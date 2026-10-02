@@ -42,12 +42,38 @@ button {
   color: inherit;
 }
 
-.game-shell {
+.game-shell,
+.boot-screen {
   width: 100vw;
   height: 100vh;
+}
+
+.game-shell {
   background:
     radial-gradient(circle at 50% -20%, #17252c 0%, transparent 38rem),
     var(--bg);
+}
+
+.boot-screen {
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at center, #0d171b, transparent 30rem),
+    #030608;
+  text-align: center;
+}
+
+.boot-mark {
+  color: var(--accent);
+  font-size: clamp(26px, 6vw, 58px);
+  letter-spacing: 0.18em;
+}
+
+.boot-line {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 
 /* Computer */
