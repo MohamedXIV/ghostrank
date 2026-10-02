@@ -66,6 +66,20 @@ export interface OperationTrace {
   worldMinute: number;
 }
 
+export type OpponentReactionKind = "defensive-watch";
+export type OpponentReactionStatus = "active";
+
+export interface OpponentReaction {
+  id: string;
+  targetId: string;
+  kind: OpponentReactionKind;
+  status: OpponentReactionStatus;
+  sourceTraceIds: string[];
+  footprintScore: number;
+  triggeredWorldMinute: number;
+  playerVisible: boolean;
+}
+
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
@@ -74,6 +88,7 @@ export interface WorldState {
   evidence: EvidenceRecord[];
   operation: OperationState | null;
   traces: OperationTrace[];
+  reactions: OpponentReaction[];
 }
 
 export interface InitialTargetState
@@ -89,6 +104,7 @@ export interface InitialWorldState {
   evidence?: EvidenceRecord[];
   operation?: OperationState | null;
   traces?: OperationTrace[];
+  reactions?: OpponentReaction[];
 }
 
 export function createInitialWorldState(
@@ -138,5 +154,8 @@ export function createInitialWorldState(
         ? null
         : structuredClone(initial.operation),
     traces: initial.traces ? structuredClone(initial.traces) : [],
+    reactions: initial.reactions
+      ? structuredClone(initial.reactions)
+      : [],
   };
 }

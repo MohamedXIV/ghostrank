@@ -1,4 +1,5 @@
 import type {
+  OpponentReactionKind,
   OperationStage,
   TraceCause,
   TraceSeverity,
@@ -48,6 +49,15 @@ export type SimulationEvent =
       targetId: string;
       cause: TraceCause;
       severity: TraceSeverity;
+      worldMinute: number;
+    }
+  | {
+      type: "OpponentReactionTriggered";
+      reactionId: string;
+      targetId: string;
+      kind: OpponentReactionKind;
+      sourceTraceIds: string[];
+      footprintScore: number;
       worldMinute: number;
     }
   | {

@@ -55,6 +55,17 @@ const traceSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
 });
 
+const reactionSchema = z.object({
+  id: z.string().min(1),
+  targetId: z.string().min(1),
+  kind: z.literal("defensive-watch"),
+  status: z.literal("active"),
+  sourceTraceIds: z.array(z.string().min(1)),
+  footprintScore: z.number().int().nonnegative(),
+  triggeredWorldMinute: z.number().int().nonnegative(),
+  playerVisible: z.boolean(),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -66,6 +77,7 @@ const storedWorldStateSchema = z.object({
   evidence: z.array(evidenceSchema).optional(),
   operation: operationSchema.nullable().optional().default(null),
   traces: z.array(traceSchema).default([]),
+  reactions: z.array(reactionSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -91,5 +103,6 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
     evidence,
     operation: state.operation ?? null,
     traces: state.traces ?? [],
+    reactions: state.reactions ?? [],
   };
 });

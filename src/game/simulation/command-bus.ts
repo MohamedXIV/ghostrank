@@ -4,11 +4,9 @@ import type {
   EvidenceKind,
   EvidenceRecord,
   MachineState,
-  OperationStage,
+  OpponentReaction,
   OperationTrace,
   TargetState,
-  TraceCause,
-  TraceSeverity,
   WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -22,6 +20,7 @@ const SURVEY_MINUTES = 12;
 const INSPECTION_MINUTES = 8;
 const ESCALATION_MINUTES = 5;
 const DISENGAGE_MINUTES = 3;
+const DEFENSIVE_WATCH_THRESHOLD = 5;
 
 export class CommandBus {
   private readonly world: WorldState;
@@ -267,6 +266,7 @@ export class CommandBus {
       weight: 3,
       worldMinute: this.world.worldMinute,
     });
+    const reactionEvent = this.evaluateOpponentReaction(operation.targetId);
 
     return {
       ok: true,
@@ -280,6 +280,7 @@ export class CommandBus {
           worldMinute: this.world.worldMinute,
         },
         traceEvent,
+        ...(reactionEvent ? [reactionEvent] : []),
       ],
     };
   }
@@ -308,12 +309,18 @@ export class CommandBus {
       weight: stage === "intrusive" ? 2 : 1,
       worldMinute: this.world.worldMinute,
     });
+    const reactionEvent = this.evaluateOpponentReaction(operation.targetId);
 
     this.world.operation = null;
 
     return {
       ok: true,
-      events: [timeEvent, event, traceEvent],
+      events: [
+        timeEvent,
+        event,
+        traceEvent,
+        ...(reactionEvent ? [reactionEvent] : []),
+      ],
     };
   }
 
@@ -390,6 +397,54 @@ export class CommandBus {
       cause: trace.cause,
       severity: trace.severity,
       worldMinute: trace.worldMinute,
+    };
+  }
+
+  private evaluateOpponentReaction(
+    targetId: string,
+  ): Extract<SimulationEvent, { type: "OpponentReactionTriggered" }> | null {
+    const alreadyActive = this.world.reactions.some(
+      (reaction) =>
+        reaction.targetId === targetId && reaction.status === "active",
+    );
+
+    if (alreadyActive) {
+      return null;
+    }
+
+    const causalTraces = this.world.traces.filter(
+      (trace) => trace.targetId === targetId,
+    );
+    const footprintScore = causalTraces.reduce(
+      (sum, trace) => sum + trace.weight,
+      0,
+    );
+
+    if (footprintScore < DEFENSIVE_WATCH_THRESHOLD) {
+      return null;
+    }
+
+    const reaction: OpponentReaction = {
+      id: `reaction:${this.world.reactions.length + 1}`,
+      targetId,
+      kind: "defensive-watch",
+      status: "active",
+      sourceTraceIds: causalTraces.map((trace) => trace.id),
+      footprintScore,
+      triggeredWorldMinute: this.world.worldMinute,
+      playerVisible: true,
+    };
+
+    this.world.reactions.push(reaction);
+
+    return {
+      type: "OpponentReactionTriggered",
+      reactionId: reaction.id,
+      targetId: reaction.targetId,
+      kind: reaction.kind,
+      sourceTraceIds: [...reaction.sourceTraceIds],
+      footprintScore: reaction.footprintScore,
+      worldMinute: reaction.triggeredWorldMinute,
     };
   }
 

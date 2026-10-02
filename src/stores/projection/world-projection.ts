@@ -47,6 +47,20 @@ export function syncWorldProjection(
     ]),
   );
 
+  const reactionRows = Object.fromEntries(
+    projection.reactions.map((reaction) => [
+      reaction.id,
+      {
+        targetId: reaction.targetId,
+        kind: reaction.kind,
+        status: reaction.status,
+        sourceTraceIds: reaction.sourceTraceIds.join(","),
+        footprintScore: reaction.footprintScore,
+        triggeredWorldMinute: reaction.triggeredWorldMinute,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -57,6 +71,7 @@ export function syncWorldProjection(
     store.setTable("targets", targetRows);
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
+    store.setTable("reactions", reactionRows);
 
     if (projection.operation) {
       store.setTable("operation", {
