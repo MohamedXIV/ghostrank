@@ -60,6 +60,6 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 ## Status
 
-**Phase 1 — Computer + Room Vertical Slice — implemented. Phase 2 — Operation Simulation — is next.**
+**Phase 2 — Operation Simulation — complete. Phase 3 — Underground Ecosystem — is not started.**
 
 Ghostrank is a working title.
