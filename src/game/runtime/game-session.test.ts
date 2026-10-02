@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createGameSession } from "@/game/runtime/game-session";
 import type { RunPersistence } from "@/persistence/run-persistence";
+import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
 
 describe("GameSession", () => {
@@ -101,5 +102,44 @@ describe("GameSession", () => {
 
     expect(eventCounts).toEqual([1, 2]);
     expect(session.snapshot().worldMinute).toBe(15);
+  });
+  it("restores time and discovered targets across a session restart", async () => {
+    let storedState = null as ReturnType<typeof createSliceWorldState> | null;
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        storedState ? structuredClone(storedState) : null,
+      saveActiveState: async (state) => {
+        storedState = structuredClone(state);
+      },
+    };
+
+    const first = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    first.execute({
+      type: "observeTarget",
+      targetId: "nightshade",
+    });
+    first.execute({
+      type: "advanceTime",
+      minutes: 45,
+    });
+    await first.flush();
+
+    const restarted = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(restarted.snapshot().worldMinute).toBe(45);
+    expect(restarted.snapshot().knownTargetIds).toContain("nightshade");
+    expect(restarted.projection.getRow("targets", "nightshade")).toEqual({
+      handle: "NIGHTSHADE",
+      rank: 10,
+      known: true,
+    });
   });
 });
