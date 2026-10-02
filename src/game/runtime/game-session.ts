@@ -26,6 +26,10 @@ export async function createGameSession({
     : null;
   const runtime = createGameRuntime(restoredState ?? initialState);
 
+  if (persistence && !restoredState) {
+    await persistence.saveActiveState(runtime.snapshot(), []);
+  }
+
   let saveQueue: Promise<void> = Promise.resolve();
   let persistedEventCount = 0;
 
@@ -47,10 +51,6 @@ export async function createGameSession({
         persistedEventCount = allEvents.length;
       });
   };
-
-  if (persistence && !restoredState) {
-    queueSave();
-  }
 
   return {
     projection: runtime.projection,
