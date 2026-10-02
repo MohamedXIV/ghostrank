@@ -52,6 +52,17 @@ describe("world projection store", () => {
         level: "elevated",
         traceCount: 1,
       },
+      reactions: [
+        {
+          id: "reaction:1",
+          targetId: "ghost",
+          kind: "defensive-watch",
+          status: "active",
+          sourceTraceIds: ["trace:1"],
+          footprintScore: 5,
+          triggeredWorldMinute: 45,
+        },
+      ],
     };
 
     syncWorldProjection(store, projection);
@@ -98,6 +109,16 @@ describe("world projection store", () => {
         score: 3,
         level: "elevated",
         traceCount: 1,
+      },
+    });
+    expect(store.getTable("reactions")).toEqual({
+      "reaction:1": {
+        targetId: "ghost",
+        kind: "defensive-watch",
+        status: "active",
+        sourceTraceIds: "trace:1",
+        footprintScore: 5,
+        triggeredWorldMinute: 45,
       },
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);

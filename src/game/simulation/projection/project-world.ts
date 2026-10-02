@@ -1,6 +1,8 @@
 import type {
   EvidenceKind,
   OperationState,
+  OpponentReactionKind,
+  OpponentReactionStatus,
   WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -35,6 +37,16 @@ export interface VisibleFootprint {
   traceCount: number;
 }
 
+export interface VisibleReaction {
+  id: string;
+  targetId: string;
+  kind: OpponentReactionKind;
+  status: OpponentReactionStatus;
+  sourceTraceIds: string[];
+  footprintScore: number;
+  triggeredWorldMinute: number;
+}
+
 export interface WorldProjection {
   worldMinute: number;
   player: {
@@ -46,6 +58,7 @@ export interface WorldProjection {
   services: VisibleService[];
   operation: OperationState | null;
   footprint: VisibleFootprint;
+  reactions: VisibleReaction[];
 }
 
 function evidenceSubjects(
@@ -132,6 +145,18 @@ export function projectWorld(state: WorldState): WorldProjection {
     0,
   );
 
+  const reactions = state.reactions
+    .filter((reaction) => reaction.playerVisible)
+    .map((reaction) => ({
+      id: reaction.id,
+      targetId: reaction.targetId,
+      kind: reaction.kind,
+      status: reaction.status,
+      sourceTraceIds: [...reaction.sourceTraceIds],
+      footprintScore: reaction.footprintScore,
+      triggeredWorldMinute: reaction.triggeredWorldMinute,
+    }));
+
   return {
     worldMinute: state.worldMinute,
     player: {
@@ -147,5 +172,6 @@ export function projectWorld(state: WorldState): WorldProjection {
       level: footprintLevel(footprintScore),
       traceCount: state.traces.length,
     },
+    reactions,
   };
 }
