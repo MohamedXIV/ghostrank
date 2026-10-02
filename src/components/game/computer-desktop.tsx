@@ -260,6 +260,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const machineIds = useRowIds("machines", runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
+  const footprint = useRow("footprint", "current", runtime.projection);
   const operationTargetId = String(operation.targetId ?? "");
   const operationStage = String(operation.stage ?? "");
   const canEscalate = Object.values(services).some(
@@ -336,6 +337,28 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
         ) : (
           <p>No active operation. Open one from an observed target profile.</p>
         )}
+      </div>
+
+      <div className="footprint-panel">
+        <span className="panel-label">SELF-OBSERVED FOOTPRINT</span>
+        <div className="footprint-summary">
+          <div>
+            <span className="panel-label">LEVEL</span>
+            <strong>{String(footprint.level ?? "none").toUpperCase()}</strong>
+          </div>
+          <div>
+            <span className="panel-label">SCORE</span>
+            <strong>{Number(footprint.score ?? 0)}</strong>
+          </div>
+          <div>
+            <span className="panel-label">TRACES</span>
+            <strong>{Number(footprint.traceCount ?? 0)}</strong>
+          </div>
+        </div>
+        <p>
+          This is your own simulated footprint summary. It does not reveal who
+          has noticed it or predict a reaction.
+        </p>
       </div>
 
       <div className="recon-results">
