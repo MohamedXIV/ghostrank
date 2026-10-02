@@ -1,4 +1,5 @@
 mod migrations;
+mod persistence;
 
 pub const DATABASE_URL: &str = "sqlite:ghostrank.db";
 
@@ -10,6 +11,7 @@ pub fn run() {
                 .add_migrations(DATABASE_URL, migrations::all())
                 .build(),
         )
+        .invoke_handler(tauri::generate_handler![persistence::save_active_run])
         .run(tauri::generate_context!())
         .expect("error while running Ghostrank");
 }

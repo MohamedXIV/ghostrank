@@ -57,8 +57,8 @@ jobs:
             xauth \
             xvfb
       - uses: dtolnay/rust-toolchain@stable
-      - name: Check locked Tauri crate
-        run: cargo check --locked --manifest-path src-tauri/Cargo.toml
+      - name: Test locked Tauri crate
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - name: Build Tauri desktop
         run: npm run desktop:build -- --debug --no-bundle
       - name: Verify lockfiles did not drift
