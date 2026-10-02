@@ -382,8 +382,22 @@ button {
 
 .target-card {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 1fr auto;
   margin-top: 8px;
+}
+
+.recon-inline-action {
+  align-self: center;
+  border: 1px solid var(--line-hot);
+  background: rgb(148 209 182 / 7%);
+  color: var(--accent);
+  padding: 6px 8px;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.recon-inline-action:hover {
+  background: rgb(148 209 182 / 14%);
 }
 
 .recon-infrastructure {
@@ -415,6 +429,12 @@ button {
 .machine-card strong,
 .service-row strong {
   font-size: 11px;
+}
+
+.machine-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .machine-role {
