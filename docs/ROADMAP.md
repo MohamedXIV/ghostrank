@@ -64,21 +64,35 @@ Exit criteria:
 
 ## Phase 2 — Operation Simulation
 
-Deliverables:
-- target model,
-- reconnaissance,
-- simulated machines/services,
-- evidence/knowledge model,
-- capability composition,
-- escalation/disengagement,
-- traces/signatures,
-- causal consequences,
-- first opponent reaction loop.
+**Status: complete (2026-10-02).**
+
+Delivered:
+- typed target -> machine -> fictional-service truth graph,
+- explicit evidence/knowledge model separate from hidden world truth,
+- evidence-gated TinyBase projection,
+- fictional reconnaissance chain through observe / survey / inspect capabilities,
+- Terminal/GUI parity through shared typed simulation commands,
+- deterministic world-time costs and explicit failure causes,
+- resumable operation sessions,
+- explicit recon -> intrusive escalation and voluntary disengagement,
+- deterministic causal trace/signature records,
+- self-observed footprint summary,
+- first deterministic opponent reaction loop,
+- exact trace provenance for triggered reactions,
+- restart persistence for evidence, operation state, traces, and reactions,
+- compatibility normalization for older Phase 1 snapshots.
 
 Exit criteria:
 - there is no generic Hack button,
-- a complete operation can be solved through multiple workflows,
-- failure has explainable causes.
+- rank never gates operation access or opponent reaction behavior,
+- a complete operation path composes multiple typed capabilities,
+- escalation and disengagement materially alter persisted risk,
+- traces produce deterministic, explainable consequences,
+- failure and reaction causes are reconstructable from stored state/events,
+- Terminal and GUI remain alternate interfaces over the same simulation,
+- static Next export and Tauri desktop build/launch remain green.
+
+Phase 3 has not started.
 
 ## Phase 3 — Underground Ecosystem
 
