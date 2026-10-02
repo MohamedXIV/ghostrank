@@ -156,6 +156,14 @@ describe("operation session lifecycle", () => {
           toStage: "intrusive",
           worldMinute: 25,
         },
+        {
+          type: "TraceRecorded",
+          traceId: "trace:1",
+          targetId: "nightshade",
+          cause: "operation-escalation",
+          severity: "high",
+          worldMinute: 25,
+        },
       ],
     });
 
@@ -202,6 +210,14 @@ describe("operation session lifecycle", () => {
           type: "OperationDisengaged",
           targetId: "nightshade",
           stage: "recon",
+          worldMinute: 3,
+        },
+        {
+          type: "TraceRecorded",
+          traceId: "trace:1",
+          targetId: "nightshade",
+          cause: "operation-disengagement",
+          severity: "low",
           worldMinute: 3,
         },
       ],

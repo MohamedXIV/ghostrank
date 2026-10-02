@@ -71,6 +71,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "ServiceObserved":
     case "OperationEscalated":
     case "OperationDisengaged":
+    case "TraceRecorded":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

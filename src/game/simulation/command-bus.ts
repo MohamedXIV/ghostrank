@@ -4,7 +4,11 @@ import type {
   EvidenceKind,
   EvidenceRecord,
   MachineState,
+  OperationStage,
+  OperationTrace,
   TargetState,
+  TraceCause,
+  TraceSeverity,
   WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -255,6 +259,15 @@ export class CommandBus {
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
 
+    const traceEvent = this.recordTrace({
+      targetId: operation.targetId,
+      cause: "operation-escalation",
+      stage: "intrusive",
+      severity: "high",
+      weight: 3,
+      worldMinute: this.world.worldMinute,
+    });
+
     return {
       ok: true,
       events: [
@@ -266,6 +279,7 @@ export class CommandBus {
           toStage: "intrusive",
           worldMinute: this.world.worldMinute,
         },
+        traceEvent,
       ],
     };
   }
@@ -278,18 +292,28 @@ export class CommandBus {
     }
 
     const timeEvent = this.advanceWorldTime(DISENGAGE_MINUTES);
+    const stage = operation.stage;
     const event: SimulationEvent = {
       type: "OperationDisengaged",
       targetId: operation.targetId,
-      stage: operation.stage,
+      stage,
       worldMinute: this.world.worldMinute,
     };
+
+    const traceEvent = this.recordTrace({
+      targetId: operation.targetId,
+      cause: "operation-disengagement",
+      stage,
+      severity: stage === "intrusive" ? "elevated" : "low",
+      weight: stage === "intrusive" ? 2 : 1,
+      worldMinute: this.world.worldMinute,
+    });
 
     this.world.operation = null;
 
     return {
       ok: true,
-      events: [timeEvent, event],
+      events: [timeEvent, event, traceEvent],
     };
   }
 
@@ -347,6 +371,26 @@ export class CommandBus {
     }
 
     this.world.evidence.push(record);
+  }
+
+  private recordTrace(
+    input: Omit<OperationTrace, "id">,
+  ): Extract<SimulationEvent, { type: "TraceRecorded" }> {
+    const trace: OperationTrace = {
+      id: `trace:${this.world.traces.length + 1}`,
+      ...input,
+    };
+
+    this.world.traces.push(trace);
+
+    return {
+      type: "TraceRecorded",
+      traceId: trace.id,
+      targetId: trace.targetId,
+      cause: trace.cause,
+      severity: trace.severity,
+      worldMinute: trace.worldMinute,
+    };
   }
 
   private findMachine(
