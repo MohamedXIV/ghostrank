@@ -1,0 +1,77 @@
+import type { SimulationCommand } from "@/game/simulation/commands/types";
+
+export type TerminalParseResult =
+  | {
+      ok: true;
+      command: SimulationCommand;
+    }
+  | {
+      ok: false;
+      error: "EMPTY_COMMAND" | "UNKNOWN_COMMAND" | "INVALID_ARGUMENT";
+    };
+
+export function parseTerminalCommand(input: string): TerminalParseResult {
+  const trimmed = input.trim();
+
+  if (!trimmed) {
+    return {
+      ok: false,
+      error: "EMPTY_COMMAND",
+    };
+  }
+
+  const [verb, ...args] = trimmed.split(/\s+/);
+
+  switch (verb.toLowerCase()) {
+    case "observe": {
+      const targetId = args[0];
+
+      if (!targetId || args.length !== 1) {
+        return {
+          ok: false,
+          error: "INVALID_ARGUMENT",
+        };
+      }
+
+      return {
+        ok: true,
+        command: {
+          type: "observeTarget",
+          targetId,
+        },
+      };
+    }
+
+    case "wait": {
+      if (args.length !== 1) {
+        return {
+          ok: false,
+          error: "INVALID_ARGUMENT",
+        };
+      }
+
+      const minutes = Number(args[0]);
+
+      if (!Number.isInteger(minutes) || minutes <= 0) {
+        return {
+          ok: false,
+          error: "INVALID_ARGUMENT",
+        };
+      }
+
+      return {
+        ok: true,
+        command: {
+          type: "advanceTime",
+          minutes,
+        },
+      };
+    }
+
+    default:
+      return {
+        ok: false,
+        error: "UNKNOWN_COMMAND",
+      };
+  }
+}
