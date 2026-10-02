@@ -34,7 +34,7 @@ Ghostrank is now **web-first until the game is feature-complete**.
 - Zustand for ephemeral UI state
 - TinyBase as a reactive/query-oriented world projection
 - Zod at data and command/save boundaries
-- durable browser persistence behind the existing persistence interface — tracked by #18
+- native IndexedDB durable browser persistence behind the existing persistence interface
 - Tauri 2 + SQLite retained in the repository but deferred to final desktop packaging — tracked by #19
 
 Normal gameplay must run entirely in a browser. Runtime authority lives in the simulation core, not in Next.js server features, Tauri, SQLite, IndexedDB, or any UI layer.
@@ -64,6 +64,6 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 **Phase 2 — Operation Simulation — complete. Phase 3 — Underground Ecosystem — is not started.**
 
-Before Phase 3 gameplay work, #18 establishes durable browser persistence and authoritative web-only gameplay CI. Tauri/SQLite desktop hardening is explicitly deferred to #19 after the web game is complete.
+The web-first platform gate is implemented by #18: IndexedDB persistence is active in the browser and normal gameplay CI is web-only. Phase 3 remains not started. Tauri/SQLite desktop hardening stays deferred to #19 after the web game is complete.
 
 Ghostrank is a working title.

@@ -6,7 +6,7 @@ This is a full-project roadmap, not a disposable prototype plan. Early milestone
 
 Ghostrank will be completed as a **web game first**. Browser execution is the primary runtime for all remaining gameplay phases.
 
-- #18 — Web-first runtime, durable browser persistence, and authoritative web gameplay CI — is the platform gate before Phase 3 gameplay begins.
+- #18 — Web-first runtime, durable browser persistence, and authoritative web gameplay CI — is complete.
 - Tauri 2 and the existing SQLite adapter remain in the repository, but they are not required for normal gameplay development or per-feature acceptance.
 - #19 — Tauri desktop host, SQLite hardening, installer/packaging/distribution work — is explicitly deferred until the web game is feature-complete and stable.
 - Gameplay architecture must stay host-agnostic so the later desktop host reuses the same simulation, UI, content, and validated save contract.
@@ -105,22 +105,23 @@ Exit criteria:
 
 ## Platform Gate Before Phase 3 — Web-first Runtime Transition
 
-**Status: planned / next. Tracked by #18.**
+**Status: complete (2026-10-03). Tracked by #18.**
 
-Deliverables:
-- durable browser persistence adapter behind the existing `RunPersistence` boundary,
-- browser refresh/reload restores the complete active run,
-- canonical Zod save/world contract remains host-agnostic,
-- normal gameplay CI requires web tests, typecheck, lint, and production web build,
-- Tauri/Rust build and desktop launch are removed from normal per-feature gates,
-- existing Tauri/SQLite code is retained but not expanded,
-- portable save/export boundary suitable for future desktop import.
+Delivered:
+- native IndexedDB persistence adapter behind the existing `RunPersistence` boundary,
+- portable versioned Zod-validated active-run save envelope,
+- browser/session recreation restores the complete Phase 2 authoritative state,
+- corrupt/invalid durable payloads fail validation instead of fabricating state,
+- browser persistence selected automatically outside Tauri,
+- normal gameplay CI reduced to tests, typecheck, lint, and production web build,
+- Tauri/Rust build and desktop launch removed from normal per-feature gates,
+- existing Tauri/SQLite implementation retained unchanged for the deferred desktop phase.
 
 Exit criteria:
-- the complete Phase 2 flow survives browser refresh with authoritative state intact,
-- no simulation/gameplay code depends directly on IndexedDB, Tauri, or SQLite,
-- normal gameplay work can ship through web-only CI,
-- Phase 3 can proceed without any desktop-host dependency.
+- the complete Phase 2 flow survives browser-style persistence reload with authoritative state intact,
+- simulation/gameplay code remains independent of IndexedDB, Tauri, and SQLite,
+- normal gameplay work ships through web-only CI,
+- Phase 3 may proceed without any desktop-host dependency.
 
 Phase 3 has not started.
 

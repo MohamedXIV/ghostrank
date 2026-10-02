@@ -4,7 +4,7 @@
 
 Ghostrank is **web-first until the full game is feature-complete**.
 
-The browser is the primary runtime for Phases 3–9. Tauri remains a future desktop host and distribution layer, not a gameplay dependency. The transition to durable browser persistence and authoritative web CI is tracked by #18. Final Tauri/SQLite hardening and packaging is tracked by #19.
+The browser is the primary runtime for Phases 3–9. Tauri remains a future desktop host and distribution layer, not a gameplay dependency. Durable IndexedDB persistence and authoritative web CI were established by #18. Final Tauri/SQLite hardening and packaging is tracked by #19.
 
 ## Stack
 
@@ -45,7 +45,7 @@ The simulation does not know whether it is hosted by a browser, Tauri, or a test
 **RunPersistence / validated save contract**
 
 Primary during web-first development:
-- durable browser adapter, targeting IndexedDB (#18).
+- native IndexedDB adapter.
 
 Deferred desktop host:
 - Tauri 2 + SQLite adapter (#19).
