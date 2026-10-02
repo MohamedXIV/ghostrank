@@ -23,6 +23,30 @@ export function syncWorldProjection(
     ]),
   );
 
+  const machineRows = Object.fromEntries(
+    projection.machines.map((machine) => [
+      machine.id,
+      {
+        targetId: machine.targetId,
+        label: machine.label,
+        role: machine.role,
+      },
+    ]),
+  );
+
+  const serviceRows = Object.fromEntries(
+    projection.services.map((service) => [
+      service.id,
+      {
+        targetId: service.targetId,
+        machineId: service.machineId,
+        label: service.label,
+        kind: service.kind,
+        state: service.state,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -31,6 +55,8 @@ export function syncWorldProjection(
       },
     });
     store.setTable("targets", targetRows);
+    store.setTable("machines", machineRows);
+    store.setTable("services", serviceRows);
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
   });
 }

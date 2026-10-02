@@ -23,6 +23,24 @@ describe("world projection store", () => {
           known: true,
         },
       ],
+      machines: [
+        {
+          id: "ghost-relay",
+          targetId: "ghost",
+          label: "Relay",
+          role: "relay",
+        },
+      ],
+      services: [
+        {
+          id: "ghost-signal",
+          targetId: "ghost",
+          machineId: "ghost-relay",
+          label: "Signal",
+          kind: "signal",
+          state: "online",
+        },
+      ],
     };
 
     syncWorldProjection(store, projection);
@@ -38,6 +56,22 @@ describe("world projection store", () => {
         handle: "ghost",
         rank: 73_122,
         known: true,
+      },
+    });
+    expect(store.getTable("machines")).toEqual({
+      "ghost-relay": {
+        targetId: "ghost",
+        label: "Relay",
+        role: "relay",
+      },
+    });
+    expect(store.getTable("services")).toEqual({
+      "ghost-signal": {
+        targetId: "ghost",
+        machineId: "ghost-relay",
+        label: "Signal",
+        kind: "signal",
+        state: "online",
       },
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);
