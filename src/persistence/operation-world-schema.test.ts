@@ -43,10 +43,22 @@ describe("operation world persistence schema", () => {
           worldMinute: 4,
         },
       ],
+      operation: {
+        targetId: "nightshade",
+        stage: "intrusive",
+        openedWorldMinute: 4,
+        escalatedWorldMinute: 15,
+      },
     });
 
     expect(parsed.targets[0]?.machines[0]?.services[0]?.id).toBe("ns-signal");
     expect(parsed.evidence[0]?.subjectId).toBe("nightshade");
+    expect(parsed.operation).toEqual({
+      targetId: "nightshade",
+      stage: "intrusive",
+      openedWorldMinute: 4,
+      escalatedWorldMinute: 15,
+    });
   });
 
   it("upgrades legacy known target ids into target-profile evidence", () => {
@@ -78,5 +90,6 @@ describe("operation world persistence schema", () => {
       worldMinute: 15,
     });
     expect(parsed.targets[0]?.machines).toEqual([]);
+    expect(parsed.operation).toBeNull();
   });
 });
