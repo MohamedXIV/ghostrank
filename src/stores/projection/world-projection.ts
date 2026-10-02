@@ -47,8 +47,19 @@ export function syncWorldProjection(
     ]),
   );
 
-  const operationRows = projection.operation
-    ? {
+  store.transaction(() => {
+    store.setTable("player", {
+      current: {
+        handle: projection.player.handle,
+        rank: projection.player.rank,
+      },
+    });
+    store.setTable("targets", targetRows);
+    store.setTable("machines", machineRows);
+    store.setTable("services", serviceRows);
+
+    if (projection.operation) {
+      store.setTable("operation", {
         active: {
           targetId: projection.operation.targetId,
           stage: projection.operation.stage,
@@ -60,20 +71,11 @@ export function syncWorldProjection(
                   projection.operation.escalatedWorldMinute,
               }),
         },
-      }
-    : {};
+      });
+    } else {
+      store.setTable("operation", {});
+    }
 
-  store.transaction(() => {
-    store.setTable("player", {
-      current: {
-        handle: projection.player.handle,
-        rank: projection.player.rank,
-      },
-    });
-    store.setTable("targets", targetRows);
-    store.setTable("machines", machineRows);
-    store.setTable("services", serviceRows);
-    store.setTable("operation", operationRows);
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
   });
 }
