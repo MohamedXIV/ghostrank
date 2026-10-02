@@ -262,4 +262,55 @@ describe("GameSession", () => {
       traceCount: 2,
     });
   });
+
+  it("restores opponent reaction provenance across a session restart", async () => {
+    let storedState = null as ReturnType<typeof createSliceWorldState> | null;
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        storedState ? structuredClone(storedState) : null,
+      saveActiveState: async (state) => {
+        storedState = structuredClone(state);
+      },
+    };
+
+    const first = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    first.execute({ type: "observeTarget", targetId: "nightshade" });
+    first.execute({ type: "openOperation", targetId: "nightshade" });
+    first.execute({ type: "surveyTarget", targetId: "nightshade" });
+    first.execute({ type: "inspectMachine", machineId: "ns-relay" });
+    first.execute({ type: "escalateOperation" });
+    first.execute({ type: "disengageOperation" });
+    await first.flush();
+
+    const restarted = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(restarted.snapshot().reactions).toEqual([
+      {
+        id: "reaction:1",
+        targetId: "nightshade",
+        kind: "defensive-watch",
+        status: "active",
+        sourceTraceIds: ["trace:1", "trace:2"],
+        footprintScore: 5,
+        triggeredWorldMinute: 28,
+        playerVisible: true,
+      },
+    ]);
+    expect(restarted.projection.getRow("reactions", "reaction:1")).toEqual({
+      targetId: "nightshade",
+      kind: "defensive-watch",
+      status: "active",
+      sourceTraceIds: "trace:1,trace:2",
+      footprintScore: 5,
+      triggeredWorldMinute: 28,
+    });
+  });
 });
