@@ -5,18 +5,18 @@
 - Save data is durable, local-first, and versioned.
 - Simulation state is authoritative in memory during play.
 - Persistence is accessed through a host-agnostic interface.
-- During web-first development, durable browser persistence is primary; the target adapter is IndexedDB (#18).
+- During web-first development, native IndexedDB persistence is primary.
 - Tauri + SQLite remains a deferred desktop adapter (#19).
 - TinyBase is a reactive/query projection.
 - Zustand contains ephemeral UI state only.
 - Zod validates file/database/command boundaries where useful.
 - Browser and future desktop hosts share one logical validated save contract.
 
-## Current transition
+## Current implementation
 
-Phase 2 implemented durable Tauri/SQLite persistence and a stable `RunPersistence` boundary.
+Phase 2 established the stable `RunPersistence` boundary and the original Tauri/SQLite adapter.
 
-The next platform task, #18, moves normal play to durable browser persistence without changing simulation authority. Until #18 is complete, browser persistence may still be incomplete; documentation here describes the accepted target architecture, not a claim that IndexedDB has already shipped.
+#18 added the primary native IndexedDB browser adapter without changing simulation authority. Active browser saves use a small versioned portable envelope containing the Zod-validated authoritative WorldState. Invalid persisted payloads are rejected rather than silently repaired into a different run.
 
 ## Persistence-adapter responsibilities
 

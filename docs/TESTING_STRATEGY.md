@@ -8,7 +8,7 @@ During web-first development, normal gameplay acceptance is browser/web-oriented
 
 ## Required normal gameplay gates
 
-Once #18 completes, ordinary gameplay PRs require:
+Ordinary gameplay PRs require:
 - deterministic/unit tests,
 - typecheck,
 - lint,
@@ -44,7 +44,7 @@ Examples:
 ### Persistence tests
 - snapshot round-trip through the canonical persistence contract,
 - browser adapter round-trip,
-- browser refresh/reload recovery,
+- browser persistence/session-recreation recovery,
 - event round-trip,
 - scheduled jobs survive load,
 - RNG continuity,
