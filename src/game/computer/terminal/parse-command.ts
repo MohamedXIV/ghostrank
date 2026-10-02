@@ -23,24 +23,23 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
   const [verb, ...args] = trimmed.split(/\s+/);
 
   switch (verb.toLowerCase()) {
-    case "observe": {
-      const targetId = args[0];
+    case "observe":
+      return singleIdCommand(args, (targetId) => ({
+        type: "observeTarget",
+        targetId,
+      }));
 
-      if (!targetId || args.length !== 1) {
-        return {
-          ok: false,
-          error: "INVALID_ARGUMENT",
-        };
-      }
+    case "survey":
+      return singleIdCommand(args, (targetId) => ({
+        type: "surveyTarget",
+        targetId,
+      }));
 
-      return {
-        ok: true,
-        command: {
-          type: "observeTarget",
-          targetId,
-        },
-      };
-    }
+    case "inspect":
+      return singleIdCommand(args, (machineId) => ({
+        type: "inspectMachine",
+        machineId,
+      }));
 
     case "wait": {
       if (args.length !== 1) {
@@ -74,4 +73,23 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         error: "UNKNOWN_COMMAND",
       };
   }
+}
+
+function singleIdCommand(
+  args: string[],
+  create: (id: string) => SimulationCommand,
+): TerminalParseResult {
+  const id = args[0];
+
+  if (!id || args.length !== 1) {
+    return {
+      ok: false,
+      error: "INVALID_ARGUMENT",
+    };
+  }
+
+  return {
+    ok: true,
+    command: create(id),
+  };
 }
