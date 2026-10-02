@@ -386,6 +386,69 @@ button {
   margin-top: 8px;
 }
 
+.recon-infrastructure {
+  margin-top: 22px;
+}
+
+.recon-infrastructure > p,
+.machine-services > p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.machine-card {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  background: #0a1014;
+}
+
+.machine-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.machine-card strong,
+.service-row strong {
+  font-size: 11px;
+}
+
+.machine-role {
+  border: 1px solid var(--line);
+  color: var(--accent);
+  padding: 3px 6px;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.machine-services {
+  display: grid;
+}
+
+.machine-services > p {
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.service-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 12px;
+  border-top: 1px solid rgb(37 51 59 / 65%);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.service-row:first-child {
+  border-top: 0;
+}
+
 /* Room */
 
 .room-surface {
