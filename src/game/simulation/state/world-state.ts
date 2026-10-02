@@ -50,6 +50,22 @@ export interface OperationState {
   escalatedWorldMinute?: number;
 }
 
+export type TraceCause =
+  | "operation-escalation"
+  | "operation-disengagement";
+
+export type TraceSeverity = "low" | "elevated" | "high";
+
+export interface OperationTrace {
+  id: string;
+  targetId: string;
+  cause: TraceCause;
+  stage: OperationStage;
+  severity: TraceSeverity;
+  weight: number;
+  worldMinute: number;
+}
+
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
@@ -57,6 +73,7 @@ export interface WorldState {
   knownTargetIds: string[];
   evidence: EvidenceRecord[];
   operation: OperationState | null;
+  traces: OperationTrace[];
 }
 
 export interface InitialTargetState
@@ -71,6 +88,7 @@ export interface InitialWorldState {
   knownTargetIds?: string[];
   evidence?: EvidenceRecord[];
   operation?: OperationState | null;
+  traces?: OperationTrace[];
 }
 
 export function createInitialWorldState(
@@ -119,5 +137,6 @@ export function createInitialWorldState(
       initial.operation === undefined
         ? null
         : structuredClone(initial.operation),
+    traces: initial.traces ? structuredClone(initial.traces) : [],
   };
 }

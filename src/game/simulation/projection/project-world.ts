@@ -27,6 +27,14 @@ export interface VisibleService {
   state: "online" | "offline" | "degraded";
 }
 
+export type FootprintLevel = "none" | "low" | "elevated" | "severe";
+
+export interface VisibleFootprint {
+  score: number;
+  level: FootprintLevel;
+  traceCount: number;
+}
+
 export interface WorldProjection {
   worldMinute: number;
   player: {
@@ -37,6 +45,7 @@ export interface WorldProjection {
   machines: VisibleMachine[];
   services: VisibleService[];
   operation: OperationState | null;
+  footprint: VisibleFootprint;
 }
 
 function evidenceSubjects(
@@ -48,6 +57,22 @@ function evidenceSubjects(
       .filter((record) => record.kind === kind)
       .map((record) => record.subjectId),
   );
+}
+
+function footprintLevel(score: number): FootprintLevel {
+  if (score === 0) {
+    return "none";
+  }
+
+  if (score <= 2) {
+    return "low";
+  }
+
+  if (score <= 4) {
+    return "elevated";
+  }
+
+  return "severe";
 }
 
 export function projectWorld(state: WorldState): WorldProjection {
@@ -102,6 +127,11 @@ export function projectWorld(state: WorldState): WorldProjection {
     }
   }
 
+  const footprintScore = state.traces.reduce(
+    (sum, trace) => sum + trace.weight,
+    0,
+  );
+
   return {
     worldMinute: state.worldMinute,
     player: {
@@ -112,5 +142,10 @@ export function projectWorld(state: WorldState): WorldProjection {
     machines,
     services,
     operation: state.operation ? structuredClone(state.operation) : null,
+    footprint: {
+      score: footprintScore,
+      level: footprintLevel(footprintScore),
+      traceCount: state.traces.length,
+    },
   };
 }

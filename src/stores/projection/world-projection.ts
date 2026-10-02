@@ -76,6 +76,14 @@ export function syncWorldProjection(
       store.setTable("operation", {});
     }
 
+    store.setTable("footprint", {
+      current: {
+        score: projection.footprint.score,
+        level: projection.footprint.level,
+        traceCount: projection.footprint.traceCount,
+      },
+    });
+
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
   });
 }

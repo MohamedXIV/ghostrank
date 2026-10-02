@@ -43,8 +43,14 @@ describe("world projection store", () => {
       ],
       operation: {
         targetId: "ghost",
-        stage: "recon",
-        openedWorldMinute: 40,
+        stage: "intrusive",
+        openedWorldMinute: 10,
+        escalatedWorldMinute: 40,
+      },
+      footprint: {
+        score: 3,
+        level: "elevated",
+        traceCount: 1,
       },
     };
 
@@ -82,8 +88,16 @@ describe("world projection store", () => {
     expect(store.getTable("operation")).toEqual({
       active: {
         targetId: "ghost",
-        stage: "recon",
-        openedWorldMinute: 40,
+        stage: "intrusive",
+        openedWorldMinute: 10,
+        escalatedWorldMinute: 40,
+      },
+    });
+    expect(store.getTable("footprint")).toEqual({
+      current: {
+        score: 3,
+        level: "elevated",
+        traceCount: 1,
       },
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);

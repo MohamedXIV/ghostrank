@@ -1,4 +1,8 @@
-import type { OperationStage } from "@/game/simulation/state/world-state";
+import type {
+  OperationStage,
+  TraceCause,
+  TraceSeverity,
+} from "@/game/simulation/state/world-state";
 
 export type SimulationEvent =
   | {
@@ -36,6 +40,14 @@ export type SimulationEvent =
       type: "OperationDisengaged";
       targetId: string;
       stage: OperationStage;
+      worldMinute: number;
+    }
+  | {
+      type: "TraceRecorded";
+      traceId: string;
+      targetId: string;
+      cause: TraceCause;
+      severity: TraceSeverity;
       worldMinute: number;
     }
   | {

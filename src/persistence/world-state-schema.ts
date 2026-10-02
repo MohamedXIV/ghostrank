@@ -42,6 +42,19 @@ const operationSchema = z.object({
   escalatedWorldMinute: z.number().int().nonnegative().optional(),
 });
 
+const traceSchema = z.object({
+  id: z.string().min(1),
+  targetId: z.string().min(1),
+  cause: z.enum([
+    "operation-escalation",
+    "operation-disengagement",
+  ]),
+  stage: z.enum(["recon", "intrusive"]),
+  severity: z.enum(["low", "elevated", "high"]),
+  weight: z.number().int().positive(),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -52,6 +65,7 @@ const storedWorldStateSchema = z.object({
   knownTargetIds: z.array(z.string().min(1)).default([]),
   evidence: z.array(evidenceSchema).optional(),
   operation: operationSchema.nullable().optional().default(null),
+  traces: z.array(traceSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -76,5 +90,6 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
     ...state,
     evidence,
     operation: state.operation ?? null,
+    traces: state.traces ?? [],
   };
 });
