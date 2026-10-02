@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #090b0c;
+  --panel: #101416;
+  --panel-border: #293136;
+  --text: #e7ecef;
+  --muted: #929da3;
+  --accent: #9fe2c3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, #172025 0%, transparent 42rem),
+    var(--background);
+  color: var(--text);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+}
+
+.foundation-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.foundation-panel {
+  width: min(56rem, 100%);
+  border: 1px solid var(--panel-border);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  padding: clamp(1.5rem, 4vw, 3rem);
+  box-shadow: 0 2rem 8rem rgb(0 0 0 / 35%);
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+}
+
+h1 {
+  margin: 0.6rem 0 1rem;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+
+.lede {
+  max-width: 44rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.boundary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.boundary-card {
+  border: 1px solid var(--panel-border);
+  padding: 0.9rem 1rem;
+  color: var(--muted);
+  background: rgb(255 255 255 / 2%);
+}
