@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useCell, useRow, useRowIds } from "tinybase/ui-react";
+import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import { observeTargetFromGui } from "@/game/computer/apps/target-actions";
@@ -226,6 +226,7 @@ function describeCommandResult(type: "observeTarget" | "advanceTime") {
 function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const [targetId, setTargetId] = useState("nightshade");
   const targetIds = useRowIds("targets", runtime.projection);
+  const machineIds = useRowIds("machines", runtime.projection);
 
   const observe = () => {
     const normalized = targetId.trim().toLowerCase();
@@ -267,6 +268,19 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           ))
         )}
       </div>
+
+      <div className="recon-infrastructure">
+        <span className="panel-label">KNOWN INFRASTRUCTURE</span>
+        {machineIds.length === 0 ? (
+          <p>
+            No infrastructure evidence. A target profile is not a topology map.
+          </p>
+        ) : (
+          machineIds.map((id) => (
+            <ReconMachine key={id} machineId={id} runtime={runtime} />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -293,6 +307,50 @@ function ReconTarget({
       <div>
         <span className="panel-label">STATUS</span>
         <strong>OBSERVED</strong>
+      </div>
+    </article>
+  );
+}
+
+
+function ReconMachine({
+  machineId,
+  runtime,
+}: {
+  machineId: string;
+  runtime: GameRuntime;
+}) {
+  const machine = useRow("machines", machineId, runtime.projection);
+  const services = useTable("services", runtime.projection);
+  const machineServices = Object.entries(services).filter(
+    ([, service]) => service.machineId === machineId,
+  );
+
+  return (
+    <article className="machine-card">
+      <header>
+        <div>
+          <span className="panel-label">MACHINE</span>
+          <strong>{String(machine.label ?? machineId)}</strong>
+        </div>
+        <span className="machine-role">{String(machine.role ?? "unknown")}</span>
+      </header>
+
+      <div className="machine-services">
+        {machineServices.length === 0 ? (
+          <p>No service evidence attached to this machine.</p>
+        ) : (
+          machineServices.map(([serviceId, service]) => (
+            <div className="service-row" key={serviceId}>
+              <div>
+                <span className="panel-label">SERVICE</span>
+                <strong>{String(service.label ?? serviceId)}</strong>
+              </div>
+              <span>{String(service.kind ?? "unknown")}</span>
+              <span>{String(service.state ?? "unknown")}</span>
+            </div>
+          ))
+        )}
       </div>
     </article>
   );

@@ -46,6 +46,19 @@ export class CommandBus {
       this.world.knownTargetIds.push(target.id);
     }
 
+    const evidenceId = `target-profile:${target.id}`;
+
+    if (!this.world.evidence.some((record) => record.id === evidenceId)) {
+      this.world.evidence.push({
+        id: evidenceId,
+        kind: "target-profile",
+        subjectId: target.id,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+    }
+
     return {
       ok: true,
       events: [
