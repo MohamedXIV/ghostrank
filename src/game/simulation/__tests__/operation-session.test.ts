@@ -64,6 +64,61 @@ describe("operation session lifecycle", () => {
     });
   });
 
+  it("rejects reconnaissance against a different operation target", () => {
+    const bus = new CommandBus(createInitialWorldState({
+      targets: [
+        {
+          id: "nightshade",
+          handle: "NIGHTSHADE",
+          rank: 10,
+          machines: [],
+        },
+        {
+          id: "glasswire",
+          handle: "GLASSWIRE",
+          rank: 11,
+          machines: [
+            {
+              id: "gw-relay",
+              label: "Glass Relay",
+              role: "relay",
+              services: [],
+            },
+          ],
+        },
+      ],
+      knownTargetIds: ["nightshade", "glasswire"],
+      evidence: [
+        {
+          id: "machine-presence:gw-relay",
+          kind: "machine-presence",
+          subjectId: "gw-relay",
+          confidence: "observed",
+          source: "direct-observation",
+          worldMinute: 0,
+        },
+      ],
+    }));
+
+    bus.execute({ type: "openOperation", targetId: "nightshade" });
+
+    expect(
+      bus.execute({ type: "surveyTarget", targetId: "glasswire" }),
+    ).toEqual({
+      ok: false,
+      events: [],
+      error: "OPERATION_TARGET_MISMATCH",
+    });
+    expect(
+      bus.execute({ type: "inspectMachine", machineId: "gw-relay" }),
+    ).toEqual({
+      ok: false,
+      events: [],
+      error: "OPERATION_TARGET_MISMATCH",
+    });
+    expect(bus.snapshot().worldMinute).toBe(0);
+  });
+
   it("requires service evidence before escalating", () => {
     const bus = new CommandBus(createSliceWorldState());
 
@@ -110,6 +165,23 @@ describe("operation session lifecycle", () => {
       openedWorldMinute: 0,
       escalatedWorldMinute: 25,
     });
+  });
+
+  it("rejects duplicate escalation without charging more time", () => {
+    const bus = new CommandBus(createSliceWorldState());
+
+    bus.execute({ type: "observeTarget", targetId: "nightshade" });
+    bus.execute({ type: "openOperation", targetId: "nightshade" });
+    bus.execute({ type: "surveyTarget", targetId: "nightshade" });
+    bus.execute({ type: "inspectMachine", machineId: "ns-relay" });
+    bus.execute({ type: "escalateOperation" });
+
+    expect(bus.execute({ type: "escalateOperation" })).toEqual({
+      ok: false,
+      events: [],
+      error: "OPERATION_ALREADY_ESCALATED",
+    });
+    expect(bus.snapshot().worldMinute).toBe(25);
   });
 
   it("disengages deliberately and charges three minutes", () => {
