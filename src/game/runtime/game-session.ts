@@ -27,21 +27,25 @@ export async function createGameSession({
   const runtime = createGameRuntime(restoredState ?? initialState);
 
   let saveQueue: Promise<void> = Promise.resolve();
-  let queuedEventCount = 0;
+  let persistedEventCount = 0;
 
   const queueSave = () => {
     if (!persistence) {
       return;
     }
 
-    const snapshot = runtime.snapshot();
-    const allEvents = [...runtime.events()];
-    const newEvents: SimulationEvent[] = allEvents.slice(queuedEventCount);
-    queuedEventCount = allEvents.length;
-
     saveQueue = saveQueue
       .catch(() => undefined)
-      .then(() => persistence.saveActiveState(snapshot, newEvents));
+      .then(async () => {
+        const snapshot = runtime.snapshot();
+        const allEvents = [...runtime.events()];
+        const newEvents: SimulationEvent[] = allEvents.slice(
+          persistedEventCount,
+        );
+
+        await persistence.saveActiveState(snapshot, newEvents);
+        persistedEventCount = allEvents.length;
+      });
   };
 
   if (persistence && !restoredState) {

@@ -61,4 +61,45 @@ describe("GameSession", () => {
       eventCount: 1,
     });
   });
+
+  it("retries unpersisted events after a failed save", async () => {
+    let attempts = 0;
+    const eventCounts: number[] = [];
+
+    const stored = createInitialWorldState();
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () => stored,
+      saveActiveState: async (_state, events) => {
+        attempts += 1;
+        eventCounts.push(events.length);
+
+        if (attempts === 1) {
+          throw new Error("disk unavailable");
+        }
+      },
+    };
+
+    const session = await createGameSession({
+      initialState: createInitialWorldState(),
+      persistence,
+    });
+
+    session.execute({
+      type: "advanceTime",
+      minutes: 10,
+    });
+
+    await expect(session.flush()).rejects.toThrow("disk unavailable");
+
+    session.execute({
+      type: "advanceTime",
+      minutes: 5,
+    });
+
+    await session.flush();
+
+    expect(eventCounts).toEqual([1, 2]);
+    expect(session.snapshot().worldMinute).toBe(15);
+  });
 });
