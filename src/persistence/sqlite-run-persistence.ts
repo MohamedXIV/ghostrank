@@ -41,90 +41,98 @@ export async function createSqliteRunPersistence(): Promise<RunPersistence> {
     ) {
       const validated = worldStateSchema.parse(state);
       const createdAt = new Date().toISOString();
-
-      await database.execute(
-        `
-          INSERT INTO runs (
-            id,
-            created_at,
-            ended_at,
-            status,
-            schema_version
-          )
-          VALUES ($1, $2, NULL, 'active', 1)
-          ON CONFLICT(id) DO UPDATE SET
-            ended_at = NULL,
-            status = 'active',
-            schema_version = 1
-        `,
-        [ACTIVE_RUN_ID, createdAt],
-      );
-
       const snapshotId = `${ACTIVE_RUN_ID}:snapshot:${crypto.randomUUID()}`;
 
-      await database.execute(
-        `
-          INSERT INTO snapshots (
-            id,
-            run_id,
-            world_minute,
-            state_json,
-            schema_version,
-            created_at
-          )
-          VALUES ($1, $2, $3, $4, 1, $5)
-        `,
-        [
-          snapshotId,
-          ACTIVE_RUN_ID,
-          validated.worldMinute,
-          JSON.stringify(validated),
-          createdAt,
-        ],
-      );
+      await database.execute("BEGIN IMMEDIATE");
 
-      for (const event of newEvents) {
-        const eventId = `${ACTIVE_RUN_ID}:event:${crypto.randomUUID()}`;
+      try {
+        await database.execute(
+          `
+            INSERT INTO runs (
+              id,
+              created_at,
+              ended_at,
+              status,
+              schema_version
+            )
+            VALUES ($1, $2, NULL, 'active', 1)
+            ON CONFLICT(id) DO UPDATE SET
+              ended_at = NULL,
+              status = 'active',
+              schema_version = 1
+          `,
+          [ACTIVE_RUN_ID, createdAt],
+        );
 
         await database.execute(
           `
-            INSERT INTO events (
+            INSERT INTO snapshots (
               id,
               run_id,
               world_minute,
-              event_type,
-              payload_json,
+              state_json,
               schema_version,
-              correlation_id,
               created_at
             )
-            VALUES ($1, $2, $3, $4, $5, 1, NULL, $6)
+            VALUES ($1, $2, $3, $4, 1, $5)
           `,
           [
-            eventId,
+            snapshotId,
             ACTIVE_RUN_ID,
-            eventWorldMinute(event),
-            event.type,
-            JSON.stringify(event),
+            validated.worldMinute,
+            JSON.stringify(validated),
             createdAt,
           ],
         );
-      }
 
-      await database.execute(
-        `
-          DELETE FROM snapshots
-          WHERE run_id = $1
-            AND id NOT IN (
-              SELECT id
-              FROM snapshots
-              WHERE run_id = $1
-              ORDER BY world_minute DESC, created_at DESC
-              LIMIT 50
-            )
-        `,
-        [ACTIVE_RUN_ID],
-      );
+        for (const event of newEvents) {
+          const eventId = `${ACTIVE_RUN_ID}:event:${crypto.randomUUID()}`;
+
+          await database.execute(
+            `
+              INSERT INTO events (
+                id,
+                run_id,
+                world_minute,
+                event_type,
+                payload_json,
+                schema_version,
+                correlation_id,
+                created_at
+              )
+              VALUES ($1, $2, $3, $4, $5, 1, NULL, $6)
+            `,
+            [
+              eventId,
+              ACTIVE_RUN_ID,
+              eventWorldMinute(event),
+              event.type,
+              JSON.stringify(event),
+              createdAt,
+            ],
+          );
+        }
+
+        await database.execute(
+          `
+            DELETE FROM snapshots
+            WHERE run_id = $1
+              AND id NOT IN (
+                SELECT id
+                FROM snapshots
+                WHERE run_id = $1
+                ORDER BY world_minute DESC, created_at DESC
+                LIMIT 50
+              )
+          `,
+          [ACTIVE_RUN_ID],
+        );
+
+        await database.execute("COMMIT");
+      } catch (error) {
+        await database.execute("ROLLBACK");
+        throw error;
+      }
     },
   };
 }
