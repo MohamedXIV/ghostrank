@@ -4,7 +4,11 @@ import { FormEvent, useState } from "react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
-import { observeTargetFromGui } from "@/game/computer/apps/target-actions";
+import {
+  inspectMachineFromGui,
+  observeTargetFromGui,
+  surveyTargetFromGui,
+} from "@/game/computer/apps/target-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import {
@@ -147,7 +151,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | wait <minutes> | help",
+    "commands: observe <target-id> | survey <target-id> | inspect <machine-id> | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -164,7 +168,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
       setLines((current) => [
         ...current,
         `> ${raw}`,
-        "observe <target-id>  inspect a known lead through the simulation",
+        "observe <target-id>  resolve a target profile",
+        "survey <target-id>   look for one unknown machine (12m)",
+        "inspect <machine-id> inspect one known machine (8m)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -214,10 +220,20 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   );
 }
 
-function describeCommandResult(type: "observeTarget" | "advanceTime") {
+function describeCommandResult(
+  type:
+    | "observeTarget"
+    | "surveyTarget"
+    | "inspectMachine"
+    | "advanceTime",
+) {
   switch (type) {
     case "observeTarget":
-      return "observation complete // projection updated";
+      return "observation complete // target profile updated";
+    case "surveyTarget":
+      return "survey complete // machine evidence updated";
+    case "inspectMachine":
+      return "inspection complete // service evidence updated";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -308,6 +324,13 @@ function ReconTarget({
         <span className="panel-label">STATUS</span>
         <strong>OBSERVED</strong>
       </div>
+      <button
+        className="recon-inline-action"
+        type="button"
+        onClick={() => runtime.execute(surveyTargetFromGui(targetId))}
+      >
+        SURVEY
+      </button>
     </article>
   );
 }
@@ -333,7 +356,16 @@ function ReconMachine({
           <span className="panel-label">MACHINE</span>
           <strong>{String(machine.label ?? machineId)}</strong>
         </div>
-        <span className="machine-role">{String(machine.role ?? "unknown")}</span>
+        <div className="machine-actions">
+          <span className="machine-role">{String(machine.role ?? "unknown")}</span>
+          <button
+            className="recon-inline-action"
+            type="button"
+            onClick={() => runtime.execute(inspectMachineFromGui(machineId))}
+          >
+            INSPECT
+          </button>
+        </div>
       </header>
 
       <div className="machine-services">

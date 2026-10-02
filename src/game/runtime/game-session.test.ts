@@ -142,4 +142,57 @@ describe("GameSession", () => {
       known: true,
     });
   });
+
+  it("restores reconnaissance evidence across a session restart", async () => {
+    let storedState = null as ReturnType<typeof createSliceWorldState> | null;
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        storedState ? structuredClone(storedState) : null,
+      saveActiveState: async (state) => {
+        storedState = structuredClone(state);
+      },
+    };
+
+    const first = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    first.execute({
+      type: "observeTarget",
+      targetId: "nightshade",
+    });
+    first.execute({
+      type: "surveyTarget",
+      targetId: "nightshade",
+    });
+    first.execute({
+      type: "inspectMachine",
+      machineId: "ns-relay",
+    });
+    await first.flush();
+
+    const restarted = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(restarted.snapshot().worldMinute).toBe(20);
+    expect(restarted.projection.getRow("machines", "ns-relay")).toEqual({
+      targetId: "nightshade",
+      label: "Outer Relay",
+      role: "relay",
+    });
+    expect(restarted.projection.getRow("services", "ns-signal")).toEqual({
+      targetId: "nightshade",
+      machineId: "ns-relay",
+      label: "Signal Broker",
+      kind: "signal",
+      state: "online",
+    });
+
+    expect(restarted.projection.getRow("machines", "ns-vault")).toEqual({});
+    expect(restarted.projection.getRow("services", "ns-archive")).toEqual({});
+  });
 });

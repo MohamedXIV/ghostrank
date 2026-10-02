@@ -6,3 +6,17 @@ export function observeTargetFromGui(targetId: string): SimulationCommand {
     targetId,
   };
 }
+
+export function surveyTargetFromGui(targetId: string): SimulationCommand {
+  return {
+    type: "surveyTarget",
+    targetId,
+  };
+}
+
+export function inspectMachineFromGui(machineId: string): SimulationCommand {
+  return {
+    type: "inspectMachine",
+    machineId,
+  };
+}
