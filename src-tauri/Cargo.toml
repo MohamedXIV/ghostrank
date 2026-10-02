@@ -19,4 +19,4 @@ tauri = { version = "2", features = [] }
 tauri-plugin-sql = { version = "2.5.0", features = ["sqlite"] }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }

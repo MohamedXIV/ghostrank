@@ -206,60 +206,68 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn commits_snapshot_and_events_together() {
-        let pool = create_test_pool().await;
-        let input = request(vec![PersistedEventInput {
-            id: "event-1".to_string(),
-            world_minute: 20,
-            event_type: "WorldTimeAdvanced".to_string(),
-            payload_json: "{}".to_string(),
-        }]);
-
-        save_active_run_on_pool(&pool, &input)
-            .await
-            .expect("valid save should commit");
-
-        let snapshot_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM snapshots")
-            .fetch_one(&pool)
-            .await
-            .expect("snapshot count should query");
-        let event_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM events")
-            .fetch_one(&pool)
-            .await
-            .expect("event count should query");
-
-        assert_eq!(snapshot_count, 1);
-        assert_eq!(event_count, 1);
+    fn runtime() -> tokio::runtime::Runtime {
+        tokio::runtime::Runtime::new().expect("test runtime should initialize")
     }
 
-    #[tokio::test]
-    async fn rolls_back_the_whole_save_when_an_event_fails() {
-        let pool = create_test_pool().await;
-        let input = request(vec![PersistedEventInput {
-            id: "event-invalid".to_string(),
-            world_minute: -1,
-            event_type: "WorldTimeAdvanced".to_string(),
-            payload_json: "{}".to_string(),
-        }]);
+    #[test]
+    fn commits_snapshot_and_events_together() {
+        runtime().block_on(async {
+            let pool = create_test_pool().await;
+            let input = request(vec![PersistedEventInput {
+                id: "event-1".to_string(),
+                world_minute: 20,
+                event_type: "WorldTimeAdvanced".to_string(),
+                payload_json: "{}".to_string(),
+            }]);
 
-        assert!(save_active_run_on_pool(&pool, &input).await.is_err());
+            save_active_run_on_pool(&pool, &input)
+                .await
+                .expect("valid save should commit");
 
-        let run_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM runs")
-            .fetch_one(&pool)
-            .await
-            .expect("run count should query");
-        let snapshot_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM snapshots")
-            .fetch_one(&pool)
-            .await
-            .expect("snapshot count should query");
-        let event_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM events")
-            .fetch_one(&pool)
-            .await
-            .expect("event count should query");
+            let snapshot_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM snapshots")
+                .fetch_one(&pool)
+                .await
+                .expect("snapshot count should query");
+            let event_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM events")
+                .fetch_one(&pool)
+                .await
+                .expect("event count should query");
 
-        assert_eq!(run_count, 0);
-        assert_eq!(snapshot_count, 0);
-        assert_eq!(event_count, 0);
+            assert_eq!(snapshot_count, 1);
+            assert_eq!(event_count, 1);
+        });
+    }
+
+    #[test]
+    fn rolls_back_the_whole_save_when_an_event_fails() {
+        runtime().block_on(async {
+            let pool = create_test_pool().await;
+            let input = request(vec![PersistedEventInput {
+                id: "event-invalid".to_string(),
+                world_minute: -1,
+                event_type: "WorldTimeAdvanced".to_string(),
+                payload_json: "{}".to_string(),
+            }]);
+
+            assert!(save_active_run_on_pool(&pool, &input).await.is_err());
+
+            let run_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM runs")
+                .fetch_one(&pool)
+                .await
+                .expect("run count should query");
+            let snapshot_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM snapshots")
+                .fetch_one(&pool)
+                .await
+                .expect("snapshot count should query");
+            let event_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM events")
+                .fetch_one(&pool)
+                .await
+                .expect("event count should query");
+
+            assert_eq!(run_count, 0);
+            assert_eq!(snapshot_count, 0);
+            assert_eq!(event_count, 0);
+        });
     }
 }
