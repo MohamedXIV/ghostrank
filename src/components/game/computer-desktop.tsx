@@ -5,8 +5,11 @@ import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
+  disengageOperationFromGui,
+  escalateOperationFromGui,
   inspectMachineFromGui,
   observeTargetFromGui,
+  openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -151,7 +154,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | survey <target-id> | inspect <machine-id> | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | op escalate | op exit | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -169,8 +172,11 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         ...current,
         `> ${raw}`,
         "observe <target-id>  resolve a target profile",
-        "survey <target-id>   look for one unknown machine (12m)",
-        "inspect <machine-id> inspect one known machine (8m)",
+        "op open <target-id>  start a recon-stage operation",
+        "survey <target-id>   discover one machine in the active operation (12m)",
+        "inspect <machine-id> inspect one known machine in the active operation (8m)",
+        "op escalate          cross the fictional recon boundary (5m)",
+        "op exit              disengage from the active operation (3m)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -223,17 +229,26 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
 function describeCommandResult(
   type:
     | "observeTarget"
+    | "openOperation"
     | "surveyTarget"
     | "inspectMachine"
+    | "escalateOperation"
+    | "disengageOperation"
     | "advanceTime",
 ) {
   switch (type) {
     case "observeTarget":
       return "observation complete // target profile updated";
+    case "openOperation":
+      return "operation opened // stage recon";
     case "surveyTarget":
       return "survey complete // machine evidence updated";
     case "inspectMachine":
       return "inspection complete // service evidence updated";
+    case "escalateOperation":
+      return "operation escalated // stage intrusive";
+    case "disengageOperation":
+      return "operation disengaged";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -243,6 +258,13 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const [targetId, setTargetId] = useState("nightshade");
   const targetIds = useRowIds("targets", runtime.projection);
   const machineIds = useRowIds("machines", runtime.projection);
+  const operation = useRow("operation", "active", runtime.projection);
+  const services = useTable("services", runtime.projection);
+  const operationTargetId = String(operation.targetId ?? "");
+  const operationStage = String(operation.stage ?? "");
+  const canEscalate = Object.values(services).some(
+    (service) => service.targetId === operationTargetId,
+  );
 
   const observe = () => {
     const normalized = targetId.trim().toLowerCase();
@@ -272,6 +294,48 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
         <button type="button" onClick={observe}>
           OBSERVE
         </button>
+      </div>
+
+      <div className="operation-panel">
+        <span className="panel-label">OPERATION SESSION</span>
+        {operationTargetId ? (
+          <div className="operation-session">
+            <div>
+              <span className="panel-label">TARGET</span>
+              <strong>{operationTargetId}</strong>
+            </div>
+            <div>
+              <span className="panel-label">STAGE</span>
+              <strong>{operationStage.toUpperCase()}</strong>
+            </div>
+            <div className="operation-actions">
+              {operationStage === "recon" && (
+                <button
+                  className="recon-inline-action"
+                  type="button"
+                  disabled={!canEscalate}
+                  title={
+                    canEscalate
+                      ? "Escalate the current fictional operation"
+                      : "Discover service evidence before escalation"
+                  }
+                  onClick={() => runtime.execute(escalateOperationFromGui())}
+                >
+                  ESCALATE
+                </button>
+              )}
+              <button
+                className="recon-inline-action"
+                type="button"
+                onClick={() => runtime.execute(disengageOperationFromGui())}
+              >
+                DISENGAGE
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p>No active operation. Open one from an observed target profile.</p>
+        )}
       </div>
 
       <div className="recon-results">
@@ -309,6 +373,19 @@ function ReconTarget({
   runtime: GameRuntime;
 }) {
   const target = useRow("targets", targetId, runtime.projection);
+  const operation = useRow("operation", "active", runtime.projection);
+  const operationTargetId = String(operation.targetId ?? "");
+  const isActiveTarget = operationTargetId === targetId;
+  const operationElsewhere =
+    operationTargetId.length > 0 && !isActiveTarget;
+
+  const act = () => {
+    runtime.execute(
+      isActiveTarget
+        ? surveyTargetFromGui(targetId)
+        : openOperationFromGui(targetId),
+    );
+  };
 
   return (
     <article className="target-card">
@@ -322,14 +399,19 @@ function ReconTarget({
       </div>
       <div>
         <span className="panel-label">STATUS</span>
-        <strong>OBSERVED</strong>
+        <strong>{isActiveTarget ? "ACTIVE OP" : "OBSERVED"}</strong>
       </div>
       <button
         className="recon-inline-action"
         type="button"
-        onClick={() => runtime.execute(surveyTargetFromGui(targetId))}
+        disabled={operationElsewhere}
+        onClick={act}
       >
-        SURVEY
+        {isActiveTarget
+          ? "SURVEY"
+          : operationElsewhere
+            ? "OP ACTIVE"
+            : "OPEN OP"}
       </button>
     </article>
   );
@@ -344,7 +426,12 @@ function ReconMachine({
   runtime: GameRuntime;
 }) {
   const machine = useRow("machines", machineId, runtime.projection);
+  const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
+  const operationTargetId = String(operation.targetId ?? "");
+  const canInspect =
+    operationTargetId.length > 0 &&
+    operationTargetId === String(machine.targetId ?? "");
   const machineServices = Object.entries(services).filter(
     ([, service]) => service.machineId === machineId,
   );
@@ -361,6 +448,7 @@ function ReconMachine({
           <button
             className="recon-inline-action"
             type="button"
+            disabled={!canInspect}
             onClick={() => runtime.execute(inspectMachineFromGui(machineId))}
           >
             INSPECT
