@@ -15,14 +15,14 @@ These documents are the canonical design and engineering foundation.
 ## Engineering
 
 - [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) — application boundaries, command bus, simulation core, Phaser bridge
-- [DATA_AND_PERSISTENCE.md](DATA_AND_PERSISTENCE.md) — SQLite, TinyBase, events, snapshots, saves, migrations
+- [DATA_AND_PERSISTENCE.md](DATA_AND_PERSISTENCE.md) — persistence contracts, browser saves, TinyBase, events, snapshots, migrations, deferred SQLite desktop adapter
 - [TESTING_STRATEGY.md](TESTING_STRATEGY.md) — deterministic simulation testing and acceptance
 - [CONTENT_AND_FICTIONALIZATION.md](CONTENT_AND_FICTIONALIZATION.md) — content model and safe fictionalization
 
 ## Delivery
 
 - [ROADMAP.md](ROADMAP.md) — staged project roadmap
-- [DECISIONS.md](DECISIONS.md) — accepted architectural/design decisions and deferred questions
+- [DECISIONS.md](DECISIONS.md) — accepted architectural/design decisions, including the web-first/Tauri-deferred platform policy, and deferred questions
 
 ## Canonical rule
 

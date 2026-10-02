@@ -4,6 +4,19 @@
 
 Ghostrank's complexity comes from interacting systems. Tests must protect rules and causality, not only component rendering.
 
+During web-first development, normal gameplay acceptance is browser/web-oriented. Rust/Tauri checks are not required for each gameplay change.
+
+## Required normal gameplay gates
+
+Once #18 completes, ordinary gameplay PRs require:
+- deterministic/unit tests,
+- typecheck,
+- lint,
+- production web build,
+- relevant browser persistence/reload acceptance.
+
+Tauri build/launch checks move to the deferred desktop phase (#19) or an explicitly requested milestone/release check.
+
 ## Test layers
 
 ### Domain unit tests
@@ -29,12 +42,15 @@ Examples:
 - laying low can reduce some exposure while allowing other deadlines to advance.
 
 ### Persistence tests
-- snapshot round-trip,
+- snapshot round-trip through the canonical persistence contract,
+- browser adapter round-trip,
+- browser refresh/reload recovery,
 - event round-trip,
 - scheduled jobs survive load,
 - RNG continuity,
 - schema migrations,
-- corrupted save handling.
+- corrupted save handling,
+- portable save payload compatibility.
 
 ### Projection/UI tests
 - hidden facts do not leak into TinyBase player projection,
@@ -51,6 +67,18 @@ Verify bridge contracts and scene behavior:
 - physical cues render from events,
 - Phaser cannot mutate authoritative state directly.
 
+### Deferred desktop tests
+
+When Phase 10 / #19 activates:
+- SQLite adapter parity with the canonical save contract,
+- browser/exported-save import/migration,
+- locked Rust/Tauri build,
+- native packaging,
+- headless/native launch smoke,
+- desktop crash recovery.
+
+These are not normal gameplay gates before then.
+
 ## Golden run fixtures
 
 Maintain a small set of canonical seeded runs with expected major events.
@@ -66,7 +94,8 @@ Critical invariants include:
 - hidden information does not appear in normal player projections,
 - resource balances do not become negative without explicit debt mechanics,
 - run-ending events are terminal unless a documented continuation rule exists,
-- save/load preserves causal continuity.
+- save/load preserves causal continuity,
+- simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
 

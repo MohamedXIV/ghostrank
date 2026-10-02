@@ -2,6 +2,17 @@
 
 This is a full-project roadmap, not a disposable prototype plan. Early milestones establish production architecture that later systems will keep.
 
+## Current platform policy — Web first
+
+Ghostrank will be completed as a **web game first**. Browser execution is the primary runtime for all remaining gameplay phases.
+
+- #18 — Web-first runtime, durable browser persistence, and authoritative web gameplay CI — is the platform gate before Phase 3 gameplay begins.
+- Tauri 2 and the existing SQLite adapter remain in the repository, but they are not required for normal gameplay development or per-feature acceptance.
+- #19 — Tauri desktop host, SQLite hardening, installer/packaging/distribution work — is explicitly deferred until the web game is feature-complete and stable.
+- Gameplay architecture must stay host-agnostic so the later desktop host reuses the same simulation, UI, content, and validated save contract.
+
+Historical Phase 0–2 Tauri CI results remain valid evidence for the work completed at that time; they are not an ongoing requirement for Phases 3–9.
+
 ## Phase 0 — Foundation
 
 **Status: complete (2026-10-02).**
@@ -91,6 +102,25 @@ Exit criteria:
 - failure and reaction causes are reconstructable from stored state/events,
 - Terminal and GUI remain alternate interfaces over the same simulation,
 - static Next export and Tauri desktop build/launch remain green.
+
+## Platform Gate Before Phase 3 — Web-first Runtime Transition
+
+**Status: planned / next. Tracked by #18.**
+
+Deliverables:
+- durable browser persistence adapter behind the existing `RunPersistence` boundary,
+- browser refresh/reload restores the complete active run,
+- canonical Zod save/world contract remains host-agnostic,
+- normal gameplay CI requires web tests, typecheck, lint, and production web build,
+- Tauri/Rust build and desktop launch are removed from normal per-feature gates,
+- existing Tauri/SQLite code is retained but not expanded,
+- portable save/export boundary suitable for future desktop import.
+
+Exit criteria:
+- the complete Phase 2 flow survives browser refresh with authoritative state intact,
+- no simulation/gameplay code depends directly on IndexedDB, Tauri, or SQLite,
+- normal gameplay work can ship through web-only CI,
+- Phase 3 can proceed without any desktop-host dependency.
 
 Phase 3 has not started.
 
@@ -190,19 +220,44 @@ Deliverables:
 Focus:
 breadth without violating established system rules.
 
-## Phase 9 — Beta / Polish
+## Phase 9 — Web Beta / Polish
 
 Deliverables:
 - onboarding,
 - accessibility,
-- performance,
+- browser performance,
 - save migration hardening,
 - UI consistency without erasing app individuality,
 - audio/room atmosphere,
 - balance,
 - ending polish,
-- crash recovery,
-- packaging/distribution.
+- browser crash/recovery behavior,
+- web release hardening.
+
+Exit criteria:
+- the web game is feature-complete and stable enough that remaining work is host/distribution integration rather than gameplay architecture.
+
+## Phase 10 — Desktop Host / Packaging
+
+**Status: explicitly deferred. Tracked by #19.**
+
+Start only after Phase 9 is complete unless the project deliberately changes the platform decision.
+
+Deliverables:
+- reconcile final save contract with the Tauri SQLite adapter,
+- browser/exported-save import or migration where appropriate,
+- native save-location/filesystem policy,
+- desktop window/application behavior,
+- installer/package/signing,
+- native crash diagnostics and recovery,
+- release-only Tauri build/launch verification,
+- desktop storefront/distribution integration if chosen.
+
+Exit criteria:
+- the desktop build runs the same game rather than a fork,
+- browser and desktop saves share one validated logical format,
+- no gameplay system exists only because of the desktop host,
+- desktop packaging does not regress the finished web game.
 
 ## Explicitly deferred
 
@@ -213,5 +268,7 @@ Deliverables:
 - mobile,
 - live-service backend,
 - modding API beyond data-driven content.
+
+Tauri itself is **not abandoned**; its completion is separately deferred to Phase 10 / #19.
 
 These can be reconsidered only after the single-player simulation is complete and stable.

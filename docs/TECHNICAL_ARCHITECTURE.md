@@ -1,22 +1,29 @@
 # Technical Architecture
 
+## Current platform policy
+
+Ghostrank is **web-first until the full game is feature-complete**.
+
+The browser is the primary runtime for Phases 3–9. Tauri remains a future desktop host and distribution layer, not a gameplay dependency. The transition to durable browser persistence and authoritative web CI is tracked by #18. Final Tauri/SQLite hardening and packaging is tracked by #19.
+
 ## Stack
 
-### Desktop shell
-**Tauri 2**
+### Primary runtime
+**Modern browser**
 
 Responsibilities:
-- native window/application shell,
-- durable local database access,
-- packaged assets,
-- platform integration needed by the game.
+- run the complete single-player game,
+- host the simulated computer UI,
+- host the Phaser room,
+- provide durable local browser persistence through an adapter,
+- require no production Node server.
 
 ### Application UI
 **Next.js + TypeScript**
 
-Use the App Router for project organization and static export for the packaged game.
+Use the App Router for project organization and static export / browser delivery.
 
-Runtime gameplay must not depend on Next.js server actions or a production Node server.
+Runtime gameplay must not depend on Next.js server actions, server-only cookies, dynamic route handlers, or a production Node server.
 
 ### UI libraries
 - Tailwind CSS
@@ -29,10 +36,21 @@ Runtime gameplay must not depend on Next.js server actions or a production Node 
 
 Used for the small top-down/isometric room and presentation effects.
 
-### Persistence
-**SQLite**
+### Authoritative simulation
+**Pure TypeScript deterministic simulation core**
 
-Durable saves, snapshots, event history, content indexes, migrations, and run history.
+The simulation does not know whether it is hosted by a browser, Tauri, or a test runner.
+
+### Persistence boundary
+**RunPersistence / validated save contract**
+
+Primary during web-first development:
+- durable browser adapter, targeting IndexedDB (#18).
+
+Deferred desktop host:
+- Tauri 2 + SQLite adapter (#19).
+
+Persistence backends are adapters. Neither browser storage nor SQLite is gameplay authority.
 
 ### Reactive world projection
 **TinyBase**
@@ -43,7 +61,7 @@ TinyBase is not simulation authority and not the durable save contract.
 
 ## Layer diagram
 
-    Tauri 2
+    Browser (primary host)
       |
       +-- Next.js / React UI
       |     +-- OS/Desktop
@@ -64,15 +82,19 @@ TinyBase is not simulation authority and not the durable save contract.
       |
       +-- TinyBase projection
       |
-      +-- SQLite persistence
+      +-- Persistence API
+              |
+              +-- Browser durable adapter (primary)
+              |
+              +-- Tauri / SQLite adapter (deferred)
 
 ## Authority
 
 The simulation core is authoritative during an active run.
 
-React, Phaser, TinyBase, and SQLite are consumers or persistence/projection layers around it.
+React, Phaser, TinyBase, and persistence adapters are consumers around it.
 
-No UI component may directly perform a consequential world mutation.
+No UI component and no persistence implementation may directly perform a consequential world mutation.
 
 ## Command bus
 
@@ -146,17 +168,19 @@ Separate:
 - deterministic world randomness,
 - purely cosmetic randomness in Phaser/UI.
 
-## Next.js/Tauri boundary
+## Host boundary
 
-Next.js is a static application bundle inside Tauri.
+Gameplay code targets browser-standard/application abstractions, not Tauri APIs.
 
-Avoid runtime dependence on:
-- server actions,
-- server-only cookies,
-- dynamic route handlers,
-- server rendering that requires a Node process.
+Normal gameplay must avoid direct dependency on:
+- Tauri commands,
+- Rust-side state,
+- native filesystem paths,
+- SQLite-specific behavior.
 
-Where native access is needed, define typed Tauri commands/adapters.
+Where platform persistence or native access is needed, define typed adapters behind stable interfaces.
+
+When #19 eventually activates, Tauri should host the existing web game rather than require a second gameplay architecture.
 
 ## React state
 
@@ -234,14 +258,15 @@ Systems interpret content; content should not contain unrestricted executable lo
         ui/
         projection/
       persistence/
-        sqlite/
-        migrations/
+        browser/
+        adapters/
+        schemas/
       schemas/
       content/
       lib/
 
     src-tauri/
-      ...
+      ...  # retained, deferred until Phase 10 / #19
 
 Exact structure may evolve, but dependency direction must remain clear.
 

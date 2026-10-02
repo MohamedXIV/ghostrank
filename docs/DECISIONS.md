@@ -54,11 +54,11 @@ Accepted.
 
 ## D008 — Main UI stack
 
-Next.js + TypeScript, static-exported inside Tauri 2.
+Next.js + TypeScript.
 
 Tailwind + shadcn/ui for UI foundation.
 
-Accepted.
+The original host assumption was a static export inside Tauri 2. The UI-stack decision remains accepted; host timing is superseded by D016.
 
 ## D009 — Physical renderer
 
@@ -71,9 +71,9 @@ Accepted.
 - Pure TypeScript simulation core: active authoritative gameplay state/rules.
 - Zustand: ephemeral shared UI state.
 - TinyBase: reactive/query read projection.
-- SQLite: durable saves/history/migrations.
+- Persistence adapter: durable saves/history/migrations.
 
-Accepted.
+The original implementation used SQLite through Tauri. Backend timing is superseded by D016; the separation of responsibilities remains accepted.
 
 ## D011 — AI-generated software
 
@@ -108,6 +108,22 @@ Accepted for initial/full single-player scope.
 Use believable concepts but fictionalize commands, vulnerabilities, protocols, currencies, and harmful operational detail.
 
 Accepted.
+
+## D016 — Web-first completion; Tauri deferred
+
+Complete Ghostrank as a web game before returning to desktop-host work.
+
+For Phases 3–9:
+- browser execution is the primary runtime,
+- normal gameplay must not depend on Tauri/Rust/native APIs,
+- durable browser persistence is implemented behind the existing persistence boundary (#18),
+- web tests/typecheck/lint/build become the authoritative normal gameplay gates.
+
+Retain the existing Tauri 2 and SQLite work, but defer further hardening, native persistence reconciliation, installer/packaging, and desktop distribution until the web game is feature-complete (#19 / Phase 10).
+
+The future desktop build must host the same game and consume the same validated logical save contract rather than fork gameplay architecture.
+
+Accepted 2026-10-03.
 
 ## Open decisions
 

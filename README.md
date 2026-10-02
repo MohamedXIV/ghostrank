@@ -25,21 +25,23 @@ A veteran player on day one can attempt to attack a top-ranked hacker. The game 
 
 ## High-level stack
 
-- Tauri 2 desktop shell
+Ghostrank is now **web-first until the game is feature-complete**.
+
 - Next.js + TypeScript application shell
 - Tailwind CSS + shadcn/ui
 - Phaser 4 for the small top-down/isometric physical world
 - Pure TypeScript deterministic simulation core
 - Zustand for ephemeral UI state
 - TinyBase as a reactive/query-oriented world projection
-- SQLite for durable saves, event history, content, and migrations
-- Zod at data and command boundaries
+- Zod at data and command/save boundaries
+- durable browser persistence behind the existing persistence interface — tracked by #18
+- Tauri 2 + SQLite retained in the repository but deferred to final desktop packaging — tracked by #19
 
-Next.js is used as a static-exported desktop UI. Runtime authority lives in the simulation core and Tauri-backed persistence, not in a Next.js server.
+Normal gameplay must run entirely in a browser. Runtime authority lives in the simulation core, not in Next.js server features, Tauri, SQLite, IndexedDB, or any UI layer.
 
 ## Development
 
-Use Node 24 and stable Rust.
+Use Node 24 for normal game development.
 
 ```bash
 npm ci
@@ -47,10 +49,10 @@ npm test
 npm run typecheck
 npm run lint
 npm run build
-npm run desktop:dev
+npm run dev
 ```
 
-CI additionally performs a locked Tauri build and a headless desktop launch smoke test on Linux.
+Web tests, typecheck, lint, and the production web build are the normal gameplay acceptance path. Rust/Tauri work is not a per-feature requirement and is deferred to the final desktop-host phase.
 
 ## Documentation
 
@@ -61,5 +63,7 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 ## Status
 
 **Phase 2 — Operation Simulation — complete. Phase 3 — Underground Ecosystem — is not started.**
+
+Before Phase 3 gameplay work, #18 establishes durable browser persistence and authoritative web-only gameplay CI. Tauri/SQLite desktop hardening is explicitly deferred to #19 after the web game is complete.
 
 Ghostrank is a working title.

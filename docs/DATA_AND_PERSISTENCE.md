@@ -2,33 +2,40 @@
 
 ## Principles
 
-- Save data is durable and versioned.
+- Save data is durable, local-first, and versioned.
 - Simulation state is authoritative in memory during play.
-- SQLite stores durable snapshots/events/content.
+- Persistence is accessed through a host-agnostic interface.
+- During web-first development, durable browser persistence is primary; the target adapter is IndexedDB (#18).
+- Tauri + SQLite remains a deferred desktop adapter (#19).
 - TinyBase is a reactive/query projection.
 - Zustand contains ephemeral UI state only.
 - Zod validates file/database/command boundaries where useful.
+- Browser and future desktop hosts share one logical validated save contract.
 
-## SQLite responsibilities
+## Current transition
 
-Suggested durable concepts:
-- runs,
+Phase 2 implemented durable Tauri/SQLite persistence and a stable `RunPersistence` boundary.
+
+The next platform task, #18, moves normal play to durable browser persistence without changing simulation authority. Until #18 is complete, browser persistence may still be incomplete; documentation here describes the accepted target architecture, not a claim that IndexedDB has already shipped.
+
+## Persistence-adapter responsibilities
+
+A durable adapter stores:
+- active run snapshots,
+- consequential event history where required,
 - run metadata,
-- snapshots,
-- events,
-- settings,
-- content metadata,
-- migrations,
+- settings where appropriate,
+- schema/version metadata,
 - optional player-wide statistics.
 
-Large content catalogs may also use SQLite or packaged data files according to profiling and authoring needs.
+The adapter may use IndexedDB in the browser or SQLite in the later Tauri host, but domain code must not depend on backend-specific query behavior.
 
 ## Active run state
 
 On load:
-1. read run metadata,
-2. load latest compatible snapshot,
-3. apply required subsequent events or persisted deltas,
+1. read compatible run metadata/state,
+2. load the latest compatible authoritative snapshot,
+3. apply any required subsequent persisted deltas/events,
 4. rebuild derived indexes/projections,
 5. resume scheduled world work.
 
@@ -59,9 +66,11 @@ Potential save points:
 - location changes,
 - major contract state changes,
 - periodic autosave,
-- clean application exit.
+- clean application exit when the host supports it.
 
-Avoid SQLite writes for every visual update.
+Avoid durable writes for every visual update.
+
+Browser refresh/reload is a first-class recovery boundary.
 
 ## Event log
 
@@ -97,14 +106,30 @@ A snapshot includes enough authoritative state to resume:
 - inventories/assets,
 - RNG state or deterministic stream position where necessary.
 
+## Portable save contract
+
+The canonical logical save format is backend-independent.
+
+Browser persistence, exported save files, test fixtures, and the future desktop adapter should all validate against the same schema/version rules.
+
+This permits a later flow such as:
+
+    Browser save
+        -> export/portable payload
+        -> Tauri import/migration
+        -> SQLite-backed desktop run
+
+without moving gameplay rules into persistence code.
+
 ## Migrations
 
 Every shipped save schema change must include migration strategy.
 
 Rules:
-- never mutate old save files in place before a backup/transactional migration,
+- do not silently drop state,
 - validate before commit,
-- fail with a readable error rather than silently dropping state,
+- preserve or back up user data where the host permits it,
+- fail with a readable error rather than fabricating state,
 - test migrations across representative historical fixtures.
 
 ## Hidden versus known information
@@ -152,3 +177,9 @@ Store summary data such as:
 - important causal chain.
 
 This supports player learning and storytelling.
+
+## Deferred desktop persistence
+
+The existing SQLite/Rust work is retained as prior validated infrastructure.
+
+Do not expand or require it during Phases 3–9. Final reconciliation, migration/import, native crash recovery, and packaging belong to Phase 10 / #19.

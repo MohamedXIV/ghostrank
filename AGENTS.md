@@ -31,7 +31,7 @@ When code and documentation disagree, do not silently invent a third design. Upd
 - The in-game terminal is a fictional simulation interface. Never bridge it to the player's real shell, filesystem, credentials, or network.
 - Hacking mechanics must stay fictionalized enough that the game is not a real exploitation toolkit.
 - Phaser owns the small physical-world presentation. React/Next owns the computer/OS-style UI. Neither owns simulation truth.
-- SQLite is durable persistence. TinyBase is a read/query projection. Zustand is ephemeral UI state. Do not blur these roles.
+- Durable persistence is accessed only through the persistence boundary. During web-first development the primary durable adapter is browser storage (target: IndexedDB, tracked by #18). SQLite/Tauri is deferred to final desktop packaging (#19). TinyBase is a read/query projection and Zustand is ephemeral UI state. Do not blur these roles.
 
 ## Architecture boundaries
 
@@ -51,7 +51,11 @@ All consequential player actions flow through typed simulation commands.
       TinyBase view   Event log
                            |
                            v
-                        SQLite
+                  Persistence API
+                    /          \
+                   v            v
+            Browser store    SQLite/Tauri
+             (primary)       (deferred)
 
 React components may request commands and render projections. They must not directly mutate authoritative world state.
 
@@ -67,6 +71,16 @@ Every consequential event should be recordable with enough causal context to sup
 - debugging,
 - balancing,
 - replay-oriented tests.
+
+## Platform policy
+
+- The browser is the primary runtime until the full web game is feature-complete.
+- Normal gameplay work must not require Rust, Tauri, native filesystem access, or SQLite.
+- Web tests, typecheck, lint, and production web build are the authoritative per-feature gates once #18 lands.
+- Tauri source may remain maintained enough to avoid needless decay, but Tauri build/launch is not a gameplay Definition-of-Done gate.
+- Do not add new gameplay behavior only to the Tauri/Rust side.
+- Browser and future desktop hosts must consume the same validated world/save contract.
+- Do not start #19 until the web-game roadmap through Beta/Polish is complete or the project explicitly changes this decision.
 
 ## Coding defaults
 
@@ -98,3 +112,5 @@ A gameplay system is not complete until it has:
 - UI exposure sufficient to understand its state,
 - failure/consequence behavior,
 - documentation updates when the design changes.
+
+For normal gameplay systems during the web-first period, Definition of Done does **not** require a Tauri build or desktop launch smoke.
