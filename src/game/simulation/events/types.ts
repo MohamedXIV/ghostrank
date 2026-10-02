@@ -1,7 +1,15 @@
+import type { OperationStage } from "@/game/simulation/state/world-state";
+
 export type SimulationEvent =
   | {
       type: "TargetObserved";
       targetId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "OperationOpened";
+      targetId: string;
+      stage: "recon";
       worldMinute: number;
     }
   | {
@@ -15,6 +23,19 @@ export type SimulationEvent =
       targetId: string;
       machineId: string;
       serviceId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "OperationEscalated";
+      targetId: string;
+      fromStage: "recon";
+      toStage: "intrusive";
+      worldMinute: number;
+    }
+  | {
+      type: "OperationDisengaged";
+      targetId: string;
+      stage: OperationStage;
       worldMinute: number;
     }
   | {

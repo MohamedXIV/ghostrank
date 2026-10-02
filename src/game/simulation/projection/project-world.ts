@@ -1,5 +1,6 @@
 import type {
   EvidenceKind,
+  OperationState,
   WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -35,6 +36,7 @@ export interface WorldProjection {
   targets: VisibleTarget[];
   machines: VisibleMachine[];
   services: VisibleService[];
+  operation: OperationState | null;
 }
 
 function evidenceSubjects(
@@ -109,5 +111,6 @@ export function projectWorld(state: WorldState): WorldProjection {
     targets,
     machines,
     services,
+    operation: state.operation ? structuredClone(state.operation) : null,
   };
 }

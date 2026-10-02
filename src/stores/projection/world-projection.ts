@@ -57,6 +57,25 @@ export function syncWorldProjection(
     store.setTable("targets", targetRows);
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
+
+    if (projection.operation) {
+      store.setTable("operation", {
+        active: {
+          targetId: projection.operation.targetId,
+          stage: projection.operation.stage,
+          openedWorldMinute: projection.operation.openedWorldMinute,
+          ...(projection.operation.escalatedWorldMinute === undefined
+            ? {}
+            : {
+                escalatedWorldMinute:
+                  projection.operation.escalatedWorldMinute,
+              }),
+        },
+      });
+    } else {
+      store.setTable("operation", {});
+    }
+
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
   });
 }

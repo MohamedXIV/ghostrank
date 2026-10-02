@@ -1,43 +1,58 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  disengageOperationFromGui,
+  escalateOperationFromGui,
   inspectMachineFromGui,
   observeTargetFromGui,
+  openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 
-describe("target GUI actions", () => {
-  it("uses the exact same observe command as the terminal route", () => {
-    const terminal = parseTerminalCommand("observe nightshade");
+describe("GUI domain actions", () => {
+  const expectParity = (
+    terminalInput: string,
+    guiCommand: ReturnType<
+      | typeof observeTargetFromGui
+      | typeof openOperationFromGui
+      | typeof surveyTargetFromGui
+      | typeof inspectMachineFromGui
+      | typeof escalateOperationFromGui
+      | typeof disengageOperationFromGui
+    >,
+  ) => {
+    const terminal = parseTerminalCommand(terminalInput);
 
     expect(terminal.ok).toBe(true);
     if (!terminal.ok) {
       throw new Error("expected terminal command");
     }
 
-    expect(observeTargetFromGui("nightshade")).toEqual(terminal.command);
+    expect(guiCommand).toEqual(terminal.command);
+  };
+
+  it("shares target observation with Terminal", () => {
+    expectParity("observe nightshade", observeTargetFromGui("nightshade"));
   });
 
-  it("uses the exact same survey command as the terminal route", () => {
-    const terminal = parseTerminalCommand("survey nightshade");
-
-    expect(terminal.ok).toBe(true);
-    if (!terminal.ok) {
-      throw new Error("expected terminal command");
-    }
-
-    expect(surveyTargetFromGui("nightshade")).toEqual(terminal.command);
+  it("shares operation opening with Terminal", () => {
+    expectParity("op open nightshade", openOperationFromGui("nightshade"));
   });
 
-  it("uses the exact same inspect command as the terminal route", () => {
-    const terminal = parseTerminalCommand("inspect ns-relay");
+  it("shares survey with Terminal", () => {
+    expectParity("survey nightshade", surveyTargetFromGui("nightshade"));
+  });
 
-    expect(terminal.ok).toBe(true);
-    if (!terminal.ok) {
-      throw new Error("expected terminal command");
-    }
+  it("shares machine inspection with Terminal", () => {
+    expectParity("inspect ns-relay", inspectMachineFromGui("ns-relay"));
+  });
 
-    expect(inspectMachineFromGui("ns-relay")).toEqual(terminal.command);
+  it("shares escalation with Terminal", () => {
+    expectParity("op escalate", escalateOperationFromGui());
+  });
+
+  it("shares disengagement with Terminal", () => {
+    expectParity("op exit", disengageOperationFromGui());
   });
 });

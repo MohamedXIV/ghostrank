@@ -374,10 +374,34 @@ button {
   padding: 8px 10px;
 }
 
-.recon-results > p {
+.recon-results > p,
+.operation-panel > p {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.6;
+}
+
+.operation-panel {
+  margin: 10px 0 18px;
+  border: 1px solid var(--line);
+  background: #080d10;
+  padding: 10px;
+}
+
+.operation-session {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.operation-session strong {
+  font-size: 11px;
+}
+
+.operation-actions {
+  display: flex;
+  gap: 7px;
 }
 
 .target-card {
@@ -396,8 +420,16 @@ button {
   cursor: pointer;
 }
 
-.recon-inline-action:hover {
+.recon-inline-action:hover:not(:disabled) {
   background: rgb(148 209 182 / 14%);
+}
+
+.recon-inline-action:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .recon-infrastructure {
