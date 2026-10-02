@@ -37,6 +37,21 @@ A veteran player on day one can attempt to attack a top-ranked hacker. The game 
 
 Next.js is used as a static-exported desktop UI. Runtime authority lives in the simulation core and Tauri-backed persistence, not in a Next.js server.
 
+## Development
+
+Use Node 24 and stable Rust.
+
+```bash
+npm ci
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm run desktop:dev
+```
+
+CI additionally performs a locked Tauri build and a headless desktop launch smoke test on Linux.
+
 ## Documentation
 
 Start with [docs/README.md](docs/README.md). The canonical project documents cover vision, game rules, simulation architecture, hacking/tool design, economy, AI, physical-world presentation, persistence, testing, and the delivery roadmap.
@@ -45,6 +60,6 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 ## Status
 
-**Pre-production / foundation.** The design and technical contracts are being established before feature implementation so later work does not drift into incompatible prototypes.
+**Phase 0 foundation implemented. Phase 1 — Computer + Room Vertical Slice — is next.**
 
 Ghostrank is a working title.

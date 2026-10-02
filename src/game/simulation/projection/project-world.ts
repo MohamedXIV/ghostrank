@@ -25,11 +25,13 @@ export function projectWorld(state: WorldState): WorldProjection {
       handle: state.player.handle,
       rank: state.player.rank,
     },
-    targets: state.targets.map((target) => ({
-      id: target.id,
-      handle: target.handle,
-      rank: target.rank,
-      known: knownTargets.has(target.id),
-    })),
+    targets: state.targets
+      .filter((target) => knownTargets.has(target.id))
+      .map((target) => ({
+        id: target.id,
+        handle: target.handle,
+        rank: target.rank,
+        known: true,
+      })),
   };
 }

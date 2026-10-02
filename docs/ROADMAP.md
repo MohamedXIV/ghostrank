@@ -4,25 +4,32 @@ This is a full-project roadmap, not a disposable prototype plan. Early milestone
 
 ## Phase 0 — Foundation
 
+**Status: complete (2026-10-02).**
+
 Goal: make the repository safe to build on.
 
-Deliverables:
+Delivered:
 - canonical documentation,
 - Next.js static-export application shell,
-- Tauri 2 packaging,
+- Tauri 2 desktop shell and launch smoke,
 - TypeScript strict configuration,
 - Tailwind + shadcn/ui foundation,
+- locked npm/Cargo dependency graphs,
 - test runner and CI,
 - simulation package boundaries,
 - command/event contracts,
-- SQLite migration system,
+- SQLite migration system and schema metadata,
 - seeded RNG service,
-- basic save metadata.
+- basic save/run metadata,
+- TinyBase player-visible projection boundary,
+- Zustand ephemeral UI boundary,
+- Phaser-to-command-bus physical intent boundary.
 
 Exit criteria:
-- desktop app launches,
-- tests run in CI,
-- architecture boundaries are represented in code,
+- desktop app launch is exercised headlessly in CI,
+- tests/typecheck/lint/static build run in CI,
+- Tauri builds from locked dependencies,
+- architecture boundaries are represented in code and tests,
 - no throwaway second architecture is expected.
 
 ## Phase 1 — Computer + Room Vertical Slice

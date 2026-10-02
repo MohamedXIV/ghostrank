@@ -5,6 +5,14 @@ pub fn all() -> Vec<Migration> {
         version: 1,
         description: "create_foundation_tables",
         sql: r#"
+            CREATE TABLE IF NOT EXISTS schema_metadata (
+                key TEXT PRIMARY KEY NOT NULL,
+                value TEXT NOT NULL
+            );
+
+            INSERT OR REPLACE INTO schema_metadata (key, value)
+                VALUES ('save_schema_version', '1');
+
             CREATE TABLE IF NOT EXISTS runs (
                 id TEXT PRIMARY KEY NOT NULL,
                 created_at TEXT NOT NULL,

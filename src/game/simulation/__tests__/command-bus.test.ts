@@ -29,7 +29,7 @@ describe("CommandBus", () => {
       targetId: "nightshade",
       worldMinute: 0,
     });
-    expect(bus.state.knownTargetIds).toContain("nightshade");
+    expect(bus.snapshot().knownTargetIds).toContain("nightshade");
   });
 
   it("advances world time monotonically through a command", () => {
@@ -38,6 +38,17 @@ describe("CommandBus", () => {
     bus.execute({ type: "advanceTime", minutes: 45 });
     bus.execute({ type: "advanceTime", minutes: 15 });
 
-    expect(bus.state.worldMinute).toBe(60);
+    expect(bus.snapshot().worldMinute).toBe(60);
+  });
+
+  it("does not expose mutable authoritative state to callers", () => {
+    const initial = createInitialWorldState();
+    const bus = new CommandBus(initial);
+
+    initial.worldMinute = 500;
+    const snapshot = bus.snapshot();
+    snapshot.worldMinute = 900;
+
+    expect(bus.snapshot().worldMinute).toBe(0);
   });
 });

@@ -5,7 +5,7 @@ Branch: `foundation/phase-0`
 
 ## Goal
 
-Establish the production architecture described in the canonical Ghostrank docs before gameplay implementation. This phase must leave the repository with a desktop-capable Next.js/Tauri application, strict TypeScript boundaries, deterministic simulation primitives, persistence scaffolding, and CI that proves the foundation builds.
+Establish the production architecture described in the canonical Ghostrank docs before gameplay implementation. This phase must leave the repository with a desktop-capable Next.js/Tauri application, strict TypeScript boundaries, deterministic simulation primitives, persistence scaffolding, and CI that proves the foundation builds and launches.
 
 ## Task 1 — Application/tooling scaffold
 
@@ -40,7 +40,8 @@ Create tests first for:
 - rank never acting as an authorization gate,
 - deterministic seeded RNG,
 - command execution emitting typed events,
-- monotonically advancing world time.
+- monotonically advancing world time,
+- callers being unable to mutate authoritative state outside commands.
 
 Then create:
 - `src/game/simulation/commands/types.ts`
@@ -58,7 +59,7 @@ Create:
 - `src/stores/projection/world-projection.ts` — TinyBase read/query projection.
 - `src/game/simulation/projection/project-world.ts` — explicit mapping from authoritative state to player-visible projection.
 
-Tests prove hidden target facts do not leak into the player projection.
+Tests prove undiscovered targets and hidden target facts do not leak into the player projection.
 
 ## Task 4 — Persistence/Tauri scaffold
 
@@ -74,15 +75,17 @@ Create:
 - `src/persistence/database.ts`
 
 Initial SQLite schema:
-- runs
-- snapshots
-- events
-- schema metadata
+- schema metadata,
+- runs,
+- snapshots,
+- events.
 
 The Tauri SQL plugin registers SQLite migrations. Front-end database access stays behind a persistence adapter.
 
 Verification:
-- `cargo check --manifest-path src-tauri/Cargo.toml`
+- `cargo check --locked --manifest-path src-tauri/Cargo.toml`
+- Tauri debug build from the static frontend.
+- headless launch smoke under Xvfb/DBus in CI.
 
 ## Task 5 — Phaser boundary
 
@@ -100,15 +103,19 @@ Create `.github/workflows/ci.yml`.
 
 Jobs:
 1. Web/simulation on Node 24:
-   - npm install
+   - `npm ci`
    - typecheck
    - lint
    - test
    - static Next build
-2. Tauri Rust check:
-   - stable Rust
-   - platform packages needed by Tauri on Ubuntu
-   - cargo check
+2. Tauri desktop:
+   - locked npm install,
+   - stable Rust,
+   - platform packages needed by Tauri on Ubuntu,
+   - `cargo check --locked`,
+   - Tauri debug build,
+   - lockfile drift check,
+   - headless desktop launch smoke.
 
 CI is the canonical cloud verification for this branch.
 
@@ -125,9 +132,13 @@ Phase 0 is complete only when:
 - static Next build succeeds,
 - all unit/scenario tests pass,
 - Rust/Tauri check succeeds,
+- Tauri debug build and headless launch smoke succeed,
 - CI is green on the exact PR head,
+- npm and Cargo dependency graphs are locked,
 - command/event boundaries exist in code,
 - seeded RNG has deterministic tests,
+- callers cannot mutate simulation truth outside command execution,
+- undiscovered/hidden target information does not leak into player projection,
 - TinyBase/Zustand/SQLite responsibilities remain separated,
 - no real shell/network attack surface is exposed,
 - no gameplay implementation bypasses the command bus,

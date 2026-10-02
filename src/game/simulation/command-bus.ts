@@ -9,7 +9,15 @@ export interface CommandResult {
 }
 
 export class CommandBus {
-  constructor(public readonly state: WorldState) {}
+  private readonly world: WorldState;
+
+  constructor(initialState: WorldState) {
+    this.world = structuredClone(initialState);
+  }
+
+  snapshot(): WorldState {
+    return structuredClone(this.world);
+  }
 
   execute(command: SimulationCommand): CommandResult {
     switch (command.type) {
@@ -22,7 +30,7 @@ export class CommandBus {
   }
 
   private observeTarget(targetId: string): CommandResult {
-    const target = this.state.targets.find(
+    const target = this.world.targets.find(
       (candidate) => candidate.id === targetId,
     );
 
@@ -34,8 +42,8 @@ export class CommandBus {
       };
     }
 
-    if (!this.state.knownTargetIds.includes(target.id)) {
-      this.state.knownTargetIds.push(target.id);
+    if (!this.world.knownTargetIds.includes(target.id)) {
+      this.world.knownTargetIds.push(target.id);
     }
 
     return {
@@ -44,7 +52,7 @@ export class CommandBus {
         {
           type: "TargetObserved",
           targetId: target.id,
-          worldMinute: this.state.worldMinute,
+          worldMinute: this.world.worldMinute,
         },
       ],
     };
@@ -59,8 +67,8 @@ export class CommandBus {
       };
     }
 
-    const fromMinute = this.state.worldMinute;
-    this.state.worldMinute += minutes;
+    const fromMinute = this.world.worldMinute;
+    this.world.worldMinute += minutes;
 
     return {
       ok: true,
@@ -68,7 +76,7 @@ export class CommandBus {
         {
           type: "WorldTimeAdvanced",
           fromMinute,
-          toMinute: this.state.worldMinute,
+          toMinute: this.world.worldMinute,
         },
       ],
     };
