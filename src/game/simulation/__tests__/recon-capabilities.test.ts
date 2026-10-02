@@ -16,7 +16,7 @@ describe("reconnaissance capabilities", () => {
     expect(result).toEqual({
       ok: false,
       events: [],
-      error: "TARGET_NOT_OBSERVED",
+      error: "NO_ACTIVE_OPERATION",
     });
     expect(bus.snapshot().worldMinute).toBe(0);
   });
@@ -26,6 +26,10 @@ describe("reconnaissance capabilities", () => {
 
     bus.execute({
       type: "observeTarget",
+      targetId: "nightshade",
+    });
+    bus.execute({
+      type: "openOperation",
       targetId: "nightshade",
     });
 
@@ -73,6 +77,7 @@ describe("reconnaissance capabilities", () => {
     const bus = new CommandBus(createSliceWorldState());
 
     bus.execute({ type: "observeTarget", targetId: "nightshade" });
+    bus.execute({ type: "openOperation", targetId: "nightshade" });
     bus.execute({ type: "surveyTarget", targetId: "nightshade" });
 
     expect(
@@ -98,7 +103,7 @@ describe("reconnaissance capabilities", () => {
     expect(result).toEqual({
       ok: false,
       events: [],
-      error: "MACHINE_NOT_OBSERVED",
+      error: "NO_ACTIVE_OPERATION",
     });
     expect(bus.snapshot().worldMinute).toBe(0);
   });
@@ -107,6 +112,7 @@ describe("reconnaissance capabilities", () => {
     const bus = new CommandBus(createSliceWorldState());
 
     bus.execute({ type: "observeTarget", targetId: "nightshade" });
+    bus.execute({ type: "openOperation", targetId: "nightshade" });
     bus.execute({ type: "surveyTarget", targetId: "nightshade" });
 
     const result = bus.execute({
@@ -150,6 +156,7 @@ describe("reconnaissance capabilities", () => {
     const bus = new CommandBus(createSliceWorldState());
 
     bus.execute({ type: "observeTarget", targetId: "nightshade" });
+    bus.execute({ type: "openOperation", targetId: "nightshade" });
     bus.execute({ type: "surveyTarget", targetId: "nightshade" });
     bus.execute({ type: "inspectMachine", machineId: "ns-relay" });
 

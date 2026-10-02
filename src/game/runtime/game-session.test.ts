@@ -164,6 +164,10 @@ describe("GameSession", () => {
       targetId: "nightshade",
     });
     first.execute({
+      type: "openOperation",
+      targetId: "nightshade",
+    });
+    first.execute({
       type: "surveyTarget",
       targetId: "nightshade",
     });
@@ -179,6 +183,11 @@ describe("GameSession", () => {
     });
 
     expect(restarted.snapshot().worldMinute).toBe(20);
+    expect(restarted.snapshot().operation).toEqual({
+      targetId: "nightshade",
+      stage: "recon",
+      openedWorldMinute: 0,
+    });
     expect(restarted.projection.getRow("machines", "ns-relay")).toEqual({
       targetId: "nightshade",
       label: "Outer Relay",
