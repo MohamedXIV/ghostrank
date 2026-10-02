@@ -258,6 +258,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const [targetId, setTargetId] = useState("nightshade");
   const targetIds = useRowIds("targets", runtime.projection);
   const machineIds = useRowIds("machines", runtime.projection);
+  const reactionIds = useRowIds("reactions", runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
   const footprint = useRow("footprint", "current", runtime.projection);
@@ -359,6 +360,17 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           This is your own simulated footprint summary. It does not reveal who
           has noticed it or predict a reaction.
         </p>
+      </div>
+
+      <div className="reaction-panel">
+        <span className="panel-label">VISIBLE TARGET REACTIONS</span>
+        {reactionIds.length === 0 ? (
+          <p>No observable target reaction is active.</p>
+        ) : (
+          reactionIds.map((id) => (
+            <ReactionCard key={id} reactionId={id} runtime={runtime} />
+          ))
+        )}
       </div>
 
       <div className="recon-results">
@@ -494,6 +506,42 @@ function ReconMachine({
             </div>
           ))
         )}
+      </div>
+    </article>
+  );
+}
+
+
+function ReactionCard({
+  reactionId,
+  runtime,
+}: {
+  reactionId: string;
+  runtime: GameRuntime;
+}) {
+  const reaction = useRow("reactions", reactionId, runtime.projection);
+
+  return (
+    <article className="reaction-card">
+      <div>
+        <span className="panel-label">TARGET</span>
+        <strong>{String(reaction.targetId ?? "unknown")}</strong>
+      </div>
+      <div>
+        <span className="panel-label">REACTION</span>
+        <strong>
+          {String(reaction.kind ?? "unknown")
+            .replaceAll("-", " ")
+            .toUpperCase()}
+        </strong>
+      </div>
+      <div>
+        <span className="panel-label">CAUSAL SCORE</span>
+        <strong>{Number(reaction.footprintScore ?? 0)}</strong>
+      </div>
+      <div className="reaction-provenance">
+        <span className="panel-label">CAUSAL TRACES</span>
+        <span>{String(reaction.sourceTraceIds ?? "none")}</span>
       </div>
     </article>
   );
