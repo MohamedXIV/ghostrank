@@ -34,25 +34,33 @@ Exit criteria:
 
 ## Phase 1 — Computer + Room Vertical Slice
 
+**Status: complete (2026-10-02).**
+
 Goal: prove the core feeling using production architecture.
 
-Deliverables:
-- simulated desktop/window manager,
-- terminal,
-- first GUI network/information tool,
-- same command invoked from terminal and GUI,
-- Phaser isometric room,
-- simple hooded avatar,
-- desk interaction,
-- world clock,
-- one physical ambient threat cue,
-- TinyBase projection for known world data,
-- autosave/load.
+Delivered:
+- GHOST/OS simulated desktop/window shell,
+- fictional Terminal parser and interactive terminal app,
+- Recon GUI as the first information tool,
+- Terminal and GUI parity through the exact same typed simulation command,
+- visible world clock and player rank,
+- Phaser 4 top-down/isometric room,
+- simple anonymous hooded avatar,
+- desk/workstation interaction and room/computer transition,
+- ambiguous physical window/light cue,
+- TinyBase player-visible projection wired directly into React,
+- Tauri SQLite active-run autosave/load,
+- resumable Zod-validated world snapshots,
+- atomic snapshot/event persistence,
+- failed-save event retry,
+- deterministic restart acceptance test.
 
 Exit criteria:
-- the player feels physically located,
-- computer interaction feels like one coherent machine,
-- terminal/GUI parity is real, not mocked.
+- the player is visibly located in a compact room around the workstation,
+- the computer presents one coherent simulated machine,
+- Terminal/GUI parity is enforced by tests rather than mocked,
+- world time and target knowledge survive a session restart,
+- static Next export and Tauri desktop build/launch remain green.
 
 ## Phase 2 — Operation Simulation
 
