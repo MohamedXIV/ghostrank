@@ -41,6 +41,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         machineId,
       }));
 
+    case "op":
+      return parseOperationCommand(args);
+
     case "wait": {
       if (args.length !== 1) {
         return {
@@ -71,6 +74,46 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
       return {
         ok: false,
         error: "UNKNOWN_COMMAND",
+      };
+  }
+}
+
+function parseOperationCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "open":
+      return singleIdCommand(rest, (targetId) => ({
+        type: "openOperation",
+        targetId,
+      }));
+
+    case "escalate":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "escalateOperation",
+        },
+      };
+
+    case "exit":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "disengageOperation",
+        },
+      };
+
+    default:
+      return {
+        ok: false,
+        error: "INVALID_ARGUMENT",
       };
   }
 }

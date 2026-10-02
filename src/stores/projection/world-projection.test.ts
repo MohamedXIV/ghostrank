@@ -41,6 +41,11 @@ describe("world projection store", () => {
           state: "online",
         },
       ],
+      operation: {
+        targetId: "ghost",
+        stage: "recon",
+        openedWorldMinute: 40,
+      },
     };
 
     syncWorldProjection(store, projection);
@@ -72,6 +77,13 @@ describe("world projection store", () => {
         label: "Signal",
         kind: "signal",
         state: "online",
+      },
+    });
+    expect(store.getTable("operation")).toEqual({
+      active: {
+        targetId: "ghost",
+        stage: "recon",
+        openedWorldMinute: 40,
       },
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);

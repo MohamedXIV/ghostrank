@@ -16,6 +16,8 @@ export interface CommandResult {
 
 const SURVEY_MINUTES = 12;
 const INSPECTION_MINUTES = 8;
+const ESCALATION_MINUTES = 5;
+const DISENGAGE_MINUTES = 3;
 
 export class CommandBus {
   private readonly world: WorldState;
@@ -33,11 +35,20 @@ export class CommandBus {
       case "observeTarget":
         return this.observeTarget(command.targetId);
 
+      case "openOperation":
+        return this.openOperation(command.targetId);
+
       case "surveyTarget":
         return this.surveyTarget(command.targetId);
 
       case "inspectMachine":
         return this.inspectMachine(command.machineId);
+
+      case "escalateOperation":
+        return this.escalateOperation();
+
+      case "disengageOperation":
+        return this.disengageOperation();
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -78,7 +89,53 @@ export class CommandBus {
     };
   }
 
+  private openOperation(targetId: string): CommandResult {
+    if (this.world.operation) {
+      return this.failure("OPERATION_ALREADY_ACTIVE");
+    }
+
+    const target = this.world.targets.find(
+      (candidate) => candidate.id === targetId,
+    );
+
+    if (!target) {
+      return this.failure("TARGET_NOT_FOUND");
+    }
+
+    if (!this.hasEvidence("target-profile", target.id)) {
+      return this.failure("TARGET_NOT_OBSERVED");
+    }
+
+    this.world.operation = {
+      targetId: target.id,
+      stage: "recon",
+      openedWorldMinute: this.world.worldMinute,
+    };
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "OperationOpened",
+          targetId: target.id,
+          stage: "recon",
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
   private surveyTarget(targetId: string): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
+    if (operation.targetId !== targetId) {
+      return this.failure("OPERATION_TARGET_MISMATCH");
+    }
+
     const target = this.world.targets.find(
       (candidate) => candidate.id === targetId,
     );
@@ -125,10 +182,20 @@ export class CommandBus {
   }
 
   private inspectMachine(machineId: string): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
     const located = this.findMachine(machineId);
 
     if (!located) {
       return this.failure("MACHINE_NOT_FOUND");
+    }
+
+    if (operation.targetId !== located.target.id) {
+      return this.failure("OPERATION_TARGET_MISMATCH");
     }
 
     if (!this.hasEvidence("machine-presence", located.machine.id)) {
@@ -169,6 +236,63 @@ export class CommandBus {
     };
   }
 
+  private escalateOperation(): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
+    if (operation.stage === "intrusive") {
+      return this.failure("OPERATION_ALREADY_ESCALATED");
+    }
+
+    if (!this.hasKnownServiceForTarget(operation.targetId)) {
+      return this.failure("SERVICE_EVIDENCE_REQUIRED");
+    }
+
+    const timeEvent = this.advanceWorldTime(ESCALATION_MINUTES);
+    operation.stage = "intrusive";
+    operation.escalatedWorldMinute = this.world.worldMinute;
+
+    return {
+      ok: true,
+      events: [
+        timeEvent,
+        {
+          type: "OperationEscalated",
+          targetId: operation.targetId,
+          fromStage: "recon",
+          toStage: "intrusive",
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private disengageOperation(): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
+    const timeEvent = this.advanceWorldTime(DISENGAGE_MINUTES);
+    const event: SimulationEvent = {
+      type: "OperationDisengaged",
+      targetId: operation.targetId,
+      stage: operation.stage,
+      worldMinute: this.world.worldMinute,
+    };
+
+    this.world.operation = null;
+
+    return {
+      ok: true,
+      events: [timeEvent, event],
+    };
+  }
+
   private advanceTime(minutes: number): CommandResult {
     if (!Number.isInteger(minutes) || minutes <= 0) {
       return this.failure("INVALID_TIME_DELTA");
@@ -189,6 +313,22 @@ export class CommandBus {
       fromMinute,
       toMinute: this.world.worldMinute,
     };
+  }
+
+  private hasKnownServiceForTarget(targetId: string): boolean {
+    const target = this.world.targets.find(
+      (candidate) => candidate.id === targetId,
+    );
+
+    if (!target) {
+      return false;
+    }
+
+    return target.machines.some((machine) =>
+      machine.services.some((service) =>
+        this.hasEvidence("service-presence", service.id),
+      ),
+    );
   }
 
   private hasEvidence(kind: EvidenceKind, subjectId: string): boolean {

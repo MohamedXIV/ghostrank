@@ -41,12 +41,22 @@ export interface TargetState {
   hidden?: Record<string, unknown>;
 }
 
+export type OperationStage = "recon" | "intrusive";
+
+export interface OperationState {
+  targetId: string;
+  stage: OperationStage;
+  openedWorldMinute: number;
+  escalatedWorldMinute?: number;
+}
+
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
   targets: TargetState[];
   knownTargetIds: string[];
   evidence: EvidenceRecord[];
+  operation: OperationState | null;
 }
 
 export interface InitialTargetState
@@ -60,6 +70,7 @@ export interface InitialWorldState {
   targets?: InitialTargetState[];
   knownTargetIds?: string[];
   evidence?: EvidenceRecord[];
+  operation?: OperationState | null;
 }
 
 export function createInitialWorldState(
@@ -104,5 +115,9 @@ export function createInitialWorldState(
       : [],
     knownTargetIds,
     evidence,
+    operation:
+      initial.operation === undefined
+        ? null
+        : structuredClone(initial.operation),
   };
 }
