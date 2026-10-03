@@ -125,6 +125,14 @@ The future desktop build must host the same game and consume the same validated 
 
 Accepted 2026-10-03.
 
+## D017 — Ecosystem simulation model
+
+NPC ecosystem activity advances on fixed 360-minute world-time boundaries inside every world-time advance. Randomness is a stateless hash of the world seed, tick, actor and purpose, so there is no RNG state to persist and splitting a wait never changes outcomes.
+
+Rank is an output of ecosystem events and never an input to any decision. A very long wait simulates only its most recent 28 ticks.
+
+Accepted 2026-10-03 as the Phase 3 substrate. Numeric rank/relationship deltas are provisional tuning; the ranking formula remains open.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

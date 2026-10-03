@@ -18,6 +18,8 @@ Phase 2 established the stable `RunPersistence` boundary and the original Tauri/
 
 #18 added the primary native IndexedDB browser adapter without changing simulation authority. Active browser saves use a small versioned portable envelope containing the Zod-validated authoritative WorldState. Invalid persisted payloads are rejected rather than silently repaired into a different run.
 
+Phase 3 adds `WorldState.underground` (actors, relationships, incidents, ecosystem seed and tick cursor) to the same validated contract. Saves written before Phase 3 load with an empty ecosystem anchored at the saved world minute. Actor skill, defense, discretion, activity and network are hidden authoritative truth and are never projected.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:
