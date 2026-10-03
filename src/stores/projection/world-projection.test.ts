@@ -63,6 +63,11 @@ describe("world projection store", () => {
           triggeredWorldMinute: 45,
         },
       ],
+      underground: {
+        board: [],
+        feed: [],
+        stances: [],
+      },
     };
 
     syncWorldProjection(store, projection);

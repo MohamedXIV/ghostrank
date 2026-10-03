@@ -1,10 +1,18 @@
-import type {
-  EvidenceKind,
-  OperationState,
-  OpponentReactionKind,
-  OpponentReactionStatus,
-  WorldState,
+import {
+  relationshipStance,
+  type RelationshipStance,
+} from "@/game/simulation/systems/underground";
+import {
+  PLAYER_ACTOR_ID,
+  type EvidenceKind,
+  type OperationState,
+  type OpponentReactionKind,
+  type OpponentReactionStatus,
+  type UndergroundIncidentOutcome,
+  type WorldState,
 } from "@/game/simulation/state/world-state";
+
+const FEED_LIMIT = 50;
 
 export interface VisibleTarget {
   id: string;
@@ -47,6 +55,33 @@ export interface VisibleReaction {
   triggeredWorldMinute: number;
 }
 
+export interface VisibleHandle {
+  id: string;
+  handle: string;
+  rank: number;
+  isPlayer: boolean;
+}
+
+export interface VisibleIncident {
+  id: string;
+  actorHandle: string;
+  counterpartHandle: string;
+  outcome: UndergroundIncidentOutcome;
+  worldMinute: number;
+}
+
+export interface VisibleStance {
+  actorId: string;
+  handle: string;
+  stance: RelationshipStance;
+}
+
+export interface UndergroundProjection {
+  board: VisibleHandle[];
+  feed: VisibleIncident[];
+  stances: VisibleStance[];
+}
+
 export interface WorldProjection {
   worldMinute: number;
   player: {
@@ -59,6 +94,71 @@ export interface WorldProjection {
   operation: OperationState | null;
   footprint: VisibleFootprint;
   reactions: VisibleReaction[];
+  underground: UndergroundProjection;
+}
+
+function projectUnderground(
+  state: WorldState,
+  knownTargets: Set<string>,
+): UndergroundProjection {
+  const { underground } = state;
+  const handles = new Map(
+    underground.actors.map((actor) => [actor.id, actor.handle]),
+  );
+  handles.set(PLAYER_ACTOR_ID, state.player.handle);
+
+  const board: VisibleHandle[] = [
+    ...underground.actors.map((actor) => ({
+      id: actor.id,
+      handle: actor.handle,
+      rank: actor.rank,
+      isPlayer: false,
+    })),
+    {
+      id: PLAYER_ACTOR_ID,
+      handle: state.player.handle,
+      rank: state.player.rank,
+      isPlayer: true,
+    },
+  ].sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
+
+  const feed: VisibleIncident[] = underground.incidents
+    .filter((incident) => incident.public)
+    .slice(-FEED_LIMIT)
+    .reverse()
+    .map((incident) => ({
+      id: incident.id,
+      actorHandle: handles.get(incident.actorId) ?? incident.actorId,
+      counterpartHandle:
+        handles.get(incident.counterpartId) ?? incident.counterpartId,
+      outcome: incident.outcome,
+      worldMinute: incident.worldMinute,
+    }));
+
+  const stances: VisibleStance[] = [];
+
+  for (const actor of underground.actors) {
+    if (!actor.targetId || !knownTargets.has(actor.targetId)) {
+      continue;
+    }
+
+    const relationship = underground.relationships.find(
+      (entry) =>
+        entry.fromId === actor.id && entry.toId === PLAYER_ACTOR_ID,
+    );
+
+    if (!relationship) {
+      continue;
+    }
+
+    stances.push({
+      actorId: actor.id,
+      handle: actor.handle,
+      stance: relationshipStance(relationship),
+    });
+  }
+
+  return { board, feed, stances };
 }
 
 function evidenceSubjects(
@@ -173,5 +273,6 @@ export function projectWorld(state: WorldState): WorldProjection {
       traceCount: state.traces.length,
     },
     reactions,
+    underground: projectUnderground(state, knownTargets),
   };
 }

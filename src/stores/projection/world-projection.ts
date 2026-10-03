@@ -61,6 +61,39 @@ export function syncWorldProjection(
     ]),
   );
 
+  const boardRows = Object.fromEntries(
+    projection.underground.board.map((entry) => [
+      entry.id,
+      {
+        handle: entry.handle,
+        rank: entry.rank,
+        isPlayer: entry.isPlayer,
+      },
+    ]),
+  );
+
+  const feedRows = Object.fromEntries(
+    projection.underground.feed.map((entry) => [
+      entry.id,
+      {
+        actorHandle: entry.actorHandle,
+        counterpartHandle: entry.counterpartHandle,
+        outcome: entry.outcome,
+        worldMinute: entry.worldMinute,
+      },
+    ]),
+  );
+
+  const stanceRows = Object.fromEntries(
+    projection.underground.stances.map((entry) => [
+      entry.actorId,
+      {
+        handle: entry.handle,
+        stance: entry.stance,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -72,6 +105,9 @@ export function syncWorldProjection(
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
     store.setTable("reactions", reactionRows);
+    store.setTable("board", boardRows);
+    store.setTable("feed", feedRows);
+    store.setTable("stances", stanceRows);
 
     if (projection.operation) {
       store.setTable("operation", {

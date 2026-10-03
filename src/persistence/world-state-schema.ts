@@ -66,6 +66,50 @@ const reactionSchema = z.object({
   playerVisible: z.boolean(),
 });
 
+const networkSchema = z.enum(["white", "black"]);
+const percentSchema = z.number().int().min(0).max(100);
+
+const undergroundActorSchema = z.object({
+  id: z.string().min(1),
+  handle: z.string().min(1),
+  rank: z.number().int().positive(),
+  network: networkSchema,
+  skill: percentSchema,
+  defense: percentSchema,
+  discretion: percentSchema,
+  activity: percentSchema,
+  targetId: z.string().min(1).optional(),
+});
+
+const undergroundRelationshipSchema = z.object({
+  id: z.string().min(1),
+  fromId: z.string().min(1),
+  toId: z.string().min(1),
+  trust: z.number().int().min(-100).max(100),
+  fear: z.number().int().min(-100).max(100),
+  grudge: z.number().int().min(0).max(100),
+  updatedWorldMinute: z.number().int().nonnegative(),
+});
+
+const undergroundIncidentSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("npc-intrusion"),
+  actorId: z.string().min(1),
+  counterpartId: z.string().min(1),
+  outcome: z.enum(["succeeded", "repelled"]),
+  public: z.boolean(),
+  worldMinute: z.number().int().nonnegative(),
+});
+
+const undergroundSchema = z.object({
+  seed: z.number().int(),
+  lastTickMinute: z.number().int().nonnegative(),
+  playerNetwork: networkSchema.nullable().default(null),
+  actors: z.array(undergroundActorSchema).default([]),
+  relationships: z.array(undergroundRelationshipSchema).default([]),
+  incidents: z.array(undergroundIncidentSchema).default([]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -78,6 +122,7 @@ const storedWorldStateSchema = z.object({
   operation: operationSchema.nullable().optional().default(null),
   traces: z.array(traceSchema).default([]),
   reactions: z.array(reactionSchema).default([]),
+  underground: undergroundSchema.optional(),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -104,5 +149,13 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
     operation: state.operation ?? null,
     traces: state.traces ?? [],
     reactions: state.reactions ?? [],
+    underground: state.underground ?? {
+      seed: 0,
+      lastTickMinute: state.worldMinute,
+      playerNetwork: null,
+      actors: [],
+      relationships: [],
+      incidents: [],
+    },
   };
 });
