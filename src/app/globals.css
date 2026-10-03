@@ -581,7 +581,8 @@ button {
 
 .underground-board,
 .underground-feed,
-.underground-stances {
+.underground-stances,
+.underground-messages {
   display: grid;
   gap: 6px;
   margin: 0;
@@ -591,7 +592,8 @@ button {
 
 .underground-board li,
 .underground-feed li,
-.underground-stances li {
+.underground-stances li,
+.underground-messages li {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -604,6 +606,31 @@ button {
 .underground-board li.is-player {
   border-color: var(--line-hot);
   color: var(--accent);
+}
+
+.underground-messages li {
+  align-items: flex-start;
+}
+
+.underground-messages li > div {
+  display: grid;
+  gap: 4px;
+}
+
+.underground-messages li.is-unread {
+  border-color: var(--line-hot);
+}
+
+.underground-messages button {
+  flex: none;
+  border: 1px solid var(--line-hot);
+  background: transparent;
+  color: var(--accent);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
 }
 
 .underground-time {

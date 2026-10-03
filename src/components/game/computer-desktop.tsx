@@ -12,8 +12,10 @@ import {
   openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
+import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
+import type { SimulationCommand } from "@/game/simulation/commands/types";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -243,16 +245,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   );
 }
 
-function describeCommandResult(
-  type:
-    | "observeTarget"
-    | "openOperation"
-    | "surveyTarget"
-    | "inspectMachine"
-    | "escalateOperation"
-    | "disengageOperation"
-    | "advanceTime",
-) {
+function describeCommandResult(type: SimulationCommand["type"]) {
   switch (type) {
     case "observeTarget":
       return "observation complete // target profile updated";
@@ -266,6 +259,8 @@ function describeCommandResult(
       return "operation escalated // stage intrusive";
     case "disengageOperation":
       return "operation disengaged";
+    case "readMessage":
+      return "message marked read";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -578,6 +573,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const board = useTable("board", runtime.projection);
   const feed = useTable("feed", runtime.projection);
   const stances = useTable("stances", runtime.projection);
+  const inbox = useTable("inbox", runtime.projection);
+  const unread = Number(
+    useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
+  );
 
   const handles = Object.entries(board).sort(
     ([idA, a], [idB, b]) =>
@@ -589,9 +588,53 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
   const stanceEntries = Object.entries(stances);
+  const messages = Object.entries(inbox).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
 
   return (
     <div className="underground-app">
+      <section aria-label="Messages">
+        <span className="panel-label">
+          MESSAGES{unread > 0 ? ` // ${unread} UNREAD` : ""}
+        </span>
+        {messages.length === 0 ? (
+          <p className="underground-empty">No messages.</p>
+        ) : (
+          <ul className="underground-messages">
+            {messages.map(([id, entry]) => (
+              <li key={id} className={entry.read ? undefined : "is-unread"}>
+                <div>
+                  <span className="underground-time">
+                    {formatWorldTime(Number(entry.worldMinute ?? 0))} ·{" "}
+                    {String(entry.fromHandle ?? "unknown")} · {id}
+                  </span>
+                  <span>
+                    heard that{" "}
+                    {describeIncident(
+                      String(entry.claimActorHandle ?? "unknown"),
+                      String(entry.claimCounterpartHandle ?? "unknown"),
+                      String(entry.claimOutcome ?? ""),
+                    )}{" "}
+                    (unverified)
+                  </span>
+                </div>
+                {!entry.read && (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(readMessageFromGui(id))}
+                  >
+                    MARK READ
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section aria-label="Public index">
         <span className="panel-label">PUBLIC INDEX</span>
         <ol className="underground-board">
