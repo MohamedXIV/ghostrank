@@ -26,6 +26,18 @@ export type SimulationCommand =
       messageId: string;
     }
   | {
+      type: "acceptContract";
+      contractId: string;
+    }
+  | {
+      type: "declineContract";
+      contractId: string;
+    }
+  | {
+      type: "deliverContract";
+      contractId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

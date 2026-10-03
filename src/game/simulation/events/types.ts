@@ -1,4 +1,5 @@
 import type {
+  ContractObjectiveKind,
   OpponentReactionKind,
   UndergroundIncidentOutcome,
   UndergroundRumorKind,
@@ -87,7 +88,7 @@ export type SimulationEvent =
       trust: number;
       fear: number;
       grudge: number;
-      causeKind: "incident" | "reaction" | "rumor";
+      causeKind: "incident" | "reaction" | "rumor" | "contract";
       causeId: string;
       worldMinute: number;
     }
@@ -110,6 +111,45 @@ export type SimulationEvent =
   | {
       type: "MessageRead";
       messageId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ContractOffered";
+      contractId: string;
+      issuerId: string;
+      targetId: string;
+      objective: ContractObjectiveKind;
+      expiresWorldMinute: number;
+      worldMinute: number;
+    }
+  | {
+      type: "ContractAccepted";
+      contractId: string;
+      dueWorldMinute: number;
+      worldMinute: number;
+    }
+  | {
+      type: "ContractDeclined";
+      contractId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ContractDelivered";
+      contractId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ContractExpired";
+      contractId: string;
+      stage: "offer" | "accepted";
+      worldMinute: number;
+    }
+  | {
+      type: "PlayerRankChanged";
+      fromRank: number;
+      toRank: number;
+      causeKind: "contract";
+      causeId: string;
       worldMinute: number;
     }
   | {

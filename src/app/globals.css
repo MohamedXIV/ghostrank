@@ -582,7 +582,8 @@ button {
 .underground-board,
 .underground-feed,
 .underground-stances,
-.underground-messages {
+.underground-messages,
+.underground-contracts {
   display: grid;
   gap: 6px;
   margin: 0;
@@ -593,7 +594,8 @@ button {
 .underground-board li,
 .underground-feed li,
 .underground-stances li,
-.underground-messages li {
+.underground-messages li,
+.underground-contracts li {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -608,20 +610,30 @@ button {
   color: var(--accent);
 }
 
-.underground-messages li {
+.underground-messages li,
+.underground-contracts li {
   align-items: flex-start;
 }
 
-.underground-messages li > div {
+.underground-messages li > div,
+.underground-contracts li > div {
   display: grid;
   gap: 4px;
 }
 
-.underground-messages li.is-unread {
+.underground-messages li.is-unread,
+.underground-contracts li.is-open {
   border-color: var(--line-hot);
 }
 
-.underground-messages button {
+.underground-contract-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.underground-messages button,
+.underground-contracts button {
   flex: none;
   border: 1px solid var(--line-hot);
   background: transparent;

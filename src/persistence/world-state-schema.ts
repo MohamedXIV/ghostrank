@@ -125,6 +125,20 @@ const undergroundMessageSchema = z.object({
   read: z.boolean(),
 });
 
+const undergroundContractSchema = z.object({
+  id: z.string().min(1),
+  issuerId: z.string().min(1),
+  targetId: z.string().min(1),
+  objective: z.enum(["recon-report", "intrusion"]),
+  requiredServices: z.number().int().positive().optional(),
+  status: z.enum(["offered", "accepted", "completed", "expired", "declined"]),
+  offeredWorldMinute: z.number().int().nonnegative(),
+  expiresWorldMinute: z.number().int().nonnegative(),
+  acceptedWorldMinute: z.number().int().nonnegative().optional(),
+  dueWorldMinute: z.number().int().nonnegative().optional(),
+  resolvedWorldMinute: z.number().int().nonnegative().optional(),
+});
+
 const undergroundSchema = z.object({
   seed: z.number().int(),
   lastTickMinute: z.number().int().nonnegative(),
@@ -134,6 +148,7 @@ const undergroundSchema = z.object({
   incidents: z.array(undergroundIncidentSchema).default([]),
   rumors: z.array(undergroundRumorSchema).default([]),
   messages: z.array(undergroundMessageSchema).default([]),
+  contracts: z.array(undergroundContractSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -184,6 +199,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       incidents: [],
       rumors: [],
       messages: [],
+      contracts: [],
     },
   };
 });

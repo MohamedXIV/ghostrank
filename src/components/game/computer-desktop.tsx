@@ -12,6 +12,10 @@ import {
   openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
+import {
+  contractActionFromGui,
+  type ContractVerb,
+} from "@/game/computer/apps/contract-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
@@ -261,6 +265,12 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "operation disengaged";
     case "readMessage":
       return "message marked read";
+    case "acceptContract":
+      return "contract accepted // clock is running";
+    case "declineContract":
+      return "contract declined";
+    case "deliverContract":
+      return "contract delivered";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -569,11 +579,25 @@ function describeIncident(
     : `${counterpartHandle} turned ${actorHandle} away`;
 }
 
+function describeContract(
+  objective: string,
+  targetHandle: string,
+  requiredServices: number | undefined,
+): string {
+  if (objective === "recon-report") {
+    const count = requiredServices ?? 1;
+    return `report ${count} service${count === 1 ? "" : "s"} you have observed on ${targetHandle}`;
+  }
+
+  return `get through ${targetHandle}'s defenses`;
+}
+
 function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const board = useTable("board", runtime.projection);
   const feed = useTable("feed", runtime.projection);
   const stances = useTable("stances", runtime.projection);
   const inbox = useTable("inbox", runtime.projection);
+  const contractTable = useTable("contracts", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -594,8 +618,78 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
 
+  const contracts = Object.entries(contractTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.expiresWorldMinute ?? 0) - Number(a.expiresWorldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
   return (
     <div className="underground-app">
+      <section aria-label="Contracts">
+        <span className="panel-label">CONTRACTS</span>
+        {contracts.length === 0 ? (
+          <p className="underground-empty">No work on offer.</p>
+        ) : (
+          <ul className="underground-contracts">
+            {contracts.map(([id, entry]) => {
+              const status = String(entry.status ?? "");
+              const verbs: ContractVerb[] =
+                status === "offered"
+                  ? ["accept", "decline"]
+                  : status === "accepted"
+                    ? ["deliver"]
+                    : [];
+
+              return (
+                <li
+                  key={id}
+                  className={verbs.length > 0 ? "is-open" : undefined}
+                >
+                  <div>
+                    <span className="underground-time">
+                      {id} · {String(entry.issuerHandle ?? "unknown")} ·{" "}
+                      {status.toUpperCase()}
+                    </span>
+                    <span>
+                      {describeContract(
+                        String(entry.objective ?? ""),
+                        String(entry.targetHandle ?? "unknown"),
+                        entry.requiredServices === undefined
+                          ? undefined
+                          : Number(entry.requiredServices),
+                      )}
+                    </span>
+                    <span className="underground-time">
+                      {status === "accepted"
+                        ? `due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`
+                        : status === "offered"
+                          ? `offer open until ${formatWorldTime(Number(entry.expiresWorldMinute ?? 0))}`
+                          : ""}
+                    </span>
+                  </div>
+                  {verbs.length > 0 && (
+                    <div className="underground-contract-actions">
+                      {verbs.map((verb) => (
+                        <button
+                          key={verb}
+                          type="button"
+                          onClick={() =>
+                            runtime.execute(contractActionFromGui(verb, id))
+                          }
+                        >
+                          {verb.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       <section aria-label="Messages">
         <span className="panel-label">
           MESSAGES{unread > 0 ? ` // ${unread} UNREAD` : ""}

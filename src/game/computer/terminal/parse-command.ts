@@ -50,6 +50,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "op":
       return parseOperationCommand(args);
 
+    case "contract":
+      return parseContractCommand(args);
+
     case "wait": {
       if (args.length !== 1) {
         return {
@@ -121,6 +124,33 @@ function parseOperationCommand(args: string[]): TerminalParseResult {
         ok: false,
         error: "INVALID_ARGUMENT",
       };
+  }
+}
+
+function parseContractCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "accept":
+      return singleIdCommand(rest, (contractId) => ({
+        type: "acceptContract",
+        contractId,
+      }));
+
+    case "decline":
+      return singleIdCommand(rest, (contractId) => ({
+        type: "declineContract",
+        contractId,
+      }));
+
+    case "deliver":
+      return singleIdCommand(rest, (contractId) => ({
+        type: "deliverContract",
+        contractId,
+      }));
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
   }
 }
 

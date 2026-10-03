@@ -5,6 +5,8 @@ import {
 import {
   PLAYER_ACTOR_ID,
   type EvidenceKind,
+  type ContractObjectiveKind,
+  type ContractStatus,
   type OperationState,
   type OpponentReactionKind,
   type OpponentReactionStatus,
@@ -14,6 +16,7 @@ import {
 
 const FEED_LIMIT = 50;
 const INBOX_LIMIT = 30;
+const CONTRACT_LIMIT = 20;
 
 export interface VisibleTarget {
   id: string;
@@ -92,11 +95,25 @@ export interface VisibleInbox {
   unread: number;
 }
 
+export interface VisibleContract {
+  id: string;
+  issuerHandle: string;
+  targetId: string;
+  targetHandle: string;
+  objective: ContractObjectiveKind;
+  requiredServices?: number;
+  status: Exclude<ContractStatus, "declined">;
+  expiresWorldMinute: number;
+  dueWorldMinute?: number;
+  resolvedWorldMinute?: number;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
   stances: VisibleStance[];
   inbox: VisibleInbox;
+  contracts: VisibleContract[];
 }
 
 export interface WorldProjection {
@@ -205,11 +222,45 @@ function projectUnderground(
     .sort((a, b) => b.worldMinute - a.worldMinute)
     .slice(0, INBOX_LIMIT);
 
+  const targetHandles = new Map(
+    state.targets.map((target) => [target.id, target.handle]),
+  );
+  const contracts: VisibleContract[] = [];
+
+  for (const contract of [...underground.contracts].reverse()) {
+    if (contract.status === "declined") {
+      continue;
+    }
+
+    contracts.push({
+      id: contract.id,
+      issuerHandle: handles.get(contract.issuerId) ?? contract.issuerId,
+      targetId: contract.targetId,
+      targetHandle:
+        targetHandles.get(contract.targetId) ?? contract.targetId,
+      objective: contract.objective,
+      requiredServices: contract.requiredServices,
+      status: contract.status,
+      expiresWorldMinute: contract.expiresWorldMinute,
+      ...(contract.dueWorldMinute === undefined
+        ? {}
+        : { dueWorldMinute: contract.dueWorldMinute }),
+      ...(contract.resolvedWorldMinute === undefined
+        ? {}
+        : { resolvedWorldMinute: contract.resolvedWorldMinute }),
+    });
+
+    if (contracts.length >= CONTRACT_LIMIT) {
+      break;
+    }
+  }
+
   return {
     board,
     feed,
     stances,
     inbox: { messages: newestFirst, unread },
+    contracts,
   };
 }
 

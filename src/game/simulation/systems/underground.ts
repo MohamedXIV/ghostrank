@@ -3,6 +3,7 @@ import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   PLAYER_ACTOR_ID,
   type UndergroundActor,
+  type UndergroundContract,
   type UndergroundIncident,
   type UndergroundMessage,
   type UndergroundRelationship,
@@ -35,8 +36,16 @@ const LEAK_PERCENT = 35;
 const ACCURATE_PERCENT = 75;
 const FOOTPRINT_PEER_TRUST = -5;
 
+const OFFER_PERCENT = 10;
+const MAX_OPEN_CONTRACTS = 3;
+const OFFER_WINDOW_MINUTES = 24 * 60;
+const RECON_DUE_MINUTES = 2 * 24 * 60;
+const INTRUSION_DUE_MINUTES = 4 * 24 * 60;
+const CONTRACT_DELIVERED_TRUST = 15;
+const CONTRACT_MISSED_TRUST = -15;
+
 export type RelationshipCause = {
-  kind: "incident" | "reaction" | "rumor";
+  kind: "incident" | "reaction" | "rumor" | "contract";
   id: string;
 };
 
@@ -347,6 +356,241 @@ function runActorTick(
   return events;
 }
 
+function isOpenContract(contract: UndergroundContract): boolean {
+  return contract.status === "offered" || contract.status === "accepted";
+}
+
+function expireContracts(
+  world: WorldState,
+  worldMinute: number,
+): SimulationEvent[] {
+  const events: SimulationEvent[] = [];
+
+  for (const contract of world.underground.contracts) {
+    if (
+      contract.status === "offered" &&
+      worldMinute > contract.expiresWorldMinute
+    ) {
+      contract.status = "expired";
+      contract.resolvedWorldMinute = worldMinute;
+      events.push({
+        type: "ContractExpired",
+        contractId: contract.id,
+        stage: "offer",
+        worldMinute,
+      });
+    } else if (
+      contract.status === "accepted" &&
+      contract.dueWorldMinute !== undefined &&
+      worldMinute > contract.dueWorldMinute
+    ) {
+      contract.status = "expired";
+      contract.resolvedWorldMinute = worldMinute;
+      events.push(
+        {
+          type: "ContractExpired",
+          contractId: contract.id,
+          stage: "accepted",
+          worldMinute,
+        },
+        adjustRelationship(
+          world,
+          contract.issuerId,
+          PLAYER_ACTOR_ID,
+          { trust: CONTRACT_MISSED_TRUST },
+          { kind: "contract", id: contract.id },
+          worldMinute,
+        ),
+      );
+    }
+  }
+
+  return events;
+}
+
+function offerContracts(
+  world: WorldState,
+  tickIndex: number,
+  worldMinute: number,
+): SimulationEvent[] {
+  const { underground } = world;
+  const { seed } = underground;
+  const events: SimulationEvent[] = [];
+
+  if (world.targets.length === 0) {
+    return events;
+  }
+
+  for (const issuer of underground.actors) {
+    const open = underground.contracts.filter(isOpenContract);
+
+    if (open.length >= MAX_OPEN_CONTRACTS) {
+      break;
+    }
+
+    if (open.some((contract) => contract.issuerId === issuer.id)) {
+      continue;
+    }
+
+    const trust = underground.relationships.find(
+      (entry) =>
+        entry.fromId === issuer.id && entry.toId === PLAYER_ACTOR_ID,
+    )?.trust;
+
+    if (trust === undefined || trust < CONTACT_TRUST_THRESHOLD) {
+      continue;
+    }
+
+    const targets = world.targets.filter(
+      (candidate) => candidate.id !== issuer.targetId,
+    );
+
+    if (targets.length === 0) {
+      continue;
+    }
+
+    if (
+      hashUnit(seed, "offer", tickIndex, issuer.id) * 100 >=
+      OFFER_PERCENT
+    ) {
+      continue;
+    }
+
+    const target =
+      targets[
+        Math.floor(
+          hashUnit(seed, "offer-target", tickIndex, issuer.id) *
+            targets.length,
+        )
+      ];
+    const objective =
+      hashUnit(seed, "offer-objective", tickIndex, issuer.id) < 0.5
+        ? "recon-report"
+        : "intrusion";
+    const serviceCount = target.machines.reduce(
+      (sum, machine) => sum + machine.services.length,
+      0,
+    );
+
+    const contract: UndergroundContract = {
+      id: `contract:${underground.contracts.length + 1}`,
+      issuerId: issuer.id,
+      targetId: target.id,
+      objective,
+      status: "offered",
+      offeredWorldMinute: worldMinute,
+      expiresWorldMinute: worldMinute + OFFER_WINDOW_MINUTES,
+    };
+
+    if (objective === "recon-report") {
+      const asked =
+        1 +
+        Math.floor(
+          hashUnit(seed, "offer-services", tickIndex, issuer.id) * 2,
+        );
+      contract.requiredServices = Math.max(1, Math.min(asked, serviceCount));
+    }
+
+    underground.contracts.push(contract);
+    events.push({
+      type: "ContractOffered",
+      contractId: contract.id,
+      issuerId: contract.issuerId,
+      targetId: contract.targetId,
+      objective: contract.objective,
+      expiresWorldMinute: contract.expiresWorldMinute,
+      worldMinute,
+    });
+  }
+
+  return events;
+}
+
+/** Due time granted when a contract is accepted at `worldMinute`. */
+export function contractDueMinute(
+  contract: Pick<UndergroundContract, "objective">,
+  worldMinute: number,
+): number {
+  return (
+    worldMinute +
+    (contract.objective === "recon-report"
+      ? RECON_DUE_MINUTES
+      : INTRUSION_DUE_MINUTES)
+  );
+}
+
+/** Objectives are verified from evidence and traces the player already has. */
+export function isObjectiveMet(
+  world: WorldState,
+  contract: UndergroundContract,
+): boolean {
+  if (contract.objective === "intrusion") {
+    return world.traces.some(
+      (trace) =>
+        trace.targetId === contract.targetId &&
+        trace.cause === "operation-escalation" &&
+        trace.worldMinute >= (contract.acceptedWorldMinute ?? 0),
+    );
+  }
+
+  const target = world.targets.find(
+    (candidate) => candidate.id === contract.targetId,
+  );
+
+  if (!target) {
+    return false;
+  }
+
+  const known = new Set(
+    world.evidence
+      .filter((record) => record.kind === "service-presence")
+      .map((record) => record.subjectId),
+  );
+  const count = target.machines.reduce(
+    (sum, machine) =>
+      sum +
+      machine.services.filter((service) => known.has(service.id)).length,
+    0,
+  );
+
+  return count >= (contract.requiredServices ?? 1);
+}
+
+/** Rewards for a delivered contract: issuer trust and player rank. */
+export function rewardContract(
+  world: WorldState,
+  contract: UndergroundContract,
+  worldMinute: number,
+): SimulationEvent[] {
+  const events: SimulationEvent[] = [
+    adjustRelationship(
+      world,
+      contract.issuerId,
+      PLAYER_ACTOR_ID,
+      { trust: CONTRACT_DELIVERED_TRUST },
+      { kind: "contract", id: contract.id },
+      worldMinute,
+    ),
+  ];
+
+  const fromRank = world.player.rank;
+  const toRank = Math.max(1, fromRank - Math.max(1, Math.floor(fromRank * 0.01)));
+
+  if (toRank !== fromRank) {
+    world.player.rank = toRank;
+    events.push({
+      type: "PlayerRankChanged",
+      fromRank,
+      toRank,
+      causeKind: "contract",
+      causeId: contract.id,
+      worldMinute,
+    });
+  }
+
+  return events;
+}
+
 /**
  * Advance the NPC ecosystem to `toMinute`. Mutates the world draft owned by
  * the command bus. Rank is never an input to any decision here.
@@ -366,18 +610,22 @@ export function advanceUnderground(
     startTickIndex = endTickIndex - MAX_CATCHUP_TICKS + 1;
   }
 
-  if (underground.actors.length >= 2) {
-    for (
-      let tickIndex = startTickIndex;
-      tickIndex <= endTickIndex;
-      tickIndex += 1
-    ) {
-      const worldMinute = tickIndex * TICK_MINUTES;
+  for (
+    let tickIndex = startTickIndex;
+    tickIndex <= endTickIndex;
+    tickIndex += 1
+  ) {
+    const worldMinute = tickIndex * TICK_MINUTES;
 
+    events.push(...expireContracts(world, worldMinute));
+
+    if (underground.actors.length >= 2) {
       for (const actor of [...underground.actors]) {
         events.push(...runActorTick(world, actor, tickIndex, worldMinute));
       }
     }
+
+    events.push(...offerContracts(world, tickIndex, worldMinute));
   }
 
   underground.lastTickMinute = Math.max(underground.lastTickMinute, toMinute);
