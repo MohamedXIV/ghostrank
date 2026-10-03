@@ -175,7 +175,15 @@ Exit criteria:
 
 ## Phase 4 — Economy and Hardware
 
-**Status: planned / blocked by #21. Tracked by #22.**
+**Status: in progress. Tracked by #22.**
+
+P0 substrate delivered (see `docs/superpowers/plans/2026-10-04-phase-4-economy-substrate.md`):
+- a credits wallet and an append-only value ledger with cause-and-counterparty provenance; credits can never go negative,
+- contract delivery now pays out deterministically (recon `80 + 40 × requiredServices`, intrusion `260`), closing the payment Phase 3 deferred,
+- a data-driven hardware catalog across five capability axes (compute / memory / vram / storage / network) and a free starter rig every run begins with,
+- the `buyHardware` command shared by Terminal (`buy <catalog-id>`) and a new Market app, costing no world time,
+- derived rig capability (the sum of owned hardware) projected read-only; capability is never stored and never gates a target or a purchase,
+- persistence: `economy` is optional in the schema and loads as an empty wallet on legacy saves.
 
 Deliverables:
 - hardware catalog,

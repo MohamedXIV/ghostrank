@@ -7,10 +7,21 @@ import {
   type ReputationDescriptor,
 } from "@/game/simulation/systems/reputation";
 import {
+  deriveRigCapability,
+  type HardwareCapability,
+} from "@/game/simulation/systems/hardware";
+import {
+  findCatalogItem,
+  HARDWARE_CATALOG,
+  MARKET_COUNTERPARTY,
+  type HardwareCategory,
+} from "@/content/hardware-catalog";
+import {
   PLAYER_ACTOR_ID,
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
+  type LedgerDirection,
   type OperationState,
   type RetaliationKind,
   type UndergroundNetwork,
@@ -25,6 +36,7 @@ const INBOX_LIMIT = 30;
 const CONTRACT_LIMIT = 20;
 const RETALIATION_LIMIT = 20;
 const FORUM_LIMIT = 30;
+const LEDGER_LIMIT = 30;
 
 export interface VisibleTarget {
   id: string;
@@ -151,6 +163,42 @@ export interface UndergroundProjection {
   forum: VisibleForumPost[];
 }
 
+export interface VisibleHardware {
+  id: string;
+  catalogId: string;
+  label: string;
+  category: HardwareCategory;
+  acquiredWorldMinute: number;
+}
+
+export interface VisibleCatalogItem {
+  id: string;
+  label: string;
+  category: HardwareCategory;
+  cost: number;
+  capability: HardwareCapability;
+  owned: number;
+}
+
+export interface VisibleLedgerEntry {
+  id: string;
+  worldMinute: number;
+  direction: LedgerDirection;
+  amount: number;
+  balanceAfter: number;
+  causeKind: "contract" | "hardware";
+  causeId: string;
+  counterparty: string;
+}
+
+export interface EconomyProjection {
+  credits: number;
+  capability: HardwareCapability;
+  hardware: VisibleHardware[];
+  catalog: VisibleCatalogItem[];
+  ledger: VisibleLedgerEntry[];
+}
+
 export interface WorldProjection {
   worldMinute: number;
   player: {
@@ -165,6 +213,7 @@ export interface WorldProjection {
   reactions: VisibleReaction[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
+  economy: EconomyProjection;
 }
 
 function projectUnderground(
@@ -406,6 +455,66 @@ function footprintLevel(score: number): FootprintLevel {
   return "severe";
 }
 
+function projectEconomy(
+  state: WorldState,
+  handles: Map<string, string>,
+): EconomyProjection {
+  const ownedCounts = new Map<string, number>();
+
+  for (const owned of state.economy.hardware) {
+    ownedCounts.set(
+      owned.catalogId,
+      (ownedCounts.get(owned.catalogId) ?? 0) + 1,
+    );
+  }
+
+  const hardware: VisibleHardware[] = state.economy.hardware.map((owned) => {
+    const item = findCatalogItem(owned.catalogId);
+
+    return {
+      id: owned.id,
+      catalogId: owned.catalogId,
+      label: item?.label ?? owned.catalogId,
+      category: item?.category ?? "workstation",
+      acquiredWorldMinute: owned.acquiredWorldMinute,
+    };
+  });
+
+  const catalog: VisibleCatalogItem[] = HARDWARE_CATALOG.map((item) => ({
+    id: item.id,
+    label: item.label,
+    category: item.category,
+    cost: item.cost,
+    capability: { ...item.capability },
+    owned: ownedCounts.get(item.id) ?? 0,
+  }));
+
+  const ledger: VisibleLedgerEntry[] = [...state.economy.ledger]
+    .reverse()
+    .slice(0, LEDGER_LIMIT)
+    .map((entry) => ({
+      id: entry.id,
+      worldMinute: entry.worldMinute,
+      direction: entry.direction,
+      amount: entry.amount,
+      balanceAfter: entry.balanceAfter,
+      causeKind: entry.cause.kind,
+      causeId: entry.cause.id,
+      counterparty:
+        entry.counterparty === MARKET_COUNTERPARTY
+          ? MARKET_COUNTERPARTY
+          : (handles.get(entry.counterparty) ?? entry.counterparty),
+    }));
+
+  return {
+    credits: state.economy.credits,
+    capability: deriveRigCapability(state.economy),
+    hardware,
+    catalog,
+    ledger,
+  };
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -475,6 +584,10 @@ export function projectWorld(state: WorldState): WorldProjection {
       triggeredWorldMinute: reaction.triggeredWorldMinute,
     }));
 
+  const handles = new Map(
+    state.underground.actors.map((actor) => [actor.id, actor.handle]),
+  );
+
   return {
     worldMinute: state.worldMinute,
     player: {
@@ -493,5 +606,6 @@ export function projectWorld(state: WorldState): WorldProjection {
     reactions,
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
+    economy: projectEconomy(state, handles),
   };
 }

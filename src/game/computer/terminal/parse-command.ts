@@ -47,6 +47,12 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         messageId,
       }));
 
+    case "buy":
+      return singleIdCommand(args, (catalogId) => ({
+        type: "buyHardware",
+        catalogId,
+      }));
+
     case "op":
       return parseOperationCommand(args);
 

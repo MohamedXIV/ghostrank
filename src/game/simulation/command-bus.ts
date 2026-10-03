@@ -1,6 +1,11 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
+  MARKET_COUNTERPARTY,
+  findCatalogItem,
+} from "@/content/hardware-catalog";
+import { transferValue } from "@/game/simulation/systems/economy";
+import {
   advanceUnderground,
   applyProvocation,
   applyReactionRelationship,
@@ -15,6 +20,7 @@ import type {
   MachineState,
   OpponentReaction,
   OperationTrace,
+  OwnedHardware,
   TargetState,
   WorldState,
 } from "@/game/simulation/state/world-state";
@@ -73,6 +79,9 @@ export class CommandBus {
 
       case "deliverContract":
         return this.deliverContract(command.contractId);
+
+      case "buyHardware":
+        return this.buyHardware(command.catalogId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -505,6 +514,54 @@ export class CommandBus {
     return {
       ok: true,
       events: this.advanceWorldTime(minutes),
+    };
+  }
+
+  private buyHardware(catalogId: string): CommandResult {
+    const item = findCatalogItem(catalogId);
+
+    if (!item) {
+      return this.failure("HARDWARE_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "hardware",
+      causeId: item.id,
+      counterparty: MARKET_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedHardware = {
+      id: `hw:${this.world.economy.hardware.length + 1}`,
+      catalogId: item.id,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.hardware.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "HardwareAcquired",
+          hardwareId: owned.id,
+          catalogId: owned.catalogId,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
     };
   }
 

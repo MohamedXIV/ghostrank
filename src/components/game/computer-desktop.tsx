@@ -16,6 +16,7 @@ import {
   contractActionFromGui,
   type ContractVerb,
 } from "@/game/computer/apps/contract-actions";
+import { buyHardwareFromGui } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
@@ -34,6 +35,7 @@ const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   terminal: "TERM_01",
   recon: "RECON INDEX",
   underground: "UNDERGROUND INDEX",
+  market: "MARKET // RIG",
 };
 
 export function ComputerDesktop({
@@ -48,6 +50,9 @@ export function ComputerDesktop({
   );
   const rank = Number(
     useCell("player", "current", "rank", runtime.projection) ?? 0,
+  );
+  const credits = Number(
+    useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
   );
 
   const openWindows = useUiStore((state) => state.openWindows);
@@ -66,6 +71,7 @@ export function ComputerDesktop({
         <div className="os-stats">
           <span>{handle}</span>
           <span>RANK #{rank.toLocaleString("en-US")}</span>
+          <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
         <button className="os-room-button" type="button" onClick={onReturnToRoom}>
@@ -86,6 +92,10 @@ export function ComputerDesktop({
           <button type="button" onClick={() => openWindow("underground")}>
             <span className="launcher-glyph">◈</span>
             Index
+          </button>
+          <button type="button" onClick={() => openWindow("market")}>
+            <span className="launcher-glyph">⌸</span>
+            Market
           </button>
         </nav>
 
@@ -124,6 +134,18 @@ export function ComputerDesktop({
             onClose={() => closeWindow("underground")}
           >
             <UndergroundApp runtime={runtime} />
+          </WindowFrame>
+        )}
+
+        {openWindows.includes("market") && (
+          <WindowFrame
+            id="market"
+            title={WINDOW_LABELS.market}
+            focused={focusedWindow === "market"}
+            onFocus={() => focusWindow("market")}
+            onClose={() => closeWindow("market")}
+          >
+            <MarketApp runtime={runtime} />
           </WindowFrame>
         )}
       </div>
@@ -177,7 +199,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | op escalate | op exit | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | op escalate | op exit | buy <catalog-id> | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -200,6 +222,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "inspect <machine-id> inspect one known machine in the active operation (8m)",
         "op escalate          cross the fictional recon boundary (5m)",
         "op exit              disengage from the active operation (3m)",
+        "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -271,6 +294,8 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "contract declined";
     case "deliverContract":
       return "contract delivered";
+    case "buyHardware":
+      return "hardware acquired // rig updated";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -862,6 +887,174 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span>{String(entry.handle ?? id)}</span>
                 <span className="underground-stance">
                   {String(entry.stance ?? "neutral").toUpperCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function MarketApp({ runtime }: { runtime: GameRuntime }) {
+  const credits = Number(
+    useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
+  );
+  const rig = useRow("rig", "capability", runtime.projection);
+  const hardwareTable = useTable("hardware", runtime.projection);
+  const catalogTable = useTable("catalog", runtime.projection);
+  const ledgerTable = useTable("ledger", runtime.projection);
+
+  const capability = [
+    ["compute", rig.compute],
+    ["memory", rig.memory],
+    ["vram", rig.vram],
+    ["storage", rig.storage],
+    ["network", rig.network],
+  ] as const;
+
+  const ownedHardware = Object.entries(hardwareTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) - Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const catalog = Object.entries(catalogTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const ledger = Object.entries(ledgerTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
+  return (
+    <div className="market-app">
+      <section aria-label="Wallet">
+        <span className="panel-label">WALLET</span>
+        <div className="market-wallet">
+          <strong>{credits.toLocaleString("en-US")} cr</strong>
+          <span>Credits never go negative. Hardware raises capability, never a gate.</span>
+        </div>
+      </section>
+
+      <section aria-label="Rig capability">
+        <span className="panel-label">RIG CAPABILITY</span>
+        <ul className="market-capability">
+          {capability.map(([label, value]) => (
+            <li key={label}>
+              <span>{label.toUpperCase()}</span>
+              <strong>{Number(value ?? 0)}</strong>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-label="Owned hardware">
+        <span className="panel-label">OWNED HARDWARE</span>
+        {ownedHardware.length === 0 ? (
+          <p className="market-empty">No hardware installed.</p>
+        ) : (
+          <ul className="market-hardware">
+            {ownedHardware.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.label ?? entry.catalogId ?? id)}</span>
+                <span className="market-time">
+                  {String(entry.category ?? "")} ·{" "}
+                  {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Catalog">
+        <span className="panel-label">MARKET CATALOG</span>
+        {catalog.length === 0 ? (
+          <p className="market-empty">Nothing listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {catalog.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const owned = Number(entry.owned ?? 0);
+              const affordable = credits >= cost;
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={owned > 0 ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "baseline platform"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost === 0 ? "included" : `${cost.toLocaleString("en-US")} cr`}
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Acquire this hardware"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyHardwareFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Ledger">
+        <span className="panel-label">VALUE LEDGER</span>
+        {ledger.length === 0 ? (
+          <p className="market-empty">No value has moved yet.</p>
+        ) : (
+          <ul className="market-ledger">
+            {ledger.map(([id, entry]) => (
+              <li key={id}>
+                <span
+                  className={
+                    entry.direction === "credit"
+                      ? "market-credit"
+                      : "market-debit"
+                  }
+                >
+                  {entry.direction === "credit" ? "+" : "−"}
+                  {Number(entry.amount ?? 0).toLocaleString("en-US")}
+                </span>
+                <span>
+                  {String(entry.causeKind ?? "")} ·{" "}
+                  {String(entry.counterparty ?? "")}
+                </span>
+                <span className="market-time">
+                  bal {Number(entry.balanceAfter ?? 0).toLocaleString("en-US")} ·{" "}
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
               </li>
             ))}

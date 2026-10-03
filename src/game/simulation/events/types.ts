@@ -1,6 +1,8 @@
 import type {
   ContractObjectiveKind,
   ForumSubjectKind,
+  LedgerCauseKind,
+  LedgerDirection,
   OpponentReactionKind,
   RetaliationKind,
   UndergroundNetwork,
@@ -176,6 +178,24 @@ export type SimulationEvent =
       authorId: string;
       subjectKind: ForumSubjectKind;
       subjectId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ValueTransferred";
+      entryId: string;
+      direction: LedgerDirection;
+      amount: number;
+      balanceAfter: number;
+      causeKind: LedgerCauseKind;
+      causeId: string;
+      counterparty: string;
+      worldMinute: number;
+    }
+  | {
+      type: "HardwareAcquired";
+      hardwareId: string;
+      catalogId: string;
+      cost: number;
       worldMinute: number;
     }
   | {

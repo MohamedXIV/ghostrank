@@ -170,6 +170,50 @@ export function syncWorldProjection(
     ]),
   );
 
+  const hardwareRows = Object.fromEntries(
+    projection.economy.hardware.map((entry) => [
+      entry.id,
+      {
+        catalogId: entry.catalogId,
+        label: entry.label,
+        category: entry.category,
+        acquiredWorldMinute: entry.acquiredWorldMinute,
+      },
+    ]),
+  );
+
+  const catalogRows = Object.fromEntries(
+    projection.economy.catalog.map((item) => [
+      item.id,
+      {
+        label: item.label,
+        category: item.category,
+        cost: item.cost,
+        compute: item.capability.compute,
+        memory: item.capability.memory,
+        vram: item.capability.vram,
+        storage: item.capability.storage,
+        network: item.capability.network,
+        owned: item.owned,
+      },
+    ]),
+  );
+
+  const ledgerRows = Object.fromEntries(
+    projection.economy.ledger.map((entry) => [
+      entry.id,
+      {
+        worldMinute: entry.worldMinute,
+        direction: entry.direction,
+        amount: entry.amount,
+        balanceAfter: entry.balanceAfter,
+        causeKind: entry.causeKind,
+        causeId: entry.causeId,
+        counterparty: entry.counterparty,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -189,6 +233,19 @@ export function syncWorldProjection(
     store.setTable("retaliations", retaliationRows);
     store.setTable("descriptors", descriptorRows);
     store.setTable("forum", forumRows);
+    store.setTable("hardware", hardwareRows);
+    store.setTable("catalog", catalogRows);
+    store.setTable("ledger", ledgerRows);
+    store.setCell("meta", "wallet", "credits", projection.economy.credits);
+    store.setTable("rig", {
+      capability: {
+        compute: projection.economy.capability.compute,
+        memory: projection.economy.capability.memory,
+        vram: projection.economy.capability.vram,
+        storage: projection.economy.capability.storage,
+        network: projection.economy.capability.network,
+      },
+    });
     store.setCell(
       "meta",
       "inbox",

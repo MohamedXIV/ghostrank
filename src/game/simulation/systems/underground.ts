@@ -1,5 +1,6 @@
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
+import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -683,13 +684,29 @@ export function isObjectiveMet(
   return count >= (contract.requiredServices ?? 1);
 }
 
-/** Rewards for a delivered contract: issuer trust and player rank. */
+/** Rewards for a delivered contract: credits, issuer trust and player rank. */
 export function rewardContract(
   world: WorldState,
   contract: UndergroundContract,
   worldMinute: number,
 ): SimulationEvent[] {
-  const events: SimulationEvent[] = [
+  const events: SimulationEvent[] = [];
+
+  const payout = contractPayout(contract);
+  const payment = transferValue(world, {
+    direction: "credit",
+    amount: payout,
+    causeKind: "contract",
+    causeId: contract.id,
+    counterparty: contract.issuerId,
+    worldMinute,
+  });
+
+  if (payment) {
+    events.push(payment);
+  }
+
+  events.push(
     adjustRelationship(
       world,
       contract.issuerId,
@@ -698,7 +715,7 @@ export function rewardContract(
       { kind: "contract", id: contract.id },
       worldMinute,
     ),
-  ];
+  );
 
   const issuer = world.underground.actors.find(
     (candidate) => candidate.id === contract.issuerId,

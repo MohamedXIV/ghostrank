@@ -208,6 +208,34 @@ export interface UndergroundState {
   forumPosts: ForumPost[];
 }
 
+export type LedgerDirection = "credit" | "debit";
+export type LedgerCauseKind = "contract" | "hardware";
+
+/** A single value transfer. The ledger is the seed of the digital-value graph. */
+export interface ValueLedgerEntry {
+  id: string;
+  worldMinute: number;
+  direction: LedgerDirection;
+  amount: number;
+  balanceAfter: number;
+  cause: { kind: LedgerCauseKind; id: string };
+  /** Actor id for a contract payout; "market" for a catalog purchase. */
+  counterparty: string;
+}
+
+/** An owned hardware instance. Capability is derived from the catalog, not stored. */
+export interface OwnedHardware {
+  id: string;
+  catalogId: string;
+  acquiredWorldMinute: number;
+}
+
+export interface EconomyState {
+  credits: number;
+  ledger: ValueLedgerEntry[];
+  hardware: OwnedHardware[];
+}
+
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
@@ -218,6 +246,7 @@ export interface WorldState {
   traces: OperationTrace[];
   reactions: OpponentReaction[];
   underground: UndergroundState;
+  economy: EconomyState;
 }
 
 export interface InitialTargetState
@@ -235,9 +264,11 @@ export interface InitialWorldState {
   traces?: OperationTrace[];
   reactions?: OpponentReaction[];
   underground?: Partial<UndergroundState>;
+  economy?: Partial<EconomyState>;
 }
 
 export const STARTING_NETWORK_TRUST = 20;
+export const STARTING_CREDITS = 0;
 
 function createInitialUnderground(
   initial: Partial<UndergroundState> | undefined,
@@ -281,6 +312,16 @@ function createInitialUnderground(
     forumPosts: initial?.forumPosts
       ? structuredClone(initial.forumPosts)
       : [],
+  };
+}
+
+function createInitialEconomy(
+  initial: Partial<EconomyState> | undefined,
+): EconomyState {
+  return {
+    credits: initial?.credits ?? STARTING_CREDITS,
+    ledger: initial?.ledger ? structuredClone(initial.ledger) : [],
+    hardware: initial?.hardware ? structuredClone(initial.hardware) : [],
   };
 }
 
@@ -335,5 +376,6 @@ export function createInitialWorldState(
       ? structuredClone(initial.reactions)
       : [],
     underground: createInitialUnderground(initial.underground, worldMinute),
+    economy: createInitialEconomy(initial.economy),
   };
 }

@@ -73,6 +73,60 @@ describe("world projection store", () => {
         retaliations: [],
         forum: [],
       },
+      economy: {
+        credits: 320,
+        capability: {
+          compute: 4,
+          memory: 5,
+          vram: 0,
+          storage: 1,
+          network: 1,
+        },
+        hardware: [
+          {
+            id: "hw:1",
+            catalogId: "rig-starter",
+            label: "Secondhand Workstation",
+            category: "workstation",
+            acquiredWorldMinute: 0,
+          },
+          {
+            id: "hw:2",
+            catalogId: "cpu-overclock",
+            label: "Overclocked CPU",
+            category: "cpu",
+            acquiredWorldMinute: 30,
+          },
+        ],
+        catalog: [
+          {
+            id: "cpu-overclock",
+            label: "Overclocked CPU",
+            category: "cpu",
+            cost: 400,
+            capability: {
+              compute: 3,
+              memory: 0,
+              vram: 0,
+              storage: 0,
+              network: 0,
+            },
+            owned: 1,
+          },
+        ],
+        ledger: [
+          {
+            id: "value:2",
+            worldMinute: 30,
+            direction: "debit",
+            amount: 400,
+            balanceAfter: 320,
+            causeKind: "hardware",
+            causeId: "hw:2",
+            counterparty: "market",
+          },
+        ],
+      },
     };
 
     syncWorldProjection(store, projection);
@@ -132,5 +186,51 @@ describe("world projection store", () => {
       },
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);
+    expect(store.getCell("meta", "wallet", "credits")).toBe(320);
+    expect(store.getRow("rig", "capability")).toEqual({
+      compute: 4,
+      memory: 5,
+      vram: 0,
+      storage: 1,
+      network: 1,
+    });
+    expect(store.getTable("hardware")).toEqual({
+      "hw:1": {
+        catalogId: "rig-starter",
+        label: "Secondhand Workstation",
+        category: "workstation",
+        acquiredWorldMinute: 0,
+      },
+      "hw:2": {
+        catalogId: "cpu-overclock",
+        label: "Overclocked CPU",
+        category: "cpu",
+        acquiredWorldMinute: 30,
+      },
+    });
+    expect(store.getTable("catalog")).toEqual({
+      "cpu-overclock": {
+        label: "Overclocked CPU",
+        category: "cpu",
+        cost: 400,
+        compute: 3,
+        memory: 0,
+        vram: 0,
+        storage: 0,
+        network: 0,
+        owned: 1,
+      },
+    });
+    expect(store.getTable("ledger")).toEqual({
+      "value:2": {
+        worldMinute: 30,
+        direction: "debit",
+        amount: 400,
+        balanceAfter: 320,
+        causeKind: "hardware",
+        causeId: "hw:2",
+        counterparty: "market",
+      },
+    });
   });
 });

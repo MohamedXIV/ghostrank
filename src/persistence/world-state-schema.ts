@@ -171,6 +171,33 @@ const undergroundSchema = z.object({
   forumPosts: z.array(forumPostSchema).default([]),
 });
 
+const ledgerCauseSchema = z.object({
+  kind: z.enum(["contract", "hardware"]),
+  id: z.string().min(1),
+});
+
+const valueLedgerEntrySchema = z.object({
+  id: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+  direction: z.enum(["credit", "debit"]),
+  amount: z.number().int().nonnegative(),
+  balanceAfter: z.number().int().nonnegative(),
+  cause: ledgerCauseSchema,
+  counterparty: z.string().min(1),
+});
+
+const ownedHardwareSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
+const economySchema = z.object({
+  credits: z.number().int().nonnegative(),
+  ledger: z.array(valueLedgerEntrySchema).default([]),
+  hardware: z.array(ownedHardwareSchema).default([]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -184,6 +211,7 @@ const storedWorldStateSchema = z.object({
   traces: z.array(traceSchema).default([]),
   reactions: z.array(reactionSchema).default([]),
   underground: undergroundSchema.optional(),
+  economy: economySchema.optional(),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -222,6 +250,11 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       contracts: [],
       retaliations: [],
       forumPosts: [],
+    },
+    economy: state.economy ?? {
+      credits: 0,
+      ledger: [],
+      hardware: [],
     },
   };
 });

@@ -38,6 +38,10 @@ export type SimulationCommand =
       contractId: string;
     }
   | {
+      type: "buyHardware";
+      catalogId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

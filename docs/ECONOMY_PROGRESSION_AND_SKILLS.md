@@ -186,3 +186,29 @@ They may:
 - discover their software on enemy systems.
 
 Tool authorship is simultaneously income, prestige, and exposure.
+
+## Implementation status (Phase 4 P0)
+
+The economy substrate is live. This section describes what the simulation
+actually does today; the sections above remain the design target for later
+slices.
+
+- **Wallet and ledger.** The player holds a single `credits` balance and an
+  append-only value ledger. Every movement records its direction, amount,
+  resulting balance, cause (`contract` or `hardware`), and counterparty. Credits
+  can never go negative: a transfer that would take the balance below zero is
+  rejected and mutates nothing. There is no debt.
+- **Income.** Contract delivery is the first income source and pays a
+  deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
+  for an intrusion. Payout is never random and never rank-dependent.
+- **Hardware.** A data-driven catalog (`src/content/hardware-catalog.ts`) spans
+  five capability axes: compute, memory, vram, storage, network. Every run starts
+  with a free secondhand workstation; upgrades are bought with credits through the
+  `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
+  app, and costing no world time.
+- **Capability, not level.** Rig capability is *derived* as the sum of owned
+  hardware — it is never stored and never gates a target or a purchase. Later
+  systems (compute budgeting, builds) will read it; nothing today checks it to
+  allow or forbid an action, preserving "rank is reputation, not power."
+- **Persistence.** `economy` is optional in the save schema and loads as an empty
+  wallet on legacy snapshots, so older saves resume cleanly.
