@@ -30,6 +30,7 @@ describe("underground persistence schema", () => {
       messages: [],
       contracts: [],
       retaliations: [],
+      forumPosts: [],
     });
   });
 

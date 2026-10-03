@@ -3,12 +3,17 @@ import {
   type RelationshipStance,
 } from "@/game/simulation/systems/underground";
 import {
+  deriveReputationDescriptors,
+  type ReputationDescriptor,
+} from "@/game/simulation/systems/reputation";
+import {
   PLAYER_ACTOR_ID,
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
   type OperationState,
   type RetaliationKind,
+  type UndergroundNetwork,
   type OpponentReactionKind,
   type OpponentReactionStatus,
   type UndergroundIncidentOutcome,
@@ -19,6 +24,7 @@ const FEED_LIMIT = 50;
 const INBOX_LIMIT = 30;
 const CONTRACT_LIMIT = 20;
 const RETALIATION_LIMIT = 20;
+const FORUM_LIMIT = 30;
 
 export interface VisibleTarget {
   id: string;
@@ -117,6 +123,24 @@ export interface VisibleRetaliation {
   worldMinute: number;
 }
 
+export type VisibleForumSubject =
+  | {
+      kind: "incident";
+      actorHandle: string;
+      counterpartHandle: string;
+      outcome: UndergroundIncidentOutcome;
+    }
+  | { kind: "unmasking"; unmaskerHandle: string }
+  | { kind: "contract"; targetHandle: string };
+
+export interface VisibleForumPost {
+  id: string;
+  board: UndergroundNetwork;
+  authorHandle: string;
+  worldMinute: number;
+  subject: VisibleForumSubject;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
@@ -124,6 +148,7 @@ export interface UndergroundProjection {
   inbox: VisibleInbox;
   contracts: VisibleContract[];
   retaliations: VisibleRetaliation[];
+  forum: VisibleForumPost[];
 }
 
 export interface WorldProjection {
@@ -138,6 +163,7 @@ export interface WorldProjection {
   operation: OperationState | null;
   footprint: VisibleFootprint;
   reactions: VisibleReaction[];
+  descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
 }
 
@@ -275,6 +301,73 @@ function projectUnderground(
       worldMinute: entry.worldMinute,
     }));
 
+  const forum: VisibleForumPost[] = [];
+
+  if (underground.playerNetwork) {
+    const incidents = new Map(
+      underground.incidents.map((incident) => [incident.id, incident]),
+    );
+    const retaliationById = new Map(
+      underground.retaliations.map((entry) => [entry.id, entry]),
+    );
+    const contractById = new Map(
+      underground.contracts.map((entry) => [entry.id, entry]),
+    );
+
+    for (const post of [...underground.forumPosts].reverse()) {
+      if (post.board !== underground.playerNetwork) {
+        continue;
+      }
+
+      let subject: VisibleForumSubject | undefined;
+
+      if (post.subject.kind === "incident") {
+        const incident = incidents.get(post.subject.id);
+        subject = incident && {
+          kind: "incident",
+          actorHandle: handles.get(incident.actorId) ?? incident.actorId,
+          counterpartHandle:
+            handles.get(incident.counterpartId) ?? incident.counterpartId,
+          outcome: incident.outcome,
+        };
+      } else if (post.subject.kind === "unmasking") {
+        const entry = retaliationById.get(post.subject.id);
+        subject = entry && {
+          kind: "unmasking",
+          unmaskerHandle: handles.get(entry.actorId) ?? entry.actorId,
+        };
+      } else {
+        const entry = contractById.get(post.subject.id);
+        subject = entry && {
+          kind: "contract",
+          targetHandle: targetHandles.get(entry.targetId) ?? entry.targetId,
+        };
+      }
+
+      if (!subject) {
+        continue;
+      }
+
+      forum.push({
+        id: post.id,
+        board: post.board,
+        authorHandle: handles.get(post.authorId) ?? post.authorId,
+        worldMinute: post.worldMinute,
+        subject,
+      });
+
+      if (forum.length >= FORUM_LIMIT) {
+        break;
+      }
+    }
+
+    forum.sort(
+      (a, b) =>
+        b.worldMinute - a.worldMinute ||
+        b.id.localeCompare(a.id, undefined, { numeric: true }),
+    );
+  }
+
   return {
     board,
     feed,
@@ -282,6 +375,7 @@ function projectUnderground(
     inbox: { messages: newestFirst, unread },
     contracts,
     retaliations,
+    forum,
   };
 }
 
@@ -397,6 +491,7 @@ export function projectWorld(state: WorldState): WorldProjection {
       traceCount: state.traces.length,
     },
     reactions,
+    descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
   };
 }

@@ -1,7 +1,9 @@
 import type {
   ContractObjectiveKind,
+  ForumSubjectKind,
   OpponentReactionKind,
   RetaliationKind,
+  UndergroundNetwork,
   UndergroundIncidentOutcome,
   UndergroundRumorKind,
   OperationStage,
@@ -165,6 +167,15 @@ export type SimulationEvent =
       retaliationId: string;
       actorId: string;
       kind: RetaliationKind;
+      worldMinute: number;
+    }
+  | {
+      type: "ForumPosted";
+      postId: string;
+      board: UndergroundNetwork;
+      authorId: string;
+      subjectKind: ForumSubjectKind;
+      subjectId: string;
       worldMinute: number;
     }
   | {

@@ -599,6 +599,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const inbox = useTable("inbox", runtime.projection);
   const contractTable = useTable("contracts", runtime.projection);
   const retaliationTable = useTable("retaliations", runtime.projection);
+  const descriptorTable = useTable("descriptors", runtime.projection);
+  const forumTable = useTable("forum", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -631,8 +633,33 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
 
+  const descriptors = Object.entries(descriptorTable);
+  const forumPosts = Object.entries(forumTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
   return (
     <div className="underground-app">
+      <section aria-label="Reputation">
+        <span className="panel-label">HOW THE SCENE KNOWS YOU</span>
+        {descriptors.length === 0 ? (
+          <p className="underground-empty">Nobody has a word for you yet.</p>
+        ) : (
+          <ul className="underground-stances">
+            {descriptors.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.label ?? id)}</span>
+                <span className="underground-time">
+                  {String(entry.context ?? "")} · seen {Number(entry.basis ?? 0)}×
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {heat.length > 0 && (
         <section aria-label="Heat">
           <span className="panel-label">HEAT</span>
@@ -750,6 +777,35 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                     MARK READ
                   </button>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Forum">
+        <span className="panel-label">FORUM</span>
+        {forumPosts.length === 0 ? (
+          <p className="underground-empty">The board is quiet.</p>
+        ) : (
+          <ul className="underground-feed">
+            {forumPosts.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))} ·{" "}
+                  {String(entry.authorHandle ?? "unknown")}
+                </span>
+                <span>
+                  {entry.subjectKind === "unmasking"
+                    ? `unmasking is a line nobody crosses — ${String(entry.unmaskerHandle ?? "someone")} did`
+                    : entry.subjectKind === "contract"
+                      ? `vouching for CobaltXZ on the ${String(entry.targetHandle ?? "")} job`
+                      : describeIncident(
+                          String(entry.actorHandle ?? "unknown"),
+                          String(entry.counterpartHandle ?? "unknown"),
+                          String(entry.outcome ?? ""),
+                        )}
+                </span>
               </li>
             ))}
           </ul>

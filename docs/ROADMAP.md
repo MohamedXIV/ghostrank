@@ -125,7 +125,7 @@ Exit criteria:
 
 ## Phase 3 — Underground Ecosystem
 
-**Status: in progress. Tracked by #21.**
+**Status: complete. Tracked by #21.**
 
 P0 substrate delivered (see `docs/superpowers/plans/2026-10-03-phase-3-underground-substrate.md`):
 - ecosystem actors with public handles and rank,
@@ -152,7 +152,10 @@ P3 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-retaliation.md`):
 - unmasking is a rare, taboo escalation: it hurts the player, but the rest of the ecosystem turns on the unmasker and sides with the player,
 - all deterministic, rank-independent, with citable provenance, and surfaced in a Heat section (no new commands; the world acts).
 
-Still to deliver: forums, contextual reputation descriptors.
+P4 delivered (see `docs/superpowers/plans/2026-10-04-phase-3-reputation-forums.md`):
+- contextual reputation descriptors (Professional, Opportunist, Hunter, Predator) derived from contracts and traces, each shown with its context and basis,
+- public forums, one board per network: commentary on public incidents, condemnation of unmasking, and a public vouch when the player delivers a contract,
+- both are read surfaces; rank is never an input.
 
 Deliverables:
 - handles and ranking,

@@ -2,8 +2,11 @@ import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   PLAYER_ACTOR_ID,
+  type ForumPost,
+  type ForumSubjectKind,
   type UndergroundActor,
   type UndergroundContract,
+  type UndergroundNetwork,
   type UndergroundIncident,
   type UndergroundMessage,
   type UndergroundRetaliation,
@@ -44,6 +47,9 @@ const RECON_DUE_MINUTES = 2 * 24 * 60;
 const INTRUSION_DUE_MINUTES = 4 * 24 * 60;
 const CONTRACT_DELIVERED_TRUST = 15;
 const CONTRACT_MISSED_TRUST = -15;
+
+const FORUM_INCIDENT_PERCENT = 60;
+const NETWORKS: UndergroundNetwork[] = ["white", "black"];
 
 const PROVOCATION_GRUDGE = 25;
 const PROVOCATION_TRUST = -10;
@@ -180,6 +186,103 @@ function moveRank(
       worldMinute,
     },
   ];
+}
+
+function postToForum(
+  world: WorldState,
+  board: UndergroundNetwork,
+  authorId: string,
+  subject: { kind: ForumSubjectKind; id: string },
+  worldMinute: number,
+): SimulationEvent {
+  const post: ForumPost = {
+    id: `forum:${world.underground.forumPosts.length + 1}`,
+    board,
+    authorId,
+    subject,
+    worldMinute,
+  };
+  world.underground.forumPosts.push(post);
+
+  return {
+    type: "ForumPosted",
+    postId: post.id,
+    board,
+    authorId,
+    subjectKind: subject.kind,
+    subjectId: subject.id,
+    worldMinute,
+  };
+}
+
+/** One actor of `board`'s network, other than `excluded`, picked by hash. */
+function pickVoice(
+  world: WorldState,
+  board: UndergroundNetwork,
+  excluded: string[],
+  ...hashParts: (string | number)[]
+): UndergroundActor | undefined {
+  const voices = world.underground.actors.filter(
+    (candidate) =>
+      candidate.network === board && !excluded.includes(candidate.id),
+  );
+
+  if (voices.length === 0) {
+    return undefined;
+  }
+
+  return voices[
+    Math.floor(hashUnit(world.underground.seed, ...hashParts) * voices.length)
+  ];
+}
+
+function commentOnIncident(
+  world: WorldState,
+  incident: UndergroundIncident,
+  tickIndex: number,
+): SimulationEvent[] {
+  const events: SimulationEvent[] = [];
+
+  for (const board of NETWORKS) {
+    const chatty =
+      hashUnit(
+        world.underground.seed,
+        "forum-act",
+        tickIndex,
+        incident.id,
+        board,
+      ) *
+        100 <
+      FORUM_INCIDENT_PERCENT;
+
+    if (!chatty) {
+      continue;
+    }
+
+    const voice = pickVoice(
+      world,
+      board,
+      [incident.actorId, incident.counterpartId],
+      "forum-voice",
+      tickIndex,
+      incident.id,
+      board,
+    );
+
+    if (voice) {
+      events.push(
+        postToForum(
+          world,
+          board,
+          voice.id,
+          { kind: "incident", id: incident.id },
+          incident.worldMinute,
+        ),
+      );
+    }
+  }
+
+  return events;
 }
 
 function leakIncident(
@@ -371,7 +474,9 @@ function runActorTick(
     );
   }
 
-  if (!incident.public) {
+  if (incident.public) {
+    events.push(...commentOnIncident(world, incident, tickIndex));
+  } else {
     events.push(...leakIncident(world, incident, tickIndex));
   }
 
@@ -595,6 +700,22 @@ export function rewardContract(
     ),
   ];
 
+  const issuer = world.underground.actors.find(
+    (candidate) => candidate.id === contract.issuerId,
+  );
+
+  if (issuer) {
+    events.push(
+      postToForum(
+        world,
+        issuer.network,
+        issuer.id,
+        { kind: "contract", id: contract.id },
+        worldMinute,
+      ),
+    );
+  }
+
   events.push(
     ...shiftPlayerRank(world, "improve", 1, "contract", contract.id, worldMinute),
   );
@@ -713,6 +834,40 @@ function retaliate(
   return events;
 }
 
+function condemnUnmasking(
+  world: WorldState,
+  unmasker: UndergroundActor,
+  retaliationId: string,
+  worldMinute: number,
+): SimulationEvent[] {
+  const events: SimulationEvent[] = [];
+
+  for (const board of NETWORKS) {
+    const voice = pickVoice(
+      world,
+      board,
+      [unmasker.id],
+      "forum-taboo",
+      retaliationId,
+      board,
+    );
+
+    if (voice) {
+      events.push(
+        postToForum(
+          world,
+          board,
+          voice.id,
+          { kind: "unmasking", id: retaliationId },
+          worldMinute,
+        ),
+      );
+    }
+  }
+
+  return events;
+}
+
 /** Unmasking is taboo: everyone else turns on the unmasker and sides with the player. */
 function punishUnmasker(
   world: WorldState,
@@ -722,6 +877,7 @@ function punishUnmasker(
 ): SimulationEvent[] {
   const cause: RelationshipCause = { kind: "unmasking", id: retaliationId };
   const events: SimulationEvent[] = [
+    ...condemnUnmasking(world, unmasker, retaliationId, worldMinute),
     ...moveRank(
       world,
       unmasker,

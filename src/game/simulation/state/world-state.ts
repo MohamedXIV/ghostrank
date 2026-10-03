@@ -152,6 +152,16 @@ export interface UndergroundMessage {
   read: boolean;
 }
 
+export type ForumSubjectKind = "incident" | "unmasking" | "contract";
+
+export interface ForumPost {
+  id: string;
+  board: UndergroundNetwork;
+  authorId: string;
+  subject: { kind: ForumSubjectKind; id: string };
+  worldMinute: number;
+}
+
 export type RetaliationKind = "smear" | "unmasking";
 
 export interface UndergroundRetaliation {
@@ -195,6 +205,7 @@ export interface UndergroundState {
   messages: UndergroundMessage[];
   contracts: UndergroundContract[];
   retaliations: UndergroundRetaliation[];
+  forumPosts: ForumPost[];
 }
 
 export interface WorldState {
@@ -266,6 +277,9 @@ function createInitialUnderground(
     contracts: initial?.contracts ? structuredClone(initial.contracts) : [],
     retaliations: initial?.retaliations
       ? structuredClone(initial.retaliations)
+      : [],
+    forumPosts: initial?.forumPosts
+      ? structuredClone(initial.forumPosts)
       : [],
   };
 }
