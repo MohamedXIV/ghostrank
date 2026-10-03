@@ -22,6 +22,10 @@ export type SimulationCommand =
       type: "disengageOperation";
     }
   | {
+      type: "readMessage";
+      messageId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

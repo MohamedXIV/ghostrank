@@ -67,6 +67,7 @@ describe("world projection store", () => {
         board: [],
         feed: [],
         stances: [],
+        inbox: { messages: [], unread: 0 },
       },
     };
 

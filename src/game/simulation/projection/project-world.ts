@@ -13,6 +13,7 @@ import {
 } from "@/game/simulation/state/world-state";
 
 const FEED_LIMIT = 50;
+const INBOX_LIMIT = 30;
 
 export interface VisibleTarget {
   id: string;
@@ -76,10 +77,26 @@ export interface VisibleStance {
   stance: RelationshipStance;
 }
 
+export interface VisibleMessage {
+  id: string;
+  fromHandle: string;
+  claimActorHandle: string;
+  claimCounterpartHandle: string;
+  claimOutcome: UndergroundIncidentOutcome;
+  worldMinute: number;
+  read: boolean;
+}
+
+export interface VisibleInbox {
+  messages: VisibleMessage[];
+  unread: number;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
   stances: VisibleStance[];
+  inbox: VisibleInbox;
 }
 
 export interface WorldProjection {
@@ -158,7 +175,42 @@ function projectUnderground(
     });
   }
 
-  return { board, feed, stances };
+  const rumors = new Map(
+    underground.rumors.map((rumor) => [rumor.id, rumor]),
+  );
+  const inboxMessages: VisibleMessage[] = [];
+
+  for (const message of underground.messages) {
+    const claim = rumors.get(message.rumorId)?.claim;
+
+    if (!claim) {
+      continue;
+    }
+
+    inboxMessages.push({
+      id: message.id,
+      fromHandle: handles.get(message.fromId) ?? message.fromId,
+      claimActorHandle: handles.get(claim.actorId) ?? claim.actorId,
+      claimCounterpartHandle:
+        handles.get(claim.counterpartId) ?? claim.counterpartId,
+      claimOutcome: claim.outcome,
+      worldMinute: message.worldMinute,
+      read: message.read,
+    });
+  }
+
+  const unread = inboxMessages.filter((message) => !message.read).length;
+  const newestFirst = inboxMessages
+    .reverse()
+    .sort((a, b) => b.worldMinute - a.worldMinute)
+    .slice(0, INBOX_LIMIT);
+
+  return {
+    board,
+    feed,
+    stances,
+    inbox: { messages: newestFirst, unread },
+  };
 }
 
 function evidenceSubjects(

@@ -101,6 +101,30 @@ const undergroundIncidentSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
 });
 
+const undergroundRumorSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["incident-leak", "player-footprint"]),
+  sourceId: z.string().min(1),
+  relayId: z.string().min(1),
+  accurate: z.boolean(),
+  claim: z
+    .object({
+      actorId: z.string().min(1),
+      counterpartId: z.string().min(1),
+      outcome: z.enum(["succeeded", "repelled"]),
+    })
+    .nullable(),
+  worldMinute: z.number().int().nonnegative(),
+});
+
+const undergroundMessageSchema = z.object({
+  id: z.string().min(1),
+  fromId: z.string().min(1),
+  rumorId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+  read: z.boolean(),
+});
+
 const undergroundSchema = z.object({
   seed: z.number().int(),
   lastTickMinute: z.number().int().nonnegative(),
@@ -108,6 +132,8 @@ const undergroundSchema = z.object({
   actors: z.array(undergroundActorSchema).default([]),
   relationships: z.array(undergroundRelationshipSchema).default([]),
   incidents: z.array(undergroundIncidentSchema).default([]),
+  rumors: z.array(undergroundRumorSchema).default([]),
+  messages: z.array(undergroundMessageSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -156,6 +182,8 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       actors: [],
       relationships: [],
       incidents: [],
+      rumors: [],
+      messages: [],
     },
   };
 });

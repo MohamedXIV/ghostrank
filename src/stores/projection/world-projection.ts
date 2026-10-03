@@ -94,6 +94,20 @@ export function syncWorldProjection(
     ]),
   );
 
+  const inboxRows = Object.fromEntries(
+    projection.underground.inbox.messages.map((message) => [
+      message.id,
+      {
+        fromHandle: message.fromHandle,
+        claimActorHandle: message.claimActorHandle,
+        claimCounterpartHandle: message.claimCounterpartHandle,
+        claimOutcome: message.claimOutcome,
+        worldMinute: message.worldMinute,
+        read: message.read,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -108,6 +122,13 @@ export function syncWorldProjection(
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
+    store.setTable("inbox", inboxRows);
+    store.setCell(
+      "meta",
+      "inbox",
+      "unread",
+      projection.underground.inbox.unread,
+    );
 
     if (projection.operation) {
       store.setTable("operation", {

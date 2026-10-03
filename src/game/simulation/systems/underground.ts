@@ -4,7 +4,9 @@ import {
   PLAYER_ACTOR_ID,
   type UndergroundActor,
   type UndergroundIncident,
+  type UndergroundMessage,
   type UndergroundRelationship,
+  type UndergroundRumor,
   type WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -28,8 +30,13 @@ const REPELLED_ATTACKER_FEAR = 10;
 const REACTION_GRUDGE = 15;
 const REACTION_TRUST = -10;
 
+const CONTACT_TRUST_THRESHOLD = 10;
+const LEAK_PERCENT = 35;
+const ACCURATE_PERCENT = 75;
+const FOOTPRINT_PEER_TRUST = -5;
+
 export type RelationshipCause = {
-  kind: "incident" | "reaction";
+  kind: "incident" | "reaction" | "rumor";
   id: string;
 };
 
@@ -144,6 +151,96 @@ function moveRank(
   ];
 }
 
+function leakIncident(
+  world: WorldState,
+  incident: UndergroundIncident,
+  tickIndex: number,
+): SimulationEvent[] {
+  const { underground } = world;
+  const events: SimulationEvent[] = [];
+
+  for (const contact of underground.actors) {
+    if (
+      contact.id === incident.actorId ||
+      contact.id === incident.counterpartId
+    ) {
+      continue;
+    }
+
+    const trust = underground.relationships.find(
+      (entry) =>
+        entry.fromId === contact.id && entry.toId === PLAYER_ACTOR_ID,
+    )?.trust;
+
+    if (trust === undefined || trust < CONTACT_TRUST_THRESHOLD) {
+      continue;
+    }
+
+    const leaks =
+      hashUnit(underground.seed, "leak", tickIndex, contact.id, incident.id) *
+        100 <
+      LEAK_PERCENT;
+
+    if (!leaks) {
+      continue;
+    }
+
+    const accurate =
+      hashUnit(underground.seed, "leak-acc", tickIndex, contact.id, incident.id) *
+        100 <
+      ACCURATE_PERCENT;
+
+    const rumor: UndergroundRumor = {
+      id: `rumor:${underground.rumors.length + 1}`,
+      kind: "incident-leak",
+      sourceId: incident.id,
+      relayId: contact.id,
+      accurate,
+      claim: {
+        actorId: incident.actorId,
+        counterpartId: incident.counterpartId,
+        outcome: accurate
+          ? incident.outcome
+          : incident.outcome === "succeeded"
+            ? "repelled"
+            : "succeeded",
+      },
+      worldMinute: incident.worldMinute,
+    };
+    underground.rumors.push(rumor);
+
+    const message: UndergroundMessage = {
+      id: `message:${underground.messages.length + 1}`,
+      fromId: contact.id,
+      rumorId: rumor.id,
+      worldMinute: incident.worldMinute,
+      read: false,
+    };
+    underground.messages.push(message);
+
+    events.push(
+      {
+        type: "RumorSpread",
+        rumorId: rumor.id,
+        kind: rumor.kind,
+        sourceId: rumor.sourceId,
+        relayId: rumor.relayId,
+        accurate: rumor.accurate,
+        worldMinute: rumor.worldMinute,
+      },
+      {
+        type: "MessageDelivered",
+        messageId: message.id,
+        fromId: message.fromId,
+        rumorId: message.rumorId,
+        worldMinute: message.worldMinute,
+      },
+    );
+  }
+
+  return events;
+}
+
 function runActorTick(
   world: WorldState,
   actor: UndergroundActor,
@@ -243,6 +340,10 @@ function runActorTick(
     );
   }
 
+  if (!incident.public) {
+    events.push(...leakIncident(world, incident, tickIndex));
+  }
+
   return events;
 }
 
@@ -312,6 +413,66 @@ export function applyReactionRelationship(
       worldMinute,
     ),
   ];
+}
+
+/**
+ * Peers of a target owner talk about the player's observed footprint. Each
+ * loses a little trust, citing the rumor so the change is reconstructable.
+ */
+export function spreadPlayerFootprint(
+  world: WorldState,
+  targetId: string,
+  reactionId: string,
+  worldMinute: number,
+): SimulationEvent[] {
+  const owner = world.underground.actors.find(
+    (candidate) => candidate.targetId === targetId,
+  );
+
+  if (!owner) {
+    return [];
+  }
+
+  const events: SimulationEvent[] = [];
+
+  for (const peer of world.underground.actors) {
+    if (peer.id === owner.id || peer.network !== owner.network) {
+      continue;
+    }
+
+    const rumor: UndergroundRumor = {
+      id: `rumor:${world.underground.rumors.length + 1}`,
+      kind: "player-footprint",
+      sourceId: reactionId,
+      relayId: peer.id,
+      accurate: true,
+      claim: null,
+      worldMinute,
+    };
+    world.underground.rumors.push(rumor);
+
+    events.push(
+      {
+        type: "RumorSpread",
+        rumorId: rumor.id,
+        kind: rumor.kind,
+        sourceId: rumor.sourceId,
+        relayId: rumor.relayId,
+        accurate: rumor.accurate,
+        worldMinute,
+      },
+      adjustRelationship(
+        world,
+        peer.id,
+        PLAYER_ACTOR_ID,
+        { trust: FOOTPRINT_PEER_TRUST },
+        { kind: "rumor", id: rumor.id },
+        worldMinute,
+      ),
+    );
+  }
+
+  return events;
 }
 
 export type RelationshipStance = "friendly" | "neutral" | "wary" | "hostile";

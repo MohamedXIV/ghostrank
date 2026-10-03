@@ -1,6 +1,7 @@
 import type {
   OpponentReactionKind,
   UndergroundIncidentOutcome,
+  UndergroundRumorKind,
   OperationStage,
   TraceCause,
   TraceSeverity,
@@ -86,8 +87,29 @@ export type SimulationEvent =
       trust: number;
       fear: number;
       grudge: number;
-      causeKind: "incident" | "reaction";
+      causeKind: "incident" | "reaction" | "rumor";
       causeId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "RumorSpread";
+      rumorId: string;
+      kind: UndergroundRumorKind;
+      sourceId: string;
+      relayId: string;
+      accurate: boolean;
+      worldMinute: number;
+    }
+  | {
+      type: "MessageDelivered";
+      messageId: string;
+      fromId: string;
+      rumorId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "MessageRead";
+      messageId: string;
       worldMinute: number;
     }
   | {

@@ -3,6 +3,7 @@ import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   advanceUnderground,
   applyReactionRelationship,
+  spreadPlayerFootprint,
 } from "@/game/simulation/systems/underground";
 import type {
   EvidenceKind,
@@ -56,6 +57,9 @@ export class CommandBus {
 
       case "disengageOperation":
         return this.disengageOperation();
+
+      case "readMessage":
+        return this.readMessage(command.messageId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -328,6 +332,33 @@ export class CommandBus {
     };
   }
 
+  private readMessage(messageId: string): CommandResult {
+    const message = this.world.underground.messages.find(
+      (candidate) => candidate.id === messageId,
+    );
+
+    if (!message) {
+      return this.failure("MESSAGE_NOT_FOUND");
+    }
+
+    if (message.read) {
+      return this.failure("MESSAGE_ALREADY_READ");
+    }
+
+    message.read = true;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "MessageRead",
+          messageId: message.id,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
   private advanceTime(minutes: number): CommandResult {
     if (!Number.isInteger(minutes) || minutes <= 0) {
       return this.failure("INVALID_TIME_DELTA");
@@ -453,6 +484,12 @@ export class CommandBus {
         worldMinute: reaction.triggeredWorldMinute,
       },
       ...applyReactionRelationship(
+        this.world,
+        targetId,
+        reaction.id,
+        reaction.triggeredWorldMinute,
+      ),
+      ...spreadPlayerFootprint(
         this.world,
         targetId,
         reaction.id,

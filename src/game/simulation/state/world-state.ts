@@ -124,6 +124,34 @@ export interface UndergroundIncident {
   worldMinute: number;
 }
 
+export type UndergroundRumorKind = "incident-leak" | "player-footprint";
+
+export interface UndergroundRumorClaim {
+  actorId: string;
+  counterpartId: string;
+  outcome: UndergroundIncidentOutcome;
+}
+
+export interface UndergroundRumor {
+  id: string;
+  kind: UndergroundRumorKind;
+  /** Incident ID for a leak, reaction ID for a player footprint. */
+  sourceId: string;
+  relayId: string;
+  /** Hidden truth: whether the claim matches what actually happened. */
+  accurate: boolean;
+  claim: UndergroundRumorClaim | null;
+  worldMinute: number;
+}
+
+export interface UndergroundMessage {
+  id: string;
+  fromId: string;
+  rumorId: string;
+  worldMinute: number;
+  read: boolean;
+}
+
 export interface UndergroundState {
   seed: number;
   lastTickMinute: number;
@@ -131,6 +159,8 @@ export interface UndergroundState {
   actors: UndergroundActor[];
   relationships: UndergroundRelationship[];
   incidents: UndergroundIncident[];
+  rumors: UndergroundRumor[];
+  messages: UndergroundMessage[];
 }
 
 export interface WorldState {
@@ -197,6 +227,8 @@ function createInitialUnderground(
     actors,
     relationships,
     incidents: initial?.incidents ? structuredClone(initial.incidents) : [],
+    rumors: initial?.rumors ? structuredClone(initial.rumors) : [],
+    messages: initial?.messages ? structuredClone(initial.messages) : [],
   };
 }
 
