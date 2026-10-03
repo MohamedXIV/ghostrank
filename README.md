@@ -62,8 +62,8 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 ## Status
 
-**Phase 2 — Operation Simulation — complete. Phase 3 — Underground Ecosystem — is not started.**
+**Phase 2 — Operation Simulation — complete. Phase 3 — Underground Ecosystem — is not started and is tracked by #21.**
 
-The web-first platform gate is implemented by #18: IndexedDB persistence is active in the browser and normal gameplay CI is web-only. Phase 3 remains not started. Tauri/SQLite desktop hardening stays deferred to #19 after the web game is complete.
+The web-first platform gate is implemented by #18: IndexedDB persistence is active in the browser and normal gameplay CI is web-only. Planned gameplay phases are tracked by #21–#27, in dependency order. Tauri/SQLite desktop hardening stays deferred to #19 after #27.
 
 Ghostrank is a working title.
