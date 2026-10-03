@@ -61,6 +61,53 @@ export function syncWorldProjection(
     ]),
   );
 
+  const boardRows = Object.fromEntries(
+    projection.underground.board.map((entry) => [
+      entry.id,
+      {
+        handle: entry.handle,
+        rank: entry.rank,
+        isPlayer: entry.isPlayer,
+      },
+    ]),
+  );
+
+  const feedRows = Object.fromEntries(
+    projection.underground.feed.map((entry) => [
+      entry.id,
+      {
+        actorHandle: entry.actorHandle,
+        counterpartHandle: entry.counterpartHandle,
+        outcome: entry.outcome,
+        worldMinute: entry.worldMinute,
+      },
+    ]),
+  );
+
+  const stanceRows = Object.fromEntries(
+    projection.underground.stances.map((entry) => [
+      entry.actorId,
+      {
+        handle: entry.handle,
+        stance: entry.stance,
+      },
+    ]),
+  );
+
+  const inboxRows = Object.fromEntries(
+    projection.underground.inbox.messages.map((message) => [
+      message.id,
+      {
+        fromHandle: message.fromHandle,
+        claimActorHandle: message.claimActorHandle,
+        claimCounterpartHandle: message.claimCounterpartHandle,
+        claimOutcome: message.claimOutcome,
+        worldMinute: message.worldMinute,
+        read: message.read,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -72,6 +119,16 @@ export function syncWorldProjection(
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
     store.setTable("reactions", reactionRows);
+    store.setTable("board", boardRows);
+    store.setTable("feed", feedRows);
+    store.setTable("stances", stanceRows);
+    store.setTable("inbox", inboxRows);
+    store.setCell(
+      "meta",
+      "inbox",
+      "unread",
+      projection.underground.inbox.unread,
+    );
 
     if (projection.operation) {
       store.setTable("operation", {

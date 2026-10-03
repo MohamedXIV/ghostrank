@@ -41,6 +41,12 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         machineId,
       }));
 
+    case "read":
+      return singleIdCommand(args, (messageId) => ({
+        type: "readMessage",
+        messageId,
+      }));
+
     case "op":
       return parseOperationCommand(args);
 

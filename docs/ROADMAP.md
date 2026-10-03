@@ -123,11 +123,24 @@ Exit criteria:
 - normal gameplay work ships through web-only CI,
 - Phase 3 may proceed without any desktop-host dependency.
 
-Phase 3 has not started.
-
 ## Phase 3 — Underground Ecosystem
 
-**Status: planned / next. Tracked by #21.**
+**Status: in progress. Tracked by #21.**
+
+P0 substrate delivered (see `docs/superpowers/plans/2026-10-03-phase-3-underground-substrate.md`):
+- ecosystem actors with public handles and rank,
+- White/Black starting networks seeding initial trust,
+- directed relationships (trust / fear / grudge),
+- deterministic NPC-to-NPC activity that runs inside world-time advancement with no player involvement,
+- an observed defensive reaction turning into a provenance-backed grudge,
+- evidence-safe projection and a read-only Underground index app.
+
+P1 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-rumors-messages.md`):
+- private NPC incidents leak as imperfect, sometimes distorted rumors through trusted contacts into a player inbox,
+- the `readMessage` command shared by Terminal (`read <id>`) and GUI,
+- the player's observed footprint spreading through the target owner's network and shifting peer trust with rumor provenance.
+
+Still to deliver: contracts, forums, retaliation, the unmasking taboo, contextual reputation descriptors.
 
 Deliverables:
 - handles and ranking,

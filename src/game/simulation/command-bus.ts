@@ -1,5 +1,10 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import type { SimulationEvent } from "@/game/simulation/events/types";
+import {
+  advanceUnderground,
+  applyReactionRelationship,
+  spreadPlayerFootprint,
+} from "@/game/simulation/systems/underground";
 import type {
   EvidenceKind,
   EvidenceRecord,
@@ -52,6 +57,9 @@ export class CommandBus {
 
       case "disengageOperation":
         return this.disengageOperation();
+
+      case "readMessage":
+        return this.readMessage(command.messageId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -159,7 +167,7 @@ export class CommandBus {
       return this.failure("NO_NEW_MACHINE_EVIDENCE");
     }
 
-    const timeEvent = this.advanceWorldTime(SURVEY_MINUTES);
+    const timeEvents = this.advanceWorldTime(SURVEY_MINUTES);
 
     this.recordEvidence({
       id: `machine-presence:${machine.id}`,
@@ -173,7 +181,7 @@ export class CommandBus {
     return {
       ok: true,
       events: [
-        timeEvent,
+        ...timeEvents,
         {
           type: "MachineObserved",
           targetId: target.id,
@@ -213,7 +221,7 @@ export class CommandBus {
       return this.failure("NO_NEW_SERVICE_EVIDENCE");
     }
 
-    const timeEvent = this.advanceWorldTime(INSPECTION_MINUTES);
+    const timeEvents = this.advanceWorldTime(INSPECTION_MINUTES);
 
     this.recordEvidence({
       id: `service-presence:${service.id}`,
@@ -227,7 +235,7 @@ export class CommandBus {
     return {
       ok: true,
       events: [
-        timeEvent,
+        ...timeEvents,
         {
           type: "ServiceObserved",
           targetId: located.target.id,
@@ -254,7 +262,7 @@ export class CommandBus {
       return this.failure("SERVICE_EVIDENCE_REQUIRED");
     }
 
-    const timeEvent = this.advanceWorldTime(ESCALATION_MINUTES);
+    const timeEvents = this.advanceWorldTime(ESCALATION_MINUTES);
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
 
@@ -266,12 +274,12 @@ export class CommandBus {
       weight: 3,
       worldMinute: this.world.worldMinute,
     });
-    const reactionEvent = this.evaluateOpponentReaction(operation.targetId);
+    const reactionEvents = this.evaluateOpponentReaction(operation.targetId);
 
     return {
       ok: true,
       events: [
-        timeEvent,
+        ...timeEvents,
         {
           type: "OperationEscalated",
           targetId: operation.targetId,
@@ -280,7 +288,7 @@ export class CommandBus {
           worldMinute: this.world.worldMinute,
         },
         traceEvent,
-        ...(reactionEvent ? [reactionEvent] : []),
+        ...reactionEvents,
       ],
     };
   }
@@ -292,7 +300,7 @@ export class CommandBus {
       return this.failure("NO_ACTIVE_OPERATION");
     }
 
-    const timeEvent = this.advanceWorldTime(DISENGAGE_MINUTES);
+    const timeEvents = this.advanceWorldTime(DISENGAGE_MINUTES);
     const stage = operation.stage;
     const event: SimulationEvent = {
       type: "OperationDisengaged",
@@ -309,17 +317,44 @@ export class CommandBus {
       weight: stage === "intrusive" ? 2 : 1,
       worldMinute: this.world.worldMinute,
     });
-    const reactionEvent = this.evaluateOpponentReaction(operation.targetId);
+    const reactionEvents = this.evaluateOpponentReaction(operation.targetId);
 
     this.world.operation = null;
 
     return {
       ok: true,
       events: [
-        timeEvent,
+        ...timeEvents,
         event,
         traceEvent,
-        ...(reactionEvent ? [reactionEvent] : []),
+        ...reactionEvents,
+      ],
+    };
+  }
+
+  private readMessage(messageId: string): CommandResult {
+    const message = this.world.underground.messages.find(
+      (candidate) => candidate.id === messageId,
+    );
+
+    if (!message) {
+      return this.failure("MESSAGE_NOT_FOUND");
+    }
+
+    if (message.read) {
+      return this.failure("MESSAGE_ALREADY_READ");
+    }
+
+    message.read = true;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "MessageRead",
+          messageId: message.id,
+          worldMinute: this.world.worldMinute,
+        },
       ],
     };
   }
@@ -331,19 +366,22 @@ export class CommandBus {
 
     return {
       ok: true,
-      events: [this.advanceWorldTime(minutes)],
+      events: this.advanceWorldTime(minutes),
     };
   }
 
-  private advanceWorldTime(minutes: number): SimulationEvent {
+  private advanceWorldTime(minutes: number): SimulationEvent[] {
     const fromMinute = this.world.worldMinute;
     this.world.worldMinute += minutes;
 
-    return {
-      type: "WorldTimeAdvanced",
-      fromMinute,
-      toMinute: this.world.worldMinute,
-    };
+    return [
+      {
+        type: "WorldTimeAdvanced",
+        fromMinute,
+        toMinute: this.world.worldMinute,
+      },
+      ...advanceUnderground(this.world, this.world.worldMinute),
+    ];
   }
 
   private hasKnownServiceForTarget(targetId: string): boolean {
@@ -400,16 +438,14 @@ export class CommandBus {
     };
   }
 
-  private evaluateOpponentReaction(
-    targetId: string,
-  ): Extract<SimulationEvent, { type: "OpponentReactionTriggered" }> | null {
+  private evaluateOpponentReaction(targetId: string): SimulationEvent[] {
     const alreadyActive = this.world.reactions.some(
       (reaction) =>
         reaction.targetId === targetId && reaction.status === "active",
     );
 
     if (alreadyActive) {
-      return null;
+      return [];
     }
 
     const causalTraces = this.world.traces.filter(
@@ -421,7 +457,7 @@ export class CommandBus {
     );
 
     if (footprintScore < DEFENSIVE_WATCH_THRESHOLD) {
-      return null;
+      return [];
     }
 
     const reaction: OpponentReaction = {
@@ -437,15 +473,29 @@ export class CommandBus {
 
     this.world.reactions.push(reaction);
 
-    return {
-      type: "OpponentReactionTriggered",
-      reactionId: reaction.id,
-      targetId: reaction.targetId,
-      kind: reaction.kind,
-      sourceTraceIds: [...reaction.sourceTraceIds],
-      footprintScore: reaction.footprintScore,
-      worldMinute: reaction.triggeredWorldMinute,
-    };
+    return [
+      {
+        type: "OpponentReactionTriggered",
+        reactionId: reaction.id,
+        targetId: reaction.targetId,
+        kind: reaction.kind,
+        sourceTraceIds: [...reaction.sourceTraceIds],
+        footprintScore: reaction.footprintScore,
+        worldMinute: reaction.triggeredWorldMinute,
+      },
+      ...applyReactionRelationship(
+        this.world,
+        targetId,
+        reaction.id,
+        reaction.triggeredWorldMinute,
+      ),
+      ...spreadPlayerFootprint(
+        this.world,
+        targetId,
+        reaction.id,
+        reaction.triggeredWorldMinute,
+      ),
+    ];
   }
 
   private findMachine(

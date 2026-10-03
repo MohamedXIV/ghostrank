@@ -12,8 +12,10 @@ import {
   openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
+import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
+import type { SimulationCommand } from "@/game/simulation/commands/types";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -27,6 +29,7 @@ interface ComputerDesktopProps {
 const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   terminal: "TERM_01",
   recon: "RECON INDEX",
+  underground: "UNDERGROUND INDEX",
 };
 
 export function ComputerDesktop({
@@ -76,6 +79,10 @@ export function ComputerDesktop({
             <span className="launcher-glyph">◎</span>
             Recon
           </button>
+          <button type="button" onClick={() => openWindow("underground")}>
+            <span className="launcher-glyph">◈</span>
+            Index
+          </button>
         </nav>
 
         <div className="desktop-grid" aria-hidden="true" />
@@ -101,6 +108,18 @@ export function ComputerDesktop({
             onClose={() => closeWindow("recon")}
           >
             <ReconApp runtime={runtime} />
+          </WindowFrame>
+        )}
+
+        {openWindows.includes("underground") && (
+          <WindowFrame
+            id="underground"
+            title={WINDOW_LABELS.underground}
+            focused={focusedWindow === "underground"}
+            onFocus={() => focusWindow("underground")}
+            onClose={() => closeWindow("underground")}
+          >
+            <UndergroundApp runtime={runtime} />
           </WindowFrame>
         )}
       </div>
@@ -226,16 +245,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   );
 }
 
-function describeCommandResult(
-  type:
-    | "observeTarget"
-    | "openOperation"
-    | "surveyTarget"
-    | "inspectMachine"
-    | "escalateOperation"
-    | "disengageOperation"
-    | "advanceTime",
-) {
+function describeCommandResult(type: SimulationCommand["type"]) {
   switch (type) {
     case "observeTarget":
       return "observation complete // target profile updated";
@@ -249,6 +259,8 @@ function describeCommandResult(
       return "operation escalated // stage intrusive";
     case "disengageOperation":
       return "operation disengaged";
+    case "readMessage":
+      return "message marked read";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -544,5 +556,141 @@ function ReactionCard({
         <span>{String(reaction.sourceTraceIds ?? "none")}</span>
       </div>
     </article>
+  );
+}
+
+function describeIncident(
+  actorHandle: string,
+  counterpartHandle: string,
+  outcome: string,
+): string {
+  return outcome === "succeeded"
+    ? `${actorHandle} got through ${counterpartHandle}'s defenses`
+    : `${counterpartHandle} turned ${actorHandle} away`;
+}
+
+function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
+  const board = useTable("board", runtime.projection);
+  const feed = useTable("feed", runtime.projection);
+  const stances = useTable("stances", runtime.projection);
+  const inbox = useTable("inbox", runtime.projection);
+  const unread = Number(
+    useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
+  );
+
+  const handles = Object.entries(board).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.rank ?? 0) - Number(b.rank ?? 0) || idA.localeCompare(idB),
+  );
+  const incidents = Object.entries(feed).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  const stanceEntries = Object.entries(stances);
+  const messages = Object.entries(inbox).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
+  return (
+    <div className="underground-app">
+      <section aria-label="Messages">
+        <span className="panel-label">
+          MESSAGES{unread > 0 ? ` // ${unread} UNREAD` : ""}
+        </span>
+        {messages.length === 0 ? (
+          <p className="underground-empty">No messages.</p>
+        ) : (
+          <ul className="underground-messages">
+            {messages.map(([id, entry]) => (
+              <li key={id} className={entry.read ? undefined : "is-unread"}>
+                <div>
+                  <span className="underground-time">
+                    {formatWorldTime(Number(entry.worldMinute ?? 0))} ·{" "}
+                    {String(entry.fromHandle ?? "unknown")} · {id}
+                  </span>
+                  <span>
+                    heard that{" "}
+                    {describeIncident(
+                      String(entry.claimActorHandle ?? "unknown"),
+                      String(entry.claimCounterpartHandle ?? "unknown"),
+                      String(entry.claimOutcome ?? ""),
+                    )}{" "}
+                    (unverified)
+                  </span>
+                </div>
+                {!entry.read && (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(readMessageFromGui(id))}
+                  >
+                    MARK READ
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Public index">
+        <span className="panel-label">PUBLIC INDEX</span>
+        <ol className="underground-board">
+          {handles.map(([id, entry]) => (
+            <li
+              key={id}
+              className={entry.isPlayer ? "is-player" : undefined}
+            >
+              <span>{String(entry.handle ?? id)}</span>
+              <span>#{Number(entry.rank ?? 0).toLocaleString("en-US")}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-label="Public feed">
+        <span className="panel-label">PUBLIC FEED</span>
+        {incidents.length === 0 ? (
+          <p className="underground-empty">Nothing public yet.</p>
+        ) : (
+          <ul className="underground-feed">
+            {incidents.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
+                </span>
+                <span>
+                  {describeIncident(
+                    String(entry.actorHandle ?? "unknown"),
+                    String(entry.counterpartHandle ?? "unknown"),
+                    String(entry.outcome ?? ""),
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Standing toward you">
+        <span className="panel-label">HOW THEY SEE YOU</span>
+        {stanceEntries.length === 0 ? (
+          <p className="underground-empty">No one you have observed has formed a view.</p>
+        ) : (
+          <ul className="underground-stances">
+            {stanceEntries.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.handle ?? id)}</span>
+                <span className="underground-stance">
+                  {String(entry.stance ?? "neutral").toUpperCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

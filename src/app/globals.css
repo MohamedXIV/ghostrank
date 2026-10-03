@@ -241,6 +241,13 @@ button {
   height: min(52vh, 470px);
 }
 
+.os-window-underground {
+  top: 8%;
+  right: 5%;
+  width: min(38vw, 500px);
+  height: min(54vh, 480px);
+}
+
 .window-titlebar {
   height: 34px;
   display: flex;
@@ -561,6 +568,92 @@ button {
   height: 100% !important;
 }
 
+/* Underground index */
+
+.underground-app {
+  height: 100%;
+  overflow: auto;
+  padding: 14px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.underground-board,
+.underground-feed,
+.underground-stances,
+.underground-messages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.underground-board li,
+.underground-feed li,
+.underground-stances li,
+.underground-messages li {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.underground-board li.is-player {
+  border-color: var(--line-hot);
+  color: var(--accent);
+}
+
+.underground-messages li {
+  align-items: flex-start;
+}
+
+.underground-messages li > div {
+  display: grid;
+  gap: 4px;
+}
+
+.underground-messages li.is-unread {
+  border-color: var(--line-hot);
+}
+
+.underground-messages button {
+  flex: none;
+  border: 1px solid var(--line-hot);
+  background: transparent;
+  color: var(--accent);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.underground-time {
+  flex: none;
+  color: var(--muted);
+}
+
+.underground-feed li {
+  justify-content: flex-start;
+}
+
+.underground-stance {
+  color: var(--warning);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.underground-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 @media (max-width: 900px) {
   .os-stats span:nth-child(2) {
     display: none;
@@ -574,6 +667,12 @@ button {
   .os-window-recon {
     right: 4%;
     width: 62vw;
+  }
+
+  .os-window-underground {
+    top: 6%;
+    right: 3%;
+    width: 70vw;
   }
 }
 
