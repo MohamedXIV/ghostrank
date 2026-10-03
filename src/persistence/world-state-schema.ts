@@ -139,6 +139,13 @@ const undergroundContractSchema = z.object({
   resolvedWorldMinute: z.number().int().nonnegative().optional(),
 });
 
+const undergroundRetaliationSchema = z.object({
+  id: z.string().min(1),
+  actorId: z.string().min(1),
+  kind: z.enum(["smear", "unmasking"]),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const undergroundSchema = z.object({
   seed: z.number().int(),
   lastTickMinute: z.number().int().nonnegative(),
@@ -149,6 +156,7 @@ const undergroundSchema = z.object({
   rumors: z.array(undergroundRumorSchema).default([]),
   messages: z.array(undergroundMessageSchema).default([]),
   contracts: z.array(undergroundContractSchema).default([]),
+  retaliations: z.array(undergroundRetaliationSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -200,6 +208,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       rumors: [],
       messages: [],
       contracts: [],
+      retaliations: [],
     },
   };
 });

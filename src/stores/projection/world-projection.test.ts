@@ -69,6 +69,7 @@ describe("world projection store", () => {
         stances: [],
         inbox: { messages: [], unread: 0 },
         contracts: [],
+        retaliations: [],
       },
     };
 

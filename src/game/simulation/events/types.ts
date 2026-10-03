@@ -1,6 +1,7 @@
 import type {
   ContractObjectiveKind,
   OpponentReactionKind,
+  RetaliationKind,
   UndergroundIncidentOutcome,
   UndergroundRumorKind,
   OperationStage,
@@ -88,7 +89,14 @@ export type SimulationEvent =
       trust: number;
       fear: number;
       grudge: number;
-      causeKind: "incident" | "reaction" | "rumor" | "contract";
+      causeKind:
+        | "incident"
+        | "reaction"
+        | "rumor"
+        | "contract"
+        | "intrusion"
+        | "retaliation"
+        | "unmasking";
       causeId: string;
       worldMinute: number;
     }
@@ -148,8 +156,15 @@ export type SimulationEvent =
       type: "PlayerRankChanged";
       fromRank: number;
       toRank: number;
-      causeKind: "contract";
+      causeKind: "contract" | "retaliation";
       causeId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "Retaliation";
+      retaliationId: string;
+      actorId: string;
+      kind: RetaliationKind;
       worldMinute: number;
     }
   | {

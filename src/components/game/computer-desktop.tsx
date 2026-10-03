@@ -598,6 +598,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const stances = useTable("stances", runtime.projection);
   const inbox = useTable("inbox", runtime.projection);
   const contractTable = useTable("contracts", runtime.projection);
+  const retaliationTable = useTable("retaliations", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -624,8 +625,34 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
 
+  const heat = Object.entries(retaliationTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
   return (
     <div className="underground-app">
+      {heat.length > 0 && (
+        <section aria-label="Heat">
+          <span className="panel-label">HEAT</span>
+          <ul className="underground-feed">
+            {heat.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
+                </span>
+                <span>
+                  {entry.kind === "unmasking"
+                    ? `${String(entry.actorHandle ?? "unknown")} tried to unmask you — the scene will not forget it`
+                    : `${String(entry.actorHandle ?? "unknown")} is dragging your name through the scene`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-label="Contracts">
         <span className="panel-label">CONTRACTS</span>
         {contracts.length === 0 ? (

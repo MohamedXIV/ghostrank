@@ -131,6 +131,17 @@ export function syncWorldProjection(
     ]),
   );
 
+  const retaliationRows = Object.fromEntries(
+    projection.underground.retaliations.map((entry) => [
+      entry.id,
+      {
+        actorHandle: entry.actorHandle,
+        kind: entry.kind,
+        worldMinute: entry.worldMinute,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -147,6 +158,7 @@ export function syncWorldProjection(
     store.setTable("stances", stanceRows);
     store.setTable("inbox", inboxRows);
     store.setTable("contracts", contractRows);
+    store.setTable("retaliations", retaliationRows);
     store.setCell(
       "meta",
       "inbox",
