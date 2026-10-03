@@ -142,6 +142,34 @@ export function syncWorldProjection(
     ]),
   );
 
+  const descriptorRows = Object.fromEntries(
+    projection.descriptors.map((entry) => [
+      entry.id,
+      { label: entry.label, context: entry.context, basis: entry.basis },
+    ]),
+  );
+
+  const forumRows = Object.fromEntries(
+    projection.underground.forum.map((post) => [
+      post.id,
+      {
+        board: post.board,
+        authorHandle: post.authorHandle,
+        worldMinute: post.worldMinute,
+        subjectKind: post.subject.kind,
+        ...(post.subject.kind === "incident"
+          ? {
+              actorHandle: post.subject.actorHandle,
+              counterpartHandle: post.subject.counterpartHandle,
+              outcome: post.subject.outcome,
+            }
+          : post.subject.kind === "unmasking"
+            ? { unmaskerHandle: post.subject.unmaskerHandle }
+            : { targetHandle: post.subject.targetHandle }),
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -159,6 +187,8 @@ export function syncWorldProjection(
     store.setTable("inbox", inboxRows);
     store.setTable("contracts", contractRows);
     store.setTable("retaliations", retaliationRows);
+    store.setTable("descriptors", descriptorRows);
+    store.setTable("forum", forumRows);
     store.setCell(
       "meta",
       "inbox",

@@ -146,6 +146,17 @@ const undergroundRetaliationSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
 });
 
+const forumPostSchema = z.object({
+  id: z.string().min(1),
+  board: networkSchema,
+  authorId: z.string().min(1),
+  subject: z.object({
+    kind: z.enum(["incident", "unmasking", "contract"]),
+    id: z.string().min(1),
+  }),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const undergroundSchema = z.object({
   seed: z.number().int(),
   lastTickMinute: z.number().int().nonnegative(),
@@ -157,6 +168,7 @@ const undergroundSchema = z.object({
   messages: z.array(undergroundMessageSchema).default([]),
   contracts: z.array(undergroundContractSchema).default([]),
   retaliations: z.array(undergroundRetaliationSchema).default([]),
+  forumPosts: z.array(forumPostSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -209,6 +221,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       messages: [],
       contracts: [],
       retaliations: [],
+      forumPosts: [],
     },
   };
 });

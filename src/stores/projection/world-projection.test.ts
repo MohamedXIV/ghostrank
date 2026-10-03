@@ -63,6 +63,7 @@ describe("world projection store", () => {
           triggeredWorldMinute: 45,
         },
       ],
+      descriptors: [],
       underground: {
         board: [],
         feed: [],
@@ -70,6 +71,7 @@ describe("world projection store", () => {
         inbox: { messages: [], unread: 0 },
         contracts: [],
         retaliations: [],
+        forum: [],
       },
     };
 
