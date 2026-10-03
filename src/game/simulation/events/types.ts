@@ -1,5 +1,6 @@
 import type {
   OpponentReactionKind,
+  UndergroundIncidentOutcome,
   OperationStage,
   TraceCause,
   TraceSeverity,
@@ -58,6 +59,35 @@ export type SimulationEvent =
       kind: OpponentReactionKind;
       sourceTraceIds: string[];
       footprintScore: number;
+      worldMinute: number;
+    }
+  | {
+      type: "UndergroundActivity";
+      incidentId: string;
+      actorId: string;
+      counterpartId: string;
+      outcome: UndergroundIncidentOutcome;
+      public: boolean;
+      worldMinute: number;
+    }
+  | {
+      type: "ActorRankChanged";
+      actorId: string;
+      fromRank: number;
+      toRank: number;
+      incidentId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "RelationshipChanged";
+      relationshipId: string;
+      fromId: string;
+      toId: string;
+      trust: number;
+      fear: number;
+      grudge: number;
+      causeKind: "incident" | "reaction";
+      causeId: string;
       worldMinute: number;
     }
   | {

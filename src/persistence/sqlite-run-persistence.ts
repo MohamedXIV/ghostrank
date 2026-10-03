@@ -73,6 +73,9 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "OperationDisengaged":
     case "TraceRecorded":
     case "OpponentReactionTriggered":
+    case "UndergroundActivity":
+    case "ActorRankChanged":
+    case "RelationshipChanged":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;
