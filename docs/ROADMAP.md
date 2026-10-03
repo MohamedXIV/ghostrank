@@ -146,7 +146,13 @@ P2 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-contracts.md`):
 - objectives verified from the evidence and traces the player already produces, never from a separate mission script,
 - delivering raises issuer trust and improves player rank with provenance; missing an accepted contract costs issuer trust; ignored offers lapse without penalty; rank never gates acceptance.
 
-Still to deliver: forums, retaliation, the unmasking taboo, contextual reputation descriptors.
+P3 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-retaliation.md`):
+- escalating again against a target that is already watching hardens its owner's grudge (provocation, with trace provenance),
+- rivals with a grudge retaliate on their own while the player waits: smears worsen the player's rank and spend grudge,
+- unmasking is a rare, taboo escalation: it hurts the player, but the rest of the ecosystem turns on the unmasker and sides with the player,
+- all deterministic, rank-independent, with citable provenance, and surfaced in a Heat section (no new commands; the world acts).
+
+Still to deliver: forums, contextual reputation descriptors.
 
 Deliverables:
 - handles and ranking,

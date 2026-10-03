@@ -152,6 +152,15 @@ export interface UndergroundMessage {
   read: boolean;
 }
 
+export type RetaliationKind = "smear" | "unmasking";
+
+export interface UndergroundRetaliation {
+  id: string;
+  actorId: string;
+  kind: RetaliationKind;
+  worldMinute: number;
+}
+
 export type ContractObjectiveKind = "recon-report" | "intrusion";
 export type ContractStatus =
   | "offered"
@@ -185,6 +194,7 @@ export interface UndergroundState {
   rumors: UndergroundRumor[];
   messages: UndergroundMessage[];
   contracts: UndergroundContract[];
+  retaliations: UndergroundRetaliation[];
 }
 
 export interface WorldState {
@@ -254,6 +264,9 @@ function createInitialUnderground(
     rumors: initial?.rumors ? structuredClone(initial.rumors) : [],
     messages: initial?.messages ? structuredClone(initial.messages) : [],
     contracts: initial?.contracts ? structuredClone(initial.contracts) : [],
+    retaliations: initial?.retaliations
+      ? structuredClone(initial.retaliations)
+      : [],
   };
 }
 

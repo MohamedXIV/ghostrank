@@ -2,6 +2,7 @@ import type { SimulationCommand } from "@/game/simulation/commands/types";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   advanceUnderground,
+  applyProvocation,
   applyReactionRelationship,
   contractDueMinute,
   isObjectiveMet,
@@ -274,6 +275,11 @@ export class CommandBus {
       return this.failure("SERVICE_EVIDENCE_REQUIRED");
     }
 
+    const watched = this.world.reactions.some(
+      (reaction) =>
+        reaction.targetId === operation.targetId &&
+        reaction.status === "active",
+    );
     const timeEvents = this.advanceWorldTime(ESCALATION_MINUTES);
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
@@ -287,6 +293,14 @@ export class CommandBus {
       worldMinute: this.world.worldMinute,
     });
     const reactionEvents = this.evaluateOpponentReaction(operation.targetId);
+    const provocationEvents = watched
+      ? applyProvocation(
+          this.world,
+          operation.targetId,
+          traceEvent.traceId,
+          this.world.worldMinute,
+        )
+      : [];
 
     return {
       ok: true,
@@ -301,6 +315,7 @@ export class CommandBus {
         },
         traceEvent,
         ...reactionEvents,
+        ...provocationEvents,
       ],
     };
   }

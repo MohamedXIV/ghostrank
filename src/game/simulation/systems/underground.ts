@@ -6,6 +6,7 @@ import {
   type UndergroundContract,
   type UndergroundIncident,
   type UndergroundMessage,
+  type UndergroundRetaliation,
   type UndergroundRelationship,
   type UndergroundRumor,
   type WorldState,
@@ -44,8 +45,28 @@ const INTRUSION_DUE_MINUTES = 4 * 24 * 60;
 const CONTRACT_DELIVERED_TRUST = 15;
 const CONTRACT_MISSED_TRUST = -15;
 
+const PROVOCATION_GRUDGE = 25;
+const PROVOCATION_TRUST = -10;
+const SMEAR_GRUDGE_THRESHOLD = 30;
+const UNMASK_GRUDGE_THRESHOLD = 60;
+const SMEAR_PERCENT = 12;
+const UNMASK_PERCENT = 3;
+const SMEAR_GRUDGE_SPENT = -10;
+const UNMASK_GRUDGE_SPENT = -30;
+const SMEAR_RANK_PERCENT = 1;
+const UNMASK_RANK_PERCENT = 5;
+const UNMASK_PEER_TRUST = -40;
+const UNMASK_SYMPATHY_TRUST = 10;
+
 export type RelationshipCause = {
-  kind: "incident" | "reaction" | "rumor" | "contract";
+  kind:
+    | "incident"
+    | "reaction"
+    | "rumor"
+    | "contract"
+    | "intrusion"
+    | "retaliation"
+    | "unmasking";
   id: string;
 };
 
@@ -124,8 +145,9 @@ function moveRank(
   direction: "improve" | "worsen",
   incidentId: string,
   worldMinute: number,
+  percent = 1,
 ): SimulationEvent[] {
-  const step = Math.max(1, Math.floor(actor.rank * 0.01));
+  const step = Math.max(1, Math.floor((actor.rank * percent) / 100));
   const fromRank = actor.rank;
   const toRank =
     direction === "improve"
@@ -573,22 +595,199 @@ export function rewardContract(
     ),
   ];
 
-  const fromRank = world.player.rank;
-  const toRank = Math.max(1, fromRank - Math.max(1, Math.floor(fromRank * 0.01)));
+  events.push(
+    ...shiftPlayerRank(world, "improve", 1, "contract", contract.id, worldMinute),
+  );
 
-  if (toRank !== fromRank) {
-    world.player.rank = toRank;
-    events.push({
+  return events;
+}
+
+function shiftPlayerRank(
+  world: WorldState,
+  direction: "improve" | "worsen",
+  percent: number,
+  causeKind: "contract" | "retaliation",
+  causeId: string,
+  worldMinute: number,
+): SimulationEvent[] {
+  const fromRank = world.player.rank;
+  const step = Math.max(1, Math.floor((fromRank * percent) / 100));
+  const toRank =
+    direction === "improve" ? Math.max(1, fromRank - step) : fromRank + step;
+
+  if (toRank === fromRank) {
+    return [];
+  }
+
+  world.player.rank = toRank;
+
+  return [
+    {
       type: "PlayerRankChanged",
       fromRank,
       toRank,
-      causeKind: "contract",
-      causeId: contract.id,
+      causeKind,
+      causeId,
       worldMinute,
-    });
+    },
+  ];
+}
+
+function grudgeOf(world: WorldState, actorId: string): number {
+  return (
+    world.underground.relationships.find(
+      (entry) => entry.fromId === actorId && entry.toId === PLAYER_ACTOR_ID,
+    )?.grudge ?? 0
+  );
+}
+
+function retaliate(
+  world: WorldState,
+  tickIndex: number,
+  worldMinute: number,
+): SimulationEvent[] {
+  const { underground } = world;
+  const { seed } = underground;
+  const events: SimulationEvent[] = [];
+
+  for (const actor of [...underground.actors]) {
+    const grudge = grudgeOf(world, actor.id);
+
+    if (grudge < SMEAR_GRUDGE_THRESHOLD) {
+      continue;
+    }
+
+    const unmasks =
+      grudge >= UNMASK_GRUDGE_THRESHOLD &&
+      hashUnit(seed, "unmask", tickIndex, actor.id) * 100 < UNMASK_PERCENT;
+    const smears =
+      !unmasks &&
+      hashUnit(seed, "smear", tickIndex, actor.id) * 100 < SMEAR_PERCENT;
+
+    if (!unmasks && !smears) {
+      continue;
+    }
+
+    const retaliation: UndergroundRetaliation = {
+      id: `retaliation:${underground.retaliations.length + 1}`,
+      actorId: actor.id,
+      kind: unmasks ? "unmasking" : "smear",
+      worldMinute,
+    };
+    underground.retaliations.push(retaliation);
+
+    events.push(
+      {
+        type: "Retaliation",
+        retaliationId: retaliation.id,
+        actorId: actor.id,
+        kind: retaliation.kind,
+        worldMinute,
+      },
+      ...shiftPlayerRank(
+        world,
+        "worsen",
+        unmasks ? UNMASK_RANK_PERCENT : SMEAR_RANK_PERCENT,
+        "retaliation",
+        retaliation.id,
+        worldMinute,
+      ),
+      adjustRelationship(
+        world,
+        actor.id,
+        PLAYER_ACTOR_ID,
+        { grudge: unmasks ? UNMASK_GRUDGE_SPENT : SMEAR_GRUDGE_SPENT },
+        {
+          kind: unmasks ? "unmasking" : "retaliation",
+          id: retaliation.id,
+        },
+        worldMinute,
+      ),
+    );
+
+    if (unmasks) {
+      events.push(...punishUnmasker(world, actor, retaliation.id, worldMinute));
+    }
   }
 
   return events;
+}
+
+/** Unmasking is taboo: everyone else turns on the unmasker and sides with the player. */
+function punishUnmasker(
+  world: WorldState,
+  unmasker: UndergroundActor,
+  retaliationId: string,
+  worldMinute: number,
+): SimulationEvent[] {
+  const cause: RelationshipCause = { kind: "unmasking", id: retaliationId };
+  const events: SimulationEvent[] = [
+    ...moveRank(
+      world,
+      unmasker,
+      "worsen",
+      retaliationId,
+      worldMinute,
+      UNMASK_RANK_PERCENT,
+    ),
+  ];
+
+  for (const other of world.underground.actors) {
+    if (other.id === unmasker.id) {
+      continue;
+    }
+
+    events.push(
+      adjustRelationship(
+        world,
+        other.id,
+        unmasker.id,
+        { trust: UNMASK_PEER_TRUST },
+        cause,
+        worldMinute,
+      ),
+      adjustRelationship(
+        world,
+        other.id,
+        PLAYER_ACTOR_ID,
+        { trust: UNMASK_SYMPATHY_TRUST },
+        cause,
+        worldMinute,
+      ),
+    );
+  }
+
+  return events;
+}
+
+/**
+ * Escalating again against a target that is already watching you. The owner's
+ * grudge hardens, citing the escalation trace.
+ */
+export function applyProvocation(
+  world: WorldState,
+  targetId: string,
+  traceId: string,
+  worldMinute: number,
+): SimulationEvent[] {
+  const owner = world.underground.actors.find(
+    (candidate) => candidate.targetId === targetId,
+  );
+
+  if (!owner) {
+    return [];
+  }
+
+  return [
+    adjustRelationship(
+      world,
+      owner.id,
+      PLAYER_ACTOR_ID,
+      { grudge: PROVOCATION_GRUDGE, trust: PROVOCATION_TRUST },
+      { kind: "intrusion", id: traceId },
+      worldMinute,
+    ),
+  ];
 }
 
 /**
@@ -625,6 +824,7 @@ export function advanceUnderground(
       }
     }
 
+    events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
   }
 

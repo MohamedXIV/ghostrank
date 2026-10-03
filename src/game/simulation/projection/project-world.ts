@@ -8,6 +8,7 @@ import {
   type ContractObjectiveKind,
   type ContractStatus,
   type OperationState,
+  type RetaliationKind,
   type OpponentReactionKind,
   type OpponentReactionStatus,
   type UndergroundIncidentOutcome,
@@ -17,6 +18,7 @@ import {
 const FEED_LIMIT = 50;
 const INBOX_LIMIT = 30;
 const CONTRACT_LIMIT = 20;
+const RETALIATION_LIMIT = 20;
 
 export interface VisibleTarget {
   id: string;
@@ -108,12 +110,20 @@ export interface VisibleContract {
   resolvedWorldMinute?: number;
 }
 
+export interface VisibleRetaliation {
+  id: string;
+  actorHandle: string;
+  kind: RetaliationKind;
+  worldMinute: number;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
   stances: VisibleStance[];
   inbox: VisibleInbox;
   contracts: VisibleContract[];
+  retaliations: VisibleRetaliation[];
 }
 
 export interface WorldProjection {
@@ -255,12 +265,23 @@ function projectUnderground(
     }
   }
 
+  const retaliations: VisibleRetaliation[] = [...underground.retaliations]
+    .reverse()
+    .slice(0, RETALIATION_LIMIT)
+    .map((entry) => ({
+      id: entry.id,
+      actorHandle: handles.get(entry.actorId) ?? entry.actorId,
+      kind: entry.kind,
+      worldMinute: entry.worldMinute,
+    }));
+
   return {
     board,
     feed,
     stances,
     inbox: { messages: newestFirst, unread },
     contracts,
+    retaliations,
   };
 }
 
