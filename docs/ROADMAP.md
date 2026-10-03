@@ -127,6 +127,8 @@ Phase 3 has not started.
 
 ## Phase 3 — Underground Ecosystem
 
+**Status: planned / next. Tracked by #21.**
+
 Deliverables:
 - handles and ranking,
 - relationships,
@@ -145,6 +147,8 @@ Exit criteria:
 
 ## Phase 4 — Economy and Hardware
 
+**Status: planned / blocked by #21. Tracked by #22.**
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,
@@ -160,6 +164,8 @@ Exit criteria:
 - expensive equipment improves capability/scale without replacing skill.
 
 ## Phase 5 — AI Economy and Software Creation
+
+**Status: planned / blocked by #22. Tracked by #23.**
 
 Deliverables:
 - cloud/local model choices,
@@ -178,6 +184,8 @@ Exit criteria:
 
 ## Phase 6 — Run Threat and Physical Consequences
 
+**Status: planned / blocked by #23. Tracked by #24.**
+
 Deliverables:
 - authority investigations,
 - rival probes,
@@ -195,6 +203,8 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
+**Status: planned / blocked by #24. Tracked by #25.**
+
 Deliverables:
 - voluntary exit plan,
 - arrested/unmasked/missing/compromised endings,
@@ -209,6 +219,8 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
+**Status: planned / blocked by #25. Tracked by #26.**
+
 Deliverables:
 - broader NPC archetypes,
 - varied contracts,
@@ -222,6 +234,8 @@ Focus:
 breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
+
+**Status: planned / blocked by #26. Tracked by #27.**
 
 Deliverables:
 - onboarding,
@@ -240,9 +254,9 @@ Exit criteria:
 
 ## Phase 10 — Desktop Host / Packaging
 
-**Status: explicitly deferred. Tracked by #19.**
+**Status: explicitly deferred / blocked by #27. Tracked by #19.**
 
-Start only after Phase 9 is complete unless the project deliberately changes the platform decision.
+Start only after #27 (Phase 9 — Web Beta / Polish) is complete unless the project deliberately changes the platform decision.
 
 Deliverables:
 - reconcile final save contract with the Tauri SQLite adapter,
