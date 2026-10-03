@@ -3,6 +3,9 @@ import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   advanceUnderground,
   applyReactionRelationship,
+  contractDueMinute,
+  isObjectiveMet,
+  rewardContract,
   spreadPlayerFootprint,
 } from "@/game/simulation/systems/underground";
 import type {
@@ -60,6 +63,15 @@ export class CommandBus {
 
       case "readMessage":
         return this.readMessage(command.messageId);
+
+      case "acceptContract":
+        return this.acceptContract(command.contractId);
+
+      case "declineContract":
+        return this.declineContract(command.contractId);
+
+      case "deliverContract":
+        return this.deliverContract(command.contractId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -355,6 +367,117 @@ export class CommandBus {
           messageId: message.id,
           worldMinute: this.world.worldMinute,
         },
+      ],
+    };
+  }
+
+  private acceptContract(contractId: string): CommandResult {
+    const contract = this.world.underground.contracts.find(
+      (candidate) => candidate.id === contractId,
+    );
+
+    if (!contract) {
+      return this.failure("CONTRACT_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (
+      contract.status === "expired" ||
+      (contract.status === "offered" && minute > contract.expiresWorldMinute)
+    ) {
+      return this.failure("CONTRACT_EXPIRED");
+    }
+
+    if (contract.status !== "offered") {
+      return this.failure("CONTRACT_NOT_OFFERED");
+    }
+
+    contract.status = "accepted";
+    contract.acceptedWorldMinute = minute;
+    contract.dueWorldMinute = contractDueMinute(contract, minute);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ContractAccepted",
+          contractId: contract.id,
+          dueWorldMinute: contract.dueWorldMinute,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private declineContract(contractId: string): CommandResult {
+    const contract = this.world.underground.contracts.find(
+      (candidate) => candidate.id === contractId,
+    );
+
+    if (!contract) {
+      return this.failure("CONTRACT_NOT_FOUND");
+    }
+
+    if (contract.status !== "offered") {
+      return this.failure("CONTRACT_NOT_OFFERED");
+    }
+
+    contract.status = "declined";
+    contract.resolvedWorldMinute = this.world.worldMinute;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ContractDeclined",
+          contractId: contract.id,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private deliverContract(contractId: string): CommandResult {
+    const contract = this.world.underground.contracts.find(
+      (candidate) => candidate.id === contractId,
+    );
+
+    if (!contract) {
+      return this.failure("CONTRACT_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (
+      contract.status === "expired" ||
+      (contract.status === "accepted" &&
+        contract.dueWorldMinute !== undefined &&
+        minute > contract.dueWorldMinute)
+    ) {
+      return this.failure("CONTRACT_EXPIRED");
+    }
+
+    if (contract.status !== "accepted") {
+      return this.failure("CONTRACT_NOT_ACCEPTED");
+    }
+
+    if (!isObjectiveMet(this.world, contract)) {
+      return this.failure("OBJECTIVE_NOT_MET");
+    }
+
+    contract.status = "completed";
+    contract.resolvedWorldMinute = minute;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ContractDelivered",
+          contractId: contract.id,
+          worldMinute: minute,
+        },
+        ...rewardContract(this.world, contract, minute),
       ],
     };
   }

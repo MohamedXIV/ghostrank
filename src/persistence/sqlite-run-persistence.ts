@@ -79,6 +79,12 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "RumorSpread":
     case "MessageDelivered":
     case "MessageRead":
+    case "ContractOffered":
+    case "ContractAccepted":
+    case "ContractDeclined":
+    case "ContractDelivered":
+    case "ContractExpired":
+    case "PlayerRankChanged":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

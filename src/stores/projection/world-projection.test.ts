@@ -68,6 +68,7 @@ describe("world projection store", () => {
         feed: [],
         stances: [],
         inbox: { messages: [], unread: 0 },
+        contracts: [],
       },
     };
 

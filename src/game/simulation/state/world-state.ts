@@ -152,6 +152,29 @@ export interface UndergroundMessage {
   read: boolean;
 }
 
+export type ContractObjectiveKind = "recon-report" | "intrusion";
+export type ContractStatus =
+  | "offered"
+  | "accepted"
+  | "completed"
+  | "expired"
+  | "declined";
+
+export interface UndergroundContract {
+  id: string;
+  issuerId: string;
+  targetId: string;
+  objective: ContractObjectiveKind;
+  /** Recon reports only: how many services of the target must be known. */
+  requiredServices?: number;
+  status: ContractStatus;
+  offeredWorldMinute: number;
+  expiresWorldMinute: number;
+  acceptedWorldMinute?: number;
+  dueWorldMinute?: number;
+  resolvedWorldMinute?: number;
+}
+
 export interface UndergroundState {
   seed: number;
   lastTickMinute: number;
@@ -161,6 +184,7 @@ export interface UndergroundState {
   incidents: UndergroundIncident[];
   rumors: UndergroundRumor[];
   messages: UndergroundMessage[];
+  contracts: UndergroundContract[];
 }
 
 export interface WorldState {
@@ -229,6 +253,7 @@ function createInitialUnderground(
     incidents: initial?.incidents ? structuredClone(initial.incidents) : [],
     rumors: initial?.rumors ? structuredClone(initial.rumors) : [],
     messages: initial?.messages ? structuredClone(initial.messages) : [],
+    contracts: initial?.contracts ? structuredClone(initial.contracts) : [],
   };
 }
 

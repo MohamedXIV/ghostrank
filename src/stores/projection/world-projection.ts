@@ -108,6 +108,29 @@ export function syncWorldProjection(
     ]),
   );
 
+  const contractRows = Object.fromEntries(
+    projection.underground.contracts.map((contract) => [
+      contract.id,
+      {
+        issuerHandle: contract.issuerHandle,
+        targetId: contract.targetId,
+        targetHandle: contract.targetHandle,
+        objective: contract.objective,
+        status: contract.status,
+        expiresWorldMinute: contract.expiresWorldMinute,
+        ...(contract.requiredServices === undefined
+          ? {}
+          : { requiredServices: contract.requiredServices }),
+        ...(contract.dueWorldMinute === undefined
+          ? {}
+          : { dueWorldMinute: contract.dueWorldMinute }),
+        ...(contract.resolvedWorldMinute === undefined
+          ? {}
+          : { resolvedWorldMinute: contract.resolvedWorldMinute }),
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -123,6 +146,7 @@ export function syncWorldProjection(
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
     store.setTable("inbox", inboxRows);
+    store.setTable("contracts", contractRows);
     store.setCell(
       "meta",
       "inbox",

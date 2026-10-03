@@ -140,7 +140,13 @@ P1 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-rumors-messages.md`
 - the `readMessage` command shared by Terminal (`read <id>`) and GUI,
 - the player's observed footprint spreading through the target owner's network and shifting peer trust with rumor provenance.
 
-Still to deliver: contracts, forums, retaliation, the unmasking taboo, contextual reputation descriptors.
+P2 delivered (see `docs/superpowers/plans/2026-10-03-phase-3-contracts.md`):
+- trusted contacts offer time-limited contracts (recon report, intrusion) against real targets, never their own, at most three open at once,
+- `acceptContract` / `declineContract` / `deliverContract` shared by Terminal (`contract <accept|decline|deliver> <id>`) and GUI, costing no world time,
+- objectives verified from the evidence and traces the player already produces, never from a separate mission script,
+- delivering raises issuer trust and improves player rank with provenance; missing an accepted contract costs issuer trust; ignored offers lapse without penalty; rank never gates acceptance.
+
+Still to deliver: forums, retaliation, the unmasking taboo, contextual reputation descriptors.
 
 Deliverables:
 - handles and ranking,
