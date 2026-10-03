@@ -187,11 +187,11 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0)
+## Implementation status (Phase 4 P0–P1)
 
-The economy substrate is live. This section describes what the simulation
-actually does today; the sections above remain the design target for later
-slices.
+The economy substrate is live through P1. This section describes what the
+simulation actually does today; the sections above remain the design target for
+later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -207,8 +207,15 @@ slices.
   `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
   app, and costing no world time.
 - **Capability, not level.** Rig capability is *derived* as the sum of owned
-  hardware — it is never stored and never gates a target or a purchase. Later
-  systems (compute budgeting, builds) will read it; nothing today checks it to
-  allow or forbid an action, preserving "rank is reputation, not power."
+  hardware — it is never stored and never gates a target or a purchase.
+- **Compute budgeting (P1).** Capability's first consumer is operation speed:
+  survey reads network, inspect/escalate read compute, and an action costs
+  `max(1, ceil(base / capability))` world minutes above baseline (the starter
+  rig sits exactly at baseline, so it pays the untouched Phase 2 base table).
+  Disengagement is a deliberate manual exit and never scales. This is the
+  money-vs-time trade: hardware buys elapsed time back, requirements and
+  outcomes are untouched, and a weak rig is never slower than baseline. The
+  Market app shows the rig's current per-action minutes.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
-  wallet on legacy snapshots, so older saves resume cleanly.
+  wallet on legacy snapshots, so older saves resume cleanly. Durations derive at
+  action time, so there is nothing to migrate.

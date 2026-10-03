@@ -82,6 +82,12 @@ describe("world projection store", () => {
           storage: 1,
           network: 1,
         },
+        actionMinutes: {
+          survey: 12,
+          inspect: 2,
+          escalate: 2,
+          disengage: 3,
+        },
         hardware: [
           {
             id: "hw:1",
@@ -193,6 +199,12 @@ describe("world projection store", () => {
       vram: 0,
       storage: 1,
       network: 1,
+    });
+    expect(store.getRow("rig", "actionMinutes")).toEqual({
+      survey: 12,
+      inspect: 2,
+      escalate: 2,
+      disengage: 3,
     });
     expect(store.getTable("hardware")).toEqual({
       "hw:1": {

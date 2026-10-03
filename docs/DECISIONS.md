@@ -139,7 +139,15 @@ The player holds one `credits` balance plus an append-only value ledger. Every m
 
 Income begins with contract delivery, paying a deterministic amount — `80 + 40 × requiredServices` for a recon report, `260` for an intrusion. Hardware is a data-driven catalog across five capability axes (compute, memory, vram, storage, network); every run starts with a free secondhand workstation. Rig capability is derived as the sum of owned hardware, never stored, and never gates a target or a purchase.
 
-Accepted 2026-10-04 as the Phase 4 substrate. All payout figures and catalog costs are provisional tuning pending playtest; compute budgeting that will actually consume capability is deferred to a later slice.
+Accepted 2026-10-04 as the Phase 4 substrate. All payout figures and catalog costs are provisional tuning pending playtest.
+
+## D019 — Compute budgeting model (Phase 4 P1)
+
+Derived rig capability is consumed as operation speed, never as an availability gate. Action durations follow a fixed base table (`survey 12m, inspect 8m, escalate 5m, disengage 3m`); above baseline an action costs `max(1, ceil(base / capability))` world minutes, with `survey` on network and `inspect`/`escalate` on compute. Baseline capability is the starter rig's value of 1, so an unupgraded world produces exactly the Phase 2 timings. Disengagement is a deliberate manual exit and never scales with hardware.
+
+Duration is derived at action time from owned hardware, so it adds no state, no events and no save-schema surface.
+
+Accepted 2026-10-04. The base table, axis mapping and the division curve are provisional tuning; memory/vram/storage axes still have no consumer and remain open.
 
 ## Open decisions
 

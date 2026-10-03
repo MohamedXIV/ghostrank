@@ -38,6 +38,13 @@ const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   market: "MARKET // RIG",
 };
 
+const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
+  ["survey", "SURVEY"],
+  ["inspect", "INSPECT"],
+  ["escalate", "ESCALATE"],
+  ["disengage", "DISENGAGE"],
+];
+
 export function ComputerDesktop({
   runtime,
   onReturnToRoom,
@@ -218,9 +225,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         `> ${raw}`,
         "observe <target-id>  resolve a target profile",
         "op open <target-id>  start a recon-stage operation",
-        "survey <target-id>   discover one machine in the active operation (12m)",
-        "inspect <machine-id> inspect one known machine in the active operation (8m)",
-        "op escalate          cross the fictional recon boundary (5m)",
+        "survey <target-id>   discover one machine in the active operation (rig speed)",
+        "inspect <machine-id> inspect one known machine in the active operation (rig speed)",
+        "op escalate          cross the fictional recon boundary (rig speed)",
         "op exit              disengage from the active operation (3m)",
         "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
         "wait <minutes>       advance world time",
@@ -902,6 +909,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
   );
   const rig = useRow("rig", "capability", runtime.projection);
+  const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const ledgerTable = useTable("ledger", runtime.projection);
@@ -951,6 +959,22 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-label="Rig speed">
+        <span className="panel-label">RIG SPEED // EST. MINUTES PER ACTION</span>
+        <ul className="market-speed">
+          {RECON_ACTION_LABELS.map(([action, label]) => (
+            <li key={action}>
+              <span>{label}</span>
+              <strong>{Number(actionMinutes[action] ?? 0)}m</strong>
+            </li>
+          ))}
+        </ul>
+        <p className="market-hint">
+          Better hardware works faster. It never unlocks or blocks a target —
+          capability is speed and scale, not a level gate.
+        </p>
       </section>
 
       <section aria-label="Owned hardware">

@@ -11,6 +11,11 @@ import {
   type HardwareCapability,
 } from "@/game/simulation/systems/hardware";
 import {
+  RECON_ACTIONS,
+  actionDuration,
+  type ReconAction,
+} from "@/game/simulation/systems/compute";
+import {
   findCatalogItem,
   HARDWARE_CATALOG,
   MARKET_COUNTERPARTY,
@@ -194,6 +199,7 @@ export interface VisibleLedgerEntry {
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
+  actionMinutes: Record<ReconAction, number>;
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -506,9 +512,15 @@ function projectEconomy(
           : (handles.get(entry.counterparty) ?? entry.counterparty),
     }));
 
+  const capability = deriveRigCapability(state.economy);
+  const actionMinutes = Object.fromEntries(
+    RECON_ACTIONS.map((action) => [action, actionDuration(action, capability)]),
+  ) as Record<ReconAction, number>;
+
   return {
     credits: state.economy.credits,
-    capability: deriveRigCapability(state.economy),
+    capability,
+    actionMinutes,
     hardware,
     catalog,
     ledger,

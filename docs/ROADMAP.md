@@ -185,6 +185,12 @@ P0 substrate delivered (see `docs/superpowers/plans/2026-10-04-phase-4-economy-s
 - derived rig capability (the sum of owned hardware) projected read-only; capability is never stored and never gates a target or a purchase,
 - persistence: `economy` is optional in the schema and loads as an empty wallet on legacy saves.
 
+P1 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-compute-budgeting.md`):
+- rig capability now shortens the world time an operation action costs (survey reads network, inspect/escalate read compute; `max(1, ceil(base / capability))` above baseline), the money-vs-time trade made real,
+- the starter rig sits exactly at baseline, so every default world keeps the Phase 2 base timings; hardware is strictly an accelerator and disengagement never scales,
+- requirements and outcomes are untouched by hardware — no gates — and the Market app shows the rig's per-action minutes,
+- duration derives at action time: no new state, events, or save-schema surface.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

@@ -811,6 +811,42 @@ button {
   color: var(--warning);
 }
 
+.market-speed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-speed li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+.market-speed li span {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.market-speed li strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.market-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .market-empty {
   margin: 0;
   color: var(--muted);

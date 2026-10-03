@@ -245,6 +245,12 @@ export function syncWorldProjection(
         storage: projection.economy.capability.storage,
         network: projection.economy.capability.network,
       },
+      actionMinutes: {
+        survey: projection.economy.actionMinutes.survey,
+        inspect: projection.economy.actionMinutes.inspect,
+        escalate: projection.economy.actionMinutes.escalate,
+        disengage: projection.economy.actionMinutes.disengage,
+      },
     });
     store.setCell(
       "meta",

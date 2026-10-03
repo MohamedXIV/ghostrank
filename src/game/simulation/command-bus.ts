@@ -5,6 +5,11 @@ import {
   findCatalogItem,
 } from "@/content/hardware-catalog";
 import { transferValue } from "@/game/simulation/systems/economy";
+import { deriveRigCapability } from "@/game/simulation/systems/hardware";
+import {
+  actionDuration,
+  type ReconAction,
+} from "@/game/simulation/systems/compute";
 import {
   advanceUnderground,
   applyProvocation,
@@ -31,10 +36,6 @@ export interface CommandResult {
   error?: string;
 }
 
-const SURVEY_MINUTES = 12;
-const INSPECTION_MINUTES = 8;
-const ESCALATION_MINUTES = 5;
-const DISENGAGE_MINUTES = 3;
 const DEFENSIVE_WATCH_THRESHOLD = 5;
 
 export class CommandBus {
@@ -189,7 +190,7 @@ export class CommandBus {
       return this.failure("NO_NEW_MACHINE_EVIDENCE");
     }
 
-    const timeEvents = this.advanceWorldTime(SURVEY_MINUTES);
+    const timeEvents = this.advanceWorldTime(this.rigActionMinutes("survey"));
 
     this.recordEvidence({
       id: `machine-presence:${machine.id}`,
@@ -243,7 +244,7 @@ export class CommandBus {
       return this.failure("NO_NEW_SERVICE_EVIDENCE");
     }
 
-    const timeEvents = this.advanceWorldTime(INSPECTION_MINUTES);
+    const timeEvents = this.advanceWorldTime(this.rigActionMinutes("inspect"));
 
     this.recordEvidence({
       id: `service-presence:${service.id}`,
@@ -289,7 +290,9 @@ export class CommandBus {
         reaction.targetId === operation.targetId &&
         reaction.status === "active",
     );
-    const timeEvents = this.advanceWorldTime(ESCALATION_MINUTES);
+    const timeEvents = this.advanceWorldTime(
+      this.rigActionMinutes("escalate"),
+    );
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
 
@@ -336,7 +339,9 @@ export class CommandBus {
       return this.failure("NO_ACTIVE_OPERATION");
     }
 
-    const timeEvents = this.advanceWorldTime(DISENGAGE_MINUTES);
+    const timeEvents = this.advanceWorldTime(
+      this.rigActionMinutes("disengage"),
+    );
     const stage = operation.stage;
     const event: SimulationEvent = {
       type: "OperationDisengaged",
@@ -563,6 +568,10 @@ export class CommandBus {
         },
       ],
     };
+  }
+
+  private rigActionMinutes(action: ReconAction): number {
+    return actionDuration(action, deriveRigCapability(this.world.economy));
   }
 
   private advanceWorldTime(minutes: number): SimulationEvent[] {
