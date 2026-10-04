@@ -7,6 +7,7 @@ import {
 import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
 import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
+import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
@@ -1436,6 +1437,10 @@ export class CommandBus {
       // Builds complete on the clock, like upkeep: the same due minute lands
       // the same frozen outcome whether the wait was one command or ten.
       ...advanceBuilds(this.world, this.world.worldMinute),
+      // Phase 6 P1: authority case files are reviewed on the same boundaries.
+      // It runs before the ecosystem so a file opened by this tick's footprint
+      // surfaces evidence on the next boundary, not the one that created it.
+      ...advanceInvestigations(this.world, this.world.worldMinute),
       ...advanceUnderground(this.world, this.world.worldMinute),
     ];
   }

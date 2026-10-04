@@ -61,6 +61,35 @@ export function syncWorldProjection(
     ]),
   );
 
+  // Phase 6 P1 — authority case files. The file row carries only the band, and
+  // its evidence is flattened into its own table keyed by signal id, so the
+  // surface reads a list of noticed things rather than a number: `progress`,
+  // `sourceIds`, and the opening minute stay in the simulation.
+  const investigationRows = Object.fromEntries(
+    projection.investigations.map((investigation) => [
+      investigation.id,
+      {
+        targetId: investigation.targetId,
+        stage: investigation.stage,
+      },
+    ]),
+  );
+
+  const signalRows = Object.fromEntries(
+    projection.investigations.flatMap((investigation) =>
+      investigation.signals.map((signal) => [
+        signal.id,
+        {
+          investigationId: investigation.id,
+          targetId: investigation.targetId,
+          targetHandle: signal.targetHandle,
+          kind: signal.kind,
+          worldMinute: signal.worldMinute,
+        },
+      ]),
+    ),
+  );
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -443,6 +472,8 @@ export function syncWorldProjection(
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
     store.setTable("reactions", reactionRows);
+    store.setTable("investigations", investigationRows);
+    store.setTable("investigationSignals", signalRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);

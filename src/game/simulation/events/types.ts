@@ -3,6 +3,8 @@ import type { WorkflowOutcome } from "@/game/simulation/state/world-state";
 import type {
   ContractObjectiveKind,
   ForumSubjectKind,
+  InvestigationSignalKind,
+  InvestigationStage,
   LedgerCauseKind,
   LedgerDirection,
   OpponentReactionKind,
@@ -304,6 +306,17 @@ export type SimulationEvent =
       type: "BuildAborted";
       buildId: string;
       specId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "InvestigationAdvanced";
+      investigationId: string;
+      targetId: string;
+      /** The evidence item this review surfaced, citable in a postmortem. */
+      signalId: string;
+      kind: InvestigationSignalKind;
+      /** The visible band, derived from how much evidence has surfaced. */
+      stage: InvestigationStage;
       worldMinute: number;
     }
   | {

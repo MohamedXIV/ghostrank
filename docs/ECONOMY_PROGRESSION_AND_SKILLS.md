@@ -187,14 +187,15 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0–P1)
 
 The Phase 4 economy is live through P7, all of Phase 5 is live: the model
 substrate (P0), compute contention (P1), AI analysis (P2), the software forge
 (P3), and the marketplace-plus-NPC-AI slice (P4). Phase 6 has begun: P0 gave
-physical life its first shipped mechanics — relocation and safehouses. This
-section describes what the simulation actually does today; the sections above
-remain the design target for later slices.
+physical life its first shipped mechanics — relocation and safehouses — and P1
+gave the run its first threat that runs on the world's clock, authority
+investigations. This section describes what the simulation actually does today;
+the sections above remain the design target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -432,6 +433,30 @@ remain the design target for later slices.
   the same `rent` / `lease break` commands the Terminal and Market emit.
   Holding no lease remains the free baseline, and involuntary eviction stays
   instant — the world acting on the player is not the player choosing to travel.
+- **Authority investigations: a case file, not a meter (Phase 6 P1).** The
+  *Information and relationships* list's first threat now has machinery, and it
+  is deliberately the least numerical system in the game. A file opens when the
+  footprint the player already emitted against a target reaches the same five
+  that raise the target's own defensive watch, and its material is arithmetic
+  over that footprint plus one unit of follow-up per 360-minute review boundary
+  that found something new — **no roll, no seed, no difficulty score, no rank**.
+  Two identical histories at rank 1 and rank 999,999 produce identical files,
+  because reputation decides who talks about you and never what an authority's
+  paperwork contains (P2's rival probes are where rank earns visibility).
+  Inactivity is a real response: a review with nothing new adds nothing, so
+  laying low *cools* a file rather than resetting it, and nothing already
+  noticed is ever un-noticed. What the player receives is the design's own
+  evidence list — an unusual login, changed marketplace behavior, a message with
+  no sender — at most one item per boundary, described in the Underground app's
+  ATTENTION panel beside the social HEAT list. Pressure past the third band
+  (`probing` / `warming` / `converging`) keeps accruing as hidden truth nothing
+  consumes *yet*: Phase 6 P3's physical retaliation reads it as a targeting
+  input alongside P0's anonymity band, and P4's compromise reads both.
+  Relocation and safehouses are how a player answers it today — time and
+  distance, both already priced in world minutes — because a converging file
+  blocks nothing: no action, no target, no purchase. Threat is evidence, never
+  a percentage, and never a countdown: the projection carries only minutes that
+  already happened.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -443,7 +468,12 @@ remain the design target for later slices.
   legacy actor without `modelId` loads as an unassisted peer — the pre-P4
   ecosystem verbatim. Phase 6 P0 adds **nothing to persist**: presence is a read
   of `economy.housing`, so a legacy save resumes at the baseline room and a
-  stale lease id resolves there rather than fabricating a place. A claim's
+  stale lease id resolves there rather than fabricating a place. Phase 6 P1 adds
+  one optional array — `investigations` loads as `[]`, and its signals and their
+  ids likewise, so a pre-Phase-6 save resumes with no file open and the first
+  one it opens is derived from the footprint the save already carries, on the
+  boundary that material implies rather than on the minute the load happened. A
+  claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and
   do project, because they are the player's own ground truth.
