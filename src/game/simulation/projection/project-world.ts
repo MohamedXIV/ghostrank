@@ -31,6 +31,7 @@ import {
 } from "@/game/simulation/systems/builds";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import { deriveInvestigationStage } from "@/game/simulation/systems/investigations";
+import { probeArtifactOf } from "@/game/simulation/systems/probes";
 import {
   derivePresence,
   relocationMinutes,
@@ -86,6 +87,7 @@ import {
   type ContractStatus,
   type InvestigationSignalKind,
   type InvestigationStage,
+  type RivalProbeArtifactKind,
   type LedgerCauseKind,
   type LedgerDirection,
   type OperationState,
@@ -264,6 +266,24 @@ export interface VisibleInvestigation {
   targetId: string;
   stage: InvestigationStage;
   signals: VisibleInvestigationSignal[];
+}
+
+/**
+ * A rival probe's observable face (Phase 6 P2): which kind of thing you noticed
+ * and when. Deliberately three facts short of the record — `actorId` (whose
+ * curiosity it was), `subject` (which seat of your standing they aimed at), and
+ * `correct` (whether the read landed) — because none is observable from inside
+ * the fiction: you can notice a ping, you cannot notice what someone was
+ * *looking for* or that they were wrong about you. The tell is *derived* from
+ * the seat rather than shipped alongside it, so the surface shows the artifact
+ * and the inference from tell back to seat stays the player's work — and the
+ * projection cannot contradict the world, so a restored game shows exactly the
+ * tells it showed before.
+ */
+export interface VisibleProbe {
+  id: string;
+  artifactKind: RivalProbeArtifactKind;
+  worldMinute: number;
 }
 
 export interface VisibleHandle {
@@ -599,6 +619,12 @@ export interface WorldProjection {
    * projected before this slice existed.
    */
   investigations: VisibleInvestigation[];
+  /**
+   * Phase 6 P2: the tells rivals have left, newest first. Empty is the
+   * pre-Phase-6 baseline, so a world nobody is curious about projects exactly
+   * what it did before this slice existed.
+   */
+  probes: VisibleProbe[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1277,6 +1303,19 @@ function projectInvestigations(
   return visible;
 }
 
+/**
+ * Project the probe tells, newest first, and only the observable half of each
+ * record: who probed and whether they were right stay in the simulation, where
+ * P3 can be genuinely fooled by them.
+ */
+function projectProbes(state: WorldState): VisibleProbe[] {
+  return [...state.probes].reverse().map((probe) => ({
+    id: probe.id,
+    artifactKind: probeArtifactOf(probe.subject),
+    worldMinute: probe.worldMinute,
+  }));
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1368,6 +1407,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     },
     reactions,
     investigations: projectInvestigations(state, knownTargets),
+    probes: projectProbes(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),

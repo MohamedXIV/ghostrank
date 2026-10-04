@@ -208,6 +208,54 @@ export type InvestigationSignalKind =
   | "suspicious-message";
 
 /**
+ * The seat of the player's infrastructure a rival pointed an assistant at
+ * (Phase 6 P2). Names, three of them: which part of your standing was being
+ * mapped, which is what a tell actually feels like from the inside.
+ */
+export type RivalProbeSubject = "rig" | "dwelling" | "habits";
+
+/**
+ * The observable artifact a probe leaves behind (Phase 6 P2). The three kinds are
+ * the lines of `docs/GAME_DESIGN.md`'s evidence list that belong to *peers* —
+ * "strange probes", "calls", and "missing contacts" — deliberately disjoint from
+ * P1's authority vocabulary and from P3's physical one.
+ */
+export type RivalProbeArtifactKind =
+  | "probe-ping"
+  | "caller-question"
+  | "missing-contact";
+
+/**
+ * One rival probe attempt (Phase 6 P2): a named peer pointed an assistant at one
+ * seat of the player's infrastructure and formed a read.
+ *
+ * `correct` is the slice's hidden truth — whether that read matches reality —
+ * and it is deliberately *not* projected: you cannot observe someone else's
+ * belief, only the tell they left. It persists so a restored world keeps
+ * fooling the same rivals the same way, and so P3 can target the player using a
+ * rival's actual (possibly wrong) picture rather than a fresh roll.
+ *
+ * The lift itself is represented by the record, not by a stored scalar: which
+ * seats a given peer has correctly read is exactly "the prober's knowledge of
+ * the player's infrastructure standing", and keeping it as citable rows is what
+ * lets P5's postmortem fold probes into a chain.
+ */
+export interface RivalProbe {
+  id: string;
+  /** Hidden-truth-adjacent: who probed. Never projected — you see the tell. */
+  actorId: string;
+  /**
+   * Which seat was aimed at. This is the stored fact; the observable tell is
+   * *derived* from it by `probeArtifactOf`, so the record cannot contradict
+   * itself and a restored world shows exactly the tells it showed before.
+   */
+  subject: RivalProbeSubject;
+  /** Hidden truth: whether the read matched reality. Never projected. */
+  correct: boolean;
+  worldMinute: number;
+}
+
+/**
  * The player-visible band of a case file. Names, three of them, derived from
  * how many signals have surfaced — the `FootprintLevel`/`relationshipStance`
  * discipline, so there is no number anywhere to turn into a bar.
@@ -486,6 +534,14 @@ export interface WorldState {
    * a default world has no investigation and nothing to read.
    */
   investigations: Investigation[];
+  /**
+   * Rival probe attempts against the player (Phase 6 P2), rolled inside the
+   * ecosystem's own tick loop. Empty is the untouched pre-Phase-6 baseline: a
+   * world where nobody holds anything against the player never generates one, so
+   * every pre-P2 ecosystem roll re-runs byte-identical. `correct` on each record
+   * is hidden truth that never projects, and nothing outside P3 consumes it.
+   */
+  probes: RivalProbe[];
 }
 
 export interface InitialTargetState
@@ -507,6 +563,7 @@ export interface InitialWorldState {
   analysis?: AnalysisRecord[];
   builds?: InFlightBuild[];
   investigations?: Investigation[];
+  probes?: RivalProbe[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -637,5 +694,6 @@ export function createInitialWorldState(
     investigations: initial.investigations
       ? structuredClone(initial.investigations)
       : [],
+    probes: initial.probes ? structuredClone(initial.probes) : [],
   };
 }

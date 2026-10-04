@@ -103,6 +103,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "BuildCompleted":
     case "BuildAborted":
     case "InvestigationAdvanced":
+    case "RivalProbe":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

@@ -90,6 +90,20 @@ export function syncWorldProjection(
     ),
   );
 
+  // Phase 6 P2 — rival probes. Rows are the leaked tells only: a kind and a
+  // minute. The prober's id and whether their read landed exist in the
+  // simulation, are not observable, and must not reach the store even by
+  // accident — a test greps this table's JSON for exactly those absences.
+  const probeRows = Object.fromEntries(
+    projection.probes.map((probe) => [
+      probe.id,
+      {
+        artifactKind: probe.artifactKind,
+        worldMinute: probe.worldMinute,
+      },
+    ]),
+  );
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -474,6 +488,7 @@ export function syncWorldProjection(
     store.setTable("reactions", reactionRows);
     store.setTable("investigations", investigationRows);
     store.setTable("investigationSignals", signalRows);
+    store.setTable("probes", probeRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
