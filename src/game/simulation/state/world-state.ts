@@ -214,7 +214,8 @@ export type LedgerCauseKind =
   | "hardware"
   | "housing"
   | "upkeep"
-  | "license";
+  | "license"
+  | "tool";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -235,6 +236,21 @@ export interface OwnedHardware {
   acquiredWorldMinute: number;
 }
 
+/**
+ * An owned player-tool instance. The author handle is captured at acquisition
+ * so provenance survives a save/load round-trip. Effect is derived from
+ * `catalogId`, never stored.
+ */
+export interface OwnedPlayerTool {
+  id: string;
+  catalogId: string;
+  /** Provenance: the author's handle at the time of purchase. */
+  author: string;
+  /** Credits paid when this copy was acquired (for resale context). */
+  paidCost: number;
+  acquiredWorldMinute: number;
+}
+
 export interface EconomyState {
   credits: number;
   ledger: ValueLedgerEntry[];
@@ -246,6 +262,12 @@ export interface EconomyState {
    * list is the free baseline: no recurring license fees, no software lift.
    */
   software: string[];
+  /**
+   * Owned player-tool instances (authored artifacts). Each contributes a
+   * SoftwareEffect permanently with no recurring fee; an empty list is the
+   * baseline.
+   */
+  playerTools: OwnedPlayerTool[];
 }
 
 export interface WorldState {
@@ -336,6 +358,9 @@ function createInitialEconomy(
     hardware: initial?.hardware ? structuredClone(initial.hardware) : [],
     housing: initial?.housing ?? null,
     software: initial?.software ? [...initial.software] : [],
+    playerTools: initial?.playerTools
+      ? structuredClone(initial.playerTools)
+      : [],
   };
 }
 

@@ -19,9 +19,11 @@ import {
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  buyPlayerToolFromGui,
   disableSoftwareFromGui,
   enableSoftwareFromGui,
   rentHousingFromGui,
+  sellPlayerToolFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -240,6 +242,8 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "lease break          move out and return to the free baseline",
         "use <software-id>    run a premium tool (recurring license fee)",
         "stop <software-id>   stop a tool (its fee stops with it)",
+        "buytool <tool-id>    buy an authored player tool (one-time, carries provenance)",
+        "selltool <tool-id>   resell an owned copy (recovers part of the price)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -321,6 +325,10 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "license activated // recurring fee starts at the next day";
     case "disableSoftware":
       return "license stopped // fee stops with it";
+    case "buyPlayerTool":
+      return "player tool acquired // author provenance recorded";
+    case "sellPlayerTool":
+      return "player tool sold // resale credits recovered";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -937,10 +945,13 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const scale = useRow("rig", "scale", runtime.projection);
   const lease = useRow("rig", "lease", runtime.projection);
   const softwareLift = useRow("rig", "softwareLift", runtime.projection);
+  const playerToolLift = useRow("rig", "playerToolLift", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const housingTable = useTable("housing", runtime.projection);
   const softwareTable = useTable("software", runtime.projection);
+  const ownedToolsTable = useTable("ownedTools", runtime.projection);
+  const toolListingsTable = useTable("toolListings", runtime.projection);
   const ledgerTable = useTable("ledger", runtime.projection);
 
   const capability = [
@@ -952,14 +963,36 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   ] as const;
 
   const liftRows = [
-    ["compute", Number(lease.compute ?? 0) + Number(softwareLift.compute ?? 0)],
-    ["memory", Number(lease.memory ?? 0) + Number(softwareLift.memory ?? 0)],
-    ["vram", Number(lease.vram ?? 0) + Number(softwareLift.vram ?? 0)],
+    [
+      "compute",
+      Number(lease.compute ?? 0) +
+        Number(softwareLift.compute ?? 0) +
+        Number(playerToolLift.compute ?? 0),
+    ],
+    [
+      "memory",
+      Number(lease.memory ?? 0) +
+        Number(softwareLift.memory ?? 0) +
+        Number(playerToolLift.memory ?? 0),
+    ],
+    [
+      "vram",
+      Number(lease.vram ?? 0) +
+        Number(softwareLift.vram ?? 0) +
+        Number(playerToolLift.vram ?? 0),
+    ],
     [
       "storage",
-      Number(lease.storage ?? 0) + Number(softwareLift.storage ?? 0),
+      Number(lease.storage ?? 0) +
+        Number(softwareLift.storage ?? 0) +
+        Number(playerToolLift.storage ?? 0),
     ],
-    ["network", Number(lease.network ?? 0) + Number(softwareLift.network ?? 0)],
+    [
+      "network",
+      Number(lease.network ?? 0) +
+        Number(softwareLift.network ?? 0) +
+        Number(playerToolLift.network ?? 0),
+    ],
   ] as const;
 
   const ownedHardware = Object.entries(hardwareTable).sort(
@@ -983,6 +1016,18 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     ([idA, a], [idB, b]) =>
       Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
       idA.localeCompare(idB),
+  );
+
+  const ownedTools = Object.entries(ownedToolsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) -
+        Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const toolListings = Object.entries(toolListingsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
   );
 
   const ledger = Object.entries(ledgerTable).sort(
@@ -1018,7 +1063,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </ul>
         {liftRows.some(([, value]) => Number(value ?? 0) > 0) && (
           <p className="market-hint">
-            Includes lease + software lift:{" "}
+            Includes lease + software + tool lift:{" "}
             {liftRows
               .filter(([, value]) => Number(value ?? 0) > 0)
               .map(([label, value]) => `${label} +${Number(value ?? 0)}`)
@@ -1274,6 +1319,123 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           costs nothing; only each world-day boundary bills. A fee you cannot
           pay just lapses that one license. Tools never unlock or block a
           target. No debt, no gate.
+        </p>
+      </section>
+
+      <section aria-label="Player tools">
+        <span className="panel-label">PLAYER TOOLS // ONE-TIME</span>
+        {ownedTools.length === 0 && toolListings.length === 0 ? (
+          <p className="market-empty">Nothing authored is on offer.</p>
+        ) : (
+          <ul className="market-catalog">
+            {ownedTools.map(([id, entry]) => {
+              const factor = Number(entry.discountFactor ?? 1);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+              const resale = Number(entry.resaleValue ?? 0);
+
+              return (
+                <li key={id} className="is-owned">
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? entry.catalogId ?? id)}
+                    </span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      by {String(entry.author ?? "unknown")} · paid{" "}
+                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
+                      sells {resale.toLocaleString("en-US")} cr ·{" "}
+                      {formatWorldTime(
+                        Number(entry.acquiredWorldMinute ?? 0),
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    title="Resell this copy to the fence (no upkeep is lost)"
+                    onClick={() => runtime.execute(sellPlayerToolFromGui(id))}
+                  >
+                    SELL
+                  </button>
+                </li>
+              );
+            })}
+            {toolListings.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const affordable = credits >= cost;
+              const factor = Number(entry.discountFactor ?? 1);
+              const owned = Number(entry.ownedCount ?? 0);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={`listing-${id}`} className={owned > 0 ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      by {String(entry.author ?? "unknown")} ·{" "}
+                      {cost.toLocaleString("en-US")} cr one-time
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Buy this authored copy (one-time, no upkeep)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyPlayerToolFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Authored tools are property, not rent: pay once, keep the lift with no
+          daily fee, and resell to the fence for half the price you paid. Each
+          copy carries its author&apos;s handle, so every trade is a named edge in
+          the scene&apos;s value graph. Like every other layer, tools are a lift —
+          never a gate.
         </p>
       </section>
 

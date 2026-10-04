@@ -12,11 +12,20 @@ import {
   deriveSoftwareCapability,
   effectiveCapability,
 } from "@/game/simulation/systems/housing";
+import {
+  combinedActionDurationFactor,
+  derivePlayerToolCapability,
+} from "@/game/simulation/systems/tools";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import { HOUSING_CATALOG } from "@/content/housing-catalog";
 import {
+  PLAYER_TOOL_CATALOG,
+  findPlayerToolItem,
+  resaleValue,
+} from "@/content/player-tool-catalog";
+import {
   SOFTWARE_CATALOG,
-  actionDurationFactor,
+  type SoftwareEffect,
 } from "@/content/software-catalog";
 import {
   RECON_ACTIONS,
@@ -225,17 +234,46 @@ export interface VisibleSoftwareListing {
   active: boolean;
 }
 
+/** A copy of an authored tool the player currently owns. */
+export interface VisibleOwnedTool {
+  id: string;
+  catalogId: string;
+  label: string;
+  /** Provenance carried from the catalog into the projection. */
+  author: string;
+  paidCost: number;
+  resaleValue: number;
+  acquiredWorldMinute: number;
+  capability: HardwareCapability | null;
+  discountFactor: number | null;
+}
+
+/** A player-tool listing offered in the market panel. */
+export interface VisiblePlayerToolListing {
+  id: string;
+  label: string;
+  author: string;
+  cost: number;
+  ownedCount: number;
+  capability: HardwareCapability | null;
+  discountFactor: number | null;
+}
+
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
   lease: HardwareCapability;
   software: HardwareCapability;
+  /** Combined capability lift from all owned player tools. */
+  playerTools: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
   discoveryScope: number;
   currentHousingId: string | null;
   dailyCost: number;
   housing: VisibleHousing[];
   softwareListings: VisibleSoftwareListing[];
+  ownedTools: VisibleOwnedTool[];
+  toolListings: VisiblePlayerToolListing[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -550,8 +588,9 @@ function projectEconomy(
 
   const lease = deriveLeaseCapability(state.economy);
   const software = deriveSoftwareCapability(state.economy);
+  const playerTools = derivePlayerToolCapability(state.economy);
   const capability = effectiveCapability(state.economy);
-  const factor = actionDurationFactor(state.economy.software);
+  const factor = combinedActionDurationFactor(state.economy);
   const actionMinutes = Object.fromEntries(
     RECON_ACTIONS.map((action) => [
       action,
@@ -582,17 +621,66 @@ function projectEconomy(
     }),
   );
 
+  const ownedToolCounts = new Map<string, number>();
+
+  for (const owned of state.economy.playerTools) {
+    ownedToolCounts.set(
+      owned.catalogId,
+      (ownedToolCounts.get(owned.catalogId) ?? 0) + 1,
+    );
+  }
+
+  const ownedTools: VisibleOwnedTool[] = state.economy.playerTools.map(
+    (owned) => {
+      const item = findPlayerToolItem(owned.catalogId);
+      const effect: SoftwareEffect | undefined = item?.effect;
+
+      return {
+        id: owned.id,
+        catalogId: owned.catalogId,
+        label: item?.label ?? owned.catalogId,
+        author: owned.author,
+        paidCost: owned.paidCost,
+        resaleValue: resaleValue(owned.paidCost),
+        acquiredWorldMinute: owned.acquiredWorldMinute,
+        capability:
+          effect?.kind === "capability" ? { ...effect.capability } : null,
+        discountFactor:
+          effect?.kind === "modifier" ? effect.discount.factor : null,
+      };
+    },
+  );
+
+  const toolListings: VisiblePlayerToolListing[] = PLAYER_TOOL_CATALOG.map(
+    (item) => ({
+      id: item.id,
+      label: item.label,
+      author: item.author,
+      cost: item.cost,
+      ownedCount: ownedToolCounts.get(item.id) ?? 0,
+      capability:
+        item.effect.kind === "capability"
+          ? { ...item.effect.capability }
+          : null,
+      discountFactor:
+        item.effect.kind === "modifier" ? item.effect.discount.factor : null,
+    }),
+  );
+
   return {
     credits: state.economy.credits,
     capability,
     lease,
     software,
+    playerTools,
     actionMinutes,
     discoveryScope: discoveryScope(capability.memory),
     currentHousingId: state.economy.housing,
     dailyCost: recurringDailyCost(state.economy.housing, state.economy.software),
     housing,
     softwareListings,
+    ownedTools,
+    toolListings,
     hardware,
     catalog,
     ledger,

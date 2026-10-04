@@ -175,6 +175,14 @@ The only new state is `economy.software: string[]` (active ids); legacy saves de
 
 Accepted 2026-10-04 as the P4 slice. License costs, capability contributions, and discount factors are provisional tuning; tool authorship/provenance, player-tool trading, and vram-consuming local-model tools remain open for later slices.
 
+## D023 — Tool authorship and provenance model (Phase 4 P5)
+
+Player tools are authored artifacts, deliberately the *opposite economic shape* from P4 licenses: **property, not rent**. A one-time purchase debits the wallet to the tool's named author (ledger cause `tool`, counterparty = the author handle — the value ledger's first person-to-person artifact edges), there is no daily fee, and a held tool can never lapse. Selling a copy credits `floor(paid × 0.5)` through an offline `fence`; resale values the stored `paidCost`, not the current catalog price, so retuning never re-values inventory. Owned tools reuse the exact `SoftwareEffect` shape and combinators as licenses: capability folds into `effectiveCapability` (hardware + lease + licenses + tools) and modifier factors compose with license factors through `combineFactors`, floored once at 0.1 — so P1 speed and P2 breadth consume the layer with no new mechanics, and an empty inventory is the untouched pre-P5 baseline.
+
+Each copy stores its catalog id, author, paid cost, and acquisition minute; the author is captured at purchase so provenance survives later catalog retuning. Instance ids are collision-safe across resale history (max-suffix, not list length). The only new state is `economy.playerTools: OwnedPlayerTool[]`; legacy saves default to `[]`, and `advanceUpkeep` never sees tools by construction.
+
+Accepted 2026-10-04 as the P5 slice. Catalog authors, prices, resale rate, and effects are provisional tuning; author→buyer chains across simulated peers, multi-hop digital-value graphs, tools as contract rewards or stolen goods, and player-driven marketplaces remain open for later slices.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

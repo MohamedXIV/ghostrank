@@ -212,6 +212,23 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "PlayerToolAcquired";
+      toolId: string;
+      catalogId: string;
+      /** Provenance edge: the author this copy was bought from. */
+      author: string;
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "PlayerToolSold";
+      toolId: string;
+      catalogId: string;
+      author: string;
+      proceeds: number;
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

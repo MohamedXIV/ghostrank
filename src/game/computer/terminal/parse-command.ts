@@ -74,6 +74,18 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         softwareId,
       }));
 
+    case "buytool":
+      return singleIdCommand(args, (toolId) => ({
+        type: "buyPlayerTool",
+        toolId,
+      }));
+
+    case "selltool":
+      return singleIdCommand(args, (toolId) => ({
+        type: "sellPlayerTool",
+        toolId,
+      }));
+
     case "op":
       return parseOperationCommand(args);
 

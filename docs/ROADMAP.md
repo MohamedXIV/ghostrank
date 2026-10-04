@@ -208,6 +208,12 @@ P4 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-software-market.md`
 - each obligation is all-or-nothing: an unpayable license lapses just that one tool (no debt, no penalty, re-runnable) while the rest keep running — software is a lift, never a punishment,
 - `use <id>` / `stop <id>` shared by Terminal and the Market SOFTWARE panel (RUN/STOP, combined daily upkeep in the wallet, lease + software lift annotated on RIG CAPABILITY); the only new state is a `software: string[]` id list that legacy saves default to empty.
 
+P5 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-tool-authorship.md`):
+- **tool authorship/provenance** and **buying/selling player tools** — authored artifacts (`src/content/player-tool-catalog.ts`) each credited to a named author handle, reusing the exact P4 `SoftwareEffect` shape through shared combinators, so no new effect mechanics,
+- tools are *property, not rent*: a one-time purchase debited to the author (ledger cause `tool`, counterparty = author — the value graph gains its first named edges) and a resale credited through a `fence` for `floor(paid × 0.5)`, so retuning prices never re-values a copy already owned — and with no upkeep, a held tool can never lapse or bill,
+- the lift flows through the same single capability source: `effectiveCapability` becomes hardware + lease + licenses + owned tools, and a `combinedActionDurationFactor` composes license × tool shortcuts with the 0.1 floor applied once, feeding P1 speed and P2 breadth untouched,
+- `buytool <tool-id>` / `selltool <instance-id>` shared by Terminal and the Market PLAYER TOOLS panel (owned copies show author, paid price, resale value and SELL; listings show `by <author> · X cr one-time` and BUY); owned-tool ids stay unique across buy/sell/rebuy cycles, and the only new state is `economy.playerTools`, legacy-defaulted to `[]`.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

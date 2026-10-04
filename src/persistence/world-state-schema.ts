@@ -172,7 +172,14 @@ const undergroundSchema = z.object({
 });
 
 const ledgerCauseSchema = z.object({
-  kind: z.enum(["contract", "hardware", "housing", "upkeep", "license"]),
+  kind: z.enum([
+    "contract",
+    "hardware",
+    "housing",
+    "upkeep",
+    "license",
+    "tool",
+  ]),
   id: z.string().min(1),
 });
 
@@ -192,12 +199,21 @@ const ownedHardwareSchema = z.object({
   acquiredWorldMinute: z.number().int().nonnegative(),
 });
 
+const ownedPlayerToolSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  author: z.string().min(1),
+  paidCost: z.number().int().nonnegative(),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
 const economySchema = z.object({
   credits: z.number().int().nonnegative(),
   ledger: z.array(valueLedgerEntrySchema).default([]),
   hardware: z.array(ownedHardwareSchema).default([]),
   housing: z.string().min(1).nullable().default(null),
   software: z.array(z.string().min(1)).default([]),
+  playerTools: z.array(ownedPlayerToolSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -259,6 +275,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       hardware: [],
       housing: null,
       software: [],
+      playerTools: [],
     },
   };
 });

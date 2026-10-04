@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  buyPlayerToolFromGui,
   disableSoftwareFromGui,
   enableSoftwareFromGui,
   rentHousingFromGui,
+  sellPlayerToolFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 
@@ -116,6 +118,59 @@ describe("use / stop software commands", () => {
       "use software-net-monitor software-auto-recon",
       "stop",
       "stop a b",
+    ]) {
+      expect(parseTerminalCommand(input)).toEqual({
+        ok: false,
+        error: "INVALID_ARGUMENT",
+      });
+    }
+  });
+});
+
+describe("buytool / selltool commands", () => {
+  it("shares buyPlayerTool between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("buytool tool-ghost-loader");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "buyPlayerTool", toolId: "tool-ghost-loader" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(buyPlayerToolFromGui("tool-ghost-loader")).toEqual(terminal.command);
+  });
+
+  it("shares sellPlayerTool between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("selltool tool:1");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "sellPlayerTool", toolId: "tool:1" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(sellPlayerToolFromGui("tool:1")).toEqual(terminal.command);
+  });
+
+  it("keeps buytool distinct from the hardware buy verb", () => {
+    expect(parseTerminalCommand("buytool cpu-overclock")).toEqual({
+      ok: true,
+      command: { type: "buyPlayerTool", toolId: "cpu-overclock" },
+    });
+    expect(parseTerminalCommand("buy cpu-overclock")).toEqual({
+      ok: true,
+      command: { type: "buyHardware", catalogId: "cpu-overclock" },
+    });
+  });
+
+  it("rejects malformed tool arguments", () => {
+    for (const input of [
+      "buytool",
+      "buytool tool-ghost-loader tool-paranoid-scraper",
+      "selltool",
+      "selltool a b",
     ]) {
       expect(parseTerminalCommand(input)).toEqual({
         ok: false,

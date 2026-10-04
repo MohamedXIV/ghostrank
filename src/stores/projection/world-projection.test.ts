@@ -133,6 +133,13 @@ describe("world projection store", () => {
           storage: 0,
           network: 0,
         },
+        playerTools: {
+          compute: 2,
+          memory: 1,
+          vram: 0,
+          storage: 0,
+          network: 0,
+        },
         softwareListings: [
           {
             id: "software-net-monitor",
@@ -155,6 +162,51 @@ describe("world projection store", () => {
             capability: null,
             discountFactor: 0.85,
             active: true,
+          },
+        ],
+        ownedTools: [
+          {
+            id: "tool:1",
+            catalogId: "tool-ghost-loader",
+            label: "Ghost Loader",
+            author: "hexwidow",
+            paidCost: 1200,
+            resaleValue: 600,
+            acquiredWorldMinute: 25,
+            capability: {
+              compute: 2,
+              memory: 1,
+              vram: 0,
+              storage: 0,
+              network: 0,
+            },
+            discountFactor: null,
+          },
+        ],
+        toolListings: [
+          {
+            id: "tool-ghost-loader",
+            label: "Ghost Loader",
+            author: "hexwidow",
+            cost: 1200,
+            ownedCount: 1,
+            capability: {
+              compute: 2,
+              memory: 1,
+              vram: 0,
+              storage: 0,
+              network: 0,
+            },
+            discountFactor: null,
+          },
+          {
+            id: "tool-silent-dedup",
+            label: "Silent Dedup Daemon",
+            author: "cipher-priest",
+            cost: 900,
+            ownedCount: 0,
+            capability: null,
+            discountFactor: 0.9,
           },
         ],
         hardware: [
@@ -293,6 +345,55 @@ describe("world projection store", () => {
       vram: 0,
       storage: 0,
       network: 0,
+    });
+    expect(store.getRow("rig", "playerToolLift")).toEqual({
+      compute: 2,
+      memory: 1,
+      vram: 0,
+      storage: 0,
+      network: 0,
+    });
+    expect(store.getTable("ownedTools")).toEqual({
+      "tool:1": {
+        catalogId: "tool-ghost-loader",
+        label: "Ghost Loader",
+        author: "hexwidow",
+        paidCost: 1200,
+        resaleValue: 600,
+        acquiredWorldMinute: 25,
+        compute: 2,
+        memory: 1,
+        vram: 0,
+        storage: 0,
+        network: 0,
+        discountFactor: 1,
+      },
+    });
+    expect(store.getTable("toolListings")).toEqual({
+      "tool-ghost-loader": {
+        label: "Ghost Loader",
+        author: "hexwidow",
+        cost: 1200,
+        ownedCount: 1,
+        compute: 2,
+        memory: 1,
+        vram: 0,
+        storage: 0,
+        network: 0,
+        discountFactor: 1,
+      },
+      "tool-silent-dedup": {
+        label: "Silent Dedup Daemon",
+        author: "cipher-priest",
+        cost: 900,
+        ownedCount: 0,
+        compute: 0,
+        memory: 0,
+        vram: 0,
+        storage: 0,
+        network: 0,
+        discountFactor: 0.9,
+      },
     });
     expect(store.getTable("software")).toEqual({
       "software-net-monitor": {

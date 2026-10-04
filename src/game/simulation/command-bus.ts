@@ -7,13 +7,21 @@ import {
 import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
 import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
+import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
+import {
+  FENCE_COUNTERPARTY,
+  findPlayerToolItem,
+  resaleValue,
+} from "@/content/player-tool-catalog";
 import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
 import { discoveryScope } from "@/game/simulation/systems/scale";
-import { actionDurationFactor, findSoftwareItem } from "@/content/software-catalog";
+import {
+  findSoftwareItem,
+} from "@/content/software-catalog";
 import {
   advanceUnderground,
   applyProvocation,
@@ -30,6 +38,7 @@ import type {
   OpponentReaction,
   OperationTrace,
   OwnedHardware,
+  OwnedPlayerTool,
   TargetState,
   WorldState,
 } from "@/game/simulation/state/world-state";
@@ -99,6 +108,12 @@ export class CommandBus {
 
       case "disableSoftware":
         return this.disableSoftware(command.softwareId);
+
+      case "buyPlayerTool":
+        return this.buyPlayerTool(command.toolId);
+
+      case "sellPlayerTool":
+        return this.sellPlayerTool(command.toolId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -707,11 +722,125 @@ export class CommandBus {
     };
   }
 
+  private buyPlayerTool(toolId: string): CommandResult {
+    const item = findPlayerToolItem(toolId);
+
+    if (!item) {
+      return this.failure("TOOL_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "tool",
+      causeId: item.id,
+      counterparty: item.author,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedPlayerTool = {
+      id: this.nextToolId(),
+      catalogId: item.id,
+      author: item.author,
+      paidCost: item.cost,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.playerTools.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "PlayerToolAcquired",
+          toolId: owned.id,
+          catalogId: owned.catalogId,
+          author: owned.author,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private sellPlayerTool(toolId: string): CommandResult {
+    const owned = this.world.economy.playerTools.find(
+      (candidate) => candidate.id === toolId,
+    );
+
+    if (!owned) {
+      return this.failure("TOOL_NOT_OWNED");
+    }
+
+    const minute = this.world.worldMinute;
+    const proceeds = resaleValue(owned.paidCost);
+
+    // Resale credits the player and records a named edge back to the author,
+    // then the copy leaves the inventory. transferValue cannot push credits
+    // negative and a credit only ever grows the balance, so this always moves.
+    const payout = transferValue(this.world, {
+      direction: "credit",
+      amount: proceeds,
+      causeKind: "tool",
+      causeId: owned.catalogId,
+      counterparty: FENCE_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    this.world.economy.playerTools = this.world.economy.playerTools.filter(
+      (candidate) => candidate.id !== owned.id,
+    );
+
+    return {
+      ok: true,
+      events: [
+        ...(payout ? [payout] : []),
+        {
+          type: "PlayerToolSold",
+          toolId: owned.id,
+          catalogId: owned.catalogId,
+          author: owned.author,
+          proceeds,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Next owned-tool id. Tools can be sold back, so a plain length counter would
+   * reuse the id of an already-sold copy; take the highest existing suffix and
+   * step past it so ids stay unique for the run, even after resales.
+   */
+  private nextToolId(): string {
+    let max = 0;
+
+    for (const owned of this.world.economy.playerTools) {
+      const suffix = Number(owned.id.slice(owned.id.lastIndexOf(":") + 1));
+
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    }
+
+    return `tool:${max + 1}`;
+  }
+
   private rigActionMinutes(action: ReconAction): number {
     return actionDuration(
       action,
       effectiveCapability(this.world.economy),
-      actionDurationFactor(this.world.economy.software),
+      combinedActionDurationFactor(this.world.economy),
     );
   }
 

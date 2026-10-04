@@ -57,6 +57,14 @@ export type SimulationCommand =
       softwareId: string;
     }
   | {
+      type: "buyPlayerTool";
+      toolId: string;
+    }
+  | {
+      type: "sellPlayerTool";
+      toolId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

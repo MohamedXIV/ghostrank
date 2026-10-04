@@ -33,3 +33,17 @@ export function disableSoftwareFromGui(softwareId: string): SimulationCommand {
     softwareId,
   };
 }
+
+export function buyPlayerToolFromGui(toolId: string): SimulationCommand {
+  return {
+    type: "buyPlayerTool",
+    toolId,
+  };
+}
+
+export function sellPlayerToolFromGui(toolId: string): SimulationCommand {
+  return {
+    type: "sellPlayerTool",
+    toolId,
+  };
+}

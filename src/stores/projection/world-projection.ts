@@ -247,6 +247,44 @@ export function syncWorldProjection(
     ]),
   );
 
+  const ownedToolRows = Object.fromEntries(
+    projection.economy.ownedTools.map((owned) => [
+      owned.id,
+      {
+        catalogId: owned.catalogId,
+        label: owned.label,
+        author: owned.author,
+        paidCost: owned.paidCost,
+        resaleValue: owned.resaleValue,
+        acquiredWorldMinute: owned.acquiredWorldMinute,
+        compute: owned.capability?.compute ?? 0,
+        memory: owned.capability?.memory ?? 0,
+        vram: owned.capability?.vram ?? 0,
+        storage: owned.capability?.storage ?? 0,
+        network: owned.capability?.network ?? 0,
+        discountFactor: owned.discountFactor ?? 1,
+      },
+    ]),
+  );
+
+  const toolListingRows = Object.fromEntries(
+    projection.economy.toolListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        author: listing.author,
+        cost: listing.cost,
+        ownedCount: listing.ownedCount,
+        compute: listing.capability?.compute ?? 0,
+        memory: listing.capability?.memory ?? 0,
+        vram: listing.capability?.vram ?? 0,
+        storage: listing.capability?.storage ?? 0,
+        network: listing.capability?.network ?? 0,
+        discountFactor: listing.discountFactor ?? 1,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -271,6 +309,8 @@ export function syncWorldProjection(
     store.setTable("ledger", ledgerRows);
     store.setTable("housing", housingRows);
     store.setTable("software", softwareRows);
+    store.setTable("ownedTools", ownedToolRows);
+    store.setTable("toolListings", toolListingRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(
       "meta",
@@ -314,6 +354,13 @@ export function syncWorldProjection(
         vram: projection.economy.software.vram,
         storage: projection.economy.software.storage,
         network: projection.economy.software.network,
+      },
+      playerToolLift: {
+        compute: projection.economy.playerTools.compute,
+        memory: projection.economy.playerTools.memory,
+        vram: projection.economy.playerTools.vram,
+        storage: projection.economy.playerTools.storage,
+        network: projection.economy.playerTools.network,
       },
     });
     store.setCell(

@@ -73,8 +73,13 @@ export function findSoftwareItem(
   return SOFTWARE_CATALOG.find((item) => item.id === softwareId);
 }
 
-export function softwareCapability(
-  activeIds: readonly string[],
+/**
+ * Fold a set of software effects into one capability contribution. Capability
+ * effects add their axes; modifier effects contribute nothing here (they act on
+ * durations, not raw capability). An empty set is the untouched baseline.
+ */
+export function combineCapabilities(
+  effects: readonly SoftwareEffect[],
 ): HardwareCapability {
   const total: HardwareCapability = {
     compute: 0,
@@ -84,19 +89,52 @@ export function softwareCapability(
     network: 0,
   };
 
-  for (const id of activeIds) {
-    const item = findSoftwareItem(id);
-    if (!item || item.effect.kind !== "capability") {
+  for (const effect of effects) {
+    if (effect.kind !== "capability") {
       continue;
     }
-    total.compute += item.effect.capability.compute;
-    total.memory += item.effect.capability.memory;
-    total.vram += item.effect.capability.vram;
-    total.storage += item.effect.capability.storage;
-    total.network += item.effect.capability.network;
+    total.compute += effect.capability.compute;
+    total.memory += effect.capability.memory;
+    total.vram += effect.capability.vram;
+    total.storage += effect.capability.storage;
+    total.network += effect.capability.network;
   }
 
   return total;
+}
+
+/**
+ * Combine the multiplicative shortcuts in a set of effects. Modifier factors
+ * stack multiplicatively and are floored so automation can never make work
+ * free — the one-minute minimum still belongs to the P1 rule. With no modifier
+ * effects the factor is exactly 1.
+ */
+export function combineFactors(
+  effects: readonly SoftwareEffect[],
+): number {
+  let factor = 1;
+
+  for (const effect of effects) {
+    if (effect.kind !== "modifier") {
+      continue;
+    }
+    factor *= effect.discount.factor;
+  }
+
+  return Math.max(0.1, factor);
+}
+
+export function softwareCapability(
+  activeIds: readonly string[],
+): HardwareCapability {
+  const effects: SoftwareEffect[] = [];
+  for (const id of activeIds) {
+    const item = findSoftwareItem(id);
+    if (item) {
+      effects.push(item.effect);
+    }
+  }
+  return combineCapabilities(effects);
 }
 
 /**
@@ -106,15 +144,12 @@ export function softwareCapability(
  * free — one minute minimum still belongs to the P1 rule.
  */
 export function actionDurationFactor(activeIds: readonly string[]): number {
-  let factor = 1;
-
+  const effects: SoftwareEffect[] = [];
   for (const id of activeIds) {
     const item = findSoftwareItem(id);
-    if (!item || item.effect.kind !== "modifier") {
-      continue;
+    if (item) {
+      effects.push(item.effect);
     }
-    factor *= item.effect.discount.factor;
   }
-
-  return Math.max(0.1, factor);
+  return combineFactors(effects);
 }
