@@ -19,10 +19,13 @@ import {
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  buyMachineFromGui,
   buyPlayerToolFromGui,
   disableSoftwareFromGui,
   enableSoftwareFromGui,
+  renameMachineFromGui,
   rentHousingFromGui,
+  sellMachineFromGui,
   sellPlayerToolFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
@@ -244,6 +247,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "stop <software-id>   stop a tool (its fee stops with it)",
         "buytool <tool-id>    buy an authored player tool (one-time, carries provenance)",
         "selltool <tool-id>   resell an owned copy (recovers part of the price)",
+        "box buy <catalog-id> acquire a complete named machine (one-time)",
+        "box sell <box-id>    resell an owned machine through the fence",
+        "box name <box-id> <label>  rename an owned machine",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -329,9 +335,61 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "player tool acquired // author provenance recorded";
     case "sellPlayerTool":
       return "player tool sold // resale credits recovered";
+    case "buyMachine":
+      return "machine acquired // new box added to the rack";
+    case "sellMachine":
+      return "machine sold // resale credits recovered";
+    case "renameMachine":
+      return "machine renamed // label updated";
     case "advanceTime":
       return "world clock advanced";
   }
+}
+
+/**
+ * Inline rename for one owned machine: local draft text, applied through the
+ * shared typed command on submit. Empty or over-long drafts are rejected by the
+ * simulation, so the view never invents its own rules.
+ */
+function MachineRenameRow({
+  machineId,
+  currentLabel,
+  onRename,
+}: {
+  machineId: string;
+  currentLabel: string;
+  onRename: (label: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const trimmed = draft.trim();
+
+  return (
+    <form
+      className="machine-rename-row"
+      onSubmit={(event) => {
+        event.preventDefault();
+
+        if (trimmed.length === 0) {
+          return;
+        }
+
+        onRename(trimmed);
+        setDraft("");
+      }}
+    >
+      <input
+        aria-label={`Rename machine ${machineId}`}
+        autoComplete="off"
+        maxLength={24}
+        placeholder={`rename "${currentLabel}"`}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <button type="submit" disabled={trimmed.length === 0}>
+        NAME
+      </button>
+    </form>
+  );
 }
 
 function ReconApp({ runtime }: { runtime: GameRuntime }) {
@@ -946,12 +1004,15 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const lease = useRow("rig", "lease", runtime.projection);
   const softwareLift = useRow("rig", "softwareLift", runtime.projection);
   const playerToolLift = useRow("rig", "playerToolLift", runtime.projection);
+  const machineLift = useRow("rig", "machineLift", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const housingTable = useTable("housing", runtime.projection);
   const softwareTable = useTable("software", runtime.projection);
   const ownedToolsTable = useTable("ownedTools", runtime.projection);
   const toolListingsTable = useTable("toolListings", runtime.projection);
+  const ownedMachinesTable = useTable("ownedMachines", runtime.projection);
+  const machineListingsTable = useTable("machineListings", runtime.projection);
   const valueNodesTable = useTable("valueNodes", runtime.projection);
   const valueInflow = Number(
     useCell("meta", "wallet", "valueInflow", runtime.projection) ?? 0,
@@ -977,31 +1038,36 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
       "compute",
       Number(lease.compute ?? 0) +
         Number(softwareLift.compute ?? 0) +
-        Number(playerToolLift.compute ?? 0),
+        Number(playerToolLift.compute ?? 0) +
+        Number(machineLift.compute ?? 0),
     ],
     [
       "memory",
       Number(lease.memory ?? 0) +
         Number(softwareLift.memory ?? 0) +
-        Number(playerToolLift.memory ?? 0),
+        Number(playerToolLift.memory ?? 0) +
+        Number(machineLift.memory ?? 0),
     ],
     [
       "vram",
       Number(lease.vram ?? 0) +
         Number(softwareLift.vram ?? 0) +
-        Number(playerToolLift.vram ?? 0),
+        Number(playerToolLift.vram ?? 0) +
+        Number(machineLift.vram ?? 0),
     ],
     [
       "storage",
       Number(lease.storage ?? 0) +
         Number(softwareLift.storage ?? 0) +
-        Number(playerToolLift.storage ?? 0),
+        Number(playerToolLift.storage ?? 0) +
+        Number(machineLift.storage ?? 0),
     ],
     [
       "network",
       Number(lease.network ?? 0) +
         Number(softwareLift.network ?? 0) +
-        Number(playerToolLift.network ?? 0),
+        Number(playerToolLift.network ?? 0) +
+        Number(machineLift.network ?? 0),
     ],
   ] as const;
 
@@ -1036,6 +1102,18 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   );
 
   const toolListings = Object.entries(toolListingsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const ownedMachines = Object.entries(ownedMachinesTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) -
+        Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const machineListings = Object.entries(machineListingsTable).sort(
     ([idA, a], [idB, b]) =>
       Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
   );
@@ -1083,7 +1161,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </ul>
         {liftRows.some(([, value]) => Number(value ?? 0) > 0) && (
           <p className="market-hint">
-            Includes lease + software + tool lift:{" "}
+            Includes lease + software + tool + machine lift:{" "}
             {liftRows
               .filter(([, value]) => Number(value ?? 0) > 0)
               .map(([label, value]) => `${label} +${Number(value ?? 0)}`)
@@ -1456,6 +1534,126 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           copy carries its author&apos;s handle, so every trade is a named edge in
           the scene&apos;s value graph. Like every other layer, tools are a lift —
           never a gate.
+        </p>
+      </section>
+
+      <section aria-label="Machines">
+        <span className="panel-label">MACHINES // NAMED BOXES</span>
+        {ownedMachines.length === 0 && machineListings.length === 0 ? (
+          <p className="market-empty">No machines on offer.</p>
+        ) : (
+          <ul className="market-catalog">
+            {ownedMachines.map(([id, entry]) => {
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+              const resale = Number(entry.resaleValue ?? 0);
+
+              return (
+                <li key={id} className="is-owned">
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {String(entry.catalogId ?? "")} · paid{" "}
+                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
+                      sells {resale.toLocaleString("en-US")} cr ·{" "}
+                      {formatWorldTime(
+                        Number(entry.acquiredWorldMinute ?? 0),
+                      )}
+                    </span>
+                    <MachineRenameRow
+                      machineId={id}
+                      currentLabel={String(entry.label ?? id)}
+                      onRename={(label) =>
+                        runtime.execute(renameMachineFromGui(id, label))
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    title="Resell this machine to the fence (no upkeep is lost)"
+                    onClick={() => runtime.execute(sellMachineFromGui(id))}
+                  >
+                    SELL
+                  </button>
+                </li>
+              );
+            })}
+            {machineListings.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const affordable = credits >= cost;
+              const owned = Number(entry.ownedCount ?? 0);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li
+                  key={`listing-${id}`}
+                  className={owned > 0 ? "is-owned" : undefined}
+                >
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr one-time
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Buy this machine (one-time, no upkeep)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyMachineFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          A machine is a whole named box — buy as many racks as you can afford,
+          rename each so you remember what it is for, and sell it back through
+          the fence for half of what you paid. Every owned box folds into the
+          same rig profile that drives speed and scale: multiple machines
+          multiply your capability, never unlock or block a target.
         </p>
       </section>
 

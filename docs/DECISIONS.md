@@ -191,6 +191,14 @@ Scope is deliberately honest: the simulation tracks the *player's* money, so thi
 
 Accepted 2026-10-04 as the P6 slice. The ranked-list layout is provisional — a drawn graph layout belongs to polish — and the graph currently spans one currency; the crypto-like asset classes (liquidity, volatility, exchange friction, tracing difficulty) remain design targets for later phases.
 
+## D025 — Named machines are a property layer, not a new mechanic (Phase 4 P7)
+
+The last core Phase 4 deliverable, *multiple machines*, lands as a fifth asset class following the precedent P5 already proved: machines are **property, not rent**. A `buyMachine` is a one-time debit to the `market` institution (new ledger cause `machine`), there is no recurring fee — `advanceUpkeep` never sees the rack by construction — and `sellMachine` credits `floor(paid × 0.5)` through the same offline `fence`, valuing the *stored paid price* so catalog retuning never re-values an owned box. Owned boxes carry max-suffix instance ids (`machine:N`), collision-safe across buy/sell/rebuy cycles exactly like P5's `tool:N`.
+
+A machine is a *complete box*, distinct from a P0 component: components upgrade one axis inside the rig you already have, boxes add whole systems to the rack. Each stores `{ id, catalogId, label, paidCost, acquiredWorldMinute }` — the label is **identity, not power**: capability derives solely from the catalog id through `deriveMachineCapability`, and a rename mutates only the label (ownership is validated before label shape; labels are trimmed, non-empty, and capped at 24 chars at the command boundary, with the Zod schema staying structural). The lift folds into the single existing source — `effectiveCapability` = components + machines + lease + licenses + tools — so P1 speed and P2 breadth consume the rack with zero new mechanics, and an empty rack is exact identity (the 322 pre-P7 tests pass untouched). Terminal and GUI share the commands through the compound `box buy|sell|name` verb, with multi-word labels rejoined by the parser and validated by the simulation.
+
+Accepted 2026-10-04 as the P7 slice, completing the core Phase 4 deliverables except vram/storage consumers, which wait for Phase 5's local-model capacity. Catalog prices and capability profiles are provisional tuning; seller-side NPC marketplaces (actors selling boxes, haggling, stolen-goods provenance), rack physical footprint (space/power/heat), and true multi-hop value chains remain open for later slices.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

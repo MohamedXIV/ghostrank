@@ -86,6 +86,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         toolId,
       }));
 
+    case "box":
+      return parseBoxCommand(args);
+
     case "op":
       return parseOperationCommand(args);
 
@@ -178,6 +181,43 @@ function parseLeaseCommand(args: string[]): TerminalParseResult {
         ok: true,
         command: {
           type: "breakLease",
+        },
+      };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+}
+
+function parseBoxCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "buy":
+      return singleIdCommand(rest, (catalogId) => ({
+        type: "buyMachine",
+        catalogId,
+      }));
+
+    case "sell":
+      return singleIdCommand(rest, (machineId) => ({
+        type: "sellMachine",
+        machineId,
+      }));
+
+    case "name":
+      // `box name <instance-id> <label...>` — the label is free text (trimmed,
+      // length-capped, and rejected if empty by the simulation), so the rest of
+      // the arguments are rejoined rather than requiring a single token.
+      if (rest.length < 2) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "renameMachine",
+          machineId: rest[0],
+          label: rest.slice(1).join(" "),
         },
       };
 

@@ -179,6 +179,7 @@ const ledgerCauseSchema = z.object({
     "upkeep",
     "license",
     "tool",
+    "machine",
   ]),
   id: z.string().min(1),
 });
@@ -207,6 +208,14 @@ const ownedPlayerToolSchema = z.object({
   acquiredWorldMinute: z.number().int().nonnegative(),
 });
 
+const ownedMachineSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  label: z.string().min(1),
+  paidCost: z.number().int().nonnegative(),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
 const economySchema = z.object({
   credits: z.number().int().nonnegative(),
   ledger: z.array(valueLedgerEntrySchema).default([]),
@@ -214,6 +223,7 @@ const economySchema = z.object({
   housing: z.string().min(1).nullable().default(null),
   software: z.array(z.string().min(1)).default([]),
   playerTools: z.array(ownedPlayerToolSchema).default([]),
+  ownedMachines: z.array(ownedMachineSchema).default([]),
 });
 
 const storedWorldStateSchema = z.object({
@@ -276,6 +286,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       housing: null,
       software: [],
       playerTools: [],
+      ownedMachines: [],
     },
   };
 });

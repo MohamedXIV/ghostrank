@@ -2,6 +2,7 @@ import {
   findCatalogItem,
   type HardwareCapability,
 } from "@/content/hardware-catalog";
+import { machineCapabilityOf } from "@/content/machine-catalog";
 import type { EconomyState } from "@/game/simulation/state/world-state";
 
 export type { HardwareCapability };
@@ -33,6 +34,33 @@ export function deriveRigCapability(economy: EconomyState): HardwareCapability {
       vram: total.vram + item.capability.vram,
       storage: total.storage + item.capability.storage,
       network: total.network + item.capability.network,
+    };
+  }, { ...EMPTY_CAPABILITY });
+}
+
+/**
+ * The combined capability of every owned machine (complete named boxes). This
+ * is the P7 layer of the hardware model: machines fold into the same effective
+ * profile components do, so they feed P1 speed and P2 breadth with no new
+ * mechanics. An empty inventory contributes exactly zero — the untouched
+ * baseline — so machines are a lift, never a gate.
+ */
+export function deriveMachineCapability(
+  economy: EconomyState,
+): HardwareCapability {
+  return economy.ownedMachines.reduce<HardwareCapability>((total, owned) => {
+    const capability = machineCapabilityOf(owned.catalogId);
+
+    if (!capability) {
+      return total;
+    }
+
+    return {
+      compute: total.compute + capability.compute,
+      memory: total.memory + capability.memory,
+      vram: total.vram + capability.vram,
+      storage: total.storage + capability.storage,
+      network: total.network + capability.network,
     };
   }, { ...EMPTY_CAPABILITY });
 }

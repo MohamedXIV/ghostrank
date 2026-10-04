@@ -65,6 +65,19 @@ export type SimulationCommand =
       toolId: string;
     }
   | {
+      type: "buyMachine";
+      catalogId: string;
+    }
+  | {
+      type: "sellMachine";
+      machineId: string;
+    }
+  | {
+      type: "renameMachine";
+      machineId: string;
+      label: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

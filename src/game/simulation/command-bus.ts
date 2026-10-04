@@ -15,6 +15,11 @@ import {
   resaleValue,
 } from "@/content/player-tool-catalog";
 import {
+  MACHINE_LABEL_MAX_LENGTH,
+  findMachineItem,
+  machineResaleValue,
+} from "@/content/machine-catalog";
+import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
@@ -38,6 +43,7 @@ import type {
   OpponentReaction,
   OperationTrace,
   OwnedHardware,
+  OwnedMachine,
   OwnedPlayerTool,
   TargetState,
   WorldState,
@@ -114,6 +120,15 @@ export class CommandBus {
 
       case "sellPlayerTool":
         return this.sellPlayerTool(command.toolId);
+
+      case "buyMachine":
+        return this.buyMachine(command.catalogId);
+
+      case "sellMachine":
+        return this.sellMachine(command.machineId);
+
+      case "renameMachine":
+        return this.renameMachine(command.machineId, command.label);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -834,6 +849,152 @@ export class CommandBus {
     }
 
     return `tool:${max + 1}`;
+  }
+
+  /**
+   * Next owned-machine id. Machines can be sold back, so — like tools — a plain
+   * length counter would reuse a sold copy's id; step past the highest existing
+   * numeric suffix so ids stay unique for the run, even after resales.
+   */
+  private nextMachineId(): string {
+    let max = 0;
+
+    for (const owned of this.world.economy.ownedMachines) {
+      const suffix = Number(owned.id.slice(owned.id.lastIndexOf(":") + 1));
+
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    }
+
+    return `machine:${max + 1}`;
+  }
+
+  private buyMachine(catalogId: string): CommandResult {
+    const item = findMachineItem(catalogId);
+
+    if (!item) {
+      return this.failure("MACHINE_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "machine",
+      causeId: item.id,
+      counterparty: MARKET_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedMachine = {
+      id: this.nextMachineId(),
+      catalogId: item.id,
+      label: item.label,
+      paidCost: item.cost,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.ownedMachines.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "MachineAcquired",
+          machineId: owned.id,
+          catalogId: owned.catalogId,
+          label: owned.label,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private sellMachine(machineId: string): CommandResult {
+    const owned = this.world.economy.ownedMachines.find(
+      (candidate) => candidate.id === machineId,
+    );
+
+    if (!owned) {
+      return this.failure("MACHINE_NOT_OWNED");
+    }
+
+    const minute = this.world.worldMinute;
+    const proceeds = machineResaleValue(owned.paidCost);
+
+    // Resale credits the player through the same offline fence as tools, valued
+    // against the stored paidCost, then the box leaves the rack. transferValue
+    // never pushes credits negative and a credit only grows the balance.
+    const payout = transferValue(this.world, {
+      direction: "credit",
+      amount: proceeds,
+      causeKind: "machine",
+      causeId: owned.catalogId,
+      counterparty: FENCE_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    this.world.economy.ownedMachines =
+      this.world.economy.ownedMachines.filter(
+        (candidate) => candidate.id !== owned.id,
+      );
+
+    return {
+      ok: true,
+      events: [
+        ...(payout ? [payout] : []),
+        {
+          type: "MachineSold",
+          machineId: owned.id,
+          catalogId: owned.catalogId,
+          label: owned.label,
+          proceeds,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private renameMachine(machineId: string, label: string): CommandResult {
+    const owned = this.world.economy.ownedMachines.find(
+      (candidate) => candidate.id === machineId,
+    );
+
+    if (!owned) {
+      return this.failure("MACHINE_NOT_OWNED");
+    }
+
+    const trimmed = label.trim();
+
+    if (trimmed.length === 0 || trimmed.length > MACHINE_LABEL_MAX_LENGTH) {
+      return this.failure("INVALID_MACHINE_LABEL");
+    }
+
+    const minute = this.world.worldMinute;
+    owned.label = trimmed;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "MachineRenamed",
+          machineId: owned.id,
+          label: owned.label,
+          worldMinute: minute,
+        },
+      ],
+    };
   }
 
   private rigActionMinutes(action: ReconAction): number {

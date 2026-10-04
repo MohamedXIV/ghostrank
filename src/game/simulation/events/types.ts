@@ -229,6 +229,29 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "MachineAcquired";
+      machineId: string;
+      catalogId: string;
+      /** The display name at purchase (the catalog label). */
+      label: string;
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "MachineSold";
+      machineId: string;
+      catalogId: string;
+      label: string;
+      proceeds: number;
+      worldMinute: number;
+    }
+  | {
+      type: "MachineRenamed";
+      machineId: string;
+      label: string;
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

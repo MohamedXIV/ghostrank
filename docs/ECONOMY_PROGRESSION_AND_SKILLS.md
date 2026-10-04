@@ -187,18 +187,18 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P6)
+## Implementation status (Phase 4 P0–P7)
 
-The economy substrate is live through P6. This section describes what the
+The economy substrate is live through P7. This section describes what the
 simulation actually does today; the sections above remain the design target for
 later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
   resulting balance, cause (`contract`, `hardware`, `housing`, `upkeep`,
-  `license`, or `tool`), and counterparty. Credits can never go negative: a
-  transfer that would take the balance below zero is rejected and mutates
-  nothing. There is no debt.
+  `license`, `tool`, or `machine`), and counterparty. Credits can never go
+  negative: a transfer that would take the balance below zero is rejected and
+  mutates nothing. There is no debt.
 - **Income.** Contract delivery is the first income source and pays a
   deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
   for an intrusion. Payout is never random and never rank-dependent.
@@ -208,9 +208,9 @@ later slices.
   `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
   app, and costing no world time.
 - **Capability, not level.** Rig capability is *derived* — the sum of owned
-  hardware, the current lease, capability-bearing licenses, and owned player
-  tools (see P3/P4/P5) — it is never stored and never gates a target or a
-  purchase.
+  hardware, owned machines, the current lease, capability-bearing licenses, and
+  owned player tools (see P3/P4/P5/P7) — it is never stored and never gates a
+  target or a purchase.
 - **Compute budgeting (P1).** Capability's first consumer is operation speed:
   survey reads network, inspect/escalate read compute, and an action costs
   `max(1, ceil(base / capability))` world minutes above baseline (the starter
@@ -279,8 +279,23 @@ later slices.
   honestly player-centred: it shows only edges the ledger actually recorded, so
   multi-hop NPC↔NPC value chains wait for the slice that simulates credit
   flowing between actors, rather than inventing edges.
+- **Multiple named machines (P7).** Beyond components sit *complete boxes*
+  (`src/content/machine-catalog.ts`) — whole named systems the player can own
+  several of, following the P5 economic shape exactly: a one-time `market`
+  debit (ledger cause `machine`), **no recurring fee**, and resale through the
+  same `fence` for `floor(paid × 0.5)` of the stored paid price, so retuning
+  never re-values a box already in the rack. Each box stores its player-chosen
+  `label`, and renaming (`box name <box-id> <label…>`, trimmed and capped at
+  24 chars) is **identity, not power** — capability derives only from the
+  catalog id and folds into the same `effectiveCapability`, so the rack feeds
+  P1 speed and P2 breadth with no new mechanics. An empty rack is the untouched
+  baseline. `box buy` / `box sell` / `box name` are shared by Terminal and the
+  Market MACHINES panel (owned boxes show paid/sell price with an inline rename
+  and SELL; listings show `X cr one-time · owned ×N` with BUY). Machines are
+  always a lift, never a gate.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
   a legacy economy loads with `housing: null` (the free baseline), an empty
-  `software` list (no running tools), and an empty `playerTools` inventory.
+  `software` list (no running tools), an empty `playerTools` inventory, and an
+  empty `ownedMachines` rack.

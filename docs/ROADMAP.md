@@ -220,6 +220,12 @@ P6 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-value-graph.md`):
 - honest player-centred scope: every node is the *player's* standing with a real counterparty — contract issuers and tool authors as `peer`s (keyed by their public handles), `market`/`landlord`/`vendor`/`fence` as `institution` roles; true multi-hop NPC↔NPC chains are deferred to the slice that adds simulated inter-actor credit flows, rather than fabricating edges the ledger never recorded;
 - deterministic by construction (volume-desc then id-asc ordering, input-order independent) and summarised over the **full** lifetime ledger even though the ledger table view stays capped; surfaced in a Market VALUE GRAPH panel with in/out bars and `valueNodes` / wallet-total TinyBase rows.
 
+P7 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-machines.md`):
+- **multiple machines** — complete named boxes (`src/content/machine-catalog.ts`) as a fifth asset class: the player can own several whole systems, rename each so the rack stays legible, and sell any box back through the same offline `fence`;
+- property, not rent, following the P5 template exactly: a one-time `market` debit (new ledger cause `machine`), **no recurring fee**, and resale at `floor(paid × 0.5)` of the *stored* price so catalog retuning never re-values an owned box; instance ids stay unique across buy/sell/rebuy cycles (max-suffix, same fix class as `tool:N`);
+- a machine's label is identity, never power: capability derives solely from the catalog id and folds into the single source — `effectiveCapability` is now components + machines + lease + licenses + tools — so P1 speed and P2 breadth consume the rack with no new mechanics, and an empty rack is exact identity (all 322 pre-P7 tests untouched);
+- `box buy <catalog-id>` / `box sell <box-id>` / `box name <box-id> <label…>` shared by Terminal and the Market MACHINES panel (owned boxes show paid/sell price and an inline rename; listings show `X cr one-time · owned ×N`); rename validates ownership before label shape, trims, and caps at 24 chars; the only new state is `economy.ownedMachines`, legacy-defaulted to `[]`.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

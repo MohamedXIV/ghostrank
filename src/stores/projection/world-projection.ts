@@ -285,6 +285,40 @@ export function syncWorldProjection(
     ]),
   );
 
+  const ownedMachineRows = Object.fromEntries(
+    projection.economy.ownedMachines.map((owned) => [
+      owned.id,
+      {
+        catalogId: owned.catalogId,
+        label: owned.label,
+        paidCost: owned.paidCost,
+        resaleValue: owned.resaleValue,
+        acquiredWorldMinute: owned.acquiredWorldMinute,
+        compute: owned.capability?.compute ?? 0,
+        memory: owned.capability?.memory ?? 0,
+        vram: owned.capability?.vram ?? 0,
+        storage: owned.capability?.storage ?? 0,
+        network: owned.capability?.network ?? 0,
+      },
+    ]),
+  );
+
+  const machineListingRows = Object.fromEntries(
+    projection.economy.machineListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        cost: listing.cost,
+        ownedCount: listing.ownedCount,
+        compute: listing.capability.compute,
+        memory: listing.capability.memory,
+        vram: listing.capability.vram,
+        storage: listing.capability.storage,
+        network: listing.capability.network,
+      },
+    ]),
+  );
+
   const valueNodeRows = Object.fromEntries(
     projection.economy.valueGraph.nodes.map((node) => [
       node.id,
@@ -327,6 +361,8 @@ export function syncWorldProjection(
     store.setTable("software", softwareRows);
     store.setTable("ownedTools", ownedToolRows);
     store.setTable("toolListings", toolListingRows);
+    store.setTable("ownedMachines", ownedMachineRows);
+    store.setTable("machineListings", machineListingRows);
     store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(
@@ -396,6 +432,13 @@ export function syncWorldProjection(
         vram: projection.economy.playerTools.vram,
         storage: projection.economy.playerTools.storage,
         network: projection.economy.playerTools.network,
+      },
+      machineLift: {
+        compute: projection.economy.ownedMachineCapability.compute,
+        memory: projection.economy.ownedMachineCapability.memory,
+        vram: projection.economy.ownedMachineCapability.vram,
+        storage: projection.economy.ownedMachineCapability.storage,
+        network: projection.economy.ownedMachineCapability.network,
       },
     });
     store.setCell(

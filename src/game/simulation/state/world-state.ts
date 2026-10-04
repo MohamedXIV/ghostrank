@@ -215,7 +215,8 @@ export type LedgerCauseKind =
   | "housing"
   | "upkeep"
   | "license"
-  | "tool";
+  | "tool"
+  | "machine";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -251,6 +252,21 @@ export interface OwnedPlayerTool {
   acquiredWorldMinute: number;
 }
 
+/**
+ * An owned machine instance: a complete named box. Its capability derives from
+ * `catalogId`, but the display `label` is player-authored (renameable) and the
+ * `paidCost` is captured at purchase, so identity and resale value survive
+ * later catalog retuning — the same property model as P5 tools.
+ */
+export interface OwnedMachine {
+  id: string;
+  catalogId: string;
+  /** Player-chosen display name; defaults to the catalog label. */
+  label: string;
+  paidCost: number;
+  acquiredWorldMinute: number;
+}
+
 export interface EconomyState {
   credits: number;
   ledger: ValueLedgerEntry[];
@@ -268,6 +284,12 @@ export interface EconomyState {
    * baseline.
    */
   playerTools: OwnedPlayerTool[];
+  /**
+   * Owned machine instances (complete named boxes). Each contributes its
+   * catalog capability permanently with no recurring fee; an empty list is the
+   * baseline, and the whole inventory folds into the same effective profile.
+   */
+  ownedMachines: OwnedMachine[];
 }
 
 export interface WorldState {
@@ -360,6 +382,9 @@ function createInitialEconomy(
     software: initial?.software ? [...initial.software] : [],
     playerTools: initial?.playerTools
       ? structuredClone(initial.playerTools)
+      : [],
+    ownedMachines: initial?.ownedMachines
+      ? structuredClone(initial.ownedMachines)
       : [],
   };
 }

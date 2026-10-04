@@ -47,3 +47,28 @@ export function sellPlayerToolFromGui(toolId: string): SimulationCommand {
     toolId,
   };
 }
+
+export function buyMachineFromGui(catalogId: string): SimulationCommand {
+  return {
+    type: "buyMachine",
+    catalogId,
+  };
+}
+
+export function sellMachineFromGui(machineId: string): SimulationCommand {
+  return {
+    type: "sellMachine",
+    machineId,
+  };
+}
+
+export function renameMachineFromGui(
+  machineId: string,
+  label: string,
+): SimulationCommand {
+  return {
+    type: "renameMachine",
+    machineId,
+    label,
+  };
+}

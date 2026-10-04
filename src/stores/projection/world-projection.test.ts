@@ -140,6 +140,13 @@ describe("world projection store", () => {
           storage: 0,
           network: 0,
         },
+        ownedMachineCapability: {
+          compute: 4,
+          memory: 3,
+          vram: 0,
+          storage: 2,
+          network: 1,
+        },
         softwareListings: [
           {
             id: "software-net-monitor",
@@ -207,6 +214,51 @@ describe("world projection store", () => {
             ownedCount: 0,
             capability: null,
             discountFactor: 0.9,
+          },
+        ],
+        ownedMachines: [
+          {
+            id: "machine:1",
+            catalogId: "box-analysis-node",
+            label: "vault-cracker",
+            paidCost: 1_500,
+            resaleValue: 750,
+            acquiredWorldMinute: 40,
+            capability: {
+              compute: 4,
+              memory: 3,
+              vram: 0,
+              storage: 2,
+              network: 1,
+            },
+          },
+        ],
+        machineListings: [
+          {
+            id: "box-analysis-node",
+            label: "Analysis Node",
+            cost: 1_500,
+            ownedCount: 1,
+            capability: {
+              compute: 4,
+              memory: 3,
+              vram: 0,
+              storage: 2,
+              network: 1,
+            },
+          },
+          {
+            id: "box-burner",
+            label: "Burner Laptop",
+            cost: 600,
+            ownedCount: 0,
+            capability: {
+              compute: 1,
+              memory: 1,
+              vram: 0,
+              storage: 1,
+              network: 1,
+            },
           },
         ],
         hardware: [
@@ -371,6 +423,49 @@ describe("world projection store", () => {
       vram: 0,
       storage: 0,
       network: 0,
+    });
+    expect(store.getRow("rig", "machineLift")).toEqual({
+      compute: 4,
+      memory: 3,
+      vram: 0,
+      storage: 2,
+      network: 1,
+    });
+    expect(store.getTable("ownedMachines")).toEqual({
+      "machine:1": {
+        catalogId: "box-analysis-node",
+        label: "vault-cracker",
+        paidCost: 1_500,
+        resaleValue: 750,
+        acquiredWorldMinute: 40,
+        compute: 4,
+        memory: 3,
+        vram: 0,
+        storage: 2,
+        network: 1,
+      },
+    });
+    expect(store.getTable("machineListings")).toEqual({
+      "box-analysis-node": {
+        label: "Analysis Node",
+        cost: 1_500,
+        ownedCount: 1,
+        compute: 4,
+        memory: 3,
+        vram: 0,
+        storage: 2,
+        network: 1,
+      },
+      "box-burner": {
+        label: "Burner Laptop",
+        cost: 600,
+        ownedCount: 0,
+        compute: 1,
+        memory: 1,
+        vram: 0,
+        storage: 1,
+        network: 1,
+      },
     });
     expect(store.getTable("ownedTools")).toEqual({
       "tool:1": {

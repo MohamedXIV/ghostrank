@@ -46,6 +46,7 @@ describe("worldStateSchema", () => {
       housing: null,
       software: [],
       playerTools: [],
+      ownedMachines: [],
     });
   });
 

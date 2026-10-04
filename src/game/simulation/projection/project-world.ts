@@ -6,8 +6,10 @@ import {
   deriveReputationDescriptors,
   type ReputationDescriptor,
 } from "@/game/simulation/systems/reputation";
-import { type HardwareCapability } from "@/game/simulation/systems/hardware";
 import {
+  deriveMachineCapability,
+  type HardwareCapability,
+} from "@/game/simulation/systems/hardware";import {
   deriveLeaseCapability,
   deriveSoftwareCapability,
   effectiveCapability,
@@ -27,6 +29,11 @@ import {
   findPlayerToolItem,
   resaleValue,
 } from "@/content/player-tool-catalog";
+import {
+  MACHINE_CATALOG,
+  machineCapabilityOf,
+  machineResaleValue,
+} from "@/content/machine-catalog";
 import {
   SOFTWARE_CATALOG,
   type SoftwareEffect,
@@ -263,6 +270,27 @@ export interface VisiblePlayerToolListing {
   discountFactor: number | null;
 }
 
+/** An owned complete machine (named box) the player currently has in the rack. */
+export interface VisibleOwnedMachine {
+  id: string;
+  catalogId: string;
+  /** Player-chosen display name. */
+  label: string;
+  paidCost: number;
+  resaleValue: number;
+  acquiredWorldMinute: number;
+  capability: HardwareCapability | null;
+}
+
+/** A machine listing offered in the market panel. */
+export interface VisibleMachineListing {
+  id: string;
+  label: string;
+  cost: number;
+  ownedCount: number;
+  capability: HardwareCapability;
+}
+
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
@@ -270,6 +298,8 @@ export interface EconomyProjection {
   software: HardwareCapability;
   /** Combined capability lift from all owned player tools. */
   playerTools: HardwareCapability;
+  /** Combined capability lift from all owned machines. */
+  ownedMachineCapability: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
   discoveryScope: number;
   currentHousingId: string | null;
@@ -278,6 +308,8 @@ export interface EconomyProjection {
   softwareListings: VisibleSoftwareListing[];
   ownedTools: VisibleOwnedTool[];
   toolListings: VisiblePlayerToolListing[];
+  ownedMachines: VisibleOwnedMachine[];
+  machineListings: VisibleMachineListing[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -609,6 +641,7 @@ function projectEconomy(
   const lease = deriveLeaseCapability(state.economy);
   const software = deriveSoftwareCapability(state.economy);
   const playerTools = derivePlayerToolCapability(state.economy);
+  const ownedMachineCapability = deriveMachineCapability(state.economy);
   const capability = effectiveCapability(state.economy);
   const factor = combinedActionDurationFactor(state.economy);
   const actionMinutes = Object.fromEntries(
@@ -687,12 +720,44 @@ function projectEconomy(
     }),
   );
 
+  const ownedMachineCounts = new Map<string, number>();
+
+  for (const owned of state.economy.ownedMachines) {
+    ownedMachineCounts.set(
+      owned.catalogId,
+      (ownedMachineCounts.get(owned.catalogId) ?? 0) + 1,
+    );
+  }
+
+  const ownedMachines: VisibleOwnedMachine[] = state.economy.ownedMachines.map(
+    (owned) => ({
+      id: owned.id,
+      catalogId: owned.catalogId,
+      label: owned.label,
+      paidCost: owned.paidCost,
+      resaleValue: machineResaleValue(owned.paidCost),
+      acquiredWorldMinute: owned.acquiredWorldMinute,
+      capability: machineCapabilityOf(owned.catalogId),
+    }),
+  );
+
+  const machineListings: VisibleMachineListing[] = MACHINE_CATALOG.map(
+    (item) => ({
+      id: item.id,
+      label: item.label,
+      cost: item.cost,
+      ownedCount: ownedMachineCounts.get(item.id) ?? 0,
+      capability: { ...item.capability },
+    }),
+  );
+
   return {
     credits: state.economy.credits,
     capability,
     lease,
     software,
     playerTools,
+    ownedMachineCapability,
     actionMinutes,
     discoveryScope: discoveryScope(capability.memory),
     currentHousingId: state.economy.housing,
@@ -701,6 +766,8 @@ function projectEconomy(
     softwareListings,
     ownedTools,
     toolListings,
+    ownedMachines,
+    machineListings,
     hardware,
     catalog,
     ledger,

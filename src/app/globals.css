@@ -853,6 +853,40 @@ button {
   font-size: 11px;
 }
 
+.machine-rename-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.machine-rename-row input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: #080d10;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.machine-rename-row button {
+  flex: none;
+  border: 1px solid var(--line-hot);
+  background: transparent;
+  color: var(--accent);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.machine-rename-row button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .market-value-graph {
   display: grid;
   gap: 6px;

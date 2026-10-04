@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  buyMachineFromGui,
   buyPlayerToolFromGui,
   disableSoftwareFromGui,
   enableSoftwareFromGui,
+  renameMachineFromGui,
   rentHousingFromGui,
+  sellMachineFromGui,
   sellPlayerToolFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -171,6 +174,88 @@ describe("buytool / selltool commands", () => {
       "buytool tool-ghost-loader tool-paranoid-scraper",
       "selltool",
       "selltool a b",
+    ]) {
+      expect(parseTerminalCommand(input)).toEqual({
+        ok: false,
+        error: "INVALID_ARGUMENT",
+      });
+    }
+  });
+});
+
+describe("box commands", () => {
+  it("shares buyMachine between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("box buy box-analysis-node");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "buyMachine", catalogId: "box-analysis-node" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(buyMachineFromGui("box-analysis-node")).toEqual(terminal.command);
+  });
+
+  it("shares sellMachine between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("box sell machine:1");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "sellMachine", machineId: "machine:1" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(sellMachineFromGui("machine:1")).toEqual(terminal.command);
+  });
+
+  it("shares renameMachine between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("box name machine:2 vault-cracker");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "renameMachine", machineId: "machine:2", label: "vault-cracker" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(renameMachineFromGui("machine:2", "vault-cracker")).toEqual(
+      terminal.command,
+    );
+  });
+
+  it("rejoins a free-text machine label from the remaining arguments", () => {
+    // The simulation trims and validates the label, so the parser passes the
+    // multi-word name through as one string.
+    expect(parseTerminalCommand("box name machine:1 big blue box")).toEqual({
+      ok: true,
+      command: { type: "renameMachine", machineId: "machine:1", label: "big blue box" },
+    });
+  });
+
+  it("keeps the box verb distinct from hardware and tool verbs", () => {
+    expect(parseTerminalCommand("buy box-analysis-node")).toEqual({
+      ok: true,
+      command: { type: "buyHardware", catalogId: "box-analysis-node" },
+    });
+    expect(parseTerminalCommand("box buy cpu-overclock")).toEqual({
+      ok: true,
+      command: { type: "buyMachine", catalogId: "cpu-overclock" },
+    });
+  });
+
+  it("rejects malformed box arguments", () => {
+    for (const input of [
+      "box",
+      "box rent",
+      "box buy",
+      "box buy box-burner box-analysis-node",
+      "box sell",
+      "box sell machine:1 machine:2",
+      // `box name` needs both an instance id and at least one label word.
+      "box name",
+      "box name machine:1",
     ]) {
       expect(parseTerminalCommand(input)).toEqual({
         ok: false,
