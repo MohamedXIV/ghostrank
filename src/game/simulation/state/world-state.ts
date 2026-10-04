@@ -54,6 +54,47 @@ export type TraceCause =
   | "operation-escalation"
   | "operation-disengagement";
 
+export type AnalysisConfidence = "low" | "medium" | "high";
+
+/**
+ * One proposed conclusion from an AI pass (Phase 5 P2). Claims are *not*
+ * evidence: they are the assistant's read of infrastructure the player has not
+ * yet verified, shaped by what the model can do —
+ *
+ * - `subjectId` locates the claim in world truth (a machine or service id), or
+ *   `null` for a hallucinated host the target does not actually have. It stays
+ *   internal: projecting a hidden subject would leak the very structure recon
+ *   has not earned yet.
+ * - `assertion` is the predicted machine role or service kind.
+ * - `confidence` derives from the model's reasoning + context, **never** from
+ *   `accurate` — an unreliable model states wrong things confidently by
+ *   construction (the docs' "overstate confidence"). Expert play is verifying
+ *   important conclusions through survey/inspect.
+ * - `accurate` is hidden ground truth recorded at generation time, the rumor
+ *   template: comparison only becomes meaningful when recon reveals `subjectId`
+ *   with a different role/kind, or never appears (a fabrication).
+ */
+export interface AnalysisClaim {
+  subjectId: string | null;
+  kind: "machine-role" | "service-kind";
+  assertion: string;
+  confidence: AnalysisConfidence;
+  accurate: boolean;
+}
+
+/**
+ * The assistant's current read of a target — at most one per target, refreshed
+ * by each pass. Derived from the model, the world seed, and the world minute:
+ * deterministic and save-safe, with nothing that can desync.
+ */
+export interface AnalysisRecord {
+  id: string;
+  targetId: string;
+  modelId: string;
+  worldMinute: number;
+  claims: AnalysisClaim[];
+}
+
 export type TraceSeverity = "low" | "elevated" | "high";
 
 export interface OperationTrace {
@@ -317,6 +358,12 @@ export interface WorldState {
   reactions: OpponentReaction[];
   underground: UndergroundState;
   economy: EconomyState;
+  /**
+   * The AI assistant's stored reads (Phase 5 P2). At most one record per
+   * target; empty is the pre-Phase-5 baseline, so every default world starts
+   * with no analysis and no unverified claims.
+   */
+  analysis: AnalysisRecord[];
 }
 
 export interface InitialTargetState
@@ -335,6 +382,7 @@ export interface InitialWorldState {
   reactions?: OpponentReaction[];
   underground?: Partial<UndergroundState>;
   economy?: Partial<EconomyState>;
+  analysis?: AnalysisRecord[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -457,5 +505,6 @@ export function createInitialWorldState(
       : [],
     underground: createInitialUnderground(initial.underground, worldMinute),
     economy: createInitialEconomy(initial.economy),
+    analysis: initial.analysis ? structuredClone(initial.analysis) : [],
   };
 }

@@ -89,6 +89,10 @@ export type SimulationCommand =
       type: "stopModel";
     }
   | {
+      type: "analyzeTarget";
+      targetId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

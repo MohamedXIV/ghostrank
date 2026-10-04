@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  analyzeTargetFromGui,
   disengageOperationFromGui,
   escalateOperationFromGui,
   inspectMachineFromGui,
@@ -17,6 +18,7 @@ describe("GUI domain actions", () => {
       | typeof observeTargetFromGui
       | typeof openOperationFromGui
       | typeof surveyTargetFromGui
+      | typeof analyzeTargetFromGui
       | typeof inspectMachineFromGui
       | typeof escalateOperationFromGui
       | typeof disengageOperationFromGui
@@ -42,6 +44,10 @@ describe("GUI domain actions", () => {
 
   it("shares survey with Terminal", () => {
     expectParity("survey nightshade", surveyTargetFromGui("nightshade"));
+  });
+
+  it("shares assistant analysis with Terminal", () => {
+    expectParity("analyze nightshade", analyzeTargetFromGui("nightshade"));
   });
 
   it("shares machine inspection with Terminal", () => {

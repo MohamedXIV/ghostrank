@@ -229,6 +229,22 @@ const economySchema = z.object({
   activeModel: z.string().min(1).nullable().default(null),
 });
 
+const analysisClaimSchema = z.object({
+  subjectId: z.string().min(1).nullable(),
+  kind: z.enum(["machine-role", "service-kind"]),
+  assertion: z.string().min(1),
+  confidence: z.enum(["low", "medium", "high"]),
+  accurate: z.boolean(),
+});
+
+const analysisRecordSchema = z.object({
+  id: z.string().min(1),
+  targetId: z.string().min(1),
+  modelId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+  claims: z.array(analysisClaimSchema).default([]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -243,6 +259,7 @@ const storedWorldStateSchema = z.object({
   reactions: z.array(reactionSchema).default([]),
   underground: undergroundSchema.optional(),
   economy: economySchema.optional(),
+  analysis: z.array(analysisRecordSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {

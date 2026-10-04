@@ -21,6 +21,13 @@ export function surveyTargetFromGui(targetId: string): SimulationCommand {
   };
 }
 
+export function analyzeTargetFromGui(targetId: string): SimulationCommand {
+  return {
+    type: "analyzeTarget",
+    targetId,
+  };
+}
+
 export function inspectMachineFromGui(machineId: string): SimulationCommand {
   return {
     type: "inspectMachine",

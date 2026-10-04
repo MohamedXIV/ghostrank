@@ -272,6 +272,15 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "AnalysisCompleted";
+      targetId: string;
+      /** The assistant that produced the read. */
+      modelId: string;
+      /** How many claims the record carries; 0 means the target held nothing unseen. */
+      claimCount: number;
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

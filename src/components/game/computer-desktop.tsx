@@ -5,6 +5,7 @@ import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
+  analyzeTargetFromGui,
   disengageOperationFromGui,
   escalateOperationFromGui,
   inspectMachineFromGui,
@@ -220,7 +221,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | op escalate | op exit | buy <catalog-id> | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -241,6 +242,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "op open <target-id>  start a recon-stage operation",
         "survey <target-id>   discover machines in the active operation (rig scale + speed)",
         "inspect <machine-id> inspect known machines in the active operation (rig scale + speed)",
+        "analyze <target-id>  the running assistant's read of what recon has not seen (no time, fallible)",
         "op escalate          cross the fictional recon boundary (rig speed)",
         "op exit              disengage from the active operation (3m)",
         "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
@@ -353,6 +355,8 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "model running // analysis assist active";
     case "stopModel":
       return "model stopped // its shortcut ends";
+    case "analyzeTarget":
+      return "assistant read stored // predictions, not evidence";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -412,6 +416,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
   const footprint = useRow("footprint", "current", runtime.projection);
+  const analysisIds = useRowIds("analysisClaims", runtime.projection);
   const operationTargetId = String(operation.targetId ?? "");
   const operationStage = String(operation.stage ?? "");
   const canEscalate = Object.values(services).some(
@@ -546,7 +551,60 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           ))
         )}
       </div>
+
+      <div className="assistant-analysis">
+        <span className="panel-label">ASSISTANT ANALYSIS</span>
+        {analysisIds.length === 0 ? (
+          <p>
+            No stored read. Ask the running assistant with ANALYZE or{" "}
+            <code>analyze &lt;target-id&gt;</code>; it costs no time and reads
+            only what recon has not mapped yet.
+          </p>
+        ) : (
+          analysisIds.map((id) => (
+            <AnalysisClaimRow key={id} claimId={id} runtime={runtime} />
+          ))
+        )}
+        {analysisIds.length > 0 && (
+          <p className="analysis-caveat">
+            These are predictions, not evidence. The assistant guesses the parts
+            of the target you have not surveyed or inspected, and it can be
+            wrong — mislabelling a host, inventing one entirely, or stating
+            either with more confidence than it has earned. Verify anything you
+            plan to act on with SURVEY and INSPECT.
+          </p>
+        )}
+      </div>
     </div>
+  );
+}
+
+function AnalysisClaimRow({
+  claimId,
+  runtime,
+}: {
+  claimId: string;
+  runtime: GameRuntime;
+}) {
+  const claim = useRow("analysisClaims", claimId, runtime.projection);
+  const minute = Number(claim.worldMinute ?? 0);
+
+  return (
+    <article className="analysis-claim">
+      <span className="analysis-subject">{String(claim.subject ?? "")}</span>
+      <span className="analysis-assertion">
+        {String(claim.kind ?? "") === "service-kind"
+          ? "service likely"
+          : "host likely"}{" "}
+        <strong>{String(claim.assertion ?? "")}</strong>
+      </span>
+      <span className={`confidence-${String(claim.confidence ?? "low")}`}>
+        {String(claim.confidence ?? "low").toUpperCase()}
+      </span>
+      <span className="analysis-meta">
+        {String(claim.modelLabel ?? "")} @ {formatWorldTime(minute)}
+      </span>
+    </article>
   );
 }
 
@@ -586,18 +644,30 @@ function ReconTarget({
         <span className="panel-label">STATUS</span>
         <strong>{isActiveTarget ? "ACTIVE OP" : "OBSERVED"}</strong>
       </div>
-      <button
-        className="recon-inline-action"
-        type="button"
-        disabled={operationElsewhere}
-        onClick={act}
-      >
-        {isActiveTarget
-          ? "SURVEY"
-          : operationElsewhere
-            ? "OP ACTIVE"
-            : "OPEN OP"}
-      </button>
+      <div className="operation-actions">
+        <button
+          className="recon-inline-action"
+          type="button"
+          disabled={operationElsewhere}
+          onClick={act}
+        >
+          {isActiveTarget
+            ? "SURVEY"
+            : operationElsewhere
+              ? "OP ACTIVE"
+              : "OPEN OP"}
+        </button>
+        {isActiveTarget && (
+          <button
+            className="recon-inline-action"
+            type="button"
+            title="Ask the running assistant for its read of what recon has not mapped yet (costs no time, can be wrong)"
+            onClick={() => runtime.execute(analyzeTargetFromGui(targetId))}
+          >
+            ANALYZE
+          </button>
+        )}
+      </div>
     </article>
   );
 }

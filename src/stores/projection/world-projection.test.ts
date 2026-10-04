@@ -41,6 +41,28 @@ describe("world projection store", () => {
           state: "online",
         },
       ],
+      analysis: [
+        {
+          targetId: "ghost",
+          modelId: "model-cloud-frontier",
+          modelLabel: "Frontier Class API",
+          worldMinute: 44,
+          claims: [
+            {
+              kind: "machine-role",
+              assertion: "vault",
+              subject: "unmapped host 1",
+              confidence: "high",
+            },
+            {
+              kind: "service-kind",
+              assertion: "archive",
+              subject: "unmapped service 1",
+              confidence: "medium",
+            },
+          ],
+        },
+      ],
       operation: {
         targetId: "ghost",
         stage: "intrusive",
@@ -492,6 +514,28 @@ describe("world projection store", () => {
         storage: 1,
         owned: true,
         running: false,
+      },
+    });
+    expect(store.getTable("analysisClaims")).toEqual({
+      "ghost:0": {
+        targetId: "ghost",
+        modelLabel: "Frontier Class API",
+        worldMinute: 44,
+        kind: "machine-role",
+        assertion: "vault",
+        subject: "unmapped host 1",
+        confidence: "high",
+      },
+      "ghost:1": {
+        targetId: "ghost",
+        modelLabel: "Frontier Class API",
+        worldMinute: 44,
+        kind: "service-kind",
+        assertion: "archive",
+        // Anonymous per-kind counters: the store never carries a hidden world
+        // id or the hidden `accurate` truth of a claim.
+        subject: "unmapped service 1",
+        confidence: "medium",
       },
     });
     expect(store.getTable("ownedMachines")).toEqual({

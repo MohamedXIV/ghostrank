@@ -337,6 +337,23 @@ export function syncWorldProjection(
     ]),
   );
 
+  const analysisClaimRows = Object.fromEntries(
+    projection.analysis.flatMap((record) =>
+      record.claims.map((claim, index) => [
+        `${record.targetId}:${index}`,
+        {
+          targetId: record.targetId,
+          modelLabel: record.modelLabel,
+          worldMinute: record.worldMinute,
+          kind: claim.kind,
+          assertion: claim.assertion,
+          subject: claim.subject,
+          confidence: claim.confidence,
+        },
+      ]),
+    ),
+  );
+
   const valueNodeRows = Object.fromEntries(
     projection.economy.valueGraph.nodes.map((node) => [
       node.id,
@@ -382,6 +399,7 @@ export function syncWorldProjection(
     store.setTable("ownedMachines", ownedMachineRows);
     store.setTable("machineListings", machineListingRows);
     store.setTable("modelListings", modelListingRows);
+    store.setTable("analysisClaims", analysisClaimRows);
     store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(

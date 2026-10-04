@@ -244,7 +244,7 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: in progress — P0 and P1 delivered. Tracked by #23 (unblocked by #22).**
+**Status: in progress — P0, P1 and P2 delivered. Tracked by #23 (unblocked by #22).**
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
 
@@ -260,6 +260,13 @@ P1 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-contention.md`) —
 - contention scales only *the model's own factor* between its catalog promise and ×1 — the speed of running nothing — so it is mathematically incapable of slowing a player below baseline (the standing lift-never-punishment rule) and a starved model stays runnable: it helps less, never blocks, never bills;
 - pure derived physics: zero new state, reservation, or save surface — deterministic by construction, with remedies that are already-shipped choices (buy GPUs/storage, stop the model, rent from the cloud) rather than new commands, and the scarcer axis bottlenecks via `min` across the pool;
 - one optional `pool` parameter on `combinedActionDurationFactor` plus the two real consumers (command bus, projection) means every existing caller behaves exactly as before — the 28 P0 model tests and 26 tool tests re-ran untouched — while listings, the `rig.assistant` row, and a new Market "rig load / your rig / delivers ×" line make the feed-it-or-rent-it decision legible before spending.
+
+P2 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-analysis.md`) — **"AI helps but can be wrong", now testable**:
+- **AI analysis** spends P0's seeded properties at last: `analyze <target-id>` asks the running assistant for a **fallible read of the target's unseen topology** — machine roles the recon has not surveyed, and service kinds on hosts it has (reasoning outward from what the player can see, never naming a hidden box). An instant command on the contract precedent: no world time, no trace — verification stays cheap because the design calls expert verification *good play*;
+- the three failure modes `docs/AI_SYSTEMS.md` names are all reachable and all proven by tests: **misclassify** (wrong vocabulary token on a real subject), **hallucinate** (an invented host, `subjectId: null`), **overstate confidence** (the band is computed from reasoning + context *without looking at accuracy*, so the unreliable-but-eloquent tuned model states wrong things with the same polish as right ones);
+- fallibility is a rule, not tuning: accuracy odds are `0.8 × reliability/5` — capped below certainty by construction — while `context` budgets how much topology one pass reads; determinism rides the existing `hashUnit` primitive, so a save replay returns the byte-identical read;
+- the **leak rule** is the load-bearing decision: `accurate` never leaves the simulation (it persists, it never projects) and a claim's `subject` is an anonymous `unmapped host N` handle, because every claim describes structure the player has *not* earned — projecting a real id would be free recon and grading the assistant for free; the verification loop closes through play (compare the panel against the next survey), not through state;
+- `analyzeTarget` needs the assistant (`NO_ACTIVE_MODEL`) and nothing else new — survey/inspect stay model-free forever (tested), keeping the never-a-gate rule intact while making the model's *function* the requirement, and the Recon panel teaches the contract in the player's own terms ("predictions, not evidence").
 
 Deliverables:
 - cloud/local model choices,

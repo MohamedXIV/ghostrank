@@ -37,6 +37,7 @@ import {
 } from "@/content/machine-catalog";
 import {
   MODEL_CATALOG,
+  findModelItem,
   type ModelFootprint,
   type ModelSource,
 } from "@/content/model-catalog";
@@ -59,6 +60,7 @@ import {
 } from "@/content/hardware-catalog";
 import {
   PLAYER_ACTOR_ID,
+  type AnalysisConfidence,
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
@@ -101,6 +103,43 @@ export interface VisibleService {
   label: string;
   kind: string;
   state: "online" | "offline" | "degraded";
+}
+
+/**
+ * One claim of the assistant's read, as much of it as the player is allowed to
+ * see.
+ *
+ * `subject` is a display handle, never the world id. Analysis claims can only
+ * describe structure recon has not observed yet (that is what makes them worth
+ * asking for), so exposing a real id would hand over hidden topology for free and
+ * turn the assistant into a cheat. Handles are anonymous per-kind counters —
+ * `unmapped host 1`, `unmapped service 2` — which also keeps the display
+ * *uniform*: a hallucinated subject and a real-but-unmapped one are
+ * indistinguishable on screen, exactly as they should be. Even for a service
+ * claim, whose host is legitimately visible (the generator only predicts services
+ * of surveyed machines), naming the host would flag the fabricated claims as the
+ * ones with no host, so it is withheld for all of them.
+ *
+ * `accurate` never leaves the simulation. Its entire purpose is to be discovered
+ * by doing recon; projecting it would grade the assistant for the player.
+ */
+export interface VisibleAnalysisClaim {
+  kind: "machine-role" | "service-kind";
+  /** What the assistant thinks the subject is. */
+  assertion: string;
+  /** Anonymous, safe-to-show handle for the subject. */
+  subject: string;
+  confidence: AnalysisConfidence;
+}
+
+/** The current stored read of one target, for the targets the player knows. */
+export interface VisibleAnalysisRecord {
+  targetId: string;
+  modelId: string;
+  /** Display label for the model that produced it; falls back to the raw id. */
+  modelLabel: string;
+  worldMinute: number;
+  claims: VisibleAnalysisClaim[];
 }
 
 export type FootprintLevel = "none" | "low" | "elevated" | "severe";
@@ -373,6 +412,11 @@ export interface WorldProjection {
   targets: VisibleTarget[];
   machines: VisibleMachine[];
   services: VisibleService[];
+  /**
+   * The assistant's current reads, for known targets only. Empty by default —
+   * the pre-Phase-5 projection is untouched when no analysis has been run.
+   */
+  analysis: VisibleAnalysisRecord[];
   operation: OperationState | null;
   footprint: VisibleFootprint;
   reactions: VisibleReaction[];
@@ -859,6 +903,47 @@ function projectEconomy(
   };
 }
 
+/**
+ * Project the assistant's stored reads, for known targets only. Claims keep
+ * their generation order so the panel matches the record; each subject gets the
+ * next anonymous handle of its kind.
+ */
+function projectAnalysis(
+  state: WorldState,
+  knownTargets: Set<string>,
+): VisibleAnalysisRecord[] {
+  const records: VisibleAnalysisRecord[] = [];
+
+  for (const record of state.analysis) {
+    if (!knownTargets.has(record.targetId)) {
+      continue;
+    }
+
+    // Subjects get anonymous per-kind counters, never world ids: a claim may
+    // only describe unobserved structure, so any real id would leak it.
+    let hostCount = 0;
+    let serviceCount = 0;
+
+    records.push({
+      targetId: record.targetId,
+      modelId: record.modelId,
+      modelLabel: findModelItem(record.modelId)?.label ?? record.modelId,
+      worldMinute: record.worldMinute,
+      claims: record.claims.map((claim) => ({
+        kind: claim.kind,
+        assertion: claim.assertion,
+        subject:
+          claim.kind === "machine-role"
+            ? `unmapped host ${++hostCount}`
+            : `unmapped service ${++serviceCount}`,
+        confidence: claim.confidence,
+      })),
+    });
+  }
+
+  return records;
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -941,6 +1026,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     targets,
     machines,
     services,
+    analysis: projectAnalysis(state, knownTargets),
     operation: state.operation ? structuredClone(state.operation) : null,
     footprint: {
       score: footprintScore,

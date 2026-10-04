@@ -35,6 +35,12 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         targetId,
       }));
 
+    case "analyze":
+      return singleIdCommand(args, (targetId) => ({
+        type: "analyzeTarget",
+        targetId,
+      }));
+
     case "inspect":
       return singleIdCommand(args, (machineId) => ({
         type: "inspectMachine",

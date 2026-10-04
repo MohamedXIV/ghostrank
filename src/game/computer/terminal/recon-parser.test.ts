@@ -23,12 +23,30 @@ describe("recon terminal commands", () => {
     });
   });
 
+  it("maps analyze to an assistant read of the target", () => {
+    expect(parseTerminalCommand("analyze nightshade")).toEqual({
+      ok: true,
+      command: {
+        type: "analyzeTarget",
+        targetId: "nightshade",
+      },
+    });
+  });
+
   it("rejects malformed recon arguments", () => {
     expect(parseTerminalCommand("survey")).toEqual({
       ok: false,
       error: "INVALID_ARGUMENT",
     });
     expect(parseTerminalCommand("inspect one two")).toEqual({
+      ok: false,
+      error: "INVALID_ARGUMENT",
+    });
+    expect(parseTerminalCommand("analyze")).toEqual({
+      ok: false,
+      error: "INVALID_ARGUMENT",
+    });
+    expect(parseTerminalCommand("analyze a b")).toEqual({
       ok: false,
       error: "INVALID_ARGUMENT",
     });

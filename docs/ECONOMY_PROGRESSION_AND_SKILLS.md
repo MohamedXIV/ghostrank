@@ -187,12 +187,12 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P1)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P2)
 
-The Phase 4 economy is live through P7, and Phase 5's model substrate (P0) and
-compute contention (P1) are live. This section describes what the simulation
-actually does today; the sections above remain the design target for later
-slices.
+The Phase 4 economy is live through P7, and Phase 5's model substrate (P0),
+compute contention (P1) and AI analysis (P2) are live. This section describes
+what the simulation actually does today; the sections above remain the design
+target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -330,10 +330,33 @@ slices.
   and storage buys, stop the model, or rent from the cloud) — and the Market
   listings show each model's footprint and the factor *this rig* would deliver,
   making the feed-it-or-rent-it choice legible before it costs anything.
+- **AI analysis (Phase 5 P2).** The model properties P0 seeded finally get
+  their consumer: `analyze <target-id>` asks the running assistant for a
+  **fallible read of the target's unseen topology** — machine roles the recon
+  has not surveyed, and service kinds only on hosts it has, reasoning from the
+  visible topology outward. It costs no world time and leaves no trace (the
+  contract-verb precedent): verification is expert play and must stay cheap,
+  while the model's real cost is already paid through its rent (P0) or rig
+  footprint (P1). The economics stay untouched — analysis moves no credits, and
+  what it spends is the assistant's *quality*: `context` budgets how much
+  topology a pass reads, `reliability` sets the odds each claim matches hidden
+  ground truth (capped at 0.8 — no model is trustworthy enough to skip
+  verifying), and `reasoning` + `context` set the confidence the claim is
+  *stated* with, independent of whether it is right, so a cheaper-but-eloquent
+  model can sound better than it is. The assistant needs a model running —
+  its function, not a gate: survey and inspect never require one, and no
+  target or item is locked behind analysis. Its conclusions are predictions the
+  projection deliberately cannot grade: a claim's hidden subject id and its
+  hidden accuracy stay in the simulation (they persist, they never surface), so
+  the read never hands over structure the player has not earned, and the loop
+  closes by comparing the panel against your own recon. The Recon app's
+  ASSISTANT ANALYSIS panel states it plainly: predictions, not evidence.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
   a legacy economy loads with `housing: null` (the free baseline), an empty
   `software` list (no running tools), an empty `playerTools` inventory, an
   empty `ownedMachines` rack, no `ownedModels`, and `activeModel: null` — the
-  untouched baseline in every layer.
+  untouched baseline in every layer. Stored `analysis` records likewise default
+  to empty, and their hidden fields (a claim's subject id and its accuracy) are
+  saved but never projected.

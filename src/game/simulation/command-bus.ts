@@ -20,6 +20,7 @@ import {
   machineResaleValue,
 } from "@/content/machine-catalog";
 import { findModelItem } from "@/content/model-catalog";
+import { runAnalysis } from "@/game/simulation/systems/analysis";
 import {
   actionDuration,
   type ReconAction,
@@ -38,6 +39,7 @@ import {
   spreadPlayerFootprint,
 } from "@/game/simulation/systems/underground";
 import type {
+  AnalysisRecord,
   EvidenceKind,
   EvidenceRecord,
   MachineState,
@@ -139,6 +141,9 @@ export class CommandBus {
 
       case "stopModel":
         return this.stopModel();
+
+      case "analyzeTarget":
+        return this.analyzeTarget(command.targetId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -1131,6 +1136,104 @@ export class CommandBus {
           // rental shape it behaved like, with no cost.
           source: item?.source ?? "cloud",
           dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Ask the running assistant for its read of a target (Phase 5 P2). The gate is
+   * the assistant itself — an active model — plus the same operation and profile
+   * prerequisites survey needs; no target or action is ever gated by hardware or
+   * software. It costs no world time and adds no trace: the player is asking a
+   * question, not touching the network. Each pass replaces the target's single
+   * stored record, so the projection always shows the *current* read.
+   */
+  private analyzeTarget(targetId: string): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
+    if (operation.targetId !== targetId) {
+      return this.failure("OPERATION_TARGET_MISMATCH");
+    }
+
+    const target = this.world.targets.find(
+      (candidate) => candidate.id === targetId,
+    );
+
+    if (!target) {
+      return this.failure("TARGET_NOT_FOUND");
+    }
+
+    if (!this.hasEvidence("target-profile", target.id)) {
+      return this.failure("TARGET_NOT_OBSERVED");
+    }
+
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_ACTIVE_MODEL");
+    }
+
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      // Only a stale save can name a model the catalog no longer carries; there
+      // are no properties to read from it, so the assistant has no voice.
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    const observedMachineIds = new Set(
+      this.world.evidence
+        .filter((record) => record.kind === "machine-presence")
+        .map((record) => record.subjectId),
+    );
+    const observedServiceIds = new Set(
+      this.world.evidence
+        .filter((record) => record.kind === "service-presence")
+        .map((record) => record.subjectId),
+    );
+
+    const claims = runAnalysis({
+      modelId: item.id,
+      properties: item.properties,
+      machines: target.machines,
+      observedMachineIds,
+      observedServiceIds,
+      seed: this.world.underground.seed,
+      worldMinute: this.world.worldMinute,
+    });
+
+    const record: AnalysisRecord = {
+      id: `analysis:${target.id}`,
+      targetId: target.id,
+      modelId: item.id,
+      worldMinute: this.world.worldMinute,
+      claims,
+    };
+
+    const existing = this.world.analysis.findIndex(
+      (candidate) => candidate.targetId === target.id,
+    );
+
+    if (existing >= 0) {
+      this.world.analysis[existing] = record;
+    } else {
+      this.world.analysis.push(record);
+    }
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "AnalysisCompleted",
+          targetId: target.id,
+          modelId: item.id,
+          claimCount: claims.length,
           worldMinute: this.world.worldMinute,
         },
       ],

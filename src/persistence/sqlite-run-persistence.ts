@@ -98,6 +98,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "MachineRenamed":
     case "ModelAcquired":
     case "ModelChanged":
+    case "AnalysisCompleted":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

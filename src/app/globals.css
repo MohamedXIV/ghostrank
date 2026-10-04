@@ -515,6 +515,67 @@ button {
   border-top: 0;
 }
 
+/* Assistant analysis (Phase 5 P2) — predictions, not evidence */
+
+.assistant-analysis {
+  margin-top: 22px;
+}
+
+.assistant-analysis > p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.analysis-claim {
+  display: grid;
+  grid-template-columns: 1.3fr 1.6fr auto 1.4fr;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  background: #0a1014;
+  padding: 9px 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.analysis-subject {
+  text-transform: uppercase;
+  font-size: 9px;
+}
+
+.analysis-assertion strong {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.analysis-meta {
+  text-align: right;
+  font-size: 9px;
+}
+
+.analysis-claim .confidence-low,
+.analysis-claim .confidence-medium,
+.analysis-claim .confidence-high {
+  border: 1px solid var(--line);
+  padding: 3px 6px;
+  font-size: 9px;
+}
+
+.analysis-claim .confidence-high {
+  border-color: var(--line-hot);
+  color: var(--accent);
+}
+
+.analysis-claim .confidence-medium {
+  color: var(--muted);
+}
+
+.analysis-caveat {
+  margin-top: 10px;
+}
+
 /* Room */
 
 .room-surface {
