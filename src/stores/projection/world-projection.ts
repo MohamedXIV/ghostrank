@@ -285,6 +285,22 @@ export function syncWorldProjection(
     ]),
   );
 
+  const valueNodeRows = Object.fromEntries(
+    projection.economy.valueGraph.nodes.map((node) => [
+      node.id,
+      {
+        kind: node.kind,
+        received: node.received,
+        paid: node.paid,
+        net: node.net,
+        interactions: node.interactions,
+        firstWorldMinute: node.firstWorldMinute,
+        lastWorldMinute: node.lastWorldMinute,
+        causeKinds: node.causeKinds.join(","),
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -311,7 +327,26 @@ export function syncWorldProjection(
     store.setTable("software", softwareRows);
     store.setTable("ownedTools", ownedToolRows);
     store.setTable("toolListings", toolListingRows);
+    store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueInflow",
+      projection.economy.valueGraph.totalInflow,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueOutflow",
+      projection.economy.valueGraph.totalOutflow,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueCounterparties",
+      projection.economy.valueGraph.counterparties,
+    );
     store.setCell(
       "meta",
       "wallet",

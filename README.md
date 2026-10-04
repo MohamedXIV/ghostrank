@@ -62,7 +62,7 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 ## Status
 
-**Phase 3 — Underground Ecosystem — complete. Phase 4 — Economy and Hardware — is in progress (P0 economy substrate, P1 compute budgeting, P2 workload scale, P3 housing/recurring costs, P4 software marketplace and P5 tool authorship/trading shipped) and is tracked by #22.**
+**Phase 3 — Underground Ecosystem — complete. Phase 4 — Economy and Hardware — is in progress (P0 economy substrate, P1 compute budgeting, P2 workload scale, P3 housing/recurring costs, P4 software marketplace, P5 tool authorship/trading and P6 digital-value graph shipped) and is tracked by #22.**
 
 The web-first platform gate is implemented by #18: IndexedDB persistence is active in the browser and normal gameplay CI is web-only. Planned gameplay phases are tracked by #21–#27, in dependency order. Tauri/SQLite desktop hardening stays deferred to #19 after #27.
 

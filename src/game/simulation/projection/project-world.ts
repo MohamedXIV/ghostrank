@@ -17,6 +17,10 @@ import {
   derivePlayerToolCapability,
 } from "@/game/simulation/systems/tools";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
+import {
+  deriveValueGraph,
+  type ValueGraph,
+} from "@/game/simulation/systems/value-graph";
 import { HOUSING_CATALOG } from "@/content/housing-catalog";
 import {
   PLAYER_TOOL_CATALOG,
@@ -277,6 +281,8 @@ export interface EconomyProjection {
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
+  /** The player's value network, derived from the full ledger. */
+  valueGraph: ValueGraph;
 }
 
 export interface WorldProjection {
@@ -569,6 +575,11 @@ function projectEconomy(
     owned: ownedCounts.get(item.id) ?? 0,
   }));
 
+  const resolveCounterparty = (raw: string): string =>
+    raw === MARKET_COUNTERPARTY
+      ? MARKET_COUNTERPARTY
+      : (handles.get(raw) ?? raw);
+
   const ledger: VisibleLedgerEntry[] = [...state.economy.ledger]
     .reverse()
     .slice(0, LEDGER_LIMIT)
@@ -580,11 +591,20 @@ function projectEconomy(
       balanceAfter: entry.balanceAfter,
       causeKind: entry.cause.kind,
       causeId: entry.cause.id,
-      counterparty:
-        entry.counterparty === MARKET_COUNTERPARTY
-          ? MARKET_COUNTERPARTY
-          : (handles.get(entry.counterparty) ?? entry.counterparty),
+      counterparty: resolveCounterparty(entry.counterparty),
     }));
+
+  // The value graph reads the *whole* ledger, not the capped recent view: it
+  // summarises lifetime relationships, so a long run keeps its history.
+  const valueGraph = deriveValueGraph(
+    state.economy.ledger.map((entry) => ({
+      counterparty: resolveCounterparty(entry.counterparty),
+      direction: entry.direction,
+      amount: entry.amount,
+      causeKind: entry.cause.kind,
+      worldMinute: entry.worldMinute,
+    })),
+  );
 
   const lease = deriveLeaseCapability(state.economy);
   const software = deriveSoftwareCapability(state.economy);
@@ -684,6 +704,7 @@ function projectEconomy(
     hardware,
     catalog,
     ledger,
+    valueGraph,
   };
 }
 

@@ -214,6 +214,12 @@ P5 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-tool-authorship.md`
 - the lift flows through the same single capability source: `effectiveCapability` becomes hardware + lease + licenses + owned tools, and a `combinedActionDurationFactor` composes license × tool shortcuts with the 0.1 floor applied once, feeding P1 speed and P2 breadth untouched,
 - `buytool <tool-id>` / `selltool <instance-id>` shared by Terminal and the Market PLAYER TOOLS panel (owned copies show author, paid price, resale value and SELL; listings show `by <author> · X cr one-time` and BUY); owned-tool ids stay unique across buy/sell/rebuy cycles, and the only new state is `economy.playerTools`, legacy-defaulted to `[]`.
 
+P6 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-value-graph.md`):
+- **digital-value graph** — the design's "transaction graphs, not anonymous money bars" made inspectable: `deriveValueGraph` folds the ledger by counterparty into nodes with received / paid / net, interaction counts, first/last world times, and the distinct cause kinds that touched each, with whole-network totals;
+- purely derived: zero new state, events, commands, or save-schema surface — the graph is a read over the append-only ledger P0 seeded and P5 named, so there is nothing to migrate and nothing that can desync;
+- honest player-centred scope: every node is the *player's* standing with a real counterparty — contract issuers and tool authors as `peer`s (keyed by their public handles), `market`/`landlord`/`vendor`/`fence` as `institution` roles; true multi-hop NPC↔NPC chains are deferred to the slice that adds simulated inter-actor credit flows, rather than fabricating edges the ledger never recorded;
+- deterministic by construction (volume-desc then id-asc ordering, input-order independent) and summarised over the **full** lifetime ledger even though the ledger table view stays capped; surfaced in a Market VALUE GRAPH panel with in/out bars and `valueNodes` / wallet-total TinyBase rows.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

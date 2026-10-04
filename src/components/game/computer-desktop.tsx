@@ -952,6 +952,16 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const softwareTable = useTable("software", runtime.projection);
   const ownedToolsTable = useTable("ownedTools", runtime.projection);
   const toolListingsTable = useTable("toolListings", runtime.projection);
+  const valueNodesTable = useTable("valueNodes", runtime.projection);
+  const valueInflow = Number(
+    useCell("meta", "wallet", "valueInflow", runtime.projection) ?? 0,
+  );
+  const valueOutflow = Number(
+    useCell("meta", "wallet", "valueOutflow", runtime.projection) ?? 0,
+  );
+  const valueCounterparties = Number(
+    useCell("meta", "wallet", "valueCounterparties", runtime.projection) ?? 0,
+  );
   const ledgerTable = useTable("ledger", runtime.projection);
 
   const capability = [
@@ -1034,6 +1044,16 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     ([idA, a], [idB, b]) =>
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
+  // Re-apply the graph's volume ordering here so the panel is stable even
+  // though TinyBase table keys carry no guaranteed order across re-syncs.
+  const valueNodes = Object.entries(valueNodesTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.paid ?? 0) +
+        Number(b.received ?? 0) -
+        (Number(a.paid ?? 0) + Number(a.received ?? 0)) ||
+      idA.localeCompare(idB),
   );
 
   return (
@@ -1436,6 +1456,82 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           copy carries its author&apos;s handle, so every trade is a named edge in
           the scene&apos;s value graph. Like every other layer, tools are a lift —
           never a gate.
+        </p>
+      </section>
+
+      <section aria-label="Value graph">
+        <span className="panel-label">
+          VALUE GRAPH // {valueCounterparties} COUNTERPART
+          {valueCounterparties === 1 ? "" : "IES"}
+        </span>
+        {valueNodes.length === 0 ? (
+          <p className="market-empty">
+            No value has moved yet — every wallet tells a story once it starts.
+          </p>
+        ) : (
+          <ul className="market-value-graph">
+            {valueNodes.map(([id, entry]) => {
+              const received = Number(entry.received ?? 0);
+              const paid = Number(entry.paid ?? 0);
+              const net = Number(entry.net ?? 0);
+              const volume = Math.max(received, paid, 1);
+              const kind = String(entry.kind ?? "peer");
+              const causes = String(entry.causeKinds ?? "")
+                .split(",")
+                .filter(Boolean);
+
+              return (
+                <li key={id} className={`value-node value-node-${kind}`}>
+                  <div>
+                    <span className="panel-label">
+                      {id}
+                      <span className="value-node-tag">
+                        {kind === "institution" ? " role" : " peer"}
+                      </span>
+                    </span>
+                    <span>
+                      {causes.length > 0 ? causes.join(" · ") : "—"}
+                    </span>
+                    <span className="market-time">
+                      {Number(entry.interactions ?? 0)}× · first{" "}
+                      {formatWorldTime(
+                        Number(entry.firstWorldMinute ?? 0),
+                      )}{" "}
+                      · last{" "}
+                      {formatWorldTime(Number(entry.lastWorldMinute ?? 0))}
+                    </span>
+                  </div>
+                  <div className="value-node-bars">
+                    <span className="value-node-bar value-node-in">
+                      <span style={{ width: `${(received / volume) * 100}%` }} />
+                      +{received.toLocaleString("en-US")}
+                    </span>
+                    <span className="value-node-bar value-node-out">
+                      <span style={{ width: `${(paid / volume) * 100}%` }} />
+                      −{paid.toLocaleString("en-US")}
+                    </span>
+                    <span className="value-node-net">
+                      net {net >= 0 ? "+" : "−"}
+                      {Math.abs(net).toLocaleString("en-US")}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Money is a graph, not a bar: this is the ledger aggregated by who
+          actually got paid. <strong>In</strong> is value they gave you,
+          <strong> out</strong> is value you gave them; <strong>net</strong> is
+          your standing with each. Institutions (market, landlord, vendor,
+          fence) are roles — every other name is a scene handle.
+        </p>
+        <p className="market-hint">
+          Lifetime totals: in +{valueInflow.toLocaleString("en-US")} · out −
+          {valueOutflow.toLocaleString("en-US")} · net{" "}
+          {valueInflow - valueOutflow >= 0 ? "+" : "−"}
+          {Math.abs(valueInflow - valueOutflow).toLocaleString("en-US")} cr.
         </p>
       </section>
 

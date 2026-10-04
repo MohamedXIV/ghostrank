@@ -253,6 +253,25 @@ describe("world projection store", () => {
             counterparty: "market",
           },
         ],
+        valueGraph: {
+          counterparties: 1,
+          totalInflow: 0,
+          totalOutflow: 400,
+          net: -400,
+          nodes: [
+            {
+              id: "market",
+              kind: "institution",
+              received: 0,
+              paid: 400,
+              net: -400,
+              interactions: 1,
+              firstWorldMinute: 30,
+              lastWorldMinute: 30,
+              causeKinds: ["hardware"],
+            },
+          ],
+        },
       },
     };
 
@@ -457,6 +476,21 @@ describe("world projection store", () => {
         counterparty: "market",
       },
     });
+    expect(store.getTable("valueNodes")).toEqual({
+      market: {
+        kind: "institution",
+        received: 0,
+        paid: 400,
+        net: -400,
+        interactions: 1,
+        firstWorldMinute: 30,
+        lastWorldMinute: 30,
+        causeKinds: "hardware",
+      },
+    });
+    expect(store.getCell("meta", "wallet", "valueInflow")).toBe(0);
+    expect(store.getCell("meta", "wallet", "valueOutflow")).toBe(400);
+    expect(store.getCell("meta", "wallet", "valueCounterparties")).toBe(1);
     expect(store.getTable("housing")).toEqual({
       "housing-cowork-loft": {
         label: "Co-working Loft",

@@ -853,6 +853,78 @@ button {
   font-size: 11px;
 }
 
+.market-value-graph {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.value-node {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.value-node > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.value-node-tag {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.value-node-peer .panel-label {
+  color: var(--accent);
+}
+
+.value-node-bars {
+  display: grid;
+  gap: 3px;
+}
+
+.value-node-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.value-node-bar > span {
+  display: block;
+  height: 4px;
+  min-width: 2px;
+  flex: none;
+}
+
+.value-node-in {
+  color: var(--accent);
+}
+
+.value-node-in > span {
+  background: var(--accent);
+}
+
+.value-node-out {
+  color: var(--warning);
+}
+
+.value-node-out > span {
+  background: var(--warning);
+}
+
+.value-node-net {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+
 @media (max-width: 900px) {
   .os-stats span:nth-child(2) {
     display: none;

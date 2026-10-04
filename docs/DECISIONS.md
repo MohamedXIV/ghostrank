@@ -183,6 +183,14 @@ Each copy stores its catalog id, author, paid cost, and acquisition minute; the 
 
 Accepted 2026-10-04 as the P5 slice. Catalog authors, prices, resale rate, and effects are provisional tuning; author→buyer chains across simulated peers, multi-hop digital-value graphs, tools as contract rewards or stolen goods, and player-driven marketplaces remain open for later slices.
 
+## D024 — Digital-value graph is a derived player-centred projection (Phase 4 P6)
+
+The Phase 4 deliverable *digital-value graph* realises the design's "transaction graphs, not anonymous money bars" as a **pure derived read over the existing append-only ledger**: `deriveValueGraph` aggregates every movement by counterparty into nodes carrying received / paid / net, interaction counts, first/last world minutes and the distinct cause kinds involved, with whole-network totals. No new state, events, commands, or save-schema surface is introduced — the ledger P0 seeded and P5 gave named counterparties already contains the graph, so there is nothing to migrate and nothing that can desync from the wallet.
+
+Scope is deliberately honest: the simulation tracks the *player's* money, so this is the player's value network — contract issuers and tool authors appear as `peer` nodes keyed by their public handles, while `market`, `landlord`, `vendor`, and `fence` are classified `institution` roles, not people in the scene. True multi-hop NPC↔NPC chains (author→buyer→buyer) require simulated inter-actor credit flows the world does not yet produce; fabricating those edges would invent history the ledger never recorded, so multi-hop is explicitly deferred to a slice that adds peer-to-peer payments. Determinism follows from construction: a read-time fold, ordered by total volume descending then id ascending, independent of ledger insertion order, and summarised over the full lifetime ledger even though the ledger table view stays capped at the most recent entries.
+
+Accepted 2026-10-04 as the P6 slice. The ranked-list layout is provisional — a drawn graph layout belongs to polish — and the graph currently spans one currency; the crypto-like asset classes (liquidity, volatility, exchange friction, tracing difficulty) remain design targets for later phases.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

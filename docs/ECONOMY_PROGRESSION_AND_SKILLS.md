@@ -187,9 +187,9 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P5)
+## Implementation status (Phase 4 P0–P6)
 
-The economy substrate is live through P5. This section describes what the
+The economy substrate is live through P6. This section describes what the
 simulation actually does today; the sections above remain the design target for
 later slices.
 
@@ -268,6 +268,17 @@ later slices.
   panel (owned copies show author, paid price and resale value with SELL;
   listings show `by <author> · X cr one-time` with BUY). Tools are always a lift,
   never a gate.
+- **Digital-value graph (P6).** The *transaction graphs, not anonymous money
+  bars* above are now inspectable: the Market app folds the player's full
+  lifetime ledger by counterparty into a ranked value network — each node shows
+  what they gave (`received`) and got (`paid`) versus the player, their net
+  standing, interaction count, first/last world time, and which causes touched
+  them; scene handles (contract issuers, tool authors) are `peer` nodes, and
+  `market`/`landlord`/`vendor`/`fence` are `institution` roles. The graph is
+  **purely derived** — no new state, events, commands, or save surface — and
+  honestly player-centred: it shows only edges the ledger actually recorded, so
+  multi-hop NPC↔NPC value chains wait for the slice that simulates credit
+  flowing between actors, rather than inventing edges.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
