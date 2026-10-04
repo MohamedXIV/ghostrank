@@ -199,6 +199,12 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "HousingChanged";
+      housingId: string | null;
+      dailyCost: number;
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

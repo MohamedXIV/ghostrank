@@ -157,6 +157,14 @@ Scope derives at action time from owned hardware; no state, events or save-schem
 
 Accepted 2026-10-04. The memory catalog values are provisional tuning; vram and storage remain unconsumed pending contention/background-workload and archive decisions.
 
+## D021 — Housing and recurring-cost model (Phase 4 P3)
+
+Credits gain a recurring sink. A housing lease contributes capability to the rig while held, and capability remains the *sum* — `effectiveCapability = owned hardware + lease` — so P1 speed and P2 breadth consume it with no new mechanics. Housing is a lift, never a gate or a punishment: holding no lease is the free baseline, and an unpayable day boundary moves the player out (back to baseline) rather than charging, indebting, or penalising them.
+
+Upkeep is levied only at crossed whole-world-day boundaries (`advanceUpkeep(world, from, to)` charges each boundary minute once). Signing, switching, or breaking a lease costs nothing, so the choice is reversible and never double-billed; the ledger records these charges with cause kind `upkeep` and counterparty `landlord`. The only new save surface is one nullable `housing` id on the economy; legacy saves load `housing: null` — the baseline behaviour by construction, which is why every pre-P3 test passes untouched.
+
+Accepted 2026-10-04 as the P3 slice. Listing daily costs and capability lifts are provisional tuning; per-day billing at a lease's first partial day, rival landlords, and lease loss as a scripted threat remain open for later phases.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

@@ -6,3 +6,16 @@ export function buyHardwareFromGui(catalogId: string): SimulationCommand {
     catalogId,
   };
 }
+
+export function rentHousingFromGui(housingId: string): SimulationCommand {
+  return {
+    type: "rentHousing",
+    housingId,
+  };
+}
+
+export function breakLeaseFromGui(): SimulationCommand {
+  return {
+    type: "breakLease",
+  };
+}

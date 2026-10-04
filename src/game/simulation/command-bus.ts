@@ -5,7 +5,11 @@ import {
   findCatalogItem,
 } from "@/content/hardware-catalog";
 import { transferValue } from "@/game/simulation/systems/economy";
-import { deriveRigCapability } from "@/game/simulation/systems/hardware";
+import {
+  advanceUpkeep,
+  effectiveCapability,
+} from "@/game/simulation/systems/housing";
+import { findHousingItem } from "@/content/housing-catalog";
 import {
   actionDuration,
   type ReconAction,
@@ -84,6 +88,12 @@ export class CommandBus {
 
       case "buyHardware":
         return this.buyHardware(command.catalogId);
+
+      case "rentHousing":
+        return this.rentHousing(command.housingId);
+
+      case "breakLease":
+        return this.breakLease();
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -579,12 +589,63 @@ export class CommandBus {
     };
   }
 
+  private rentHousing(housingId: string): CommandResult {
+    const item = findHousingItem(housingId);
+
+    if (!item) {
+      return this.failure("HOUSING_NOT_FOUND");
+    }
+
+    if (this.world.economy.housing === housingId) {
+      return this.failure("ALREADY_RENTED");
+    }
+
+    const minute = this.world.worldMinute;
+
+    // Signing or switching a lease moves no credits in P3: the cost is levied
+    // at the next whole-day boundary through advanceUpkeep. The choice is
+    // therefore reversible, and switching never double-bills.
+    this.world.economy.housing = item.id;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "HousingChanged",
+          housingId: item.id,
+          dailyCost: item.dailyCost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private breakLease(): CommandResult {
+    if (!this.world.economy.housing) {
+      return this.failure("NO_ACTIVE_LEASE");
+    }
+
+    this.world.economy.housing = null;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "HousingChanged",
+          housingId: null,
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
   private rigActionMinutes(action: ReconAction): number {
-    return actionDuration(action, deriveRigCapability(this.world.economy));
+    return actionDuration(action, effectiveCapability(this.world.economy));
   }
 
   private rigDiscoveryScope(): number {
-    return discoveryScope(deriveRigCapability(this.world.economy).memory);
+    return discoveryScope(effectiveCapability(this.world.economy).memory);
   }
 
   private advanceWorldTime(minutes: number): SimulationEvent[] {
@@ -597,6 +658,7 @@ export class CommandBus {
         fromMinute,
         toMinute: this.world.worldMinute,
       },
+      ...advanceUpkeep(this.world, fromMinute, this.world.worldMinute),
       ...advanceUnderground(this.world, this.world.worldMinute),
     ];
   }

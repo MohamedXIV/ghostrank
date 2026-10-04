@@ -16,7 +16,11 @@ import {
   contractActionFromGui,
   type ContractVerb,
 } from "@/game/computer/apps/contract-actions";
-import { buyHardwareFromGui } from "@/game/computer/apps/economy-actions";
+import {
+  breakLeaseFromGui,
+  buyHardwareFromGui,
+  rentHousingFromGui,
+} from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
@@ -230,6 +234,8 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "op escalate          cross the fictional recon boundary (rig speed)",
         "op exit              disengage from the active operation (3m)",
         "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
+        "rent <housing-id>    sign a housing lease (recurring upkeep, capability lift)",
+        "lease break          move out and return to the free baseline",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -303,6 +309,10 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "contract delivered";
     case "buyHardware":
       return "hardware acquired // rig updated";
+    case "rentHousing":
+      return "lease signed // location capability active";
+    case "breakLease":
+      return "lease broken // back to the free baseline";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -908,11 +918,19 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const credits = Number(
     useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
   );
+  const dailyCost = Number(
+    useCell("meta", "wallet", "dailyCost", runtime.projection) ?? 0,
+  );
+  const currentHousingId = String(
+    useCell("meta", "wallet", "currentHousingId", runtime.projection) ?? "",
+  );
   const rig = useRow("rig", "capability", runtime.projection);
   const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
   const scale = useRow("rig", "scale", runtime.projection);
+  const lease = useRow("rig", "lease", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
+  const housingTable = useTable("housing", runtime.projection);
   const ledgerTable = useTable("ledger", runtime.projection);
 
   const capability = [
@@ -921,6 +939,14 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     ["vram", rig.vram],
     ["storage", rig.storage],
     ["network", rig.network],
+  ] as const;
+
+  const leaseRows = [
+    ["compute", lease.compute],
+    ["memory", lease.memory],
+    ["vram", lease.vram],
+    ["storage", lease.storage],
+    ["network", lease.network],
   ] as const;
 
   const ownedHardware = Object.entries(hardwareTable).sort(
@@ -932,6 +958,12 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const catalog = Object.entries(catalogTable).sort(
     ([idA, a], [idB, b]) =>
       Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const housing = Object.entries(housingTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
   );
 
   const ledger = Object.entries(ledgerTable).sort(
@@ -946,7 +978,12 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         <span className="panel-label">WALLET</span>
         <div className="market-wallet">
           <strong>{credits.toLocaleString("en-US")} cr</strong>
-          <span>Credits never go negative. Hardware raises capability, never a gate.</span>
+          <span>
+            {dailyCost > 0
+              ? `${dailyCost.toLocaleString("en-US")} cr upkeep per world day.`
+              : "Credits never go negative."}{" "}
+            Hardware raises capability, never a gate.
+          </span>
         </div>
       </section>
 
@@ -960,6 +997,16 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             </li>
           ))}
         </ul>
+        {leaseRows.some(([, value]) => Number(value ?? 0) > 0) && (
+          <p className="market-hint">
+            Includes lease lift:{" "}
+            {leaseRows
+              .filter(([, value]) => Number(value ?? 0) > 0)
+              .map(([label, value]) => `${label} +${Number(value ?? 0)}`)
+              .join(" · ")}
+            .
+          </p>
+        )}
       </section>
 
       <section aria-label="Rig speed">
@@ -1067,6 +1114,78 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             })}
           </ul>
         )}
+      </section>
+
+      <section aria-label="Housing market">
+        <span className="panel-label">HOUSING // RECURRING</span>
+        {housing.length === 0 ? (
+          <p className="market-empty">No locations listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {housing.map(([id, entry]) => {
+              const cost = Number(entry.dailyCost ?? 0);
+              const active = entry.active === true;
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={active ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr / day
+                      {active ? " · active lease" : ""}
+                    </span>
+                  </div>
+                  {active ? (
+                    <button
+                      type="button"
+                      title="Move out and return to the free baseline"
+                      onClick={() => runtime.execute(breakLeaseFromGui())}
+                    >
+                      MOVE OUT
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      title={
+                        currentHousingId
+                          ? "Switch to this lease (free to move)"
+                          : "Sign this lease"
+                      }
+                      onClick={() => runtime.execute(rentHousingFromGui(id))}
+                    >
+                      MOVE IN
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          A lease adds capability while you keep paying its daily upkeep — it
+          never unlocks or blocks a target. Moving in, switching, or moving out
+          costs nothing; rent is only levied at each world-day boundary. Miss a
+          payment and you simply return to the free baseline. No debt, no gate.
+        </p>
       </section>
 
       <section aria-label="Ledger">

@@ -76,19 +76,56 @@ describe("world projection store", () => {
       economy: {
         credits: 320,
         capability: {
-          compute: 4,
-          memory: 5,
+          compute: 6,
+          memory: 6,
           vram: 0,
-          storage: 1,
+          storage: 2,
           network: 1,
         },
         actionMinutes: {
           survey: 12,
           inspect: 2,
-          escalate: 2,
+          escalate: 1,
           disengage: 3,
         },
-        discoveryScope: 5,
+        discoveryScope: 6,
+        lease: {
+          compute: 2,
+          memory: 1,
+          vram: 0,
+          storage: 1,
+          network: 0,
+        },
+        currentHousingId: "housing-rented-lab",
+        dailyCost: 60,
+        housing: [
+          {
+            id: "housing-cowork-loft",
+            label: "Co-working Loft",
+            dailyCost: 30,
+            capability: {
+              compute: 0,
+              memory: 0,
+              vram: 0,
+              storage: 0,
+              network: 2,
+            },
+            active: false,
+          },
+          {
+            id: "housing-rented-lab",
+            label: "Rented Lab Bench",
+            dailyCost: 60,
+            capability: {
+              compute: 2,
+              memory: 1,
+              vram: 0,
+              storage: 1,
+              network: 0,
+            },
+            active: true,
+          },
+        ],
         hardware: [
           {
             id: "hw:1",
@@ -194,20 +231,31 @@ describe("world projection store", () => {
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);
     expect(store.getCell("meta", "wallet", "credits")).toBe(320);
+    expect(store.getCell("meta", "wallet", "dailyCost")).toBe(60);
+    expect(store.getCell("meta", "wallet", "currentHousingId")).toBe(
+      "housing-rented-lab",
+    );
     expect(store.getRow("rig", "capability")).toEqual({
-      compute: 4,
-      memory: 5,
+      compute: 6,
+      memory: 6,
       vram: 0,
-      storage: 1,
+      storage: 2,
       network: 1,
     });
     expect(store.getRow("rig", "actionMinutes")).toEqual({
       survey: 12,
       inspect: 2,
-      escalate: 2,
+      escalate: 1,
       disengage: 3,
     });
-    expect(store.getRow("rig", "scale")).toEqual({ discoveryScope: 5 });
+    expect(store.getRow("rig", "scale")).toEqual({ discoveryScope: 6 });
+    expect(store.getRow("rig", "lease")).toEqual({
+      compute: 2,
+      memory: 1,
+      vram: 0,
+      storage: 1,
+      network: 0,
+    });
     expect(store.getTable("hardware")).toEqual({
       "hw:1": {
         catalogId: "rig-starter",
@@ -244,6 +292,28 @@ describe("world projection store", () => {
         causeKind: "hardware",
         causeId: "hw:2",
         counterparty: "market",
+      },
+    });
+    expect(store.getTable("housing")).toEqual({
+      "housing-cowork-loft": {
+        label: "Co-working Loft",
+        dailyCost: 30,
+        compute: 0,
+        memory: 0,
+        vram: 0,
+        storage: 0,
+        network: 2,
+        active: false,
+      },
+      "housing-rented-lab": {
+        label: "Rented Lab Bench",
+        dailyCost: 60,
+        compute: 2,
+        memory: 1,
+        vram: 0,
+        storage: 1,
+        network: 0,
+        active: true,
       },
     });
   });

@@ -6,10 +6,15 @@ import {
   deriveReputationDescriptors,
   type ReputationDescriptor,
 } from "@/game/simulation/systems/reputation";
+import { type HardwareCapability } from "@/game/simulation/systems/hardware";
 import {
-  deriveRigCapability,
-  type HardwareCapability,
-} from "@/game/simulation/systems/hardware";
+  deriveLeaseCapability,
+  effectiveCapability,
+} from "@/game/simulation/systems/housing";
+import {
+  HOUSING_CATALOG,
+  findHousingItem,
+} from "@/content/housing-catalog";
 import {
   RECON_ACTIONS,
   actionDuration,
@@ -27,6 +32,7 @@ import {
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
+  type LedgerCauseKind,
   type LedgerDirection,
   type OperationState,
   type RetaliationKind,
@@ -192,16 +198,28 @@ export interface VisibleLedgerEntry {
   direction: LedgerDirection;
   amount: number;
   balanceAfter: number;
-  causeKind: "contract" | "hardware";
+  causeKind: LedgerCauseKind;
   causeId: string;
   counterparty: string;
+}
+
+export interface VisibleHousing {
+  id: string;
+  label: string;
+  dailyCost: number;
+  capability: HardwareCapability;
+  active: boolean;
 }
 
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
+  lease: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
   discoveryScope: number;
+  currentHousingId: string | null;
+  dailyCost: number;
+  housing: VisibleHousing[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -514,16 +532,33 @@ function projectEconomy(
           : (handles.get(entry.counterparty) ?? entry.counterparty),
     }));
 
-  const capability = deriveRigCapability(state.economy);
+  const lease = deriveLeaseCapability(state.economy);
+  const capability = effectiveCapability(state.economy);
   const actionMinutes = Object.fromEntries(
     RECON_ACTIONS.map((action) => [action, actionDuration(action, capability)]),
   ) as Record<ReconAction, number>;
 
+  const housingItem = state.economy.housing
+    ? findHousingItem(state.economy.housing)
+    : undefined;
+
+  const housing: VisibleHousing[] = HOUSING_CATALOG.map((item) => ({
+    id: item.id,
+    label: item.label,
+    dailyCost: item.dailyCost,
+    capability: { ...item.capability },
+    active: state.economy.housing === item.id,
+  }));
+
   return {
     credits: state.economy.credits,
     capability,
+    lease,
     actionMinutes,
     discoveryScope: discoveryScope(capability.memory),
+    currentHousingId: state.economy.housing,
+    dailyCost: housingItem?.dailyCost ?? 0,
+    housing,
     hardware,
     catalog,
     ledger,

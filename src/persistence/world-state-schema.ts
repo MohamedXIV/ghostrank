@@ -172,7 +172,7 @@ const undergroundSchema = z.object({
 });
 
 const ledgerCauseSchema = z.object({
-  kind: z.enum(["contract", "hardware"]),
+  kind: z.enum(["contract", "hardware", "housing", "upkeep"]),
   id: z.string().min(1),
 });
 
@@ -196,6 +196,7 @@ const economySchema = z.object({
   credits: z.number().int().nonnegative(),
   ledger: z.array(valueLedgerEntrySchema).default([]),
   hardware: z.array(ownedHardwareSchema).default([]),
+  housing: z.string().min(1).nullable().default(null),
 });
 
 const storedWorldStateSchema = z.object({
@@ -255,6 +256,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       credits: 0,
       ledger: [],
       hardware: [],
+      housing: null,
     },
   };
 });

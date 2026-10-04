@@ -187,17 +187,17 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P2)
+## Implementation status (Phase 4 P0–P3)
 
-The economy substrate is live through P2. This section describes what the
+The economy substrate is live through P3. This section describes what the
 simulation actually does today; the sections above remain the design target for
 later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
-  resulting balance, cause (`contract` or `hardware`), and counterparty. Credits
-  can never go negative: a transfer that would take the balance below zero is
-  rejected and mutates nothing. There is no debt.
+  resulting balance, cause (`contract`, `hardware`, `housing`, or `upkeep`), and
+  counterparty. Credits can never go negative: a transfer that would take the
+  balance below zero is rejected and mutates nothing. There is no debt.
 - **Income.** Contract delivery is the first income source and pays a
   deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
   for an intrusion. Payout is never random and never rank-dependent.
@@ -206,8 +206,9 @@ later slices.
   with a free secondhand workstation; upgrades are bought with credits through the
   `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
   app, and costing no world time.
-- **Capability, not level.** Rig capability is *derived* as the sum of owned
-  hardware — it is never stored and never gates a target or a purchase.
+- **Capability, not level.** Rig capability is *derived* — the sum of owned
+  hardware plus the current lease (see P3) — it is never stored and never gates a
+  target or a purchase.
 - **Compute budgeting (P1).** Capability's first consumer is operation speed:
   survey reads network, inspect/escalate read compute, and an action costs
   `max(1, ceil(base / capability))` world minutes above baseline (the starter
@@ -224,6 +225,20 @@ later slices.
   discoverable on any rig; modest hardware just needs more passes, each
   costing its own time. Market shows items-per-pass next to per-action
   minutes; both halves of the money↔time trade are visible before buying.
+- **Housing and recurring costs (P3).** The wallet gains its first *sink* that
+  turns credits from a one-shot purchase pool into a strategic flow. A lease
+  (`src/content/housing-catalog.ts`) adds capability to the rig while it is held
+  — a co-working loft lifts connectivity, a rented lab bench lifts compute, memory
+  and storage — so it feeds the same P1 speed and P2 breadth consumers rather than
+  inventing new ones. Signing, switching, or breaking a lease moves no credits;
+  cost accrues only when a whole world-day boundary is crossed (`advanceUpkeep`
+  levies the daily cost at fixed boundaries, so it is deterministic and
+  split-invariant across chunked waits). If a boundary cannot be paid the player is
+  simply moved out — housing returns to the free baseline with no charge for that
+  boundary, no debt, and no penalty beyond losing the capability lift. Housing is
+  therefore always a lift, never a gate or a punishment; the Market app lists
+  locations with MOVE IN / MOVE OUT and shows the current daily upkeep.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
-  wallet on legacy snapshots, so older saves resume cleanly. Durations derive at
-  action time, so there is nothing to migrate.
+  wallet on legacy snapshots, so older saves resume cleanly. Durations and scope
+  derive at action time, so there is nothing to migrate; a legacy economy loads with
+  `housing: null` (the free baseline), and the held lease id round-trips with it.

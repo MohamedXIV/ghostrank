@@ -196,6 +196,12 @@ P2 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-workload-scale.md`)
 - the starter rig sits at scope 1, so Phase 2's one-item-per-pass rhythm is untouched; scale saves passes and time, and every item stays discoverable on any rig — breadth, never a gate,
 - Market surfaces RIG SCALE (items per pass) beside RIG SPEED, so both halves of the money↔time trade are legible before buying.
 
+P3 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-housing-costs.md`):
+- credits gain their first recurring sink: a housing lease (`src/content/housing-catalog.ts`) adds capability to the rig while it is held, flowing into the same P1 speed and P2 breadth consumers through `effectiveCapability` (hardware + lease),
+- signing, switching, or breaking a lease moves no credits; rent is levied only when a whole world-day boundary is crossed (`advanceUpkeep` charges fixed boundaries, so it is deterministic and split-invariant across chunked waits),
+- an unpayable boundary moves the player out instead of charging: back to the free baseline, no debt, no penalty beyond losing the lift — housing is capability, never a gate or a punishment,
+- new state is one nullable `housing` id on the economy (legacy saves load as the free baseline); new commands `rentHousing` (`rent <id>`) and `breakLease` (`lease break`) are shared by Terminal and the Market housing app, which shows listings, daily upkeep, and the lease lift inside RIG CAPABILITY.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

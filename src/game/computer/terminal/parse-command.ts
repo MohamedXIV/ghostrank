@@ -53,6 +53,15 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         catalogId,
       }));
 
+    case "rent":
+      return singleIdCommand(args, (housingId) => ({
+        type: "rentHousing",
+        housingId,
+      }));
+
+    case "lease":
+      return parseLeaseCommand(args);
+
     case "op":
       return parseOperationCommand(args);
 
@@ -130,6 +139,26 @@ function parseOperationCommand(args: string[]): TerminalParseResult {
         ok: false,
         error: "INVALID_ARGUMENT",
       };
+  }
+}
+
+function parseLeaseCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "break":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "breakLease",
+        },
+      };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
   }
 }
 

@@ -214,6 +214,22 @@ export function syncWorldProjection(
     ]),
   );
 
+  const housingRows = Object.fromEntries(
+    projection.economy.housing.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        dailyCost: listing.dailyCost,
+        compute: listing.capability.compute,
+        memory: listing.capability.memory,
+        vram: listing.capability.vram,
+        storage: listing.capability.storage,
+        network: listing.capability.network,
+        active: listing.active,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -236,7 +252,20 @@ export function syncWorldProjection(
     store.setTable("hardware", hardwareRows);
     store.setTable("catalog", catalogRows);
     store.setTable("ledger", ledgerRows);
+    store.setTable("housing", housingRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
+    store.setCell(
+      "meta",
+      "wallet",
+      "dailyCost",
+      projection.economy.dailyCost,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "currentHousingId",
+      projection.economy.currentHousingId ?? "",
+    );
     store.setTable("rig", {
       capability: {
         compute: projection.economy.capability.compute,
@@ -253,6 +282,13 @@ export function syncWorldProjection(
       },
       scale: {
         discoveryScope: projection.economy.discoveryScope,
+      },
+      lease: {
+        compute: projection.economy.lease.compute,
+        memory: projection.economy.lease.memory,
+        vram: projection.economy.lease.vram,
+        storage: projection.economy.lease.storage,
+        network: projection.economy.lease.network,
       },
     });
     store.setCell(

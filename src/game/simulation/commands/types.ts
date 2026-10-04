@@ -42,6 +42,13 @@ export type SimulationCommand =
       catalogId: string;
     }
   | {
+      type: "rentHousing";
+      housingId: string;
+    }
+  | {
+      type: "breakLease";
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };
