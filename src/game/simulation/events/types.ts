@@ -1,3 +1,4 @@
+import type { ModelSource } from "@/content/model-catalog";
 import type {
   ContractObjectiveKind,
   ForumSubjectKind,
@@ -249,6 +250,25 @@ export type SimulationEvent =
       type: "MachineRenamed";
       machineId: string;
       label: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ModelAcquired";
+      modelId: string;
+      label: string;
+      /** One-time credits paid for the local copy. */
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "ModelChanged";
+      modelId: string;
+      /** True when the model is now running; false when stopped or lapsed. */
+      active: boolean;
+      /** Which economic shape it carries: rented cloud or owned local. */
+      source: ModelSource;
+      /** Credits per world day while it runs (0 for a local model). */
+      dailyCost: number;
       worldMinute: number;
     }
   | {

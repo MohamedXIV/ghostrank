@@ -89,6 +89,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "box":
       return parseBoxCommand(args);
 
+    case "model":
+      return parseModelCommand(args);
+
     case "op":
       return parseOperationCommand(args);
 
@@ -220,6 +223,33 @@ function parseBoxCommand(args: string[]): TerminalParseResult {
           label: rest.slice(1).join(" "),
         },
       };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+}
+
+function parseModelCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "buy":
+      return singleIdCommand(rest, (modelId) => ({
+        type: "acquireModel",
+        modelId,
+      }));
+
+    case "run":
+      return singleIdCommand(rest, (modelId) => ({
+        type: "runModel",
+        modelId,
+      }));
+
+    case "stop":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return { ok: true, command: { type: "stopModel" } };
 
     default:
       return { ok: false, error: "INVALID_ARGUMENT" };

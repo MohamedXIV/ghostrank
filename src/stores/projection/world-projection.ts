@@ -319,6 +319,21 @@ export function syncWorldProjection(
     ]),
   );
 
+  const modelListingRows = Object.fromEntries(
+    projection.economy.modelListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        source: listing.source,
+        cost: listing.cost,
+        dailyCost: listing.dailyCost,
+        factor: listing.factor,
+        owned: listing.owned,
+        running: listing.running,
+      },
+    ]),
+  );
+
   const valueNodeRows = Object.fromEntries(
     projection.economy.valueGraph.nodes.map((node) => [
       node.id,
@@ -363,6 +378,7 @@ export function syncWorldProjection(
     store.setTable("toolListings", toolListingRows);
     store.setTable("ownedMachines", ownedMachineRows);
     store.setTable("machineListings", machineListingRows);
+    store.setTable("modelListings", modelListingRows);
     store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(
@@ -439,6 +455,12 @@ export function syncWorldProjection(
         vram: projection.economy.ownedMachineCapability.vram,
         storage: projection.economy.ownedMachineCapability.storage,
         network: projection.economy.ownedMachineCapability.network,
+      },
+      // The rig's running AI assistant: which model, and the *combined*
+      // duration shortcut it shares with licenses and tools (1 = no lift).
+      assistant: {
+        modelId: projection.economy.activeModelId ?? "",
+        factor: projection.economy.actionDurationFactor,
       },
     });
     store.setCell(

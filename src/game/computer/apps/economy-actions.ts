@@ -72,3 +72,23 @@ export function renameMachineFromGui(
     label,
   };
 }
+
+export function acquireModelFromGui(modelId: string): SimulationCommand {
+  return {
+    type: "acquireModel",
+    modelId,
+  };
+}
+
+export function runModelFromGui(modelId: string): SimulationCommand {
+  return {
+    type: "runModel",
+    modelId,
+  };
+}
+
+export function stopModelFromGui(): SimulationCommand {
+  return {
+    type: "stopModel",
+  };
+}

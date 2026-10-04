@@ -180,6 +180,7 @@ const ledgerCauseSchema = z.object({
     "license",
     "tool",
     "machine",
+    "model",
   ]),
   id: z.string().min(1),
 });
@@ -224,6 +225,8 @@ const economySchema = z.object({
   software: z.array(z.string().min(1)).default([]),
   playerTools: z.array(ownedPlayerToolSchema).default([]),
   ownedMachines: z.array(ownedMachineSchema).default([]),
+  ownedModels: z.array(z.string().min(1)).default([]),
+  activeModel: z.string().min(1).nullable().default(null),
 });
 
 const storedWorldStateSchema = z.object({
@@ -287,6 +290,8 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       software: [],
       playerTools: [],
       ownedMachines: [],
+      ownedModels: [],
+      activeModel: null,
     },
   };
 });

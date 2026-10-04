@@ -35,6 +35,10 @@ import {
   machineResaleValue,
 } from "@/content/machine-catalog";
 import {
+  MODEL_CATALOG,
+  type ModelSource,
+} from "@/content/model-catalog";
+import {
   SOFTWARE_CATALOG,
   type SoftwareEffect,
 } from "@/content/software-catalog";
@@ -291,6 +295,28 @@ export interface VisibleMachineListing {
   capability: HardwareCapability;
 }
 
+/**
+ * A model the rig can run. Both sources are listed; the two economic shapes
+ * are mutually exclusive by construction — a cloud model rents (dailyCost > 0,
+ * never owned, starting moves no credits), a local model is property (cost > 0,
+ * bills nothing to run). Whether BUY or RUN applies follows from `source`,
+ * `owned`, and `running`.
+ */
+export interface VisibleModelListing {
+  id: string;
+  label: string;
+  source: ModelSource;
+  /** One-time acquisition price; 0 for a cloud model, which cannot be bought. */
+  cost: number;
+  /** Credits per crossed world day while running; 0 for a local model. */
+  dailyCost: number;
+  /** The speed shortcut this model applies while running (< 1 is faster). */
+  factor: number;
+  /** True for an owned local copy; always false for a cloud model. */
+  owned: boolean;
+  running: boolean;
+}
+
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
@@ -301,6 +327,13 @@ export interface EconomyProjection {
   /** Combined capability lift from all owned machines. */
   ownedMachineCapability: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
+  /**
+   * The rig's combined duration shortcut (licenses × tools × running model).
+   * Exactly 1 with none of them active — the untouched baseline.
+   */
+  actionDurationFactor: number;
+  /** Catalog id of the running model, or null. */
+  activeModelId: string | null;
   discoveryScope: number;
   currentHousingId: string | null;
   dailyCost: number;
@@ -310,6 +343,8 @@ export interface EconomyProjection {
   toolListings: VisiblePlayerToolListing[];
   ownedMachines: VisibleOwnedMachine[];
   machineListings: VisibleMachineListing[];
+  /** Every model the scene offers, tagged with ownership and running state. */
+  modelListings: VisibleModelListing[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -751,6 +786,21 @@ function projectEconomy(
     }),
   );
 
+  // Models list every catalog entry with its two-state tag. The running model's
+  // shortcut is shown per listing so the player can compare before starting —
+  // `factor` above is the *combined* result of licenses × tools × this model.
+  const modelListings: VisibleModelListing[] = MODEL_CATALOG.map((item) => ({
+    id: item.id,
+    label: item.label,
+    source: item.source,
+    cost: item.cost,
+    dailyCost: item.dailyCost,
+    factor:
+      item.effect.kind === "modifier" ? item.effect.discount.factor : 1,
+    owned: state.economy.ownedModels.includes(item.id),
+    running: state.economy.activeModel === item.id,
+  }));
+
   return {
     credits: state.economy.credits,
     capability,
@@ -759,15 +809,22 @@ function projectEconomy(
     playerTools,
     ownedMachineCapability,
     actionMinutes,
+    actionDurationFactor: factor,
+    activeModelId: state.economy.activeModel,
     discoveryScope: discoveryScope(capability.memory),
     currentHousingId: state.economy.housing,
-    dailyCost: recurringDailyCost(state.economy.housing, state.economy.software),
+    dailyCost: recurringDailyCost(
+      state.economy.housing,
+      state.economy.software,
+      state.economy.activeModel,
+    ),
     housing,
     softwareListings,
     ownedTools,
     toolListings,
     ownedMachines,
     machineListings,
+    modelListings,
     hardware,
     catalog,
     ledger,

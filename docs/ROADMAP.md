@@ -244,9 +244,16 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: planned, kickoff plan delivered. Tracked by #23 (unblocked by #22).**
+**Status: in progress — P0 delivered. Tracked by #23 (unblocked by #22).**
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
+
+P0 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-models.md`):
+- **AI substrate and model catalog** — fictional models (`src/content/model-catalog.ts`) as a new asset class: one *assistant slot* (`economy.activeModel`) over an owned-local inventory (`economy.ownedModels`), each contributing an action-duration factor through the existing `combineFactors` path — never capability, never a gate, and no model running is exact identity (all 354 pre-Phase-5 tests untouched);
+- the two sources are deliberately opposite economics, each an established template: **cloud is rent** (running *is* renting, zero credits to start, `advanceUpkeep` bills the `provider` at each crossed world-day boundary, an unpayable boundary lapses the model — no debt, the license semantics verbatim) and **local is property** (a one-time `market` debit, new ledger cause `model`, then it runs free forever, and buying never auto-runs what you own);
+- starting, switching, and stopping move no credits and cannot double-bill; `model buy <id>` / `model run <id>` / `model stop` (argument-free — the slot holds exactly one) are shared by Terminal and the Market AI MODELS panel, which shows each model's factor, its rent-or-property price shape, and owned/running state;
+- model *properties* (reasoning/context/reliability, 1–5 bands) ship as seeded catalog data consumed by no one yet — stated plainly, reserved for P2 analysis and P3 builds; the hardware footprint waits for P1 contention, so both #22 handoffs stay on-map;
+- the `provider` joins the value graph as a fifth institution role, and the wallet's combined daily upkeep now folds lease + licenses + a running cloud subscription.
 
 Deliverables:
 - cloud/local model choices,

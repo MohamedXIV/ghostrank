@@ -187,17 +187,17 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0)
 
-The economy substrate is live through P7. This section describes what the
-simulation actually does today; the sections above remain the design target for
-later slices.
+The Phase 4 economy is live through P7, and Phase 5's model substrate through
+P0. This section describes what the simulation actually does today; the
+sections above remain the design target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
   resulting balance, cause (`contract`, `hardware`, `housing`, `upkeep`,
-  `license`, `tool`, or `machine`), and counterparty. Credits can never go
-  negative: a transfer that would take the balance below zero is rejected and
+  `license`, `tool`, `machine`, or `model`), and counterparty. Credits can never
+  go negative: a transfer that would take the balance below zero is rejected and
   mutates nothing. There is no debt.
 - **Income.** Contract delivery is the first income source and pays a
   deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
@@ -293,9 +293,28 @@ later slices.
   Market MACHINES panel (owned boxes show paid/sell price with an inline rename
   and SELL; listings show `X cr one-time · owned ×N` with BUY). Machines are
   always a lift, never a gate.
+- **AI models — the assistant slot (Phase 5 P0).** Models
+  (`src/content/model-catalog.ts`) are not capability but a *shortcut*: exactly
+  one running model multiplies derived action minutes through the same
+  `combineFactors` path licenses and tools compose with (one floor, the P1
+  one-minute floor still leading), and no model running is exact identity. The
+  two sources are opposite economic shapes, each an established template:
+  **cloud is rent** — running *is* renting, moving no credits to start, switch,
+  or stop, while `advanceUpkeep` bills the `provider` (ledger cause `model`) at
+  each crossed world-day boundary, and an unpayable boundary simply lapses the
+  model (no debt, the license semantics); **local is property** — a one-time
+  `market` debit, then it runs free forever, and buying never auto-runs, because
+  owning and using are separate choices. `model buy <id>` / `model run <id>` /
+  `model stop` are shared by Terminal and the Market AI MODELS panel (each
+  listing shows its factor and rent-or-property price; the wallet's combined
+  daily upkeep folds in a running cloud subscription). Model properties
+  (reasoning/context/reliability) ship as seeded data nothing consumes yet —
+  reserved for the analysis and build slices, as vram/storage await the
+  contention slice — never a gate.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
   a legacy economy loads with `housing: null` (the free baseline), an empty
-  `software` list (no running tools), an empty `playerTools` inventory, and an
-  empty `ownedMachines` rack.
+  `software` list (no running tools), an empty `playerTools` inventory, an
+  empty `ownedMachines` rack, no `ownedModels`, and `activeModel: null` — the
+  untouched baseline in every layer.

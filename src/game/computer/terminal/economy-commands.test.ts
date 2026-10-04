@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  acquireModelFromGui,
   breakLeaseFromGui,
   buyHardwareFromGui,
   buyMachineFromGui,
@@ -9,8 +10,10 @@ import {
   enableSoftwareFromGui,
   renameMachineFromGui,
   rentHousingFromGui,
+  runModelFromGui,
   sellMachineFromGui,
   sellPlayerToolFromGui,
+  stopModelFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 
@@ -256,6 +259,73 @@ describe("box commands", () => {
       // `box name` needs both an instance id and at least one label word.
       "box name",
       "box name machine:1",
+    ]) {
+      expect(parseTerminalCommand(input)).toEqual({
+        ok: false,
+        error: "INVALID_ARGUMENT",
+      });
+    }
+  });
+});
+
+describe("model commands", () => {
+  it("shares acquireModel between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("model buy model-local-workhorse");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "acquireModel", modelId: "model-local-workhorse" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(acquireModelFromGui("model-local-workhorse")).toEqual(
+      terminal.command,
+    );
+  });
+
+  it("shares runModel between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("model run model-cloud-frontier");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "runModel", modelId: "model-cloud-frontier" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(runModelFromGui("model-cloud-frontier")).toEqual(terminal.command);
+  });
+
+  it("shares stopModel between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("model stop");
+
+    expect(terminal).toEqual({ ok: true, command: { type: "stopModel" } });
+    expect(stopModelFromGui()).toEqual({ type: "stopModel" });
+  });
+
+  it("keeps the model verb distinct from the software use/stop verbs", () => {
+    // `stop <id>` disables a license; `model stop` has no argument and halts
+    // whatever assistant is running. Both must stay on their own paths.
+    expect(parseTerminalCommand("stop software-net-monitor")).toEqual({
+      ok: true,
+      command: { type: "disableSoftware", softwareId: "software-net-monitor" },
+    });
+    expect(parseTerminalCommand("model run software-net-monitor")).toEqual({
+      ok: true,
+      command: { type: "runModel", modelId: "software-net-monitor" },
+    });
+  });
+
+  it("rejects malformed model arguments", () => {
+    for (const input of [
+      "model",
+      "model buy",
+      "model buy model-local-workhorse model-local-tuned",
+      "model run",
+      // `model stop` takes no argument — the slot holds exactly one model.
+      "model stop now",
+      "model rent model-cloud-frontier",
     ]) {
       expect(parseTerminalCommand(input)).toEqual({
         ok: false,

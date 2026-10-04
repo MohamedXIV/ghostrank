@@ -1,5 +1,6 @@
 import { FENCE_COUNTERPARTY } from "@/content/player-tool-catalog";
 import { LANDLORD_COUNTERPARTY } from "@/content/housing-catalog";
+import { PROVIDER_COUNTERPARTY } from "@/content/model-catalog";
 import { VENDOR_COUNTERPARTY } from "@/content/software-catalog";
 import { MARKET_COUNTERPARTY } from "@/content/hardware-catalog";
 import type { LedgerCauseKind } from "@/game/simulation/state/world-state";
@@ -26,6 +27,7 @@ const INSTITUTION_COUNTERPARTIES: ReadonlySet<string> = new Set([
   LANDLORD_COUNTERPARTY,
   VENDOR_COUNTERPARTY,
   FENCE_COUNTERPARTY,
+  PROVIDER_COUNTERPARTY,
 ]);
 
 /**

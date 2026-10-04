@@ -89,6 +89,8 @@ describe("world projection store", () => {
           disengage: 3,
         },
         discoveryScope: 6,
+        actionDurationFactor: 0.595,
+        activeModelId: "model-cloud-frontier",
         lease: {
           compute: 2,
           memory: 1,
@@ -97,7 +99,7 @@ describe("world projection store", () => {
           network: 0,
         },
         currentHousingId: "housing-rented-lab",
-        dailyCost: 160,
+        dailyCost: 280,
         housing: [
           {
             id: "housing-cowork-loft",
@@ -261,6 +263,28 @@ describe("world projection store", () => {
             },
           },
         ],
+        modelListings: [
+          {
+            id: "model-cloud-frontier",
+            label: "Frontier Class API",
+            source: "cloud",
+            cost: 0,
+            dailyCost: 120,
+            factor: 0.7,
+            owned: false,
+            running: true,
+          },
+          {
+            id: "model-local-workhorse",
+            label: "Quantized Workhorse 13B",
+            source: "local",
+            cost: 900,
+            dailyCost: 0,
+            factor: 0.9,
+            owned: true,
+            running: false,
+          },
+        ],
         hardware: [
           {
             id: "hw:1",
@@ -385,7 +409,7 @@ describe("world projection store", () => {
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);
     expect(store.getCell("meta", "wallet", "credits")).toBe(320);
-    expect(store.getCell("meta", "wallet", "dailyCost")).toBe(160);
+    expect(store.getCell("meta", "wallet", "dailyCost")).toBe(280);
     expect(store.getCell("meta", "wallet", "currentHousingId")).toBe(
       "housing-rented-lab",
     );
@@ -430,6 +454,30 @@ describe("world projection store", () => {
       vram: 0,
       storage: 2,
       network: 1,
+    });
+    expect(store.getRow("rig", "assistant")).toEqual({
+      modelId: "model-cloud-frontier",
+      factor: 0.595,
+    });
+    expect(store.getTable("modelListings")).toEqual({
+      "model-cloud-frontier": {
+        label: "Frontier Class API",
+        source: "cloud",
+        cost: 0,
+        dailyCost: 120,
+        factor: 0.7,
+        owned: false,
+        running: true,
+      },
+      "model-local-workhorse": {
+        label: "Quantized Workhorse 13B",
+        source: "local",
+        cost: 900,
+        dailyCost: 0,
+        factor: 0.9,
+        owned: true,
+        running: false,
+      },
     });
     expect(store.getTable("ownedMachines")).toEqual({
       "machine:1": {

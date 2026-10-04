@@ -17,6 +17,7 @@ import {
   type ContractVerb,
 } from "@/game/computer/apps/contract-actions";
 import {
+  acquireModelFromGui,
   breakLeaseFromGui,
   buyHardwareFromGui,
   buyMachineFromGui,
@@ -25,8 +26,10 @@ import {
   enableSoftwareFromGui,
   renameMachineFromGui,
   rentHousingFromGui,
+  runModelFromGui,
   sellMachineFromGui,
   sellPlayerToolFromGui,
+  stopModelFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -250,6 +253,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "box buy <catalog-id> acquire a complete named machine (one-time)",
         "box sell <box-id>    resell an owned machine through the fence",
         "box name <box-id> <label>  rename an owned machine",
+        "model buy <model-id> acquire a local model (one-time, runs free)",
+        "model run <model-id> run a model (cloud rents daily; local must be owned)",
+        "model stop         stop the running model",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -341,6 +347,12 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "machine sold // resale credits recovered";
     case "renameMachine":
       return "machine renamed // label updated";
+    case "acquireModel":
+      return "local model acquired // owned outright, runs free";
+    case "runModel":
+      return "model running // analysis assist active";
+    case "stopModel":
+      return "model stopped // its shortcut ends";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -1005,6 +1017,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const softwareLift = useRow("rig", "softwareLift", runtime.projection);
   const playerToolLift = useRow("rig", "playerToolLift", runtime.projection);
   const machineLift = useRow("rig", "machineLift", runtime.projection);
+  const assistant = useRow("rig", "assistant", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const housingTable = useTable("housing", runtime.projection);
@@ -1013,6 +1026,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const toolListingsTable = useTable("toolListings", runtime.projection);
   const ownedMachinesTable = useTable("ownedMachines", runtime.projection);
   const machineListingsTable = useTable("machineListings", runtime.projection);
+  const modelsTable = useTable("modelListings", runtime.projection);
   const valueNodesTable = useTable("valueNodes", runtime.projection);
   const valueInflow = Number(
     useCell("meta", "wallet", "valueInflow", runtime.projection) ?? 0,
@@ -1118,6 +1132,13 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
       Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
   );
 
+  const models = Object.entries(modelsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) ||
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
   const ledger = Object.entries(ledgerTable).sort(
     ([idA, a], [idB, b]) =>
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
@@ -1184,6 +1205,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         <p className="market-hint">
           Better hardware works faster. It never unlocks or blocks a target —
           capability is speed and scale, not a level gate.
+          {Number(assistant.factor ?? 1) < 1 && (
+            <> An assistant is running: every accelerated action costs{" "}
+            <strong>×{Number(assistant.factor ?? 1)}</strong> its hardware
+            minutes.</>
+          )}
         </p>
       </section>
 
@@ -1654,6 +1680,83 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           the fence for half of what you paid. Every owned box folds into the
           same rig profile that drives speed and scale: multiple machines
           multiply your capability, never unlock or block a target.
+        </p>
+      </section>
+
+      <section aria-label="AI models">
+        <span className="panel-label">AI MODELS // ASSISTANTS</span>
+        <ul className="market-catalog">
+          {models.map(([id, entry]) => {
+            const cost = Number(entry.cost ?? 0);
+            const perDay = Number(entry.dailyCost ?? 0);
+            const owned = Boolean(entry.owned ?? false);
+            const running = Boolean(entry.running ?? false);
+            const cloud = String(entry.source ?? "cloud") === "cloud";
+            const factor = Number(entry.factor ?? 1);
+
+            return (
+              <li key={id} className={running ? "is-owned" : undefined}>
+                <div>
+                  <span className="panel-label">
+                    {String(entry.label ?? id)}
+                  </span>
+                  <span>
+                    analysis ×{factor} action minutes
+                  </span>
+                  <span className="market-time">
+                    {cloud
+                      ? `${perDay.toLocaleString("en-US")} cr / day while running`
+                      : `${cost.toLocaleString("en-US")} cr one-time · runs free`}
+                    {owned ? " · owned" : ""}
+                    {running ? " · running" : ""}
+                  </span>
+                </div>
+                {running ? (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(stopModelFromGui())}
+                    title="Stop this assistant (its shortcut ends)"
+                  >
+                    STOP
+                  </button>
+                ) : owned || cloud ? (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(runModelFromGui(id))}
+                    title={
+                      cloud
+                        ? "Start renting this cloud model (bills daily while it runs)"
+                        : "Run this owned model (costs nothing)"
+                    }
+                  >
+                    RUN
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={credits < cost}
+                    title={
+                      credits >= cost
+                        ? "Buy this local model (one-time, runs free)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(acquireModelFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="market-hint">
+          A model is an assistant, not an autopilot: while one runs it shortens
+          the minutes accelerated actions cost, composed with your licenses and
+          tools under the same one-minute floor. Cloud models rent — starting or
+          stopping moves nothing, the fee lands at each crossed day and an
+          unpayable one simply stops the model. Local models are property — one
+          purchase, then running them is free forever. No model at all is the
+          baseline, and an assistant never unlocks or blocks a target.
         </p>
       </section>
 

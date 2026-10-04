@@ -78,6 +78,17 @@ export type SimulationCommand =
       label: string;
     }
   | {
+      type: "acquireModel";
+      modelId: string;
+    }
+  | {
+      type: "runModel";
+      modelId: string;
+    }
+  | {
+      type: "stopModel";
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

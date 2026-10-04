@@ -19,6 +19,7 @@ import {
   findMachineItem,
   machineResaleValue,
 } from "@/content/machine-catalog";
+import { findModelItem } from "@/content/model-catalog";
 import {
   actionDuration,
   type ReconAction,
@@ -129,6 +130,15 @@ export class CommandBus {
 
       case "renameMachine":
         return this.renameMachine(command.machineId, command.label);
+
+      case "acquireModel":
+        return this.acquireModel(command.modelId);
+
+      case "runModel":
+        return this.runModel(command.modelId);
+
+      case "stopModel":
+        return this.stopModel();
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -992,6 +1002,136 @@ export class CommandBus {
           machineId: owned.id,
           label: owned.label,
           worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Acquire a *local* model: a one-time purchase of owned property, the P5/P7
+   * template again. Cloud models have no acquisition step — renting is done by
+   * running them — so a cloud id here is a category error, not a price check.
+   * Acquiring never starts the model: owning and running are separate choices,
+   * so a purchase cannot silently swap out a running subscription.
+   */
+  private acquireModel(modelId: string): CommandResult {
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    if (item.source !== "local") {
+      return this.failure("MODEL_NOT_LOCAL");
+    }
+
+    if (this.world.economy.ownedModels.includes(item.id)) {
+      return this.failure("MODEL_ALREADY_OWNED");
+    }
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "model",
+      causeId: item.id,
+      counterparty: MARKET_COUNTERPARTY,
+      worldMinute: this.world.worldMinute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    this.world.economy.ownedModels = [
+      ...this.world.economy.ownedModels,
+      item.id,
+    ];
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "ModelAcquired",
+          modelId: item.id,
+          label: item.label,
+          cost: item.cost,
+          worldMinute: payment.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Start a model running — exactly one at a time, the rig's single AI
+   * assistant. Cloud models need no purchase: running *is* renting, and the
+   * subscription starts billing at the next whole-day boundary. Local models
+   * must be owned first. Starting, stopping, or switching mid-day moves no
+   * credits, so swapping assistants never double-bills (the license rule,
+   * unchanged). Switching implicitly stops whatever was running.
+   */
+  private runModel(modelId: string): CommandResult {
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    if (
+      item.source === "local" &&
+      !this.world.economy.ownedModels.includes(item.id)
+    ) {
+      return this.failure("LOCAL_MODEL_NOT_OWNED");
+    }
+
+    if (this.world.economy.activeModel === item.id) {
+      return this.failure("MODEL_ALREADY_ACTIVE");
+    }
+
+    this.world.economy.activeModel = item.id;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ModelChanged",
+          modelId: item.id,
+          active: true,
+          source: item.source,
+          dailyCost: item.dailyCost,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /** Stop the running model. No debt, no penalty — the lift simply ends. */
+  private stopModel(): CommandResult {
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_MODEL_ACTIVE");
+    }
+
+    const item = findModelItem(modelId);
+    this.world.economy.activeModel = null;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ModelChanged",
+          modelId,
+          active: false,
+          // An unknown id can only come from a stale save; report it as the
+          // rental shape it behaved like, with no cost.
+          source: item?.source ?? "cloud",
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
         },
       ],
     };

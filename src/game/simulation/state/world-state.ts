@@ -216,7 +216,8 @@ export type LedgerCauseKind =
   | "upkeep"
   | "license"
   | "tool"
-  | "machine";
+  | "machine"
+  | "model";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -290,6 +291,19 @@ export interface EconomyState {
    * baseline, and the whole inventory folds into the same effective profile.
    */
   ownedMachines: OwnedMachine[];
+  /**
+   * Catalog ids of acquired *local* models (Phase 5 property). Running one bills
+   * nothing; an empty list means the player owns no model outright.
+   */
+  ownedModels: string[];
+  /**
+   * Catalog id of the running model, or null. A running model is the rig's AI
+   * assistant: it composes its shortcut into the same duration factor as
+   * licenses and tools. Cloud models bill while they run and lapse if the fee
+   * cannot be paid; local models are owned and run free. Null is the untouched
+   * pre-Phase-5 baseline.
+   */
+  activeModel: string | null;
 }
 
 export interface WorldState {
@@ -386,6 +400,8 @@ function createInitialEconomy(
     ownedMachines: initial?.ownedMachines
       ? structuredClone(initial.ownedMachines)
       : [],
+    ownedModels: initial?.ownedModels ? [...initial.ownedModels] : [],
+    activeModel: initial?.activeModel ?? null,
   };
 }
 

@@ -199,6 +199,14 @@ A machine is a *complete box*, distinct from a P0 component: components upgrade 
 
 Accepted 2026-10-04 as the P7 slice, completing the core Phase 4 deliverables except vram/storage consumers, which wait for Phase 5's local-model capacity. Catalog prices and capability profiles are provisional tuning; seller-side NPC marketplaces (actors selling boxes, haggling, stolen-goods provenance), rack physical footprint (space/power/heat), and true multi-hop value chains remain open for later slices.
 
+## D026 — Models are assistants on the duration factor, with rent-vs-property economics (Phase 5 P0)
+
+Phase 5's substrate lands models as the rig's *assistant slot*, deliberately **not** a capability layer: exactly one `economy.activeModel` contributes an action-duration factor through the existing `combinedActionDurationFactor` → `combineFactors` path (licenses × tools × model, floored once at 0.1, the P1 one-minute floor still leading). Capability, targets, and requirements are untouched — no model running is exact identity, so the 354 pre-Phase-5 tests pass untouched and models are a shortcut, never a gate.
+
+The two sources are opposite economic shapes, each reusing an established template rather than inventing mechanics. **Cloud models are rent**: running one *is* renting — no acquisition, no credits to start, switch, or stop (the single slot makes double-billing impossible by construction) — and `advanceUpkeep` bills the `provider` (new ledger cause `model`, fifth institution role) at each crossed world-day boundary; an unpayable boundary lapses the model, the license semantics verbatim. **Local models are property**: a one-time `market` debit following the P5/P7 template, then running costs nothing forever; buying never auto-runs, because owning and using are separate choices. Model properties (reasoning/context/reliability on 1–5 bands) ship as seeded catalog data that nothing consumes yet — stated rather than hidden — reserved for P2 analysis and P3 builds; the hardware footprint waits for P1 contention, keeping both #22 handoffs on-map.
+
+Accepted 2026-10-04 as the P0 slice. Catalog names, prices, factors, and property bands are provisional tuning; compute contention (vram/storage consumers), fallible AI analysis, provider privacy/refusal/rate-limit drama, and NPC model use remain open for later slices.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
