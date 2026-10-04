@@ -86,6 +86,7 @@ describe("world projection store", () => {
         },
       ],
       investigations: [],
+      probes: [],
       descriptors: [],
       underground: {
         board: [],

@@ -793,6 +793,27 @@ function describeSignal(kind: string, targetHandle: string): string {
   }
 }
 
+/**
+ * Phase 6 P2 — the tell a rival probe leaves behind. One line per artifact kind,
+ * in the player's own words, and deliberately nothing more: which seat of your
+ * standing was aimed at, who aimed it, and whether they learned anything true
+ * are all invisible from here. That inference — ping → your rig, a call → your
+ * dwelling, a contact gone quiet → your habits — is the player's work, and it is
+ * exactly what the counterplay (lay low, move, change relays) is for.
+ */
+function describeProbeTell(artifactKind: string): string {
+  switch (artifactKind) {
+    case "probe-ping":
+      return "a probe touched a port you were not listening on";
+    case "caller-question":
+      return "an unknown number asked for you by name";
+    case "missing-contact":
+      return "a contact went quiet mid-sentence, right after someone leaned on them";
+    default:
+      return "something poked at your corner of the network";
+  }
+}
+
 function describeIncident(
   actorHandle: string,
   counterpartHandle: string,
@@ -829,6 +850,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   // Phase 6 P1: the case files and the evidence they have surfaced.
   const investigationTable = useTable("investigations", runtime.projection);
   const signalTable = useTable("investigationSignals", runtime.projection);
+  // Phase 6 P2: the tells rival probes leaked into your logs.
+  const probeTable = useTable("probes", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -885,6 +908,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
+  const tells = Object.entries(probeTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
   const caseStage = (investigationId: string): string =>
     cases[investigationId] ?? "probing";
 
@@ -930,7 +958,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
 
       <section aria-label="Attention">
         <span className="panel-label">ATTENTION</span>
-        {signals.length === 0 ? (
+        {signals.length === 0 && tells.length === 0 ? (
           <p className="underground-empty">
             Nothing unusual in the logs. Nobody has asked about you yet.
           </p>
@@ -950,9 +978,17 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
               </li>
             ))}
+            {tells.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
+                </span>
+                <span>{describeProbeTell(String(entry.artifactKind ?? ""))}</span>
+              </li>
+            ))}
           </ul>
         )}
-        {signals.length > 0 && (
+        {(signals.length > 0 || tells.length > 0) && (
           <p className="analysis-caveat">
             Each line is a thing you noticed, not a verdict. None of them says
             how close anyone is — lay low, change relays, or move, and see

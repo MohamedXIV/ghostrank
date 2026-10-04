@@ -3,6 +3,7 @@ import type { SimulationEvent } from "@/game/simulation/events/types";
 import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
+import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -1012,6 +1013,10 @@ export function advanceUnderground(
     startTickIndex = endTickIndex - MAX_CATCHUP_TICKS + 1;
   }
 
+  // Phase 6 P2: peers with standing against the player may spend a tick pointing
+  // an assistant at them. See the call site inside the loop for why the
+  // candidate list is re-derived every tick rather than cached for the command.
+
   for (
     let tickIndex = startTickIndex;
     tickIndex <= endTickIndex;
@@ -1029,6 +1034,19 @@ export function advanceUnderground(
 
     events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
+    // Last in the tick, and re-derived per tick: retaliation spends grudge
+    // downward, so a cached candidate list would let one big `wait` keep probing
+    // with a peer who has already spent its grudge while the same wait in chunks
+    // would not — probe records would depend on how the player pressed the
+    // button. Reading standing at the tick makes the sequence a function of
+    // world history alone. Inside this loop at all is the point: a probe is an
+    // ecosystem *action*, so it inherits the tick index and the catch-up cap
+    // rather than carrying a second clock cursor, and a tick that never ran is a
+    // probe that never happened — the deliberate contrast with P1's derived case
+    // material (D032).
+    events.push(
+      ...probeTick(world, tickIndex, worldMinute, probeCandidates(world)),
+    );
   }
 
   underground.lastTickMinute = Math.max(underground.lastTickMinute, toMinute);

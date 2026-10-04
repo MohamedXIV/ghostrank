@@ -277,6 +277,16 @@ const investigationSignalSchema = z.object({
   surfacedWorldMinute: z.number().int().nonnegative(),
 });
 
+const rivalProbeSchema = z.object({
+  id: z.string().min(1),
+  actorId: z.string().min(1),
+  subject: z.enum(["rig", "dwelling", "habits"]),
+  // Hidden truth that must survive a restore: a rival that was fooled stays
+  // fooled, so `correct` persists even though it never projects.
+  correct: z.boolean(),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const investigationSchema = z.object({
   id: z.string().min(1),
   targetId: z.string().min(1),
@@ -304,6 +314,8 @@ const storedWorldStateSchema = z.object({
   builds: z.array(inFlightBuildSchema).default([]),
   // Phase 6 P1: a legacy save simply has no open case files.
   investigations: z.array(investigationSchema).default([]),
+  // Phase 6 P2: and no rival has looked at them yet.
+  probes: z.array(rivalProbeSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {

@@ -187,14 +187,15 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0–P1)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0–P2)
 
 The Phase 4 economy is live through P7, all of Phase 5 is live: the model
 substrate (P0), compute contention (P1), AI analysis (P2), the software forge
 (P3), and the marketplace-plus-NPC-AI slice (P4). Phase 6 has begun: P0 gave
-physical life its first shipped mechanics — relocation and safehouses — and P1
+physical life its first shipped mechanics — relocation and safehouses — P1
 gave the run its first threat that runs on the world's clock, authority
-investigations. This section describes what the simulation actually does today;
+investigations, and P2 turned the ecosystem's automation on the player with
+rival probes. This section describes what the simulation actually does today;
 the sections above remain the design target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
@@ -426,9 +427,12 @@ the sections above remain the design target for later slices.
   distance and daily upkeep, never with power, so a safehouse cannot become a
   purchase that gates anything and staying in one costs the rig lift a lab bench
   would have given. Each listing carries an `anonymity` band
-  (`public`/`quiet`/`hidden`, names never numbers); nothing consumes it yet —
-  Phase 6 P3's physical retaliation does — and that is stated rather than
-  hidden. The room now renders the projected presence instead of a hardcoded
+  (`public`/`quiet`/`hidden`, names never numbers), and that band is now read by
+  two systems: Phase 6 P2's rival probes treat a `quiet` or `hidden` dwelling as
+  strictly harder to read (`public > quiet > hidden` is a tested inequality),
+  which is what makes a safehouse a counterplay choice rather than decoration
+  before anything physical arrives, and Phase 6 P3's physical retaliation reads
+  it as a targeting input. The room now renders the projected presence instead of a hardcoded
   caption, and its MOVE / PACK UP controls issue physical intents that map onto
   the same `rent` / `lease break` commands the Terminal and Market emit.
   Holding no lease remains the free baseline, and involuntary eviction stays
@@ -442,7 +446,8 @@ the sections above remain the design target for later slices.
   that found something new — **no roll, no seed, no difficulty score, no rank**.
   Two identical histories at rank 1 and rank 999,999 produce identical files,
   because reputation decides who talks about you and never what an authority's
-  paperwork contains (P2's rival probes are where rank earns visibility).
+  paperwork contains (P2's rival probes turned out to be driven by grudge, and
+  rank appears nowhere in their math either — see D033).
   Inactivity is a real response: a review with nothing new adds nothing, so
   laying low *cools* a file rather than resetting it, and nothing already
   noticed is ever un-noticed. What the player receives is the design's own
@@ -457,6 +462,28 @@ the sections above remain the design target for later slices.
   blocks nothing: no action, no target, no purchase. Threat is evidence, never
   a percentage, and never a countdown: the projection carries only minutes that
   already happened.
+- **Rival probes: the ecosystem's automation aimed at you (Phase 6 P2).** #23's
+  deferred "use automation to watch **the player**" is now mechanically true, and
+  with no second rulebook: a probing peer reads the *same* `npcAssistDeltas`
+  primitive, with the same seed/tick/actor salt, that decides a peer's offence and
+  a target's defence, so a good model sharpens the read and an AI-assisted mistake
+  degrades it twice over — a rival trusts a confident misread. Interest is
+  **grudge, never rank** (a floor of 5 toward the player, deliberately below the
+  smear ladder's 30), so a world in which nobody holds anything against you has no
+  candidates, no probe rolls at all, and replays byte-identical to the code before
+  this slice — pinned by six golden digests, with a companion test showing the
+  provoked runs really do produce probes. A read's difficulty is assembled
+  entirely from truths the player controls: the footprint band, the dwelling's
+  `anonymity` band, whether their exits have been quiet or escalatory (the sim's
+  only vocabulary for "changes relays"), and whether an intrusive operation is
+  open — bounded to `[8, 78]` percent so no player is ever unreadable and none is
+  ever read with certainty. The knowledge a rival gains is a **durable record**,
+  not a hidden scalar, and it persists half-invisible: `actorId`, `subject`, and
+  `correct` are stored for P3's targeting (a rival can be genuinely fooled, and
+  stay fooled across a restore) while the screen receives only the **derived tell**
+  — a ping, a call, a contact gone quiet — beside P1's authority evidence in the
+  same ATTENTION panel. No verb was added, so parity stays structural, and no
+  probe gates anything: every action still answers in a world that has read you.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -472,7 +499,12 @@ the sections above remain the design target for later slices.
   one optional array — `investigations` loads as `[]`, and its signals and their
   ids likewise, so a pre-Phase-6 save resumes with no file open and the first
   one it opens is derived from the footprint the save already carries, on the
-  boundary that material implies rather than on the minute the load happened. A
+  boundary that material implies rather than on the minute the load happened.
+  Phase 6 P2 adds a second optional array — `probes` loads as `[]`, so a
+  pre-Phase-6 save resumes with no rival having read you and the first probe is
+  rolled on a tick that actually runs — and it sits at `WorldState` top level
+  rather than inside `underground` specifically so the ecosystem object's exact
+  legacy shape stays untouched. A
   claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and

@@ -9,6 +9,8 @@ import type {
   LedgerDirection,
   OpponentReactionKind,
   RetaliationKind,
+  RivalProbeArtifactKind,
+  RivalProbeSubject,
   UndergroundNetwork,
   UndergroundIncidentOutcome,
   UndergroundRumorKind,
@@ -317,6 +319,21 @@ export type SimulationEvent =
       kind: InvestigationSignalKind;
       /** The visible band, derived from how much evidence has surfaced. */
       stage: InvestigationStage;
+      worldMinute: number;
+    }
+  | {
+      type: "RivalProbe";
+      probeId: string;
+      /**
+       * Who looked. World truth, citable by P3 and P5 — the projection never
+       * carries it, because you cannot observe a rival's belief, only the tell
+       * they left behind.
+       */
+      actorId: string;
+      /** Which seat of the player's infrastructure was aimed at. */
+      subject: RivalProbeSubject;
+      /** The observable artifact: the only part of a probe a player can see. */
+      artifactKind: RivalProbeArtifactKind;
       worldMinute: number;
     }
   | {
