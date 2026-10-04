@@ -175,7 +175,9 @@ Exit criteria:
 
 ## Phase 4 — Economy and Hardware
 
-**Status: in progress. Tracked by #22.**
+**Status: complete (2026-10-04). Tracked by #22.**
+
+All eight deliverables shipped (P0–P7 below). Two of the issue's exit-criterion phrases were recorded at closure as **Phase 5 handoffs** rather than retro-claimed: player *self-authoring* (trading + provenance shipped; building from a spec does not) and real *constraints/contention* (hardware so far is pure lift; vram/storage have no consumers yet). Both are pinned in the Phase 5 kickoff plan (`docs/superpowers/plans/2026-10-04-phase-5-plan.md`) so they cannot be lost.
 
 P0 substrate delivered (see `docs/superpowers/plans/2026-10-04-phase-4-economy-substrate.md`):
 - a credits wallet and an append-only value ledger with cause-and-counterparty provenance; credits can never go negative,
@@ -242,7 +244,9 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: planned / blocked by #22. Tracked by #23.**
+**Status: planned, kickoff plan delivered. Tracked by #23 (unblocked by #22).**
+
+Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
 
 Deliverables:
 - cloud/local model choices,

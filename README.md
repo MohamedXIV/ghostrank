@@ -62,7 +62,7 @@ For automated contributors and coding agents, [AGENTS.md](AGENTS.md) is mandator
 
 ## Status
 
-**Phase 3 — Underground Ecosystem — complete. Phase 4 — Economy and Hardware — is in progress (P0 economy substrate, P1 compute budgeting, P2 workload scale, P3 housing/recurring costs, P4 software marketplace, P5 tool authorship/trading, P6 digital-value graph and P7 multiple named machines shipped) and is tracked by #22.**
+**Phase 4 — Economy and Hardware — is complete (#22 closed 2026-10-04: economy substrate, compute budgeting, workload scale, housing/recurring costs, software marketplace, tool authorship/trading, digital-value graph, and multiple named machines). Two exit-criterion phrases were handed to Phase 5 at closure — player self-authoring and real compute constraints/contention — and are pinned in `docs/superpowers/plans/2026-10-04-phase-5-plan.md`. Phase 5 — AI Economy and Software Creation — is next and is tracked by #23.**
 
 The web-first platform gate is implemented by #18: IndexedDB persistence is active in the browser and normal gameplay CI is web-only. Planned gameplay phases are tracked by #21–#27, in dependency order. Tauri/SQLite desktop hardening stays deferred to #19 after #27.
 
