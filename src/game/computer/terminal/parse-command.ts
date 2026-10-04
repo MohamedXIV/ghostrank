@@ -35,6 +35,12 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         targetId,
       }));
 
+    case "analyze":
+      return singleIdCommand(args, (targetId) => ({
+        type: "analyzeTarget",
+        targetId,
+      }));
+
     case "inspect":
       return singleIdCommand(args, (machineId) => ({
         type: "inspectMachine",
@@ -46,6 +52,54 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         type: "readMessage",
         messageId,
       }));
+
+    case "buy":
+      return singleIdCommand(args, (catalogId) => ({
+        type: "buyHardware",
+        catalogId,
+      }));
+
+    case "rent":
+      return singleIdCommand(args, (housingId) => ({
+        type: "rentHousing",
+        housingId,
+      }));
+
+    case "lease":
+      return parseLeaseCommand(args);
+
+    case "use":
+      return singleIdCommand(args, (softwareId) => ({
+        type: "enableSoftware",
+        softwareId,
+      }));
+
+    case "stop":
+      return singleIdCommand(args, (softwareId) => ({
+        type: "disableSoftware",
+        softwareId,
+      }));
+
+    case "buytool":
+      return singleIdCommand(args, (toolId) => ({
+        type: "buyPlayerTool",
+        toolId,
+      }));
+
+    case "selltool":
+      return singleIdCommand(args, (toolId) => ({
+        type: "sellPlayerTool",
+        toolId,
+      }));
+
+    case "box":
+      return parseBoxCommand(args);
+
+    case "model":
+      return parseModelCommand(args);
+
+    case "build":
+      return parseBuildCommand(args);
 
     case "op":
       return parseOperationCommand(args);
@@ -127,8 +181,113 @@ function parseOperationCommand(args: string[]): TerminalParseResult {
   }
 }
 
-function parseContractCommand(args: string[]): TerminalParseResult {
+function parseLeaseCommand(args: string[]): TerminalParseResult {
   const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "break":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "breakLease",
+        },
+      };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+}
+
+function parseBoxCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "buy":
+      return singleIdCommand(rest, (catalogId) => ({
+        type: "buyMachine",
+        catalogId,
+      }));
+
+    case "sell":
+      return singleIdCommand(rest, (machineId) => ({
+        type: "sellMachine",
+        machineId,
+      }));
+
+    case "name":
+      // `box name <instance-id> <label...>` — the label is free text (trimmed,
+      // length-capped, and rejected if empty by the simulation), so the rest of
+      // the arguments are rejoined rather than requiring a single token.
+      if (rest.length < 2) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return {
+        ok: true,
+        command: {
+          type: "renameMachine",
+          machineId: rest[0],
+          label: rest.slice(1).join(" "),
+        },
+      };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+}
+
+function parseModelCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case "buy":
+      return singleIdCommand(rest, (modelId) => ({
+        type: "acquireModel",
+        modelId,
+      }));
+
+    case "run":
+      return singleIdCommand(rest, (modelId) => ({
+        type: "runModel",
+        modelId,
+      }));
+
+    case "stop":
+      if (rest.length !== 0) {
+        return { ok: false, error: "INVALID_ARGUMENT" };
+      }
+      return { ok: true, command: { type: "stopModel" } };
+
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+}
+
+function parseBuildCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case undefined:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+
+    case "abort":
+      return singleIdCommand(rest, (buildId) => ({
+        type: "abortBuild",
+        buildId,
+      }));
+
+    default:
+      // `build <spec-id>` — a bare argument is the spec to commission.
+      return singleIdCommand(args, (specId) => ({
+        type: "startBuild",
+        specId,
+      }));
+  }
+}
+
+function parseContractCommand(args: string[]): TerminalParseResult {  const [subcommand, ...rest] = args;
 
   switch (subcommand?.toLowerCase()) {
     case "accept":

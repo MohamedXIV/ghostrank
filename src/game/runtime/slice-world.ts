@@ -1,4 +1,5 @@
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
+import { STARTER_RIG_ID } from "@/content/hardware-catalog";
 
 export const SLICE_WORLD_SEED = 20_261_003;
 
@@ -10,6 +11,17 @@ export function createSliceWorldState() {
     },
     knownTargetIds: [],
     evidence: [],
+    economy: {
+      credits: 0,
+      ledger: [],
+      hardware: [
+        {
+          id: "hw:1",
+          catalogId: STARTER_RIG_ID,
+          acquiredWorldMinute: 0,
+        },
+      ],
+    },
     underground: {
       seed: SLICE_WORLD_SEED,
       playerNetwork: "white",
@@ -44,6 +56,10 @@ export function createSliceWorldState() {
           defense: 55,
           discretion: 55,
           activity: 30,
+          // Phase 5 P4: a peer running a reliable local workhorse — a modest
+          // but steady assist. This is the "AI is part of the ecosystem" fact
+          // made visible in the world, not a player-only superpower.
+          modelId: "model-local-workhorse",
         },
         {
           id: "halfmoon",
@@ -54,6 +70,14 @@ export function createSliceWorldState() {
           defense: 40,
           discretion: 30,
           activity: 35,
+          // A peer running the cheap salvaged core: a stronger planner that is
+          // unreliable, so its assists backfire into AI-assisted mistakes
+          // (`npcAssistDeltas`) — the ecosystem's version of an overconfident
+          // claim. The lift bounds keep power structure intact: even halfmoon's
+          // +2 assist plus the maximum roll noise stays under nightshade's 88
+          // defence, so an assisted peer re-shuffles the mid-table and never
+          // crowns a new top dog.
+          modelId: "model-local-salvage",
         },
         {
           id: "kestrel",

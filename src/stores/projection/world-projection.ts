@@ -170,6 +170,263 @@ export function syncWorldProjection(
     ]),
   );
 
+  const hardwareRows = Object.fromEntries(
+    projection.economy.hardware.map((entry) => [
+      entry.id,
+      {
+        catalogId: entry.catalogId,
+        label: entry.label,
+        category: entry.category,
+        acquiredWorldMinute: entry.acquiredWorldMinute,
+      },
+    ]),
+  );
+
+  const catalogRows = Object.fromEntries(
+    projection.economy.catalog.map((item) => [
+      item.id,
+      {
+        label: item.label,
+        category: item.category,
+        cost: item.cost,
+        compute: item.capability.compute,
+        memory: item.capability.memory,
+        vram: item.capability.vram,
+        storage: item.capability.storage,
+        network: item.capability.network,
+        owned: item.owned,
+      },
+    ]),
+  );
+
+  const ledgerRows = Object.fromEntries(
+    projection.economy.ledger.map((entry) => [
+      entry.id,
+      {
+        worldMinute: entry.worldMinute,
+        direction: entry.direction,
+        amount: entry.amount,
+        balanceAfter: entry.balanceAfter,
+        causeKind: entry.causeKind,
+        causeId: entry.causeId,
+        counterparty: entry.counterparty,
+      },
+    ]),
+  );
+
+  const housingRows = Object.fromEntries(
+    projection.economy.housing.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        dailyCost: listing.dailyCost,
+        compute: listing.capability.compute,
+        memory: listing.capability.memory,
+        vram: listing.capability.vram,
+        storage: listing.capability.storage,
+        network: listing.capability.network,
+        active: listing.active,
+      },
+    ]),
+  );
+
+  const softwareRows = Object.fromEntries(
+    projection.economy.softwareListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        dailyCost: listing.dailyCost,
+        compute: listing.capability?.compute ?? 0,
+        memory: listing.capability?.memory ?? 0,
+        vram: listing.capability?.vram ?? 0,
+        storage: listing.capability?.storage ?? 0,
+        network: listing.capability?.network ?? 0,
+        discountFactor: listing.discountFactor ?? 1,
+        active: listing.active,
+      },
+    ]),
+  );
+
+  const ownedToolRows = Object.fromEntries(
+    projection.economy.ownedTools.map((owned) => [
+      owned.id,
+      {
+        catalogId: owned.catalogId,
+        label: owned.label,
+        author: owned.author,
+        paidCost: owned.paidCost,
+        resaleValue: owned.resaleValue,
+        acquiredWorldMinute: owned.acquiredWorldMinute,
+        compute: owned.capability?.compute ?? 0,
+        memory: owned.capability?.memory ?? 0,
+        vram: owned.capability?.vram ?? 0,
+        storage: owned.capability?.storage ?? 0,
+        network: owned.capability?.network ?? 0,
+        discountFactor: owned.discountFactor ?? 1,
+      },
+    ]),
+  );
+
+  const toolListingRows = Object.fromEntries(
+    projection.economy.toolListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        author: listing.author,
+        cost: listing.cost,
+        ownedCount: listing.ownedCount,
+        compute: listing.capability?.compute ?? 0,
+        memory: listing.capability?.memory ?? 0,
+        vram: listing.capability?.vram ?? 0,
+        storage: listing.capability?.storage ?? 0,
+        network: listing.capability?.network ?? 0,
+        discountFactor: listing.discountFactor ?? 1,
+      },
+    ]),
+  );
+
+  const ownedMachineRows = Object.fromEntries(
+    projection.economy.ownedMachines.map((owned) => [
+      owned.id,
+      {
+        catalogId: owned.catalogId,
+        label: owned.label,
+        paidCost: owned.paidCost,
+        resaleValue: owned.resaleValue,
+        acquiredWorldMinute: owned.acquiredWorldMinute,
+        compute: owned.capability?.compute ?? 0,
+        memory: owned.capability?.memory ?? 0,
+        vram: owned.capability?.vram ?? 0,
+        storage: owned.capability?.storage ?? 0,
+        network: owned.capability?.network ?? 0,
+      },
+    ]),
+  );
+
+  const machineListingRows = Object.fromEntries(
+    projection.economy.machineListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        cost: listing.cost,
+        ownedCount: listing.ownedCount,
+        compute: listing.capability.compute,
+        memory: listing.capability.memory,
+        vram: listing.capability.vram,
+        storage: listing.capability.storage,
+        network: listing.capability.network,
+      },
+    ]),
+  );
+
+  const modelListingRows = Object.fromEntries(
+    projection.economy.modelListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        source: listing.source,
+        cost: listing.cost,
+        dailyCost: listing.dailyCost,
+        factor: listing.factor,
+        deliveredFactor: listing.deliveredFactor,
+        vram: listing.footprint.vram,
+        storage: listing.footprint.storage,
+        author: listing.author ?? "",
+        owned: listing.owned,
+        running: listing.running,
+      },
+    ]),
+  );
+
+  // Phase 5 P4: which peers run which assistant. Names only — the lift a model
+  // gives a peer lives inside the simulation roll and never crosses here.
+  const assistantRows = Object.fromEntries(
+    projection.underground.assistants.map((entry) => [
+      entry.actorId,
+      {
+        handle: entry.handle,
+        modelLabel: entry.modelLabel,
+        modelAuthor: entry.modelAuthor ?? "",
+      },
+    ]),
+  );
+
+  const analysisClaimRows = Object.fromEntries(
+    projection.analysis.flatMap((record) =>
+      record.claims.map((claim, index) => [
+        `${record.targetId}:${index}`,
+        {
+          targetId: record.targetId,
+          modelLabel: record.modelLabel,
+          worldMinute: record.worldMinute,
+          kind: claim.kind,
+          assertion: claim.assertion,
+          subject: claim.subject,
+          confidence: claim.confidence,
+        },
+      ]),
+    ),
+  );
+
+  const forgeSpecRows = Object.fromEntries(
+    projection.economy.workflowSpecs.map((spec) => [
+      spec.id,
+      {
+        label: spec.label,
+        steps: spec.steps.join("\n"),
+        tests: spec.tests.join("\n"),
+        estimatedMinutes: spec.estimatedMinutes,
+        vram: spec.footprint.vram,
+        storage: spec.footprint.storage,
+        replacesLabel: spec.replacesLabel,
+      },
+    ]),
+  );
+
+  // The queue rows carry no outcome: the projection never contains one.
+  const buildQueueRows = Object.fromEntries(
+    projection.economy.builds.map((build) => [
+      build.id,
+      {
+        specLabel: build.specLabel,
+        modelLabel: build.modelLabel,
+        startedWorldMinute: build.startedWorldMinute,
+        dueWorldMinute: build.dueWorldMinute,
+        vram: build.footprint.vram,
+        storage: build.footprint.storage,
+      },
+    ]),
+  );
+
+  const ownedWorkflowRows = Object.fromEntries(
+    projection.economy.ownedWorkflows.map((workflow) => [
+      workflow.id,
+      {
+        label: workflow.label,
+        outcome: workflow.outcome,
+        builtWithLabel: workflow.builtWithLabel,
+        acquiredWorldMinute: workflow.acquiredWorldMinute,
+        tests: workflow.tests.join("\n"),
+      },
+    ]),
+  );
+
+  const valueNodeRows = Object.fromEntries(
+    projection.economy.valueGraph.nodes.map((node) => [
+      node.id,
+      {
+        kind: node.kind,
+        received: node.received,
+        paid: node.paid,
+        net: node.net,
+        interactions: node.interactions,
+        firstWorldMinute: node.firstWorldMinute,
+        lastWorldMinute: node.lastWorldMinute,
+        causeKinds: node.causeKinds.join(","),
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -189,6 +446,105 @@ export function syncWorldProjection(
     store.setTable("retaliations", retaliationRows);
     store.setTable("descriptors", descriptorRows);
     store.setTable("forum", forumRows);
+    store.setTable("assistants", assistantRows);
+    store.setTable("hardware", hardwareRows);
+    store.setTable("catalog", catalogRows);
+    store.setTable("ledger", ledgerRows);
+    store.setTable("housing", housingRows);
+    store.setTable("software", softwareRows);
+    store.setTable("ownedTools", ownedToolRows);
+    store.setTable("toolListings", toolListingRows);
+    store.setTable("ownedMachines", ownedMachineRows);
+    store.setTable("machineListings", machineListingRows);
+    store.setTable("modelListings", modelListingRows);
+    store.setTable("analysisClaims", analysisClaimRows);
+    store.setTable("forgeSpecs", forgeSpecRows);
+    store.setTable("buildQueue", buildQueueRows);
+    store.setTable("ownedWorkflows", ownedWorkflowRows);
+    store.setTable("valueNodes", valueNodeRows);
+    store.setCell("meta", "wallet", "credits", projection.economy.credits);
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueInflow",
+      projection.economy.valueGraph.totalInflow,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueOutflow",
+      projection.economy.valueGraph.totalOutflow,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "valueCounterparties",
+      projection.economy.valueGraph.counterparties,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "dailyCost",
+      projection.economy.dailyCost,
+    );
+    store.setCell(
+      "meta",
+      "wallet",
+      "currentHousingId",
+      projection.economy.currentHousingId ?? "",
+    );
+    store.setTable("rig", {
+      capability: {
+        compute: projection.economy.capability.compute,
+        memory: projection.economy.capability.memory,
+        vram: projection.economy.capability.vram,
+        storage: projection.economy.capability.storage,
+        network: projection.economy.capability.network,
+      },
+      actionMinutes: {
+        survey: projection.economy.actionMinutes.survey,
+        inspect: projection.economy.actionMinutes.inspect,
+        escalate: projection.economy.actionMinutes.escalate,
+        disengage: projection.economy.actionMinutes.disengage,
+      },
+      scale: {
+        discoveryScope: projection.economy.discoveryScope,
+      },
+      lease: {
+        compute: projection.economy.lease.compute,
+        memory: projection.economy.lease.memory,
+        vram: projection.economy.lease.vram,
+        storage: projection.economy.lease.storage,
+        network: projection.economy.lease.network,
+      },
+      softwareLift: {
+        compute: projection.economy.software.compute,
+        memory: projection.economy.software.memory,
+        vram: projection.economy.software.vram,
+        storage: projection.economy.software.storage,
+        network: projection.economy.software.network,
+      },
+      playerToolLift: {
+        compute: projection.economy.playerTools.compute,
+        memory: projection.economy.playerTools.memory,
+        vram: projection.economy.playerTools.vram,
+        storage: projection.economy.playerTools.storage,
+        network: projection.economy.playerTools.network,
+      },
+      machineLift: {
+        compute: projection.economy.ownedMachineCapability.compute,
+        memory: projection.economy.ownedMachineCapability.memory,
+        vram: projection.economy.ownedMachineCapability.vram,
+        storage: projection.economy.ownedMachineCapability.storage,
+        network: projection.economy.ownedMachineCapability.network,
+      },
+      // The rig's running AI assistant: which model, and the *combined*
+      // duration shortcut it shares with licenses and tools (1 = no lift).
+      assistant: {
+        modelId: projection.economy.activeModelId ?? "",
+        factor: projection.economy.actionDurationFactor,
+      },
+    });
     store.setCell(
       "meta",
       "inbox",

@@ -1,6 +1,44 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
+  MARKET_COUNTERPARTY,
+  findCatalogItem,
+} from "@/content/hardware-catalog";
+import { transferValue } from "@/game/simulation/systems/economy";
+import { effectiveCapability } from "@/game/simulation/systems/housing";
+import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
+import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
+import { findHousingItem } from "@/content/housing-catalog";
+import {
+  FENCE_COUNTERPARTY,
+  findPlayerToolItem,
+  resaleValue,
+} from "@/content/player-tool-catalog";
+import {
+  MACHINE_LABEL_MAX_LENGTH,
+  findMachineItem,
+  machineResaleValue,
+} from "@/content/machine-catalog";
+import { findModelItem } from "@/content/model-catalog";
+import { runAnalysis } from "@/game/simulation/systems/analysis";
+import {
+  advanceBuilds,
+  buildMinutes,
+  nextBuildId,
+  poolForNewBuild,
+  rollBuildOutcome,
+} from "@/game/simulation/systems/builds";
+import { contestedModelFactor } from "@/game/simulation/systems/contention";
+import { findWorkflowSpec } from "@/content/workflow-spec-catalog";
+import {
+  actionDuration,
+  type ReconAction,
+} from "@/game/simulation/systems/compute";
+import { discoveryScope } from "@/game/simulation/systems/scale";
+import {
+  findSoftwareItem,
+} from "@/content/software-catalog";
+import {
   advanceUnderground,
   applyProvocation,
   applyReactionRelationship,
@@ -10,11 +48,16 @@ import {
   spreadPlayerFootprint,
 } from "@/game/simulation/systems/underground";
 import type {
+  AnalysisRecord,
   EvidenceKind,
   EvidenceRecord,
+  InFlightBuild,
   MachineState,
   OpponentReaction,
   OperationTrace,
+  OwnedHardware,
+  OwnedMachine,
+  OwnedPlayerTool,
   TargetState,
   WorldState,
 } from "@/game/simulation/state/world-state";
@@ -25,10 +68,6 @@ export interface CommandResult {
   error?: string;
 }
 
-const SURVEY_MINUTES = 12;
-const INSPECTION_MINUTES = 8;
-const ESCALATION_MINUTES = 5;
-const DISENGAGE_MINUTES = 3;
 const DEFENSIVE_WATCH_THRESHOLD = 5;
 
 export class CommandBus {
@@ -73,6 +112,52 @@ export class CommandBus {
 
       case "deliverContract":
         return this.deliverContract(command.contractId);
+
+      case "buyHardware":
+        return this.buyHardware(command.catalogId);
+
+      case "rentHousing":
+        return this.rentHousing(command.housingId);
+
+      case "breakLease":
+        return this.breakLease();
+
+      case "enableSoftware":
+        return this.enableSoftware(command.softwareId);
+
+      case "disableSoftware":
+        return this.disableSoftware(command.softwareId);
+
+      case "buyPlayerTool":
+        return this.buyPlayerTool(command.toolId);
+
+      case "sellPlayerTool":
+        return this.sellPlayerTool(command.toolId);
+
+      case "buyMachine":
+        return this.buyMachine(command.catalogId);
+
+      case "sellMachine":
+        return this.sellMachine(command.machineId);
+
+      case "renameMachine":
+        return this.renameMachine(command.machineId, command.label);
+
+      case "acquireModel":
+        return this.acquireModel(command.modelId);
+
+      case "runModel":
+        return this.runModel(command.modelId);
+
+      case "stopModel":
+        return this.stopModel();
+
+      case "analyzeTarget":
+        return this.analyzeTarget(command.targetId);
+      case "startBuild":
+        return this.startBuild(command.specId);
+      case "abortBuild":
+        return this.abortBuild(command.buildId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -172,36 +257,40 @@ export class CommandBus {
       return this.failure("TARGET_NOT_OBSERVED");
     }
 
-    const machine = target.machines.find(
-      (candidate) => !this.hasEvidence("machine-presence", candidate.id),
-    );
+    const scope = this.rigDiscoveryScope();
+    const discovered = target.machines
+      .filter((candidate) => !this.hasEvidence("machine-presence", candidate.id))
+      .slice(0, scope);
 
-    if (!machine) {
+    if (discovered.length === 0) {
       return this.failure("NO_NEW_MACHINE_EVIDENCE");
     }
 
-    const timeEvents = this.advanceWorldTime(SURVEY_MINUTES);
+    const timeEvents = this.advanceWorldTime(this.rigActionMinutes("survey"));
 
-    this.recordEvidence({
-      id: `machine-presence:${machine.id}`,
-      kind: "machine-presence",
-      subjectId: machine.id,
-      confidence: "observed",
-      source: "direct-observation",
-      worldMinute: this.world.worldMinute,
-    });
+    const events: SimulationEvent[] = [...timeEvents];
+
+    for (const machine of discovered) {
+      this.recordEvidence({
+        id: `machine-presence:${machine.id}`,
+        kind: "machine-presence",
+        subjectId: machine.id,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+
+      events.push({
+        type: "MachineObserved",
+        targetId: target.id,
+        machineId: machine.id,
+        worldMinute: this.world.worldMinute,
+      });
+    }
 
     return {
       ok: true,
-      events: [
-        ...timeEvents,
-        {
-          type: "MachineObserved",
-          targetId: target.id,
-          machineId: machine.id,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+      events,
     };
   }
 
@@ -226,37 +315,41 @@ export class CommandBus {
       return this.failure("MACHINE_NOT_OBSERVED");
     }
 
-    const service = located.machine.services.find(
-      (candidate) => !this.hasEvidence("service-presence", candidate.id),
-    );
+    const scope = this.rigDiscoveryScope();
+    const discovered = located.machine.services
+      .filter((candidate) => !this.hasEvidence("service-presence", candidate.id))
+      .slice(0, scope);
 
-    if (!service) {
+    if (discovered.length === 0) {
       return this.failure("NO_NEW_SERVICE_EVIDENCE");
     }
 
-    const timeEvents = this.advanceWorldTime(INSPECTION_MINUTES);
+    const timeEvents = this.advanceWorldTime(this.rigActionMinutes("inspect"));
 
-    this.recordEvidence({
-      id: `service-presence:${service.id}`,
-      kind: "service-presence",
-      subjectId: service.id,
-      confidence: "observed",
-      source: "direct-observation",
-      worldMinute: this.world.worldMinute,
-    });
+    const events: SimulationEvent[] = [...timeEvents];
+
+    for (const service of discovered) {
+      this.recordEvidence({
+        id: `service-presence:${service.id}`,
+        kind: "service-presence",
+        subjectId: service.id,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+
+      events.push({
+        type: "ServiceObserved",
+        targetId: located.target.id,
+        machineId: located.machine.id,
+        serviceId: service.id,
+        worldMinute: this.world.worldMinute,
+      });
+    }
 
     return {
       ok: true,
-      events: [
-        ...timeEvents,
-        {
-          type: "ServiceObserved",
-          targetId: located.target.id,
-          machineId: located.machine.id,
-          serviceId: service.id,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+      events,
     };
   }
 
@@ -280,7 +373,9 @@ export class CommandBus {
         reaction.targetId === operation.targetId &&
         reaction.status === "active",
     );
-    const timeEvents = this.advanceWorldTime(ESCALATION_MINUTES);
+    const timeEvents = this.advanceWorldTime(
+      this.rigActionMinutes("escalate"),
+    );
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
 
@@ -327,7 +422,9 @@ export class CommandBus {
       return this.failure("NO_ACTIVE_OPERATION");
     }
 
-    const timeEvents = this.advanceWorldTime(DISENGAGE_MINUTES);
+    const timeEvents = this.advanceWorldTime(
+      this.rigActionMinutes("disengage"),
+    );
     const stage = operation.stage;
     const event: SimulationEvent = {
       type: "OperationDisengaged",
@@ -508,6 +605,789 @@ export class CommandBus {
     };
   }
 
+  private buyHardware(catalogId: string): CommandResult {
+    const item = findCatalogItem(catalogId);
+
+    if (!item) {
+      return this.failure("HARDWARE_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "hardware",
+      causeId: item.id,
+      counterparty: MARKET_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedHardware = {
+      id: `hw:${this.world.economy.hardware.length + 1}`,
+      catalogId: item.id,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.hardware.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "HardwareAcquired",
+          hardwareId: owned.id,
+          catalogId: owned.catalogId,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private rentHousing(housingId: string): CommandResult {
+    const item = findHousingItem(housingId);
+
+    if (!item) {
+      return this.failure("HOUSING_NOT_FOUND");
+    }
+
+    if (this.world.economy.housing === housingId) {
+      return this.failure("ALREADY_RENTED");
+    }
+
+    const minute = this.world.worldMinute;
+
+    // Signing or switching a lease moves no credits in P3: the cost is levied
+    // at the next whole-day boundary through advanceUpkeep. The choice is
+    // therefore reversible, and switching never double-bills.
+    this.world.economy.housing = item.id;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "HousingChanged",
+          housingId: item.id,
+          dailyCost: item.dailyCost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private breakLease(): CommandResult {
+    if (!this.world.economy.housing) {
+      return this.failure("NO_ACTIVE_LEASE");
+    }
+
+    this.world.economy.housing = null;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "HousingChanged",
+          housingId: null,
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private enableSoftware(softwareId: string): CommandResult {
+    const item = findSoftwareItem(softwareId);
+
+    if (!item) {
+      return this.failure("SOFTWARE_NOT_FOUND");
+    }
+
+    if (this.world.economy.software.includes(softwareId)) {
+      return this.failure("ALREADY_ACTIVE");
+    }
+
+    // Activating a license moves no credits in P4: the daily fee is levied at
+    // the next whole-day boundary through advanceUpkeep. The choice is free and
+    // reversible, so stacking or swapping tools never double-bills.
+    this.world.economy.software = [
+      ...this.world.economy.software,
+      item.id,
+    ];
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "SoftwareChanged",
+          softwareId: item.id,
+          active: true,
+          dailyCost: item.dailyCost,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private disableSoftware(softwareId: string): CommandResult {
+    const item = findSoftwareItem(softwareId);
+
+    if (!item) {
+      return this.failure("SOFTWARE_NOT_FOUND");
+    }
+
+    if (!this.world.economy.software.includes(softwareId)) {
+      return this.failure("NOT_RUNNING");
+    }
+
+    this.world.economy.software = this.world.economy.software.filter(
+      (candidate) => candidate !== item.id,
+    );
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "SoftwareChanged",
+          softwareId: item.id,
+          active: false,
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private buyPlayerTool(toolId: string): CommandResult {
+    const item = findPlayerToolItem(toolId);
+
+    if (!item) {
+      return this.failure("TOOL_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "tool",
+      causeId: item.id,
+      counterparty: item.author,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedPlayerTool = {
+      id: this.nextToolId(),
+      catalogId: item.id,
+      author: item.author,
+      paidCost: item.cost,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.playerTools.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "PlayerToolAcquired",
+          toolId: owned.id,
+          catalogId: owned.catalogId,
+          author: owned.author,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private sellPlayerTool(toolId: string): CommandResult {
+    const owned = this.world.economy.playerTools.find(
+      (candidate) => candidate.id === toolId,
+    );
+
+    if (!owned) {
+      return this.failure("TOOL_NOT_OWNED");
+    }
+
+    const minute = this.world.worldMinute;
+    const proceeds = resaleValue(owned.paidCost);
+
+    // Resale credits the player and records a named edge back to the author,
+    // then the copy leaves the inventory. transferValue cannot push credits
+    // negative and a credit only ever grows the balance, so this always moves.
+    const payout = transferValue(this.world, {
+      direction: "credit",
+      amount: proceeds,
+      causeKind: "tool",
+      causeId: owned.catalogId,
+      counterparty: FENCE_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    this.world.economy.playerTools = this.world.economy.playerTools.filter(
+      (candidate) => candidate.id !== owned.id,
+    );
+
+    return {
+      ok: true,
+      events: [
+        ...(payout ? [payout] : []),
+        {
+          type: "PlayerToolSold",
+          toolId: owned.id,
+          catalogId: owned.catalogId,
+          author: owned.author,
+          proceeds,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Next owned-tool id. Tools can be sold back, so a plain length counter would
+   * reuse the id of an already-sold copy; take the highest existing suffix and
+   * step past it so ids stay unique for the run, even after resales.
+   */
+  private nextToolId(): string {
+    let max = 0;
+
+    for (const owned of this.world.economy.playerTools) {
+      const suffix = Number(owned.id.slice(owned.id.lastIndexOf(":") + 1));
+
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    }
+
+    return `tool:${max + 1}`;
+  }
+
+  /**
+   * Next owned-machine id. Machines can be sold back, so — like tools — a plain
+   * length counter would reuse a sold copy's id; step past the highest existing
+   * numeric suffix so ids stay unique for the run, even after resales.
+   */
+  private nextMachineId(): string {
+    let max = 0;
+
+    for (const owned of this.world.economy.ownedMachines) {
+      const suffix = Number(owned.id.slice(owned.id.lastIndexOf(":") + 1));
+
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    }
+
+    return `machine:${max + 1}`;
+  }
+
+  private buyMachine(catalogId: string): CommandResult {
+    const item = findMachineItem(catalogId);
+
+    if (!item) {
+      return this.failure("MACHINE_NOT_FOUND");
+    }
+
+    const minute = this.world.worldMinute;
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "machine",
+      causeId: item.id,
+      counterparty: MARKET_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const owned: OwnedMachine = {
+      id: this.nextMachineId(),
+      catalogId: item.id,
+      label: item.label,
+      paidCost: item.cost,
+      acquiredWorldMinute: minute,
+    };
+    this.world.economy.ownedMachines.push(owned);
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "MachineAcquired",
+          machineId: owned.id,
+          catalogId: owned.catalogId,
+          label: owned.label,
+          cost: item.cost,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private sellMachine(machineId: string): CommandResult {
+    const owned = this.world.economy.ownedMachines.find(
+      (candidate) => candidate.id === machineId,
+    );
+
+    if (!owned) {
+      return this.failure("MACHINE_NOT_OWNED");
+    }
+
+    const minute = this.world.worldMinute;
+    const proceeds = machineResaleValue(owned.paidCost);
+
+    // Resale credits the player through the same offline fence as tools, valued
+    // against the stored paidCost, then the box leaves the rack. transferValue
+    // never pushes credits negative and a credit only grows the balance.
+    const payout = transferValue(this.world, {
+      direction: "credit",
+      amount: proceeds,
+      causeKind: "machine",
+      causeId: owned.catalogId,
+      counterparty: FENCE_COUNTERPARTY,
+      worldMinute: minute,
+    });
+
+    this.world.economy.ownedMachines =
+      this.world.economy.ownedMachines.filter(
+        (candidate) => candidate.id !== owned.id,
+      );
+
+    return {
+      ok: true,
+      events: [
+        ...(payout ? [payout] : []),
+        {
+          type: "MachineSold",
+          machineId: owned.id,
+          catalogId: owned.catalogId,
+          label: owned.label,
+          proceeds,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  private renameMachine(machineId: string, label: string): CommandResult {
+    const owned = this.world.economy.ownedMachines.find(
+      (candidate) => candidate.id === machineId,
+    );
+
+    if (!owned) {
+      return this.failure("MACHINE_NOT_OWNED");
+    }
+
+    const trimmed = label.trim();
+
+    if (trimmed.length === 0 || trimmed.length > MACHINE_LABEL_MAX_LENGTH) {
+      return this.failure("INVALID_MACHINE_LABEL");
+    }
+
+    const minute = this.world.worldMinute;
+    owned.label = trimmed;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "MachineRenamed",
+          machineId: owned.id,
+          label: owned.label,
+          worldMinute: minute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Acquire a *local* model: a one-time purchase of owned property, the P5/P7
+   * template again. Cloud models have no acquisition step — renting is done by
+   * running them — so a cloud id here is a category error, not a price check.
+   * Acquiring never starts the model: owning and running are separate choices,
+   * so a purchase cannot silently swap out a running subscription.
+   *
+   * Phase 5 P4 marketplace provenance: when the catalog names an author (an
+   * in-fiction peer who wrote and sells the copy), the debit goes to *that*
+   * handle and seeds a named edge in the value graph, the same shape a P5 tool
+   * purchase has. Otherwise it goes to the anonymous market, as the house-brand
+   * models always did. Nothing else changes; the ownership and running rules
+   * are the same, so this is purely counterparty routing.
+   */
+  private acquireModel(modelId: string): CommandResult {
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    if (item.source !== "local") {
+      return this.failure("MODEL_NOT_LOCAL");
+    }
+
+    if (this.world.economy.ownedModels.includes(item.id)) {
+      return this.failure("MODEL_ALREADY_OWNED");
+    }
+
+    if (this.world.economy.credits < item.cost) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    const payment = transferValue(this.world, {
+      direction: "debit",
+      amount: item.cost,
+      causeKind: "model",
+      causeId: item.id,
+      counterparty: item.author ?? MARKET_COUNTERPARTY,
+      worldMinute: this.world.worldMinute,
+    });
+
+    if (!payment) {
+      return this.failure("INSUFFICIENT_CREDITS");
+    }
+
+    this.world.economy.ownedModels = [
+      ...this.world.economy.ownedModels,
+      item.id,
+    ];
+
+    return {
+      ok: true,
+      events: [
+        payment,
+        {
+          type: "ModelAcquired",
+          modelId: item.id,
+          label: item.label,
+          cost: item.cost,
+          worldMinute: payment.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Start a model running — exactly one at a time, the rig's single AI
+   * assistant. Cloud models need no purchase: running *is* renting, and the
+   * subscription starts billing at the next whole-day boundary. Local models
+   * must be owned first. Starting, stopping, or switching mid-day moves no
+   * credits, so swapping assistants never double-bills (the license rule,
+   * unchanged). Switching implicitly stops whatever was running.
+   */
+  private runModel(modelId: string): CommandResult {
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    if (
+      item.source === "local" &&
+      !this.world.economy.ownedModels.includes(item.id)
+    ) {
+      return this.failure("LOCAL_MODEL_NOT_OWNED");
+    }
+
+    if (this.world.economy.activeModel === item.id) {
+      return this.failure("MODEL_ALREADY_ACTIVE");
+    }
+
+    this.world.economy.activeModel = item.id;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ModelChanged",
+          modelId: item.id,
+          active: true,
+          source: item.source,
+          dailyCost: item.dailyCost,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /** Stop the running model. No debt, no penalty — the lift simply ends. */
+  private stopModel(): CommandResult {
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_MODEL_ACTIVE");
+    }
+
+    const item = findModelItem(modelId);
+    this.world.economy.activeModel = null;
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "ModelChanged",
+          modelId,
+          active: false,
+          // An unknown id can only come from a stale save; report it as the
+          // rental shape it behaved like, with no cost.
+          source: item?.source ?? "cloud",
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Ask the running assistant for its read of a target (Phase 5 P2). The gate is
+   * the assistant itself — an active model — plus the same operation and profile
+   * prerequisites survey needs; no target or action is ever gated by hardware or
+   * software. It costs no world time and adds no trace: the player is asking a
+   * question, not touching the network. Each pass replaces the target's single
+   * stored record, so the projection always shows the *current* read.
+   */
+  private analyzeTarget(targetId: string): CommandResult {
+    const operation = this.world.operation;
+
+    if (!operation) {
+      return this.failure("NO_ACTIVE_OPERATION");
+    }
+
+    if (operation.targetId !== targetId) {
+      return this.failure("OPERATION_TARGET_MISMATCH");
+    }
+
+    const target = this.world.targets.find(
+      (candidate) => candidate.id === targetId,
+    );
+
+    if (!target) {
+      return this.failure("TARGET_NOT_FOUND");
+    }
+
+    if (!this.hasEvidence("target-profile", target.id)) {
+      return this.failure("TARGET_NOT_OBSERVED");
+    }
+
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_ACTIVE_MODEL");
+    }
+
+    const item = findModelItem(modelId);
+
+    if (!item) {
+      // Only a stale save can name a model the catalog no longer carries; there
+      // are no properties to read from it, so the assistant has no voice.
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    const observedMachineIds = new Set(
+      this.world.evidence
+        .filter((record) => record.kind === "machine-presence")
+        .map((record) => record.subjectId),
+    );
+    const observedServiceIds = new Set(
+      this.world.evidence
+        .filter((record) => record.kind === "service-presence")
+        .map((record) => record.subjectId),
+    );
+
+    const claims = runAnalysis({
+      modelId: item.id,
+      properties: item.properties,
+      machines: target.machines,
+      observedMachineIds,
+      observedServiceIds,
+      seed: this.world.underground.seed,
+      worldMinute: this.world.worldMinute,
+    });
+
+    const record: AnalysisRecord = {
+      id: `analysis:${target.id}`,
+      targetId: target.id,
+      modelId: item.id,
+      worldMinute: this.world.worldMinute,
+      claims,
+    };
+
+    const existing = this.world.analysis.findIndex(
+      (candidate) => candidate.targetId === target.id,
+    );
+
+    if (existing >= 0) {
+      this.world.analysis[existing] = record;
+    } else {
+      this.world.analysis.push(record);
+    }
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "AnalysisCompleted",
+          targetId: target.id,
+          modelId: item.id,
+          claimCount: claims.length,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Commission the running assistant to build a workflow spec (Phase 5 P3). The
+   * gate is the assistant itself — an active model — the same prerequisite as
+   * analysis; a spec is a design, and only an AI can write the code. It costs no
+   * credits and no immediate world time: the job enters the queue, occupies its
+   * footprint, and lands on its frozen due minute. The delivered model shortcut
+   * and the quality roll are both computed *at start*, against the pool the job
+   * will actually run against (minus builds already in flight and its own
+   * footprint), so a split wait cannot re-time or re-roll it.
+   */
+  private startBuild(specId: string): CommandResult {
+    const spec = findWorkflowSpec(specId);
+
+    if (!spec) {
+      return this.failure("WORKFLOW_SPEC_NOT_FOUND");
+    }
+
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_ACTIVE_MODEL");
+    }
+
+    const model = findModelItem(modelId);
+
+    if (!model) {
+      // Only a stale save can name a dropped model; there is no assistant to
+      // write the code, exactly like the analysis gate.
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    const capability = effectiveCapability(this.world.economy);
+    // The build's clock is frozen against the pool left after the jobs already
+    // queued (and its own footprint) take their share. With no model running,
+    // or a cloud model that contends nothing, the factor is 1: the build pays
+    // pure hardware time, and every pre-P3 duration path is untouched.
+    const buildPool = poolForNewBuild(capability, this.world.builds, spec);
+    const deliveredFactor =
+      model.effect.kind === "modifier"
+        ? contestedModelFactor(
+            model.effect.discount.factor,
+            model.footprint,
+            buildPool,
+          )
+        : 1;
+
+    const minutes = buildMinutes(spec, capability, deliveredFactor);
+    const startWorldMinute = this.world.worldMinute;
+    const build: InFlightBuild = {
+      id: nextBuildId(this.world.builds, this.world.economy.ownedWorkflows),
+      specId: spec.id,
+      modelId: model.id,
+      startedWorldMinute: startWorldMinute,
+      dueWorldMinute: startWorldMinute + minutes,
+      outcome: rollBuildOutcome(
+        this.world.underground.seed,
+        startWorldMinute,
+        model.id,
+        spec,
+        model.properties,
+      ),
+    };
+
+    this.world.builds.push(build);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "BuildStarted",
+          buildId: build.id,
+          specId: build.specId,
+          modelId: build.modelId,
+          minutes,
+          worldMinute: startWorldMinute,
+        },
+      ],
+    };
+  }
+
+  /** Cancel an in-flight build. No debt, no penalty — the queue slot frees up. */
+  private abortBuild(buildId: string): CommandResult {
+    const index = this.world.builds.findIndex(
+      (candidate) => candidate.id === buildId,
+    );
+
+    if (index < 0) {
+      return this.failure("BUILD_NOT_FOUND");
+    }
+
+    const [build] = this.world.builds.splice(index, 1);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "BuildAborted",
+          buildId: build.id,
+          specId: build.specId,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private rigActionMinutes(action: ReconAction): number {
+    // Phase 5 P1: the rig's vram/storage pool contends a running local model,
+    // so the duration factor is read against the same derived pool. Phase 5
+    // P3: in-flight builds are tenants of that pool too, and their footprint
+    // taxes the model's delivered shortcut while they run.
+    const capability = effectiveCapability(this.world.economy);
+
+    return actionDuration(
+      action,
+      capability,
+      combinedActionDurationFactor(
+        this.world.economy,
+        capability,
+        this.world.builds,
+      ),
+    );
+  }
+
+  private rigDiscoveryScope(): number {
+    return discoveryScope(effectiveCapability(this.world.economy).memory);
+  }
+
   private advanceWorldTime(minutes: number): SimulationEvent[] {
     const fromMinute = this.world.worldMinute;
     this.world.worldMinute += minutes;
@@ -518,6 +1398,10 @@ export class CommandBus {
         fromMinute,
         toMinute: this.world.worldMinute,
       },
+      ...advanceUpkeep(this.world, fromMinute, this.world.worldMinute),
+      // Builds complete on the clock, like upkeep: the same due minute lands
+      // the same frozen outcome whether the wait was one command or ten.
+      ...advanceBuilds(this.world, this.world.worldMinute),
       ...advanceUnderground(this.world, this.world.worldMinute),
     ];
   }

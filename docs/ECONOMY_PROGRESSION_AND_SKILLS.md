@@ -186,3 +186,237 @@ They may:
 - discover their software on enemy systems.
 
 Tool authorship is simultaneously income, prestige, and exposure.
+
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4)
+
+The Phase 4 economy is live through P7, and all of Phase 5 is live: the model
+substrate (P0), compute contention (P1), AI analysis (P2), the software forge
+(P3), and the marketplace-plus-NPC-AI slice (P4). This section describes what
+the simulation actually does today; the sections above remain the design target
+for later slices.
+
+- **Wallet and ledger.** The player holds a single `credits` balance and an
+  append-only value ledger. Every movement records its direction, amount,
+  resulting balance, cause (`contract`, `hardware`, `housing`, `upkeep`,
+  `license`, `tool`, `machine`, or `model`), and counterparty. Credits can never
+  go negative: a transfer that would take the balance below zero is rejected and
+  mutates nothing. There is no debt.
+- **Income.** Contract delivery is the first income source and pays a
+  deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
+  for an intrusion. Payout is never random and never rank-dependent.
+- **Hardware.** A data-driven catalog (`src/content/hardware-catalog.ts`) spans
+  five capability axes: compute, memory, vram, storage, network. Every run starts
+  with a free secondhand workstation; upgrades are bought with credits through the
+  `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
+  app, and costing no world time.
+- **Capability, not level.** Rig capability is *derived* — the sum of owned
+  hardware, owned machines, the current lease, capability-bearing licenses, and
+  owned player tools (see P3/P4/P5/P7) — it is never stored and never gates a
+  target or a purchase.
+- **Compute budgeting (P1).** Capability's first consumer is operation speed:
+  survey reads network, inspect/escalate read compute, and an action costs
+  `max(1, ceil(base / capability))` world minutes above baseline (the starter
+  rig sits exactly at baseline, so it pays the untouched Phase 2 base table).
+  Disengagement is a deliberate manual exit and never scales. This is the
+  money-vs-time trade: hardware buys elapsed time back, requirements and
+  outcomes are untouched, and a weak rig is never slower than baseline. The
+  Market app shows the rig's current per-action minutes.
+- **Workload scale (P2).** The memory axis decides how much one pass of
+  scoped work covers: `discoveryScope = max(1, floor(memory))`, so a survey
+  can discover several machines and an inspection several services in one
+  action, charging one pass's duration. The starter rig sits at scope 1 — the
+  original one-item-per-pass rhythm. Breadth, never a gate: every item is
+  discoverable on any rig; modest hardware just needs more passes, each
+  costing its own time. Market shows items-per-pass next to per-action
+  minutes; both halves of the money↔time trade are visible before buying.
+- **Housing and recurring costs (P3).** The wallet gains its first *sink* that
+  turns credits from a one-shot purchase pool into a strategic flow. A lease
+  (`src/content/housing-catalog.ts`) adds capability to the rig while it is held
+  — a co-working loft lifts connectivity, a rented lab bench lifts compute, memory
+  and storage — so it feeds the same P1 speed and P2 breadth consumers rather than
+  inventing new ones. Signing, switching, or breaking a lease moves no credits;
+  cost accrues only when a whole world-day boundary is crossed (`advanceUpkeep`
+  levies the daily cost at fixed boundaries, so it is deterministic and
+  split-invariant across chunked waits). If a boundary cannot be paid the player is
+  simply moved out — housing returns to the free baseline with no charge for that
+  boundary, no debt, and no penalty beyond losing the capability lift. Housing is
+  therefore always a lift, never a gate or a punishment; the Market app lists
+  locations with MOVE IN / MOVE OUT and shows the current daily upkeep.
+- **Software marketplace (P4).** A second recurring sink that is *stackable*:
+  premium tool licenses (`src/content/software-catalog.ts`) make the same rig
+  more productive — capability tools (a monitoring suite lifts network, an
+  automation framework lifts memory/network) fold into the same effective
+  profile, and an efficiency tool (an analysis pipeline) multiplies derived
+  hardware action minutes by a discount factor, still respecting the
+  one-minute floor. Enabling (`use <id>`) and stopping (`stop <id>`) a license
+  cost nothing; the daily fee accrues only at world-day boundaries through the
+  same `advanceUpkeep` that also bills the lease — lease first (landlord),
+  licenses after (vendor), deterministic and split-invariant. Each obligation
+  is all-or-nothing: an unpayable license lapses just that one tool with no
+  debt and no penalty, and can be re-run later. Software is always a lift,
+  never a gate; the Market app lists tools with RUN / STOP and folds their cost
+  into the wallet's combined daily upkeep.
+- **Tool authorship and trading (P5).** Authored tools (`src/content/player-tool-catalog.ts`)
+  are the opposite economic shape from licenses: **property, not rent**. Each is
+  credited to a named author handle and bought outright with a one-time debit —
+  recorded on the ledger against the author, the first person-to-person artifact
+  edges in the value graph — and there is **no recurring fee**, so a held tool
+  can never lapse or bill. Selling a copy credits back half of what was *paid*
+  through an offline fence (never re-valued by later catalog retuning). Tools
+  reuse the exact license effect shapes, so a capability tool folds into the same
+  `effectiveCapability` and a modifier tool's factor composes with license
+  factors — feeding P1 speed and P2 breadth with no new mechanics. `buytool <id>`
+  and `selltool <instance-id>` are shared by Terminal and the Market PLAYER TOOLS
+  panel (owned copies show author, paid price and resale value with SELL;
+  listings show `by <author> · X cr one-time` with BUY). Tools are always a lift,
+  never a gate.
+- **Digital-value graph (P6).** The *transaction graphs, not anonymous money
+  bars* above are now inspectable: the Market app folds the player's full
+  lifetime ledger by counterparty into a ranked value network — each node shows
+  what they gave (`received`) and got (`paid`) versus the player, their net
+  standing, interaction count, first/last world time, and which causes touched
+  them; scene handles (contract issuers, tool authors) are `peer` nodes, and
+  `market`/`landlord`/`vendor`/`fence` are `institution` roles. The graph is
+  **purely derived** — no new state, events, commands, or save surface — and
+  honestly player-centred: it shows only edges the ledger actually recorded, so
+  multi-hop NPC↔NPC value chains wait for the slice that simulates credit
+  flowing between actors, rather than inventing edges.
+- **Multiple named machines (P7).** Beyond components sit *complete boxes*
+  (`src/content/machine-catalog.ts`) — whole named systems the player can own
+  several of, following the P5 economic shape exactly: a one-time `market`
+  debit (ledger cause `machine`), **no recurring fee**, and resale through the
+  same `fence` for `floor(paid × 0.5)` of the stored paid price, so retuning
+  never re-values a box already in the rack. Each box stores its player-chosen
+  `label`, and renaming (`box name <box-id> <label…>`, trimmed and capped at
+  24 chars) is **identity, not power** — capability derives only from the
+  catalog id and folds into the same `effectiveCapability`, so the rack feeds
+  P1 speed and P2 breadth with no new mechanics. An empty rack is the untouched
+  baseline. `box buy` / `box sell` / `box name` are shared by Terminal and the
+  Market MACHINES panel (owned boxes show paid/sell price with an inline rename
+  and SELL; listings show `X cr one-time · owned ×N` with BUY). Machines are
+  always a lift, never a gate.
+- **AI models — the assistant slot (Phase 5 P0).** Models
+  (`src/content/model-catalog.ts`) are not capability but a *shortcut*: exactly
+  one running model multiplies derived action minutes through the same
+  `combineFactors` path licenses and tools compose with (one floor, the P1
+  one-minute floor still leading), and no model running is exact identity. The
+  two sources are opposite economic shapes, each an established template:
+  **cloud is rent** — running *is* renting, moving no credits to start, switch,
+  or stop, while `advanceUpkeep` bills the `provider` (ledger cause `model`) at
+  each crossed world-day boundary, and an unpayable boundary simply lapses the
+  model (no debt, the license semantics); **local is property** — a one-time
+  `market` debit, then it runs free forever, and buying never auto-runs, because
+  owning and using are separate choices. `model buy <id>` / `model run <id>` /
+  `model stop` are shared by Terminal and the Market AI MODELS panel (each
+  listing shows its factor and rent-or-property price; the wallet's combined
+  daily upkeep folds in a running cloud subscription). Model properties
+  (reasoning/context/reliability) ship as seeded data nothing consumes yet —
+  reserved for the analysis and build slices — never a gate.
+- **Compute contention (Phase 5 P1).** The `vram` and `storage` axes — summed
+  by every catalog since the substrate but read by nothing until now — became
+  live consumers, discharging the #22 *constraints* handoff and turning
+  hardware into a decision rather than a passive bonus. A running **local**
+  model occupies a footprint on the player's own rig, and how well the rig's
+  pool covers it decides how much of the model's advertised shortcut actually
+  arrives: the scarcer of the two axes bottlenecks (a `min` of coverage). A
+  fully-provisioned rig gets the full factor, a starved one drifts to ×1 —
+  exactly the speed of running no model — so contention **taxes only the
+  model's own shortcut, never the player below the baseline** (the standing
+  lift-never-punishment rule) and a starved model stays runnable, helps less,
+  and never blocks or bills. **Cloud models carry a zero footprint**: the
+  provider hosts them, so renting never contends with the rig — the
+  counterweight to their daily fee (rent costs credits and is rig-free;
+  property runs free and is rig-hungry). This is pure derived physics — no
+  reservation, no new state or commands (feed the pool with the existing GPU
+  and storage buys, stop the model, or rent from the cloud) — and the Market
+  listings show each model's footprint and the factor *this rig* would deliver,
+  making the feed-it-or-rent-it choice legible before it costs anything.
+- **AI analysis (Phase 5 P2).** The model properties P0 seeded finally get
+  their consumer: `analyze <target-id>` asks the running assistant for a
+  **fallible read of the target's unseen topology** — machine roles the recon
+  has not surveyed, and service kinds only on hosts it has, reasoning from the
+  visible topology outward. It costs no world time and leaves no trace (the
+  contract-verb precedent): verification is expert play and must stay cheap,
+  while the model's real cost is already paid through its rent (P0) or rig
+  footprint (P1). The economics stay untouched — analysis moves no credits, and
+  what it spends is the assistant's *quality*: `context` budgets how much
+  topology a pass reads, `reliability` sets the odds each claim matches hidden
+  ground truth (capped at 0.8 — no model is trustworthy enough to skip
+  verifying), and `reasoning` + `context` set the confidence the claim is
+  *stated* with, independent of whether it is right, so a cheaper-but-eloquent
+  model can sound better than it is. The assistant needs a model running —
+  its function, not a gate: survey and inspect never require one, and no
+  target or item is locked behind analysis. Its conclusions are predictions the
+  projection deliberately cannot grade: a claim's hidden subject id and its
+  hidden accuracy stay in the simulation (they persist, they never surface), so
+  the read never hands over structure the player has not earned, and the loop
+  closes by comparing the panel against your own recon. The Recon app's
+  ASSISTANT ANALYSIS panel states it plainly: predictions, not evidence.
+- **Software forge (Phase 5 P3).** The build system turns the assistant into a
+  programmer: `build <spec-id>` hands it a workflow spec — a safe
+  workflow/IR from `src/content/workflow-spec-catalog.ts`, an ordered list of
+  fictional pipeline steps, pure data that never executes — and the rig writes
+  the program over world time. The price shape is the money-vs-time-vs-skill
+  triangle made playable: building moves **no credits**; you pay in minutes
+  (base `complexityMinutes`, shortened by the compute axis and the running
+  model's *delivered* shortcut, frozen at commissioning so a split wait cannot
+  re-time it) and in rig occupancy (each in-flight build holds VRAM and storage
+  — the second tenant P1's contention pool was waiting for, so a queue taxes
+  both later estimates and the model's own delivered factor, never below the
+  no-lift baseline). The finished workflow contributes a plain `SoftwareEffect`
+  through the same capability/factor combinators licenses and tools use — the
+  core rule that software creation reuses the purchased-tools capability system,
+  enforced by there being no second system. Quality inherits P2's doctrine: one
+  seeded roll at start splits into clean / warnings / defective, with
+  `reasoning` setting clean odds (capped at 0.7 — lower than analysis, because
+  writing whole programs is harder than labelling a host) and `reliability`
+  deciding whether failures bite; a defective copy delivers halved effect
+  (floor 1 on nonzero axes, shortcut halfway back to ×1) — disappointing, never
+  a trap. The three specs mirror the three premium licenses one-for-one, so
+  #23's exit criterion is checkable: build the Homegrown Monitoring Loop, stop
+  renting the Commercial Monitoring Suite, lose nothing. The queue is
+  completed by the same clock tick as upkeep (`advanceBuilds`), and the leak
+  rule inverts where it should: an in-flight build's frozen outcome is hidden
+  until completion (a halfway report card grades the roll for free), but an
+  owned workflow projects *in full* — outcome, tests, provenance — because it
+  is the player's own ground truth, not someone else's hidden topology. The
+  Market FORGE panel shows specs with this rig's estimate, the queue with due
+  times, and the garage with report cards; a self-built copy permanently
+  replaces a recurring fee with owned software.
+- **Marketplace provenance and NPC AI use (Phase 5 P4).** The model catalog
+  finally has an *author* side. `ModelListing.author` is catalog data: when
+  present, the one-time `model buy` debit goes to that named peer instead of
+  the anonymous market, so the value graph gains a `peer` node with a paid
+  total — the P5 tool-author template reused verbatim, with `market` still the
+  house brand for every unauthored copy. The Salvaged Reason Core (600, ×0.85,
+  reasoning 4 / reliability 2, footprint 3/1, author `moebius`) is the cheap
+  stronger planner: it out-plans the reliable workhorse and slips roughly twice
+  as often, the same reasoning-versus-reliability trade the player's own model
+  choice already prices. And AI is no longer player-exclusive: a peer can run a
+  model (`UndergroundActor.modelId`, hidden truth, never projected raw), and one
+  pure function turns it into that tick's assist — a competent read lifts the
+  actor's offence (band − 2, never a subtraction on a good read), while a miss
+  (`(6 − reliability)/12`, nonzero even at band 5 because fallible-never-
+  deterministic binds the whole ecosystem) costs skill *and* 18 discretion, so
+  an AI-assisted mistake is how a peer's incident surfaces in the public feed.
+  The same function read from the defender's seat is "automation to watch": a
+  watching assistant raises a box's defence on a good read and lowers it when
+  the model misses the pattern. No new command, event, or ledger cause kind —
+  `model buy/run/stop` already covered the flow — and no model is exact
+  `{ 0, 0 }`, so every world of unassisted peers keeps its old math to the
+  byte. The projection shows *that* a peer runs an assistant (handle + model
+  label + author only, never the lift), keeping D028's leak boundary intact at
+  ecosystem scale.
+- **Persistence.** `economy` is optional in the save schema and loads as an empty
+  wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
+  license and tool effects derive at action time, so there is nothing to migrate;
+  a legacy economy loads with `housing: null` (the free baseline), an empty
+  `software` list (no running tools), an empty `playerTools` inventory, an
+  empty `ownedMachines` rack, no `ownedModels`, no `ownedWorkflows`, and
+  `activeModel: null` — the untouched baseline in every layer. Stored `analysis`
+  records and the in-flight `builds` queue likewise default to empty, and a
+  legacy actor without `modelId` loads as an unassisted peer — the pre-P4
+  ecosystem verbatim. A claim's
+  subject id and accuracy, and an in-flight build's frozen outcome, are saved
+  but never projected; a *completed* workflow's outcome and report are saved and
+  do project, because they are the player's own ground truth.

@@ -78,6 +78,9 @@ const undergroundActorSchema = z.object({
   defense: percentSchema,
   discretion: percentSchema,
   activity: percentSchema,
+  // Phase 5 P4: the model id this peer runs as an assistant, or absent when the
+  // actor works without AI. Optional so legacy saves load as unassisted.
+  modelId: z.string().min(1).optional(),
   targetId: z.string().min(1).optional(),
 });
 
@@ -171,6 +174,99 @@ const undergroundSchema = z.object({
   forumPosts: z.array(forumPostSchema).default([]),
 });
 
+const ledgerCauseSchema = z.object({
+  kind: z.enum([
+    "contract",
+    "hardware",
+    "housing",
+    "upkeep",
+    "license",
+    "tool",
+    "machine",
+    "model",
+  ]),
+  id: z.string().min(1),
+});
+
+const valueLedgerEntrySchema = z.object({
+  id: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+  direction: z.enum(["credit", "debit"]),
+  amount: z.number().int().nonnegative(),
+  balanceAfter: z.number().int().nonnegative(),
+  cause: ledgerCauseSchema,
+  counterparty: z.string().min(1),
+});
+
+const ownedHardwareSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
+const ownedPlayerToolSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  author: z.string().min(1),
+  paidCost: z.number().int().nonnegative(),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
+const ownedMachineSchema = z.object({
+  id: z.string().min(1),
+  catalogId: z.string().min(1),
+  label: z.string().min(1),
+  paidCost: z.number().int().nonnegative(),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
+const ownedWorkflowSchema = z.object({
+  id: z.string().min(1),
+  specId: z.string().min(1),
+  label: z.string().min(1),
+  outcome: z.enum(["clean", "warnings", "defective"]),
+  builtWithModelId: z.string().min(1),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
+const economySchema = z.object({
+  credits: z.number().int().nonnegative(),
+  ledger: z.array(valueLedgerEntrySchema).default([]),
+  hardware: z.array(ownedHardwareSchema).default([]),
+  housing: z.string().min(1).nullable().default(null),
+  software: z.array(z.string().min(1)).default([]),
+  playerTools: z.array(ownedPlayerToolSchema).default([]),
+  ownedMachines: z.array(ownedMachineSchema).default([]),
+  ownedModels: z.array(z.string().min(1)).default([]),
+  ownedWorkflows: z.array(ownedWorkflowSchema).default([]),
+  activeModel: z.string().min(1).nullable().default(null),
+});
+
+const analysisClaimSchema = z.object({
+  subjectId: z.string().min(1).nullable(),
+  kind: z.enum(["machine-role", "service-kind"]),
+  assertion: z.string().min(1),
+  confidence: z.enum(["low", "medium", "high"]),
+  accurate: z.boolean(),
+});
+
+const analysisRecordSchema = z.object({
+  id: z.string().min(1),
+  targetId: z.string().min(1),
+  modelId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+  claims: z.array(analysisClaimSchema).default([]),
+});
+
+const inFlightBuildSchema = z.object({
+  id: z.string().min(1),
+  specId: z.string().min(1),
+  modelId: z.string().min(1),
+  startedWorldMinute: z.number().int().nonnegative(),
+  dueWorldMinute: z.number().int().nonnegative(),
+  outcome: z.enum(["clean", "warnings", "defective"]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -184,6 +280,9 @@ const storedWorldStateSchema = z.object({
   traces: z.array(traceSchema).default([]),
   reactions: z.array(reactionSchema).default([]),
   underground: undergroundSchema.optional(),
+  economy: economySchema.optional(),
+  analysis: z.array(analysisRecordSchema).default([]),
+  builds: z.array(inFlightBuildSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -222,6 +321,18 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       contracts: [],
       retaliations: [],
       forumPosts: [],
+    },
+    economy: state.economy ?? {
+      credits: 0,
+      ledger: [],
+      hardware: [],
+      housing: null,
+      software: [],
+      playerTools: [],
+      ownedMachines: [],
+      ownedModels: [],
+      ownedWorkflows: [],
+      activeModel: null,
     },
   };
 });

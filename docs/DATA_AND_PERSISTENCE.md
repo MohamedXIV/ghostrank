@@ -20,6 +20,8 @@ Phase 2 established the stable `RunPersistence` boundary and the original Tauri/
 
 Phase 3 adds `WorldState.underground` (actors, relationships, incidents, ecosystem seed and tick cursor) to the same validated contract. Saves written before Phase 3 load with an empty ecosystem anchored at the saved world minute. Rumors, the player inbox and contracts, retaliations and forum posts live in the same state; saves without them load with none. Reputation descriptors are derived from that history and are not stored. Actor skill, defense, discretion, activity and network, and whether a rumor is accurate, are hidden authoritative truth and are never projected.
 
+Phase 4 adds `WorldState.economy` (a `credits` balance, an append-only value ledger and the list of owned hardware) to the same validated contract. `economy` is optional in the schema; saves written before Phase 4 load with an empty wallet (zero credits, no ledger, no hardware). Credits are validated non-negative integers, so a corrupted negative balance is rejected rather than repaired. Ledger entries carry direction, amount, resulting balance, cause and counterparty. Rig capability is derived from owned hardware at projection time and is never stored, matching the derived-not-stored rule used for reputation descriptors.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:

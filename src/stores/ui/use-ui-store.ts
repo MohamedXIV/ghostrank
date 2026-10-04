@@ -1,7 +1,11 @@
 import { create } from "zustand";
 
 export type ActiveSurface = "computer" | "room";
-export type ComputerWindowId = "terminal" | "recon" | "underground";
+export type ComputerWindowId =
+  | "terminal"
+  | "recon"
+  | "underground"
+  | "market";
 
 interface UiState {
   activeSurface: ActiveSurface;

@@ -87,6 +87,21 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "PlayerRankChanged":
     case "Retaliation":
     case "ForumPosted":
+    case "ValueTransferred":
+    case "HardwareAcquired":
+    case "HousingChanged":
+    case "SoftwareChanged":
+    case "PlayerToolAcquired":
+    case "PlayerToolSold":
+    case "MachineAcquired":
+    case "MachineSold":
+    case "MachineRenamed":
+    case "ModelAcquired":
+    case "ModelChanged":
+    case "AnalysisCompleted":
+    case "BuildStarted":
+    case "BuildCompleted":
+    case "BuildAborted":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

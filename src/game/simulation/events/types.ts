@@ -1,6 +1,10 @@
+import type { ModelSource } from "@/content/model-catalog";
+import type { WorkflowOutcome } from "@/game/simulation/state/world-state";
 import type {
   ContractObjectiveKind,
   ForumSubjectKind,
+  LedgerCauseKind,
+  LedgerDirection,
   OpponentReactionKind,
   RetaliationKind,
   UndergroundNetwork,
@@ -176,6 +180,130 @@ export type SimulationEvent =
       authorId: string;
       subjectKind: ForumSubjectKind;
       subjectId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ValueTransferred";
+      entryId: string;
+      direction: LedgerDirection;
+      amount: number;
+      balanceAfter: number;
+      causeKind: LedgerCauseKind;
+      causeId: string;
+      counterparty: string;
+      worldMinute: number;
+    }
+  | {
+      type: "HardwareAcquired";
+      hardwareId: string;
+      catalogId: string;
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "HousingChanged";
+      housingId: string | null;
+      dailyCost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "SoftwareChanged";
+      softwareId: string;
+      active: boolean;
+      dailyCost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "PlayerToolAcquired";
+      toolId: string;
+      catalogId: string;
+      /** Provenance edge: the author this copy was bought from. */
+      author: string;
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "PlayerToolSold";
+      toolId: string;
+      catalogId: string;
+      author: string;
+      proceeds: number;
+      worldMinute: number;
+    }
+  | {
+      type: "MachineAcquired";
+      machineId: string;
+      catalogId: string;
+      /** The display name at purchase (the catalog label). */
+      label: string;
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "MachineSold";
+      machineId: string;
+      catalogId: string;
+      label: string;
+      proceeds: number;
+      worldMinute: number;
+    }
+  | {
+      type: "MachineRenamed";
+      machineId: string;
+      label: string;
+      worldMinute: number;
+    }
+  | {
+      type: "ModelAcquired";
+      modelId: string;
+      label: string;
+      /** One-time credits paid for the local copy. */
+      cost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "ModelChanged";
+      modelId: string;
+      /** True when the model is now running; false when stopped or lapsed. */
+      active: boolean;
+      /** Which economic shape it carries: rented cloud or owned local. */
+      source: ModelSource;
+      /** Credits per world day while it runs (0 for a local model). */
+      dailyCost: number;
+      worldMinute: number;
+    }
+  | {
+      type: "AnalysisCompleted";
+      targetId: string;
+      /** The assistant that produced the read. */
+      modelId: string;
+      /** How many claims the record carries; 0 means the target held nothing unseen. */
+      claimCount: number;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildStarted";
+      buildId: string;
+      specId: string;
+      /** The assistant commissioned for the job. */
+      modelId: string;
+      /** Frozen build duration in world minutes. */
+      minutes: number;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildCompleted";
+      buildId: string;
+      specId: string;
+      modelId: string;
+      /** The frozen roll, revealed only now — the report card lands with it. */
+      outcome: WorkflowOutcome;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildAborted";
+      buildId: string;
+      specId: string;
       worldMinute: number;
     }
   | {

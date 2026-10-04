@@ -5,6 +5,7 @@ import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
+  analyzeTargetFromGui,
   disengageOperationFromGui,
   escalateOperationFromGui,
   inspectMachineFromGui,
@@ -16,6 +17,23 @@ import {
   contractActionFromGui,
   type ContractVerb,
 } from "@/game/computer/apps/contract-actions";
+import {
+  acquireModelFromGui,
+  abortBuildFromGui,
+  breakLeaseFromGui,
+  buyHardwareFromGui,
+  buyMachineFromGui,
+  buyPlayerToolFromGui,
+  disableSoftwareFromGui,
+  enableSoftwareFromGui,
+  renameMachineFromGui,
+  rentHousingFromGui,
+  runModelFromGui,
+  sellMachineFromGui,
+  sellPlayerToolFromGui,
+  startBuildFromGui,
+  stopModelFromGui,
+} from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
@@ -34,7 +52,15 @@ const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   terminal: "TERM_01",
   recon: "RECON INDEX",
   underground: "UNDERGROUND INDEX",
+  market: "MARKET // RIG",
 };
+
+const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
+  ["survey", "SURVEY"],
+  ["inspect", "INSPECT"],
+  ["escalate", "ESCALATE"],
+  ["disengage", "DISENGAGE"],
+];
 
 export function ComputerDesktop({
   runtime,
@@ -48,6 +74,9 @@ export function ComputerDesktop({
   );
   const rank = Number(
     useCell("player", "current", "rank", runtime.projection) ?? 0,
+  );
+  const credits = Number(
+    useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
   );
 
   const openWindows = useUiStore((state) => state.openWindows);
@@ -66,6 +95,7 @@ export function ComputerDesktop({
         <div className="os-stats">
           <span>{handle}</span>
           <span>RANK #{rank.toLocaleString("en-US")}</span>
+          <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
         <button className="os-room-button" type="button" onClick={onReturnToRoom}>
@@ -86,6 +116,10 @@ export function ComputerDesktop({
           <button type="button" onClick={() => openWindow("underground")}>
             <span className="launcher-glyph">◈</span>
             Index
+          </button>
+          <button type="button" onClick={() => openWindow("market")}>
+            <span className="launcher-glyph">⌸</span>
+            Market
           </button>
         </nav>
 
@@ -124,6 +158,18 @@ export function ComputerDesktop({
             onClose={() => closeWindow("underground")}
           >
             <UndergroundApp runtime={runtime} />
+          </WindowFrame>
+        )}
+
+        {openWindows.includes("market") && (
+          <WindowFrame
+            id="market"
+            title={WINDOW_LABELS.market}
+            focused={focusedWindow === "market"}
+            onFocus={() => focusWindow("market")}
+            onClose={() => closeWindow("market")}
+          >
+            <MarketApp runtime={runtime} />
           </WindowFrame>
         )}
       </div>
@@ -177,7 +223,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | op escalate | op exit | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | build abort <build-id> | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -196,10 +242,26 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         `> ${raw}`,
         "observe <target-id>  resolve a target profile",
         "op open <target-id>  start a recon-stage operation",
-        "survey <target-id>   discover one machine in the active operation (12m)",
-        "inspect <machine-id> inspect one known machine in the active operation (8m)",
-        "op escalate          cross the fictional recon boundary (5m)",
+        "survey <target-id>   discover machines in the active operation (rig scale + speed)",
+        "inspect <machine-id> inspect known machines in the active operation (rig scale + speed)",
+        "analyze <target-id>  the running assistant's read of what recon has not seen (no time, fallible)",
+        "op escalate          cross the fictional recon boundary (rig speed)",
         "op exit              disengage from the active operation (3m)",
+        "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
+        "rent <housing-id>    sign a housing lease (recurring upkeep, capability lift)",
+        "lease break          move out and return to the free baseline",
+        "use <software-id>    run a premium tool (recurring license fee)",
+        "stop <software-id>   stop a tool (its fee stops with it)",
+        "buytool <tool-id>    buy an authored player tool (one-time, carries provenance)",
+        "selltool <tool-id>   resell an owned copy (recovers part of the price)",
+        "box buy <catalog-id> acquire a complete named machine (one-time)",
+        "box sell <box-id>    resell an owned machine through the fence",
+        "box name <box-id> <label>  rename an owned machine",
+        "model buy <model-id> acquire a local model (one-time, runs free)",
+        "model run <model-id> run a model (cloud rents daily; local must be owned)",
+        "model stop         stop the running model",
+        "build <spec-id>    commission the assistant to build a workflow (time, not credits)",
+        "build abort <build-id>  cancel an in-flight build (nothing is charged)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -271,9 +333,87 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "contract declined";
     case "deliverContract":
       return "contract delivered";
+    case "buyHardware":
+      return "hardware acquired // rig updated";
+    case "rentHousing":
+      return "lease signed // location capability active";
+    case "breakLease":
+      return "lease broken // back to the free baseline";
+    case "enableSoftware":
+      return "license activated // recurring fee starts at the next day";
+    case "disableSoftware":
+      return "license stopped // fee stops with it";
+    case "buyPlayerTool":
+      return "player tool acquired // author provenance recorded";
+    case "sellPlayerTool":
+      return "player tool sold // resale credits recovered";
+    case "buyMachine":
+      return "machine acquired // new box added to the rack";
+    case "sellMachine":
+      return "machine sold // resale credits recovered";
+    case "renameMachine":
+      return "machine renamed // label updated";
+    case "acquireModel":
+      return "local model acquired // owned outright, runs free";
+    case "runModel":
+      return "model running // analysis assist active";
+    case "stopModel":
+      return "model stopped // its shortcut ends";
+    case "analyzeTarget":
+      return "assistant read stored // predictions, not evidence";
+    case "startBuild":
+      return "build commissioned // assistant working, garage shows the queue";
+    case "abortBuild":
+      return "build aborted // rig freed, nothing charged";
     case "advanceTime":
       return "world clock advanced";
   }
+}
+
+/**
+ * Inline rename for one owned machine: local draft text, applied through the
+ * shared typed command on submit. Empty or over-long drafts are rejected by the
+ * simulation, so the view never invents its own rules.
+ */
+function MachineRenameRow({
+  machineId,
+  currentLabel,
+  onRename,
+}: {
+  machineId: string;
+  currentLabel: string;
+  onRename: (label: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const trimmed = draft.trim();
+
+  return (
+    <form
+      className="machine-rename-row"
+      onSubmit={(event) => {
+        event.preventDefault();
+
+        if (trimmed.length === 0) {
+          return;
+        }
+
+        onRename(trimmed);
+        setDraft("");
+      }}
+    >
+      <input
+        aria-label={`Rename machine ${machineId}`}
+        autoComplete="off"
+        maxLength={24}
+        placeholder={`rename "${currentLabel}"`}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <button type="submit" disabled={trimmed.length === 0}>
+        NAME
+      </button>
+    </form>
+  );
 }
 
 function ReconApp({ runtime }: { runtime: GameRuntime }) {
@@ -284,6 +424,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
   const footprint = useRow("footprint", "current", runtime.projection);
+  const analysisIds = useRowIds("analysisClaims", runtime.projection);
   const operationTargetId = String(operation.targetId ?? "");
   const operationStage = String(operation.stage ?? "");
   const canEscalate = Object.values(services).some(
@@ -418,7 +559,60 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           ))
         )}
       </div>
+
+      <div className="assistant-analysis">
+        <span className="panel-label">ASSISTANT ANALYSIS</span>
+        {analysisIds.length === 0 ? (
+          <p>
+            No stored read. Ask the running assistant with ANALYZE or{" "}
+            <code>analyze &lt;target-id&gt;</code>; it costs no time and reads
+            only what recon has not mapped yet.
+          </p>
+        ) : (
+          analysisIds.map((id) => (
+            <AnalysisClaimRow key={id} claimId={id} runtime={runtime} />
+          ))
+        )}
+        {analysisIds.length > 0 && (
+          <p className="analysis-caveat">
+            These are predictions, not evidence. The assistant guesses the parts
+            of the target you have not surveyed or inspected, and it can be
+            wrong — mislabelling a host, inventing one entirely, or stating
+            either with more confidence than it has earned. Verify anything you
+            plan to act on with SURVEY and INSPECT.
+          </p>
+        )}
+      </div>
     </div>
+  );
+}
+
+function AnalysisClaimRow({
+  claimId,
+  runtime,
+}: {
+  claimId: string;
+  runtime: GameRuntime;
+}) {
+  const claim = useRow("analysisClaims", claimId, runtime.projection);
+  const minute = Number(claim.worldMinute ?? 0);
+
+  return (
+    <article className="analysis-claim">
+      <span className="analysis-subject">{String(claim.subject ?? "")}</span>
+      <span className="analysis-assertion">
+        {String(claim.kind ?? "") === "service-kind"
+          ? "service likely"
+          : "host likely"}{" "}
+        <strong>{String(claim.assertion ?? "")}</strong>
+      </span>
+      <span className={`confidence-${String(claim.confidence ?? "low")}`}>
+        {String(claim.confidence ?? "low").toUpperCase()}
+      </span>
+      <span className="analysis-meta">
+        {String(claim.modelLabel ?? "")} @ {formatWorldTime(minute)}
+      </span>
+    </article>
   );
 }
 
@@ -458,18 +652,30 @@ function ReconTarget({
         <span className="panel-label">STATUS</span>
         <strong>{isActiveTarget ? "ACTIVE OP" : "OBSERVED"}</strong>
       </div>
-      <button
-        className="recon-inline-action"
-        type="button"
-        disabled={operationElsewhere}
-        onClick={act}
-      >
-        {isActiveTarget
-          ? "SURVEY"
-          : operationElsewhere
-            ? "OP ACTIVE"
-            : "OPEN OP"}
-      </button>
+      <div className="operation-actions">
+        <button
+          className="recon-inline-action"
+          type="button"
+          disabled={operationElsewhere}
+          onClick={act}
+        >
+          {isActiveTarget
+            ? "SURVEY"
+            : operationElsewhere
+              ? "OP ACTIVE"
+              : "OPEN OP"}
+        </button>
+        {isActiveTarget && (
+          <button
+            className="recon-inline-action"
+            type="button"
+            title="Ask the running assistant for its read of what recon has not mapped yet (costs no time, can be wrong)"
+            onClick={() => runtime.execute(analyzeTargetFromGui(targetId))}
+          >
+            ANALYZE
+          </button>
+        )}
+      </div>
     </article>
   );
 }
@@ -601,6 +807,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const retaliationTable = useTable("retaliations", runtime.projection);
   const descriptorTable = useTable("descriptors", runtime.projection);
   const forumTable = useTable("forum", runtime.projection);
+  const assistantsTable = useTable("assistants", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -638,6 +845,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
     ([idA, a], [idB, b]) =>
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  // Phase 5 P4: the ecosystem's AI users, read-only, name and model label only.
+  const assistants = Object.entries(assistantsTable).sort(([idA], [idB]) =>
+    idA.localeCompare(idB),
   );
 
   return (
@@ -862,6 +1073,1089 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span>{String(entry.handle ?? id)}</span>
                 <span className="underground-stance">
                   {String(entry.stance ?? "neutral").toUpperCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Peer assistants">
+        <span className="panel-label">PEER ASSISTANTS // ECOSYSTEM AI</span>
+        {assistants.length === 0 ? (
+          <p className="underground-empty">No one in the scene is running an assistant.</p>
+        ) : (
+          <ul className="underground-assistants">
+            {assistants.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.handle ?? id)}</span>
+                <span>
+                  {String(entry.modelLabel ?? "")}
+                  {entry.modelAuthor
+                    ? ` — by ${String(entry.modelAuthor)}`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="underground-note">
+          You see which peer runs which assistant, never what it earns them.
+          Peers using AI is part of the scene, not a player-only superpower —
+          and like yours, theirs is fallible, so the same model that helps a
+          peer can also make their work slip into the public feed.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function MarketApp({ runtime }: { runtime: GameRuntime }) {
+  const credits = Number(
+    useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
+  );
+  const dailyCost = Number(
+    useCell("meta", "wallet", "dailyCost", runtime.projection) ?? 0,
+  );
+  const currentHousingId = String(
+    useCell("meta", "wallet", "currentHousingId", runtime.projection) ?? "",
+  );
+  const rig = useRow("rig", "capability", runtime.projection);
+  const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
+  const scale = useRow("rig", "scale", runtime.projection);
+  const lease = useRow("rig", "lease", runtime.projection);
+  const softwareLift = useRow("rig", "softwareLift", runtime.projection);
+  const playerToolLift = useRow("rig", "playerToolLift", runtime.projection);
+  const machineLift = useRow("rig", "machineLift", runtime.projection);
+  const assistant = useRow("rig", "assistant", runtime.projection);
+  const hardwareTable = useTable("hardware", runtime.projection);
+  const catalogTable = useTable("catalog", runtime.projection);
+  const housingTable = useTable("housing", runtime.projection);
+  const softwareTable = useTable("software", runtime.projection);
+  const ownedToolsTable = useTable("ownedTools", runtime.projection);
+  const toolListingsTable = useTable("toolListings", runtime.projection);
+  const ownedMachinesTable = useTable("ownedMachines", runtime.projection);
+  const machineListingsTable = useTable("machineListings", runtime.projection);
+  const modelsTable = useTable("modelListings", runtime.projection);
+  const forgeSpecsTable = useTable("forgeSpecs", runtime.projection);
+  const buildQueueTable = useTable("buildQueue", runtime.projection);
+  const ownedWorkflowsTable = useTable("ownedWorkflows", runtime.projection);
+  const valueNodesTable = useTable("valueNodes", runtime.projection);
+  const valueInflow = Number(
+    useCell("meta", "wallet", "valueInflow", runtime.projection) ?? 0,
+  );
+  const valueOutflow = Number(
+    useCell("meta", "wallet", "valueOutflow", runtime.projection) ?? 0,
+  );
+  const valueCounterparties = Number(
+    useCell("meta", "wallet", "valueCounterparties", runtime.projection) ?? 0,
+  );
+  const ledgerTable = useTable("ledger", runtime.projection);
+
+  const capability = [
+    ["compute", rig.compute],
+    ["memory", rig.memory],
+    ["vram", rig.vram],
+    ["storage", rig.storage],
+    ["network", rig.network],
+  ] as const;
+
+  const liftRows = [
+    [
+      "compute",
+      Number(lease.compute ?? 0) +
+        Number(softwareLift.compute ?? 0) +
+        Number(playerToolLift.compute ?? 0) +
+        Number(machineLift.compute ?? 0),
+    ],
+    [
+      "memory",
+      Number(lease.memory ?? 0) +
+        Number(softwareLift.memory ?? 0) +
+        Number(playerToolLift.memory ?? 0) +
+        Number(machineLift.memory ?? 0),
+    ],
+    [
+      "vram",
+      Number(lease.vram ?? 0) +
+        Number(softwareLift.vram ?? 0) +
+        Number(playerToolLift.vram ?? 0) +
+        Number(machineLift.vram ?? 0),
+    ],
+    [
+      "storage",
+      Number(lease.storage ?? 0) +
+        Number(softwareLift.storage ?? 0) +
+        Number(playerToolLift.storage ?? 0) +
+        Number(machineLift.storage ?? 0),
+    ],
+    [
+      "network",
+      Number(lease.network ?? 0) +
+        Number(softwareLift.network ?? 0) +
+        Number(playerToolLift.network ?? 0) +
+        Number(machineLift.network ?? 0),
+    ],
+  ] as const;
+
+  const ownedHardware = Object.entries(hardwareTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) - Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const catalog = Object.entries(catalogTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const housing = Object.entries(housingTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  const software = Object.entries(softwareTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  const ownedTools = Object.entries(ownedToolsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) -
+        Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const toolListings = Object.entries(toolListingsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const ownedMachines = Object.entries(ownedMachinesTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.acquiredWorldMinute ?? 0) -
+        Number(b.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const machineListings = Object.entries(machineListingsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  );
+
+  const models = Object.entries(modelsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.cost ?? 0) - Number(b.cost ?? 0) ||
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  const forgeSpecs = Object.entries(forgeSpecsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.estimatedMinutes ?? 0) - Number(b.estimatedMinutes ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  // The queue reads like a build log: soonest deadline first.
+  const buildQueue = Object.entries(buildQueueTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dueWorldMinute ?? 0) - Number(b.dueWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const ownedWorkflows = Object.entries(ownedWorkflowsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.acquiredWorldMinute ?? 0) - Number(a.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const assistantRunning = String(assistant.modelId ?? "").length > 0;
+
+  const ledger = Object.entries(ledgerTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+
+  // Re-apply the graph's volume ordering here so the panel is stable even
+  // though TinyBase table keys carry no guaranteed order across re-syncs.
+  const valueNodes = Object.entries(valueNodesTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.paid ?? 0) +
+        Number(b.received ?? 0) -
+        (Number(a.paid ?? 0) + Number(a.received ?? 0)) ||
+      idA.localeCompare(idB),
+  );
+
+  return (
+    <div className="market-app">
+      <section aria-label="Wallet">
+        <span className="panel-label">WALLET</span>
+        <div className="market-wallet">
+          <strong>{credits.toLocaleString("en-US")} cr</strong>
+          <span>
+            {dailyCost > 0
+              ? `${dailyCost.toLocaleString("en-US")} cr upkeep per world day.`
+              : "Credits never go negative."}{" "}
+            Hardware raises capability, never a gate.
+          </span>
+        </div>
+      </section>
+
+      <section aria-label="Rig capability">
+        <span className="panel-label">RIG CAPABILITY</span>
+        <ul className="market-capability">
+          {capability.map(([label, value]) => (
+            <li key={label}>
+              <span>{label.toUpperCase()}</span>
+              <strong>{Number(value ?? 0)}</strong>
+            </li>
+          ))}
+        </ul>
+        {liftRows.some(([, value]) => Number(value ?? 0) > 0) && (
+          <p className="market-hint">
+            Includes lease + software + tool + machine lift:{" "}
+            {liftRows
+              .filter(([, value]) => Number(value ?? 0) > 0)
+              .map(([label, value]) => `${label} +${Number(value ?? 0)}`)
+              .join(" · ")}
+            .
+          </p>
+        )}
+      </section>
+
+      <section aria-label="Rig speed">
+        <span className="panel-label">RIG SPEED // EST. MINUTES PER ACTION</span>
+        <ul className="market-speed">
+          {RECON_ACTION_LABELS.map(([action, label]) => (
+            <li key={action}>
+              <span>{label}</span>
+              <strong>{Number(actionMinutes[action] ?? 0)}m</strong>
+            </li>
+          ))}
+        </ul>
+        <p className="market-hint">
+          Better hardware works faster. It never unlocks or blocks a target —
+          capability is speed and scale, not a level gate.
+          {Number(assistant.factor ?? 1) < 1 && (
+            <> An assistant is running: every accelerated action costs{" "}
+            <strong>×{Number(assistant.factor ?? 1)}</strong> its hardware
+            minutes.</>
+          )}
+        </p>
+      </section>
+
+      <section aria-label="Rig scale">
+        <span className="panel-label">RIG SCALE // ITEMS PER PASS</span>
+        <ul className="market-speed">
+          <li>
+            <span>SURVEY + INSPECT</span>
+            <strong>×{Number(scale.discoveryScope ?? 1)}</strong>
+          </li>
+        </ul>
+        <p className="market-hint">
+          Memory decides how many machines or services one pass covers. A modest
+          rig still discovers everything — it just needs more passes.
+        </p>
+      </section>
+
+      <section aria-label="Owned hardware">
+        <span className="panel-label">OWNED HARDWARE</span>
+        {ownedHardware.length === 0 ? (
+          <p className="market-empty">No hardware installed.</p>
+        ) : (
+          <ul className="market-hardware">
+            {ownedHardware.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.label ?? entry.catalogId ?? id)}</span>
+                <span className="market-time">
+                  {String(entry.category ?? "")} ·{" "}
+                  {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Catalog">
+        <span className="panel-label">MARKET CATALOG</span>
+        {catalog.length === 0 ? (
+          <p className="market-empty">Nothing listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {catalog.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const owned = Number(entry.owned ?? 0);
+              const affordable = credits >= cost;
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={owned > 0 ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "baseline platform"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost === 0 ? "included" : `${cost.toLocaleString("en-US")} cr`}
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Acquire this hardware"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyHardwareFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Housing market">
+        <span className="panel-label">HOUSING // RECURRING</span>
+        {housing.length === 0 ? (
+          <p className="market-empty">No locations listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {housing.map(([id, entry]) => {
+              const cost = Number(entry.dailyCost ?? 0);
+              const active = entry.active === true;
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={active ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr / day
+                      {active ? " · active lease" : ""}
+                    </span>
+                  </div>
+                  {active ? (
+                    <button
+                      type="button"
+                      title="Move out and return to the free baseline"
+                      onClick={() => runtime.execute(breakLeaseFromGui())}
+                    >
+                      MOVE OUT
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      title={
+                        currentHousingId
+                          ? "Switch to this lease (free to move)"
+                          : "Sign this lease"
+                      }
+                      onClick={() => runtime.execute(rentHousingFromGui(id))}
+                    >
+                      MOVE IN
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          A lease adds capability while you keep paying its daily upkeep — it
+          never unlocks or blocks a target. Moving in, switching, or moving out
+          costs nothing; rent is only levied at each world-day boundary. Miss a
+          payment and you simply return to the free baseline. No debt, no gate.
+        </p>
+      </section>
+
+      <section aria-label="Software market">
+        <span className="panel-label">SOFTWARE // RECURRING</span>
+        {software.length === 0 ? (
+          <p className="market-empty">No tools listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {software.map(([id, entry]) => {
+              const cost = Number(entry.dailyCost ?? 0);
+              const active = entry.active === true;
+              const factor = Number(entry.discountFactor ?? 1);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={active ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">{String(entry.label ?? id)}</span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr / day
+                      {active ? " · running" : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    title={
+                      active
+                        ? "Stop this license (fee stops with it)"
+                        : "Run this license (fee starts at the next day)"
+                    }
+                    onClick={() =>
+                      runtime.execute(
+                        active
+                          ? disableSoftwareFromGui(id)
+                          : enableSoftwareFromGui(id),
+                      )
+                    }
+                  >
+                    {active ? "STOP" : "RUN"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Premium tools make the same rig more productive — wider passes, faster
+          work — for a daily license fee. Running, swapping, or stopping a tool
+          costs nothing; only each world-day boundary bills. A fee you cannot
+          pay just lapses that one license. Tools never unlock or block a
+          target. No debt, no gate.
+        </p>
+      </section>
+
+      <section aria-label="Player tools">
+        <span className="panel-label">PLAYER TOOLS // ONE-TIME</span>
+        {ownedTools.length === 0 && toolListings.length === 0 ? (
+          <p className="market-empty">Nothing authored is on offer.</p>
+        ) : (
+          <ul className="market-catalog">
+            {ownedTools.map(([id, entry]) => {
+              const factor = Number(entry.discountFactor ?? 1);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+              const resale = Number(entry.resaleValue ?? 0);
+
+              return (
+                <li key={id} className="is-owned">
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? entry.catalogId ?? id)}
+                    </span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      by {String(entry.author ?? "unknown")} · paid{" "}
+                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
+                      sells {resale.toLocaleString("en-US")} cr ·{" "}
+                      {formatWorldTime(
+                        Number(entry.acquiredWorldMinute ?? 0),
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    title="Resell this copy to the fence (no upkeep is lost)"
+                    onClick={() => runtime.execute(sellPlayerToolFromGui(id))}
+                  >
+                    SELL
+                  </button>
+                </li>
+              );
+            })}
+            {toolListings.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const affordable = credits >= cost;
+              const factor = Number(entry.discountFactor ?? 1);
+              const owned = Number(entry.ownedCount ?? 0);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={`listing-${id}`} className={owned > 0 ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      by {String(entry.author ?? "unknown")} ·{" "}
+                      {cost.toLocaleString("en-US")} cr one-time
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Buy this authored copy (one-time, no upkeep)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyPlayerToolFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Authored tools are property, not rent: pay once, keep the lift with no
+          daily fee, and resell to the fence for half the price you paid. Each
+          copy carries its author&apos;s handle, so every trade is a named edge in
+          the scene&apos;s value graph. Like every other layer, tools are a lift —
+          never a gate.
+        </p>
+      </section>
+
+      <section aria-label="Machines">
+        <span className="panel-label">MACHINES // NAMED BOXES</span>
+        {ownedMachines.length === 0 && machineListings.length === 0 ? (
+          <p className="market-empty">No machines on offer.</p>
+        ) : (
+          <ul className="market-catalog">
+            {ownedMachines.map(([id, entry]) => {
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+              const resale = Number(entry.resaleValue ?? 0);
+
+              return (
+                <li key={id} className="is-owned">
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {String(entry.catalogId ?? "")} · paid{" "}
+                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
+                      sells {resale.toLocaleString("en-US")} cr ·{" "}
+                      {formatWorldTime(
+                        Number(entry.acquiredWorldMinute ?? 0),
+                      )}
+                    </span>
+                    <MachineRenameRow
+                      machineId={id}
+                      currentLabel={String(entry.label ?? id)}
+                      onRename={(label) =>
+                        runtime.execute(renameMachineFromGui(id, label))
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    title="Resell this machine to the fence (no upkeep is lost)"
+                    onClick={() => runtime.execute(sellMachineFromGui(id))}
+                  >
+                    SELL
+                  </button>
+                </li>
+              );
+            })}
+            {machineListings.map(([id, entry]) => {
+              const cost = Number(entry.cost ?? 0);
+              const affordable = credits >= cost;
+              const owned = Number(entry.ownedCount ?? 0);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li
+                  key={`listing-${id}`}
+                  className={owned > 0 ? "is-owned" : undefined}
+                >
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span>
+                      {stats.length === 0
+                        ? "no capability lift"
+                        : stats
+                            .map(
+                              ([label, value]) =>
+                                `${label} +${Number(value ?? 0)}`,
+                            )
+                            .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr one-time
+                      {owned > 0 ? ` · owned ×${owned}` : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!affordable}
+                    title={
+                      affordable
+                        ? "Buy this machine (one-time, no upkeep)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(buyMachineFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          A machine is a whole named box — buy as many racks as you can afford,
+          rename each so you remember what it is for, and sell it back through
+          the fence for half of what you paid. Every owned box folds into the
+          same rig profile that drives speed and scale: multiple machines
+          multiply your capability, never unlock or block a target.
+        </p>
+      </section>
+
+      <section aria-label="AI models">
+        <span className="panel-label">AI MODELS // ASSISTANTS</span>
+        <ul className="market-catalog">
+          {models.map(([id, entry]) => {
+            const cost = Number(entry.cost ?? 0);
+            const perDay = Number(entry.dailyCost ?? 0);
+            const owned = Boolean(entry.owned ?? false);
+            const running = Boolean(entry.running ?? false);
+            const cloud = String(entry.source ?? "cloud") === "cloud";
+            const factor = Number(entry.factor ?? 1);
+            const delivered = Number(entry.deliveredFactor ?? factor);
+            // Contention pulls a local model's delivered shortcut toward ×1;
+            // "starved" means the rig covers less than the model asked for.
+            const starved = !cloud && delivered > factor;
+
+            return (
+              <li key={id} className={running ? "is-owned" : undefined}>
+                <div>
+                  <span className="panel-label">
+                    {String(entry.label ?? id)}
+                  </span>
+                  <span>
+                    analysis ×{factor} action minutes
+                    {starved && (
+                      <>
+                        {" — this rig delivers "}
+                        <strong>×{delivered}</strong>
+                      </>
+                    )}
+                  </span>
+                  {!cloud && (
+                    <span className="market-time">
+                      rig load {Number(entry.vram ?? 0)} vram /{" "}
+                      {Number(entry.storage ?? 0)} storage · your rig{" "}
+                      {Number(rig.vram ?? 0)} / {Number(rig.storage ?? 0)}
+                    </span>
+                  )}
+                  {entry.author && (
+                    // Phase 5 P4 marketplace provenance: an in-fiction peer
+                    // authored this copy and collects for it — like a P5 tool.
+                    <span className="market-time">
+                      by {String(entry.author)} · paid to them directly
+                    </span>
+                  )}
+                  <span className="market-time">
+                    {cloud
+                      ? `${perDay.toLocaleString("en-US")} cr / day while running`
+                      : `${cost.toLocaleString("en-US")} cr one-time · runs free`}
+                    {owned ? " · owned" : ""}
+                    {running ? " · running" : ""}
+                  </span>
+                </div>
+                {running ? (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(stopModelFromGui())}
+                    title="Stop this assistant (its shortcut ends)"
+                  >
+                    STOP
+                  </button>
+                ) : owned || cloud ? (
+                  <button
+                    type="button"
+                    onClick={() => runtime.execute(runModelFromGui(id))}
+                    title={
+                      cloud
+                        ? "Start renting this cloud model (bills daily while it runs)"
+                        : starved
+                          ? "Run this owned model — your rig under-provisions it, so it helps less"
+                          : "Run this owned model (costs nothing)"
+                    }
+                  >
+                    RUN
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={credits < cost}
+                    title={
+                      credits >= cost
+                        ? "Buy this local model (one-time, runs free)"
+                        : "Not enough credits"
+                    }
+                    onClick={() => runtime.execute(acquireModelFromGui(id))}
+                  >
+                    BUY
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="market-hint">
+          A model is an assistant, not an autopilot: while one runs it shortens
+          the minutes accelerated actions cost, composed with your licenses and
+          tools under the same one-minute floor. Cloud models rent — starting or
+          stopping moves nothing, the fee lands at each crossed day and an
+          unpayable one simply stops the model; they run on the provider&apos;s
+          hardware, so your rig never contends with them. Local models are
+          property — one purchase, then running them is free forever — but they
+          occupy your VRAM and storage: a rig that covers the footprint gets the
+          full shortcut, one that under-provisions it gets less, never worse
+          than running nothing at all. Buy GPUs and storage to feed a local
+          model, or rent the speed from the cloud instead. No model at all is
+          the baseline, and an assistant never unlocks or blocks a target.
+        </p>
+      </section>
+
+      <section aria-label="Software forge">
+        <span className="panel-label">SOFTWARE FORGE // SPECS</span>
+        {forgeSpecs.length === 0 ? (
+          <p className="market-empty">The forge shelves are empty.</p>
+        ) : (
+          <ul className="market-catalog forge-specs">
+            {forgeSpecs.map(([id, entry]) => {
+              const minutes = Number(entry.estimatedMinutes ?? 0);
+
+              return (
+                <li key={id}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span className="forge-steps">
+                      {String(entry.steps ?? "").split("\n").map((step) => (
+                        <span key={step} className="forge-step">
+                          {step}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="market-time">
+                      replaces {String(entry.replacesLabel ?? "")} · about{" "}
+                      {minutes.toLocaleString("en-US")} min on this rig · load{" "}
+                      {Number(entry.vram ?? 0)} vram /{" "}
+                      {Number(entry.storage ?? 0)} storage
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!assistantRunning}
+                    title={
+                      assistantRunning
+                        ? "Commission the running assistant to build this (pays in time, not credits)"
+                        : "Run a model first — the forge needs an assistant"
+                    }
+                    onClick={() => runtime.execute(startBuildFromGui(id))}
+                  >
+                    BUILD
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <span className="panel-label">BUILD QUEUE</span>
+        {buildQueue.length === 0 ? (
+          <p className="market-empty">
+            No builds in flight — the rig is not writing anything.
+          </p>
+        ) : (
+          <ul className="market-catalog forge-queue">
+            {buildQueue.map(([id, entry]) => (
+              <li key={id}>
+                <div>
+                  <span className="panel-label">{String(entry.specLabel ?? id)}</span>
+                  <span>
+                    {String(entry.modelLabel ?? "")} · occupies{" "}
+                    {Number(entry.vram ?? 0)} vram /{" "}
+                    {Number(entry.storage ?? 0)} storage
+                  </span>
+                  <span className="market-time">
+                    started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} · due{" "}
+                    {formatWorldTime(Number(entry.dueWorldMinute ?? 0))}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  title="Abort this build — the queue slot frees, nothing is charged"
+                  onClick={() => runtime.execute(abortBuildFromGui(id))}
+                >
+                  ABORT
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <span className="panel-label">SELF-AUTHORED</span>
+        {ownedWorkflows.length === 0 ? (
+          <p className="market-empty">
+            Nothing built yet — a finished workflow is yours permanently, with no
+            recurring fee.
+          </p>
+        ) : (
+          <ul className="market-catalog forge-owned">
+            {ownedWorkflows.map(([id, entry]) => {
+              const outcome = String(entry.outcome ?? "");
+
+              return (
+                <li key={id}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                      <span className={`workflow-outcome-${outcome}`}>
+                        {outcome}
+                      </span>
+                    </span>
+                    <span className="forge-tests">
+                      {String(entry.tests ?? "").split("\n").filter(Boolean).map((test) => (
+                        <span key={test} className="forge-test">
+                          {test}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="market-time">
+                      built by {String(entry.builtWithLabel ?? "")} · delivered{" "}
+                      {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          The forge is where you stop renting: hand the running assistant a spec
+          — a safe workflow/IR, plan only, never executable code — and it writes
+          the program over world time. Building costs no credits; you pay in
+          minutes and rig occupancy instead. Each build occupies VRAM and
+          storage while it runs, competing with a local assistant for the same
+          pool, so a queue taxes both the next build&apos;s estimate and the
+          model&apos;s delivered shortcut. The finished workflow is yours
+          forever, contributes through the same capability language as the
+          license it replaces, and — because the assistant can be wrong — may
+          arrive clean, with warnings, or defective. A defective copy still
+          works, just for less; software is a lift, never a trap.
+        </p>
+      </section>
+
+      <section aria-label="Value graph">
+        <span className="panel-label">
+          VALUE GRAPH // {valueCounterparties} COUNTERPART
+          {valueCounterparties === 1 ? "" : "IES"}
+        </span>
+        {valueNodes.length === 0 ? (
+          <p className="market-empty">
+            No value has moved yet — every wallet tells a story once it starts.
+          </p>
+        ) : (
+          <ul className="market-value-graph">
+            {valueNodes.map(([id, entry]) => {
+              const received = Number(entry.received ?? 0);
+              const paid = Number(entry.paid ?? 0);
+              const net = Number(entry.net ?? 0);
+              const volume = Math.max(received, paid, 1);
+              const kind = String(entry.kind ?? "peer");
+              const causes = String(entry.causeKinds ?? "")
+                .split(",")
+                .filter(Boolean);
+
+              return (
+                <li key={id} className={`value-node value-node-${kind}`}>
+                  <div>
+                    <span className="panel-label">
+                      {id}
+                      <span className="value-node-tag">
+                        {kind === "institution" ? " role" : " peer"}
+                      </span>
+                    </span>
+                    <span>
+                      {causes.length > 0 ? causes.join(" · ") : "—"}
+                    </span>
+                    <span className="market-time">
+                      {Number(entry.interactions ?? 0)}× · first{" "}
+                      {formatWorldTime(
+                        Number(entry.firstWorldMinute ?? 0),
+                      )}{" "}
+                      · last{" "}
+                      {formatWorldTime(Number(entry.lastWorldMinute ?? 0))}
+                    </span>
+                  </div>
+                  <div className="value-node-bars">
+                    <span className="value-node-bar value-node-in">
+                      <span style={{ width: `${(received / volume) * 100}%` }} />
+                      +{received.toLocaleString("en-US")}
+                    </span>
+                    <span className="value-node-bar value-node-out">
+                      <span style={{ width: `${(paid / volume) * 100}%` }} />
+                      −{paid.toLocaleString("en-US")}
+                    </span>
+                    <span className="value-node-net">
+                      net {net >= 0 ? "+" : "−"}
+                      {Math.abs(net).toLocaleString("en-US")}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Money is a graph, not a bar: this is the ledger aggregated by who
+          actually got paid. <strong>In</strong> is value they gave you,
+          <strong> out</strong> is value you gave them; <strong>net</strong> is
+          your standing with each. Institutions (market, landlord, vendor,
+          fence) are roles — every other name is a scene handle.
+        </p>
+        <p className="market-hint">
+          Lifetime totals: in +{valueInflow.toLocaleString("en-US")} · out −
+          {valueOutflow.toLocaleString("en-US")} · net{" "}
+          {valueInflow - valueOutflow >= 0 ? "+" : "−"}
+          {Math.abs(valueInflow - valueOutflow).toLocaleString("en-US")} cr.
+        </p>
+      </section>
+
+      <section aria-label="Ledger">
+        <span className="panel-label">VALUE LEDGER</span>
+        {ledger.length === 0 ? (
+          <p className="market-empty">No value has moved yet.</p>
+        ) : (
+          <ul className="market-ledger">
+            {ledger.map(([id, entry]) => (
+              <li key={id}>
+                <span
+                  className={
+                    entry.direction === "credit"
+                      ? "market-credit"
+                      : "market-debit"
+                  }
+                >
+                  {entry.direction === "credit" ? "+" : "−"}
+                  {Number(entry.amount ?? 0).toLocaleString("en-US")}
+                </span>
+                <span>
+                  {String(entry.causeKind ?? "")} ·{" "}
+                  {String(entry.counterparty ?? "")}
+                </span>
+                <span className="market-time">
+                  bal {Number(entry.balanceAfter ?? 0).toLocaleString("en-US")} ·{" "}
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
               </li>
             ))}
