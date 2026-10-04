@@ -19,6 +19,7 @@ import {
 } from "@/game/computer/apps/contract-actions";
 import {
   acquireModelFromGui,
+  abortBuildFromGui,
   breakLeaseFromGui,
   buyHardwareFromGui,
   buyMachineFromGui,
@@ -30,6 +31,7 @@ import {
   runModelFromGui,
   sellMachineFromGui,
   sellPlayerToolFromGui,
+  startBuildFromGui,
   stopModelFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
@@ -221,7 +223,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | build abort <build-id> | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -258,6 +260,8 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "model buy <model-id> acquire a local model (one-time, runs free)",
         "model run <model-id> run a model (cloud rents daily; local must be owned)",
         "model stop         stop the running model",
+        "build <spec-id>    commission the assistant to build a workflow (time, not credits)",
+        "build abort <build-id>  cancel an in-flight build (nothing is charged)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -357,6 +361,10 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "model stopped // its shortcut ends";
     case "analyzeTarget":
       return "assistant read stored // predictions, not evidence";
+    case "startBuild":
+      return "build commissioned // assistant working, garage shows the queue";
+    case "abortBuild":
+      return "build aborted // rig freed, nothing charged";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -1097,6 +1105,9 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const ownedMachinesTable = useTable("ownedMachines", runtime.projection);
   const machineListingsTable = useTable("machineListings", runtime.projection);
   const modelsTable = useTable("modelListings", runtime.projection);
+  const forgeSpecsTable = useTable("forgeSpecs", runtime.projection);
+  const buildQueueTable = useTable("buildQueue", runtime.projection);
+  const ownedWorkflowsTable = useTable("ownedWorkflows", runtime.projection);
   const valueNodesTable = useTable("valueNodes", runtime.projection);
   const valueInflow = Number(
     useCell("meta", "wallet", "valueInflow", runtime.projection) ?? 0,
@@ -1208,6 +1219,27 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
       Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
       idA.localeCompare(idB),
   );
+
+  const forgeSpecs = Object.entries(forgeSpecsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.estimatedMinutes ?? 0) - Number(b.estimatedMinutes ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  // The queue reads like a build log: soonest deadline first.
+  const buildQueue = Object.entries(buildQueueTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dueWorldMinute ?? 0) - Number(b.dueWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const ownedWorkflows = Object.entries(ownedWorkflowsTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.acquiredWorldMinute ?? 0) - Number(a.acquiredWorldMinute ?? 0) ||
+      idA.localeCompare(idB, undefined, { numeric: true }),
+  );
+
+  const assistantRunning = String(assistant.modelId ?? "").length > 0;
 
   const ledger = Object.entries(ledgerTable).sort(
     ([idA, a], [idB, b]) =>
@@ -1851,6 +1883,136 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           than running nothing at all. Buy GPUs and storage to feed a local
           model, or rent the speed from the cloud instead. No model at all is
           the baseline, and an assistant never unlocks or blocks a target.
+        </p>
+      </section>
+
+      <section aria-label="Software forge">
+        <span className="panel-label">SOFTWARE FORGE // SPECS</span>
+        {forgeSpecs.length === 0 ? (
+          <p className="market-empty">The forge shelves are empty.</p>
+        ) : (
+          <ul className="market-catalog forge-specs">
+            {forgeSpecs.map(([id, entry]) => {
+              const minutes = Number(entry.estimatedMinutes ?? 0);
+
+              return (
+                <li key={id}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                    </span>
+                    <span className="forge-steps">
+                      {String(entry.steps ?? "").split("\n").map((step) => (
+                        <span key={step} className="forge-step">
+                          {step}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="market-time">
+                      replaces {String(entry.replacesLabel ?? "")} · about{" "}
+                      {minutes.toLocaleString("en-US")} min on this rig · load{" "}
+                      {Number(entry.vram ?? 0)} vram /{" "}
+                      {Number(entry.storage ?? 0)} storage
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!assistantRunning}
+                    title={
+                      assistantRunning
+                        ? "Commission the running assistant to build this (pays in time, not credits)"
+                        : "Run a model first — the forge needs an assistant"
+                    }
+                    onClick={() => runtime.execute(startBuildFromGui(id))}
+                  >
+                    BUILD
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <span className="panel-label">BUILD QUEUE</span>
+        {buildQueue.length === 0 ? (
+          <p className="market-empty">
+            No builds in flight — the rig is not writing anything.
+          </p>
+        ) : (
+          <ul className="market-catalog forge-queue">
+            {buildQueue.map(([id, entry]) => (
+              <li key={id}>
+                <div>
+                  <span className="panel-label">{String(entry.specLabel ?? id)}</span>
+                  <span>
+                    {String(entry.modelLabel ?? "")} · occupies{" "}
+                    {Number(entry.vram ?? 0)} vram /{" "}
+                    {Number(entry.storage ?? 0)} storage
+                  </span>
+                  <span className="market-time">
+                    started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} · due{" "}
+                    {formatWorldTime(Number(entry.dueWorldMinute ?? 0))}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  title="Abort this build — the queue slot frees, nothing is charged"
+                  onClick={() => runtime.execute(abortBuildFromGui(id))}
+                >
+                  ABORT
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <span className="panel-label">SELF-AUTHORED</span>
+        {ownedWorkflows.length === 0 ? (
+          <p className="market-empty">
+            Nothing built yet — a finished workflow is yours permanently, with no
+            recurring fee.
+          </p>
+        ) : (
+          <ul className="market-catalog forge-owned">
+            {ownedWorkflows.map(([id, entry]) => {
+              const outcome = String(entry.outcome ?? "");
+
+              return (
+                <li key={id}>
+                  <div>
+                    <span className="panel-label">
+                      {String(entry.label ?? id)}
+                      <span className={`workflow-outcome-${outcome}`}>
+                        {outcome}
+                      </span>
+                    </span>
+                    <span className="forge-tests">
+                      {String(entry.tests ?? "").split("\n").filter(Boolean).map((test) => (
+                        <span key={test} className="forge-test">
+                          {test}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="market-time">
+                      built by {String(entry.builtWithLabel ?? "")} · delivered{" "}
+                      {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          The forge is where you stop renting: hand the running assistant a spec
+          — a safe workflow/IR, plan only, never executable code — and it writes
+          the program over world time. Building costs no credits; you pay in
+          minutes and rig occupancy instead. Each build occupies VRAM and
+          storage while it runs, competing with a local assistant for the same
+          pool, so a queue taxes both the next build&apos;s estimate and the
+          model&apos;s delivered shortcut. The finished workflow is yours
+          forever, contributes through the same capability language as the
+          license it replaces, and — because the assistant can be wrong — may
+          arrive clean, with warnings, or defective. A defective copy still
+          works, just for less; software is a lift, never a trap.
         </p>
       </section>
 

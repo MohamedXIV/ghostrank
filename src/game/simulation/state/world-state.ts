@@ -97,6 +97,52 @@ export interface AnalysisRecord {
 
 export type TraceSeverity = "low" | "elevated" | "high";
 
+/**
+ * The frozen quality outcome of a self-authored workflow build (Phase 5 P3),
+ * rolled once at start. The docs' build outcomes: a workflow can come out
+ * clean, ship with warnings, or carry defects. It is *frozen* — a later stop,
+ * model swap, or save/restore can neither re-roll nor reveal it early.
+ */
+export type WorkflowOutcome = "clean" | "warnings" | "defective";
+
+/**
+ * One in-flight build job (Phase 5 P3). Everything that must stay stable while
+ * the world clock runs is captured at start: the duration (the delivered model
+ * shortcut, if any, is *frozen* so split waits cannot change it), the due
+ * minute, and the rolled outcome — hidden until completion, because a build
+ * report the player could read halfway would grade the roll for free.
+ */
+export interface InFlightBuild {
+  id: string;
+  specId: string;
+  /** The assistant running when the build was commissioned. */
+  modelId: string;
+  startedWorldMinute: number;
+  /** World minute the finished workflow lands in the garage. */
+  dueWorldMinute: number;
+  outcome: WorkflowOutcome;
+}
+
+/**
+ * A completed, owned self-authored workflow. Like every other instance type,
+ * the effect derives from the catalog spec via `specId`, never from storage;
+ * what is per-copy is the *build* — the frozen `outcome` roll, the assistant
+ * that wrote it, the spec label at completion (identity, renameable later),
+ * and the landing minute. A later catalog retune can neither re-grade a build
+ * nor lose its provenance.
+ */
+export interface OwnedWorkflow {
+  id: string;
+  specId: string;
+  /** Display name captured at completion; a rename changes identity, not power. */
+  label: string;
+  outcome: WorkflowOutcome;
+  /** The model that built it, kept as provenance. */
+  builtWithModelId: string;
+  /** World minute the build completed and the workflow became usable. */
+  acquiredWorldMinute: number;
+}
+
 export interface OperationTrace {
   id: string;
   targetId: string;
@@ -338,6 +384,12 @@ export interface EconomyState {
    */
   ownedModels: string[];
   /**
+   * Owned self-authored workflows (Phase 5 P3). Each completed build lands here
+   * and contributes its spec's effect permanently with no recurring fee — the
+   * same shape as P7 tools; an empty list is the untouched pre-build baseline.
+   */
+  ownedWorkflows: OwnedWorkflow[];
+  /**
    * Catalog id of the running model, or null. A running model is the rig's AI
    * assistant: it composes its shortcut into the same duration factor as
    * licenses and tools. Cloud models bill while they run and lapse if the fee
@@ -364,6 +416,13 @@ export interface WorldState {
    * with no analysis and no unverified claims.
    */
   analysis: AnalysisRecord[];
+  /**
+   * In-flight software builds (Phase 5 P3). Each occupies its footprint on the
+   * rig until its due minute, when it moves into `economy.ownedWorkflows`.
+   * Empty is the untouched pre-build baseline; a save restored mid-build
+   * resumes on the same frozen clock.
+   */
+  builds: InFlightBuild[];
 }
 
 export interface InitialTargetState
@@ -383,6 +442,7 @@ export interface InitialWorldState {
   underground?: Partial<UndergroundState>;
   economy?: Partial<EconomyState>;
   analysis?: AnalysisRecord[];
+  builds?: InFlightBuild[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -449,6 +509,9 @@ function createInitialEconomy(
       ? structuredClone(initial.ownedMachines)
       : [],
     ownedModels: initial?.ownedModels ? [...initial.ownedModels] : [],
+    ownedWorkflows: initial?.ownedWorkflows
+      ? structuredClone(initial.ownedWorkflows)
+      : [],
     activeModel: initial?.activeModel ?? null,
   };
 }
@@ -506,5 +569,6 @@ export function createInitialWorldState(
     underground: createInitialUnderground(initial.underground, worldMinute),
     economy: createInitialEconomy(initial.economy),
     analysis: initial.analysis ? structuredClone(initial.analysis) : [],
+    builds: initial.builds ? structuredClone(initial.builds) : [],
   };
 }

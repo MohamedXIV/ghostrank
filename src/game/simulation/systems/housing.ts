@@ -1,6 +1,9 @@
 import { findHousingItem } from "@/content/housing-catalog";
 import { softwareCapability } from "@/content/software-catalog";
-import { derivePlayerToolCapability } from "@/game/simulation/systems/tools";
+import {
+  derivePlayerToolCapability,
+  deriveWorkflowCapability,
+} from "@/game/simulation/systems/tools";
 import type { HardwareCapability } from "@/content/hardware-catalog";
 import {
   deriveMachineCapability,
@@ -67,22 +70,25 @@ export function deriveSoftwareCapability(
 /**
  * The capability that actually powers action speed and workload breadth: the
  * sum of owned hardware components, owned machines, the current lease,
- * capability-bearing licenses, and owned player tools. Derived, never stored.
- * Each added layer is identity for the empty case, so a bare rig stays exactly
- * the hardware profile of P1/P2.
+ * capability-bearing licenses, owned player tools, and owned self-built
+ * workflows. Derived, never stored. Each added layer is identity for the empty
+ * case, so a bare rig stays exactly the hardware profile of P1/P2.
  */
 export function effectiveCapability(economy: EconomyState): HardwareCapability {
   return addCapability(
     addCapability(
       addCapability(
         addCapability(
-          deriveRigCapability(economy),
-          deriveMachineCapability(economy),
+          addCapability(
+            deriveRigCapability(economy),
+            deriveMachineCapability(economy),
+          ),
+          deriveLeaseCapability(economy),
         ),
-        deriveLeaseCapability(economy),
+        deriveSoftwareCapability(economy),
       ),
-      deriveSoftwareCapability(economy),
+      derivePlayerToolCapability(economy),
     ),
-    derivePlayerToolCapability(economy),
+    deriveWorkflowCapability(economy),
   );
 }

@@ -48,6 +48,7 @@ describe("worldStateSchema", () => {
       playerTools: [],
       ownedMachines: [],
       ownedModels: [],
+      ownedWorkflows: [],
       activeModel: null,
     });
   });

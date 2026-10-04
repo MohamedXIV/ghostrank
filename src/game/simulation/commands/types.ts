@@ -93,6 +93,14 @@ export type SimulationCommand =
       targetId: string;
     }
   | {
+      type: "startBuild";
+      specId: string;
+    }
+  | {
+      type: "abortBuild";
+      buildId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

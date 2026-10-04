@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   acquireModelFromGui,
+  abortBuildFromGui,
   breakLeaseFromGui,
   buyHardwareFromGui,
   buyMachineFromGui,
@@ -13,6 +14,7 @@ import {
   runModelFromGui,
   sellMachineFromGui,
   sellPlayerToolFromGui,
+  startBuildFromGui,
   stopModelFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -326,6 +328,50 @@ describe("model commands", () => {
       // `model stop` takes no argument — the slot holds exactly one model.
       "model stop now",
       "model rent model-cloud-frontier",
+    ]) {
+      expect(parseTerminalCommand(input)).toEqual({
+        ok: false,
+        error: "INVALID_ARGUMENT",
+      });
+    }
+  });
+});
+
+describe("build commands", () => {
+  it("shares startBuild between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("build workflow-net-monitor");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "startBuild", specId: "workflow-net-monitor" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(startBuildFromGui("workflow-net-monitor")).toEqual(terminal.command);
+  });
+
+  it("shares abortBuild between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("build abort workflow:1");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: { type: "abortBuild", buildId: "workflow:1" },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(abortBuildFromGui("workflow:1")).toEqual(terminal.command);
+  });
+
+  it("rejects malformed build arguments", () => {
+    for (const input of [
+      "build",
+      "build workflow-net-monitor workflow-auto-recon",
+      "build abort",
+      "build abort workflow:1 workflow:2",
+      // A bare sub-word is only a spec id when it stands alone.
+      "build abort now extra",
     ]) {
       expect(parseTerminalCommand(input)).toEqual({
         ok: false,

@@ -18,7 +18,17 @@ import {
 import {
   combinedActionDurationFactor,
   derivePlayerToolCapability,
+  deriveWorkflowCapability,
 } from "@/game/simulation/systems/tools";
+import {
+  WORKFLOW_SPEC_CATALOG,
+  findWorkflowSpec,
+} from "@/content/workflow-spec-catalog";
+import {
+  availablePool,
+  buildMinutes,
+  deliverableEffect,
+} from "@/game/simulation/systems/builds";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import {
   deriveValueGraph,
@@ -44,6 +54,7 @@ import {
 import { contestedModelFactor } from "@/game/simulation/systems/contention";
 import {
   SOFTWARE_CATALOG,
+  findSoftwareItem,
   type SoftwareEffect,
 } from "@/content/software-catalog";
 import {
@@ -69,6 +80,7 @@ import {
   type OperationState,
   type RetaliationKind,
   type UndergroundNetwork,
+  type WorkflowOutcome,
   type OpponentReactionKind,
   type OpponentReactionStatus,
   type UndergroundIncidentOutcome,
@@ -140,6 +152,62 @@ export interface VisibleAnalysisRecord {
   modelLabel: string;
   worldMinute: number;
   claims: VisibleAnalysisClaim[];
+}
+
+/**
+ * A build spec the forge offers — the IR made visible. Fictional data only:
+ * the steps are the design language of `docs/HACKING_AND_TOOLS.md`, never code,
+ * and the effect is the same capability language licenses and tools use. The
+ * estimate is *this* rig's current compute minutes with no assistant shortcut;
+ * a running model shortens it further, and queueing builds lengthen later ones.
+ */
+export interface VisibleWorkflowSpec {
+  id: string;
+  label: string;
+  steps: string[];
+  tests: string[];
+  /** Base minutes at this rig's compute, before any model shortcut. */
+  estimatedMinutes: number;
+  footprint: { vram: number; storage: number };
+  capability: HardwareCapability | null;
+  discountFactor: number | null;
+  /** The premium license this workflow replaces, for the FORGE copy. */
+  replacesLabel: string;
+}
+
+/**
+ * An in-flight build job. The frozen `outcome` is deliberately **not** here:
+ * a report card the player could read halfway through the job grades the roll
+ * for free and destroys the build-time tension. What is visible is the plan
+ * (spec, start, due) and the occupancy the rig is paying for.
+ */
+export interface VisibleBuild {
+  id: string;
+  specId: string;
+  specLabel: string;
+  modelLabel: string;
+  startedWorldMinute: number;
+  dueWorldMinute: number;
+  footprint: { vram: number; storage: number };
+}
+
+/**
+ * A completed, owned self-authored workflow — projected in full, outcome and
+ * test report included. The asymmetry with analysis claims is principled: the
+ * assistant predicted *someone else's* hidden topology, so its truth stays
+ * internal; a forge build is the player's own ground truth, witnessed by the
+ * queue from the start, and hiding its report would grade nothing.
+ */
+export interface VisibleOwnedWorkflow {
+  id: string;
+  specId: string;
+  label: string;
+  outcome: WorkflowOutcome;
+  builtWithLabel: string;
+  acquiredWorldMinute: number;
+  tests: string[];
+  capability: HardwareCapability | null;
+  discountFactor: number | null;
 }
 
 export type FootprintLevel = "none" | "low" | "elevated" | "severe";
@@ -375,6 +443,8 @@ export interface EconomyProjection {
   software: HardwareCapability;
   /** Combined capability lift from all owned player tools. */
   playerTools: HardwareCapability;
+  /** Combined capability lift from all owned self-built workflows (P3). */
+  workflows: HardwareCapability;
   /** Combined capability lift from all owned machines. */
   ownedMachineCapability: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
@@ -396,6 +466,12 @@ export interface EconomyProjection {
   machineListings: VisibleMachineListing[];
   /** Every model the scene offers, tagged with ownership and running state. */
   modelListings: VisibleModelListing[];
+  /** The forge's shelf: buildable workflow specs with this rig's estimates. */
+  workflowSpecs: VisibleWorkflowSpec[];
+  /** In-flight build jobs (plan and occupancy only, never the outcome). */
+  builds: VisibleBuild[];
+  /** Completed self-built workflows, projected in full. */
+  ownedWorkflows: VisibleOwnedWorkflow[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -733,12 +809,19 @@ function projectEconomy(
   const software = deriveSoftwareCapability(state.economy);
   const playerTools = derivePlayerToolCapability(state.economy);
   const ownedMachineCapability = deriveMachineCapability(state.economy);
+  const workflows = deriveWorkflowCapability(state.economy);
   const capability = effectiveCapability(state.economy);
   // Phase 5 P1: a running local model contends with the rig's vram/storage
   // pool, so both the combined factor and each listing's *delivered* factor
   // are read against the derived pool. Cloud footprints are zero, so renting
   // is never contended by the player's own hardware.
-  const factor = combinedActionDurationFactor(state.economy, capability);
+  // Phase 5 P3: in-flight builds are tenants of the same pool, so the factor
+  // is read against what remains after the whole queue takes its share.
+  const factor = combinedActionDurationFactor(
+    state.economy,
+    capability,
+    state.builds,
+  );
   const actionMinutes = Object.fromEntries(
     RECON_ACTIONS.map((action) => [
       action,
@@ -864,7 +947,8 @@ function projectEconomy(
       deliveredFactor: contestedModelFactor(
         catalogFactor,
         item.footprint,
-        capability,
+        // P3: a build queue taxes the pool the model runs against too.
+        availablePool(capability, state.builds, findWorkflowSpec),
       ),
       footprint: { ...item.footprint },
       owned: state.economy.ownedModels.includes(item.id),
@@ -872,12 +956,80 @@ function projectEconomy(
     };
   });
 
+  // The forge's shelf: every spec with this rig's honest estimate. The estimate
+  // is bare compute minutes — a running assistant shortens it further at
+  // commissioning, which the panel says rather than fakes here.
+  const workflowSpecs: VisibleWorkflowSpec[] = WORKFLOW_SPEC_CATALOG.map(
+    (spec) => ({
+      id: spec.id,
+      label: spec.label,
+      steps: [...spec.steps],
+      tests: [...spec.tests],
+      estimatedMinutes: buildMinutes(spec, capability),
+      footprint: { ...spec.footprint },
+      capability:
+        spec.effect.kind === "capability"
+          ? { ...spec.effect.capability }
+          : null,
+      discountFactor:
+        spec.effect.kind === "modifier" ? spec.effect.discount.factor : null,
+      replacesLabel:
+        findSoftwareItem(spec.replaces)?.label ?? spec.replaces,
+    }),
+  );
+
+  // In-flight jobs show the plan and the occupancy — never the frozen outcome.
+  const builds: VisibleBuild[] = state.builds.map((build) => {
+    const spec = findWorkflowSpec(build.specId);
+
+    return {
+      id: build.id,
+      specId: build.specId,
+      specLabel: spec?.label ?? build.specId,
+      modelLabel: findModelItem(build.modelId)?.label ?? build.modelId,
+      startedWorldMinute: build.startedWorldMinute,
+      dueWorldMinute: build.dueWorldMinute,
+      footprint: spec
+        ? { ...spec.footprint }
+        : { vram: 0, storage: 0 },
+    };
+  });
+
+  const ownedWorkflows: VisibleOwnedWorkflow[] =
+    state.economy.ownedWorkflows.map((workflow) => {
+      const spec = findWorkflowSpec(workflow.specId);
+      const delivered = spec
+        ? deliverableEffect(spec, workflow.outcome)
+        : undefined;
+
+      return {
+        id: workflow.id,
+        specId: workflow.specId,
+        label: workflow.label,
+        outcome: workflow.outcome,
+        builtWithLabel:
+          findModelItem(workflow.builtWithModelId)?.label ??
+          workflow.builtWithModelId,
+        acquiredWorldMinute: workflow.acquiredWorldMinute,
+        tests: spec ? [...spec.tests] : [],
+        capability:
+          delivered?.kind === "capability"
+            ? { ...delivered.capability }
+            : null,
+        discountFactor:
+          delivered?.kind === "modifier"
+            ? delivered.discount.factor
+            : null,
+      };
+    });
+
   return {
     credits: state.economy.credits,
     capability,
     lease,
     software,
     playerTools,
+    workflows,
     ownedMachineCapability,
     actionMinutes,
     actionDurationFactor: factor,
@@ -896,6 +1048,9 @@ function projectEconomy(
     ownedMachines,
     machineListings,
     modelListings,
+    workflowSpecs,
+    builds,
+    ownedWorkflows,
     hardware,
     catalog,
     ledger,

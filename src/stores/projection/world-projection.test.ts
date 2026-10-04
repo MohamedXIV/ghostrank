@@ -164,6 +164,13 @@ describe("world projection store", () => {
           storage: 0,
           network: 0,
         },
+        workflows: {
+          compute: 0,
+          memory: 1,
+          vram: 0,
+          storage: 0,
+          network: 1,
+        },
         ownedMachineCapability: {
           compute: 4,
           memory: 3,
@@ -314,6 +321,46 @@ describe("world projection store", () => {
             footprint: { vram: 2, storage: 1 },
             owned: true,
             running: false,
+          },
+        ],
+        workflowSpecs: [
+          {
+            id: "workflow-net-monitor",
+            label: "Homegrown Monitoring Loop",
+            steps: ["discover(target) → enumerate hosts"],
+            tests: ["poll returns for every enumerated host"],
+            estimatedMinutes: 120,
+            footprint: { vram: 1, storage: 1 },
+            capability: {
+              compute: 0,
+              memory: 0,
+              vram: 0,
+              storage: 0,
+              network: 2,
+            },
+            discountFactor: null,
+            replacesLabel: "Commercial Monitoring Suite",
+          },
+        ],
+        builds: [],
+        ownedWorkflows: [
+          {
+            id: "workflow:1",
+            specId: "workflow-auto-recon",
+            label: "Automated Recon Pipeline",
+            outcome: "defective",
+            builtWithLabel: "Frontier Class API",
+            acquiredWorldMinute: 400,
+            tests: ["topology map matches a hand-drawn survey"],
+            // A defective copy delivers half its axes (memory 2→1, network 1→1).
+            capability: {
+              compute: 0,
+              memory: 1,
+              vram: 0,
+              storage: 0,
+              network: 1,
+            },
+            discountFactor: null,
           },
         ],
         hardware: [
@@ -536,6 +583,29 @@ describe("world projection store", () => {
         // id or the hidden `accurate` truth of a claim.
         subject: "unmapped service 1",
         confidence: "medium",
+      },
+    });
+    expect(store.getTable("forgeSpecs")).toEqual({
+      "workflow-net-monitor": {
+        label: "Homegrown Monitoring Loop",
+        steps: "discover(target) → enumerate hosts",
+        tests: "poll returns for every enumerated host",
+        estimatedMinutes: 120,
+        vram: 1,
+        storage: 1,
+        replacesLabel: "Commercial Monitoring Suite",
+      },
+    });
+    expect(store.getTable("buildQueue")).toEqual({});
+    expect(store.getTable("ownedWorkflows")).toEqual({
+      "workflow:1": {
+        label: "Automated Recon Pipeline",
+        // A finished self-build projects in full — the report card, not just
+        // the plan — because it is the player's own ground truth.
+        outcome: "defective",
+        builtWithLabel: "Frontier Class API",
+        acquiredWorldMinute: 400,
+        tests: "topology map matches a hand-drawn survey",
       },
     });
     expect(store.getTable("ownedMachines")).toEqual({

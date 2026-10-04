@@ -1,4 +1,5 @@
 import type { ModelSource } from "@/content/model-catalog";
+import type { WorkflowOutcome } from "@/game/simulation/state/world-state";
 import type {
   ContractObjectiveKind,
   ForumSubjectKind,
@@ -278,6 +279,31 @@ export type SimulationEvent =
       modelId: string;
       /** How many claims the record carries; 0 means the target held nothing unseen. */
       claimCount: number;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildStarted";
+      buildId: string;
+      specId: string;
+      /** The assistant commissioned for the job. */
+      modelId: string;
+      /** Frozen build duration in world minutes. */
+      minutes: number;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildCompleted";
+      buildId: string;
+      specId: string;
+      modelId: string;
+      /** The frozen roll, revealed only now — the report card lands with it. */
+      outcome: WorkflowOutcome;
+      worldMinute: number;
+    }
+  | {
+      type: "BuildAborted";
+      buildId: string;
+      specId: string;
       worldMinute: number;
     }
   | {

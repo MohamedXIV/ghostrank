@@ -92,3 +92,17 @@ export function stopModelFromGui(): SimulationCommand {
     type: "stopModel",
   };
 }
+
+export function startBuildFromGui(specId: string): SimulationCommand {
+  return {
+    type: "startBuild",
+    specId,
+  };
+}
+
+export function abortBuildFromGui(buildId: string): SimulationCommand {
+  return {
+    type: "abortBuild",
+    buildId,
+  };
+}

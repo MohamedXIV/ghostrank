@@ -354,6 +354,49 @@ export function syncWorldProjection(
     ),
   );
 
+  const forgeSpecRows = Object.fromEntries(
+    projection.economy.workflowSpecs.map((spec) => [
+      spec.id,
+      {
+        label: spec.label,
+        steps: spec.steps.join("\n"),
+        tests: spec.tests.join("\n"),
+        estimatedMinutes: spec.estimatedMinutes,
+        vram: spec.footprint.vram,
+        storage: spec.footprint.storage,
+        replacesLabel: spec.replacesLabel,
+      },
+    ]),
+  );
+
+  // The queue rows carry no outcome: the projection never contains one.
+  const buildQueueRows = Object.fromEntries(
+    projection.economy.builds.map((build) => [
+      build.id,
+      {
+        specLabel: build.specLabel,
+        modelLabel: build.modelLabel,
+        startedWorldMinute: build.startedWorldMinute,
+        dueWorldMinute: build.dueWorldMinute,
+        vram: build.footprint.vram,
+        storage: build.footprint.storage,
+      },
+    ]),
+  );
+
+  const ownedWorkflowRows = Object.fromEntries(
+    projection.economy.ownedWorkflows.map((workflow) => [
+      workflow.id,
+      {
+        label: workflow.label,
+        outcome: workflow.outcome,
+        builtWithLabel: workflow.builtWithLabel,
+        acquiredWorldMinute: workflow.acquiredWorldMinute,
+        tests: workflow.tests.join("\n"),
+      },
+    ]),
+  );
+
   const valueNodeRows = Object.fromEntries(
     projection.economy.valueGraph.nodes.map((node) => [
       node.id,
@@ -400,6 +443,9 @@ export function syncWorldProjection(
     store.setTable("machineListings", machineListingRows);
     store.setTable("modelListings", modelListingRows);
     store.setTable("analysisClaims", analysisClaimRows);
+    store.setTable("forgeSpecs", forgeSpecRows);
+    store.setTable("buildQueue", buildQueueRows);
+    store.setTable("ownedWorkflows", ownedWorkflowRows);
     store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(

@@ -22,6 +22,15 @@ import {
 import { findModelItem } from "@/content/model-catalog";
 import { runAnalysis } from "@/game/simulation/systems/analysis";
 import {
+  advanceBuilds,
+  buildMinutes,
+  nextBuildId,
+  poolForNewBuild,
+  rollBuildOutcome,
+} from "@/game/simulation/systems/builds";
+import { contestedModelFactor } from "@/game/simulation/systems/contention";
+import { findWorkflowSpec } from "@/content/workflow-spec-catalog";
+import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
@@ -42,6 +51,7 @@ import type {
   AnalysisRecord,
   EvidenceKind,
   EvidenceRecord,
+  InFlightBuild,
   MachineState,
   OpponentReaction,
   OperationTrace,
@@ -144,6 +154,10 @@ export class CommandBus {
 
       case "analyzeTarget":
         return this.analyzeTarget(command.targetId);
+      case "startBuild":
+        return this.startBuild(command.specId);
+      case "abortBuild":
+        return this.abortBuild(command.buildId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -1240,15 +1254,126 @@ export class CommandBus {
     };
   }
 
+  /**
+   * Commission the running assistant to build a workflow spec (Phase 5 P3). The
+   * gate is the assistant itself — an active model — the same prerequisite as
+   * analysis; a spec is a design, and only an AI can write the code. It costs no
+   * credits and no immediate world time: the job enters the queue, occupies its
+   * footprint, and lands on its frozen due minute. The delivered model shortcut
+   * and the quality roll are both computed *at start*, against the pool the job
+   * will actually run against (minus builds already in flight and its own
+   * footprint), so a split wait cannot re-time or re-roll it.
+   */
+  private startBuild(specId: string): CommandResult {
+    const spec = findWorkflowSpec(specId);
+
+    if (!spec) {
+      return this.failure("WORKFLOW_SPEC_NOT_FOUND");
+    }
+
+    const modelId = this.world.economy.activeModel;
+
+    if (!modelId) {
+      return this.failure("NO_ACTIVE_MODEL");
+    }
+
+    const model = findModelItem(modelId);
+
+    if (!model) {
+      // Only a stale save can name a dropped model; there is no assistant to
+      // write the code, exactly like the analysis gate.
+      return this.failure("MODEL_NOT_FOUND");
+    }
+
+    const capability = effectiveCapability(this.world.economy);
+    // The build's clock is frozen against the pool left after the jobs already
+    // queued (and its own footprint) take their share. With no model running,
+    // or a cloud model that contends nothing, the factor is 1: the build pays
+    // pure hardware time, and every pre-P3 duration path is untouched.
+    const buildPool = poolForNewBuild(capability, this.world.builds, spec);
+    const deliveredFactor =
+      model.effect.kind === "modifier"
+        ? contestedModelFactor(
+            model.effect.discount.factor,
+            model.footprint,
+            buildPool,
+          )
+        : 1;
+
+    const minutes = buildMinutes(spec, capability, deliveredFactor);
+    const startWorldMinute = this.world.worldMinute;
+    const build: InFlightBuild = {
+      id: nextBuildId(this.world.builds, this.world.economy.ownedWorkflows),
+      specId: spec.id,
+      modelId: model.id,
+      startedWorldMinute: startWorldMinute,
+      dueWorldMinute: startWorldMinute + minutes,
+      outcome: rollBuildOutcome(
+        this.world.underground.seed,
+        startWorldMinute,
+        model.id,
+        spec,
+        model.properties,
+      ),
+    };
+
+    this.world.builds.push(build);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "BuildStarted",
+          buildId: build.id,
+          specId: build.specId,
+          modelId: build.modelId,
+          minutes,
+          worldMinute: startWorldMinute,
+        },
+      ],
+    };
+  }
+
+  /** Cancel an in-flight build. No debt, no penalty — the queue slot frees up. */
+  private abortBuild(buildId: string): CommandResult {
+    const index = this.world.builds.findIndex(
+      (candidate) => candidate.id === buildId,
+    );
+
+    if (index < 0) {
+      return this.failure("BUILD_NOT_FOUND");
+    }
+
+    const [build] = this.world.builds.splice(index, 1);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "BuildAborted",
+          buildId: build.id,
+          specId: build.specId,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
   private rigActionMinutes(action: ReconAction): number {
     // Phase 5 P1: the rig's vram/storage pool contends a running local model,
-    // so the duration factor is read against the same derived pool.
+    // so the duration factor is read against the same derived pool. Phase 5
+    // P3: in-flight builds are tenants of that pool too, and their footprint
+    // taxes the model's delivered shortcut while they run.
     const capability = effectiveCapability(this.world.economy);
 
     return actionDuration(
       action,
       capability,
-      combinedActionDurationFactor(this.world.economy, capability),
+      combinedActionDurationFactor(
+        this.world.economy,
+        capability,
+        this.world.builds,
+      ),
     );
   }
 
@@ -1267,6 +1392,9 @@ export class CommandBus {
         toMinute: this.world.worldMinute,
       },
       ...advanceUpkeep(this.world, fromMinute, this.world.worldMinute),
+      // Builds complete on the clock, like upkeep: the same due minute lands
+      // the same frozen outcome whether the wait was one command or ten.
+      ...advanceBuilds(this.world, this.world.worldMinute),
       ...advanceUnderground(this.world, this.world.worldMinute),
     ];
   }

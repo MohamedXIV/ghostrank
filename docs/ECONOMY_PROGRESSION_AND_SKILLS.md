@@ -187,12 +187,12 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P2)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P3)
 
 The Phase 4 economy is live through P7, and Phase 5's model substrate (P0),
-compute contention (P1) and AI analysis (P2) are live. This section describes
-what the simulation actually does today; the sections above remain the design
-target for later slices.
+compute contention (P1), AI analysis (P2) and software forge (P3) are live. This
+section describes what the simulation actually does today; the sections above
+remain the design target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -351,12 +351,45 @@ target for later slices.
   the read never hands over structure the player has not earned, and the loop
   closes by comparing the panel against your own recon. The Recon app's
   ASSISTANT ANALYSIS panel states it plainly: predictions, not evidence.
+- **Software forge (Phase 5 P3).** The build system turns the assistant into a
+  programmer: `build <spec-id>` hands it a workflow spec — a safe
+  workflow/IR from `src/content/workflow-spec-catalog.ts`, an ordered list of
+  fictional pipeline steps, pure data that never executes — and the rig writes
+  the program over world time. The price shape is the money-vs-time-vs-skill
+  triangle made playable: building moves **no credits**; you pay in minutes
+  (base `complexityMinutes`, shortened by the compute axis and the running
+  model's *delivered* shortcut, frozen at commissioning so a split wait cannot
+  re-time it) and in rig occupancy (each in-flight build holds VRAM and storage
+  — the second tenant P1's contention pool was waiting for, so a queue taxes
+  both later estimates and the model's own delivered factor, never below the
+  no-lift baseline). The finished workflow contributes a plain `SoftwareEffect`
+  through the same capability/factor combinators licenses and tools use — the
+  core rule that software creation reuses the purchased-tools capability system,
+  enforced by there being no second system. Quality inherits P2's doctrine: one
+  seeded roll at start splits into clean / warnings / defective, with
+  `reasoning` setting clean odds (capped at 0.7 — lower than analysis, because
+  writing whole programs is harder than labelling a host) and `reliability`
+  deciding whether failures bite; a defective copy delivers halved effect
+  (floor 1 on nonzero axes, shortcut halfway back to ×1) — disappointing, never
+  a trap. The three specs mirror the three premium licenses one-for-one, so
+  #23's exit criterion is checkable: build the Homegrown Monitoring Loop, stop
+  renting the Commercial Monitoring Suite, lose nothing. The queue is
+  completed by the same clock tick as upkeep (`advanceBuilds`), and the leak
+  rule inverts where it should: an in-flight build's frozen outcome is hidden
+  until completion (a halfway report card grades the roll for free), but an
+  owned workflow projects *in full* — outcome, tests, provenance — because it
+  is the player's own ground truth, not someone else's hidden topology. The
+  Market FORGE panel shows specs with this rig's estimate, the queue with due
+  times, and the garage with report cards; a self-built copy permanently
+  replaces a recurring fee with owned software.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
   a legacy economy loads with `housing: null` (the free baseline), an empty
   `software` list (no running tools), an empty `playerTools` inventory, an
-  empty `ownedMachines` rack, no `ownedModels`, and `activeModel: null` — the
-  untouched baseline in every layer. Stored `analysis` records likewise default
-  to empty, and their hidden fields (a claim's subject id and its accuracy) are
-  saved but never projected.
+  empty `ownedMachines` rack, no `ownedModels`, no `ownedWorkflows`, and
+  `activeModel: null` — the untouched baseline in every layer. Stored `analysis`
+  records and the in-flight `builds` queue likewise default to empty. A claim's
+  subject id and accuracy, and an in-flight build's frozen outcome, are saved
+  but never projected; a *completed* workflow's outcome and report are saved and
+  do project, because they are the player's own ground truth.

@@ -98,6 +98,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "model":
       return parseModelCommand(args);
 
+    case "build":
+      return parseBuildCommand(args);
+
     case "op":
       return parseOperationCommand(args);
 
@@ -262,8 +265,29 @@ function parseModelCommand(args: string[]): TerminalParseResult {
   }
 }
 
-function parseContractCommand(args: string[]): TerminalParseResult {
+function parseBuildCommand(args: string[]): TerminalParseResult {
   const [subcommand, ...rest] = args;
+
+  switch (subcommand?.toLowerCase()) {
+    case undefined:
+      return { ok: false, error: "INVALID_ARGUMENT" };
+
+    case "abort":
+      return singleIdCommand(rest, (buildId) => ({
+        type: "abortBuild",
+        buildId,
+      }));
+
+    default:
+      // `build <spec-id>` — a bare argument is the spec to commission.
+      return singleIdCommand(args, (specId) => ({
+        type: "startBuild",
+        specId,
+      }));
+  }
+}
+
+function parseContractCommand(args: string[]): TerminalParseResult {  const [subcommand, ...rest] = args;
 
   switch (subcommand?.toLowerCase()) {
     case "accept":

@@ -217,6 +217,15 @@ const ownedMachineSchema = z.object({
   acquiredWorldMinute: z.number().int().nonnegative(),
 });
 
+const ownedWorkflowSchema = z.object({
+  id: z.string().min(1),
+  specId: z.string().min(1),
+  label: z.string().min(1),
+  outcome: z.enum(["clean", "warnings", "defective"]),
+  builtWithModelId: z.string().min(1),
+  acquiredWorldMinute: z.number().int().nonnegative(),
+});
+
 const economySchema = z.object({
   credits: z.number().int().nonnegative(),
   ledger: z.array(valueLedgerEntrySchema).default([]),
@@ -226,6 +235,7 @@ const economySchema = z.object({
   playerTools: z.array(ownedPlayerToolSchema).default([]),
   ownedMachines: z.array(ownedMachineSchema).default([]),
   ownedModels: z.array(z.string().min(1)).default([]),
+  ownedWorkflows: z.array(ownedWorkflowSchema).default([]),
   activeModel: z.string().min(1).nullable().default(null),
 });
 
@@ -245,6 +255,15 @@ const analysisRecordSchema = z.object({
   claims: z.array(analysisClaimSchema).default([]),
 });
 
+const inFlightBuildSchema = z.object({
+  id: z.string().min(1),
+  specId: z.string().min(1),
+  modelId: z.string().min(1),
+  startedWorldMinute: z.number().int().nonnegative(),
+  dueWorldMinute: z.number().int().nonnegative(),
+  outcome: z.enum(["clean", "warnings", "defective"]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -260,6 +279,7 @@ const storedWorldStateSchema = z.object({
   underground: undergroundSchema.optional(),
   economy: economySchema.optional(),
   analysis: z.array(analysisRecordSchema).default([]),
+  builds: z.array(inFlightBuildSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
@@ -308,6 +328,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       playerTools: [],
       ownedMachines: [],
       ownedModels: [],
+      ownedWorkflows: [],
       activeModel: null,
     },
   };

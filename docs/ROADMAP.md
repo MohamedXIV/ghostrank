@@ -244,7 +244,7 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: in progress — P0, P1 and P2 delivered. Tracked by #23 (unblocked by #22).**
+**Status: in progress — P0, P1, P2 and P3 delivered. Tracked by #23 (unblocked by #22).**
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
 
@@ -267,6 +267,14 @@ P2 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-analysis.md`) — *
 - fallibility is a rule, not tuning: accuracy odds are `0.8 × reliability/5` — capped below certainty by construction — while `context` budgets how much topology one pass reads; determinism rides the existing `hashUnit` primitive, so a save replay returns the byte-identical read;
 - the **leak rule** is the load-bearing decision: `accurate` never leaves the simulation (it persists, it never projects) and a claim's `subject` is an anonymous `unmapped host N` handle, because every claim describes structure the player has *not* earned — projecting a real id would be free recon and grading the assistant for free; the verification loop closes through play (compare the panel against the next survey), not through state;
 - `analyzeTarget` needs the assistant (`NO_ACTIVE_MODEL`) and nothing else new — survey/inspect stay model-free forever (tested), keeping the never-a-gate rule intact while making the model's *function* the requirement, and the Recon panel teaches the contract in the player's own terms ("predictions, not evidence").
+
+P3 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-build-system.md`) — **the #22 author handoff, discharged**:
+- **the software specification and virtual workflow/IR build system** — `src/content/workflow-spec-catalog.ts` stores specs as pure IR: an ordered list of fictional pipeline steps (`discover(target) → …`), a `SoftwareEffect`, build minutes, a rig footprint, a test report, and the premium license each replaces. Nothing here executes: the safe-virtual-data rule is structural, and tests pin the step notation to a grammar no script could hide in;
+- **three specs mirror the three premium licenses one-for-one**, so the issue's exit criterion ("replace a premium workflow with a self-built one") is a checked fact: the Homegrown Monitoring Loop delivers the exact network +2 the Commercial Monitoring Suite rents at 40/day — build it once with time, stop paying forever; the pipeline's ×0.85 lands through the same `combineFactors` path as any license, enforcing #23's "reuse the same capability system" by having only one system to reuse;
+- **builds pay in the triangle, never credits**: `build <spec-id>` is instant and free — the price is frozen at commissioning as `buildMinutes` (compute-accelerated base × the running assistant's *delivered* shortcut) plus VRAM/storage occupancy, so split waits, model swaps, and save/restore all complete the same job on the same due minute with the same report card, and completion rides the upkeep tick (`advanceBuilds`);
+- **build quality is P2's fallibility doctrine re-applied**: one seeded roll at start splits clean / warnings / defective — `reasoning` caps clean odds at 0.7 (below analysis's 0.8: whole programs are harder than labels), `reliability` decides whether a failure is cosmetic or bites, and a defective copy delivers halved effect (floor 1, shortcut pulled toward ×1) — disappointing, never a trap, never a gate;
+- **the queue is P1's designed second tenant**: `availablePool` subtracts every in-flight footprint before a local model measures its shortcut, making the docs' "model occupies GPU while building — pause / quality / rent / slower" a live four-way choice (tested both directions), while an empty queue subtracts 0/0 and every pre-P3 number re-ran untouched (427 tests, then 462);
+- the **disclosure asymmetry** is the honest half: an in-flight build hides its frozen outcome until completion (a halfway report grades the roll for free), but a finished workflow projects in full — outcome, tests, provenance — because it is the player's own ground truth, not someone else's hidden topology; the Market FORGE panel shows specs with live estimates, the queue with due times, and the garage with report cards.
 
 Deliverables:
 - cloud/local model choices,
