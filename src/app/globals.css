@@ -705,6 +705,7 @@ button {
 .underground-board,
 .underground-feed,
 .underground-stances,
+.underground-assistants,
 .underground-messages,
 .underground-contracts {
   display: grid;
@@ -717,6 +718,7 @@ button {
 .underground-board li,
 .underground-feed li,
 .underground-stances li,
+.underground-assistants li,
 .underground-messages li,
 .underground-contracts li {
   display: flex;
@@ -787,6 +789,13 @@ button {
   margin: 0;
   color: var(--muted);
   font-size: 11px;
+}
+
+.underground-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 /* Market */

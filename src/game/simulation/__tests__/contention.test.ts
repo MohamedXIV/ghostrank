@@ -260,7 +260,7 @@ describe("contention in the projection and the runtime", () => {
   it("listings show the footprint and what this rig would deliver", () => {
     const state = richState();
     const listings = projectWorld(state).economy.modelListings;
-    expect(listings).toHaveLength(4);
+    expect(listings).toHaveLength(5);
 
     const workhorse = listings.find((m) => m.id === LOCAL_WORKHORSE);
     expect(workhorse?.factor).toBe(0.9);

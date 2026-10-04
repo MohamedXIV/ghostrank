@@ -94,6 +94,7 @@ describe("world projection store", () => {
         contracts: [],
         retaliations: [],
         forum: [],
+        assistants: [],
       },
       economy: {
         credits: 320,
@@ -304,6 +305,7 @@ describe("world projection store", () => {
             // contention — it delivers its advertised shortcut on any rig.
             deliveredFactor: 0.7,
             footprint: { vram: 0, storage: 0 },
+            author: null,
             owned: false,
             running: true,
           },
@@ -319,6 +321,7 @@ describe("world projection store", () => {
             // model drifts to the no-model baseline of exactly 1.
             deliveredFactor: 1,
             footprint: { vram: 2, storage: 1 },
+            author: null,
             owned: true,
             running: false,
           },
@@ -547,6 +550,7 @@ describe("world projection store", () => {
         deliveredFactor: 0.7,
         vram: 0,
         storage: 0,
+        author: "",
         owned: false,
         running: true,
       },
@@ -559,10 +563,12 @@ describe("world projection store", () => {
         deliveredFactor: 1,
         vram: 2,
         storage: 1,
+        author: "",
         owned: true,
         running: false,
       },
     });
+    expect(store.getTable("assistants")).toEqual({});
     expect(store.getTable("analysisClaims")).toEqual({
       "ghost:0": {
         targetId: "ghost",

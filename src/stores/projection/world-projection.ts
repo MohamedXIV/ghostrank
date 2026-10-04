@@ -331,8 +331,22 @@ export function syncWorldProjection(
         deliveredFactor: listing.deliveredFactor,
         vram: listing.footprint.vram,
         storage: listing.footprint.storage,
+        author: listing.author ?? "",
         owned: listing.owned,
         running: listing.running,
+      },
+    ]),
+  );
+
+  // Phase 5 P4: which peers run which assistant. Names only — the lift a model
+  // gives a peer lives inside the simulation roll and never crosses here.
+  const assistantRows = Object.fromEntries(
+    projection.underground.assistants.map((entry) => [
+      entry.actorId,
+      {
+        handle: entry.handle,
+        modelLabel: entry.modelLabel,
+        modelAuthor: entry.modelAuthor ?? "",
       },
     ]),
   );
@@ -432,6 +446,7 @@ export function syncWorldProjection(
     store.setTable("retaliations", retaliationRows);
     store.setTable("descriptors", descriptorRows);
     store.setTable("forum", forumRows);
+    store.setTable("assistants", assistantRows);
     store.setTable("hardware", hardwareRows);
     store.setTable("catalog", catalogRows);
     store.setTable("ledger", ledgerRows);

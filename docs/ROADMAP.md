@@ -244,7 +244,9 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: in progress — P0, P1, P2 and P3 delivered. Tracked by #23 (unblocked by #22).**
+**Status: complete (2026-10-04). Tracked by #23 (unblocked by #22).**
+
+All eight deliverables shipped (P0–P4 below). All three exit criteria are checked facts, not vibes: a player can replace a premium workflow with a self-built one (P3's three specs mirror the three premium licenses one-for-one, delivered effect byte-identical on a clean build), AI helps but can be wrong (P2's capped accuracy, structural overconfidence, and hallucinations; P4's peers make the same kind of mistake), and generated software is safe virtual data (P3's IR is display-and-gate data pinned to a notation grammar, never executed). The two #22 handoffs stayed on-map and discharged in-phase: real constraints/contention by P1, player self-authoring by P3.
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
 
@@ -275,6 +277,14 @@ P3 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-build-system.md`) �
 - **build quality is P2's fallibility doctrine re-applied**: one seeded roll at start splits clean / warnings / defective — `reasoning` caps clean odds at 0.7 (below analysis's 0.8: whole programs are harder than labels), `reliability` decides whether a failure is cosmetic or bites, and a defective copy delivers halved effect (floor 1, shortcut pulled toward ×1) — disappointing, never a trap, never a gate;
 - **the queue is P1's designed second tenant**: `availablePool` subtracts every in-flight footprint before a local model measures its shortcut, making the docs' "model occupies GPU while building — pause / quality / rent / slower" a live four-way choice (tested both directions), while an empty queue subtracts 0/0 and every pre-P3 number re-ran untouched (427 tests, then 462);
 - the **disclosure asymmetry** is the honest half: an in-flight build hides its frozen outcome until completion (a halfway report grades the roll for free), but a finished workflow projects in full — outcome, tests, provenance — because it is the player's own ground truth, not someone else's hidden topology; the Market FORGE panel shows specs with live estimates, the queue with due times, and the garage with report cards.
+
+P4 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-marketplace.md`) — **model/tool marketplace content, and AI is no longer player-exclusive**:
+- **NPC AI use**: a peer can run a model (`UndergroundActor.modelId`, hidden truth), and one pure function `npcAssistDeltas` turns it into this tick's assist — a competent read lifts the actor's offence (reasoning band − 2), a miss costs skill *and* discretion, so **AI-assisted mistakes surface in the public feed** (discretion decides incident privacy); mistake odds `(6 − reliability)/12` stay nonzero even at band 5, because fallible-never-deterministic binds the ecosystem too, not just the player's assistant;
+- the same math read from the **defender's seat** is "automation to watch": a modelled counterpart's assistant raises its defence on a good read and lowers it when the model misses a pattern (`docs/AI_SYSTEMS.md`'s named failure mode) — one function, both seats, no second rulebook;
+- **no model is exact identity `{0, 0}`**: every unmodelled world re-ran byte-identical (the zero-regression pattern again), and the seeded slice world demonstrates both marketplace archetypes — lattice on the reliable workhorse, halfmoon on the cheap unreliable salvaged core — within bounds that keep rank-not-power intact: even the best possible assisted rolls cannot beat nightshade's defence of 88 (lattice 62+1+20, halfmoon 45+2+20), so the assist re-shuffles the mid-table, never crowns a peer;
+- **marketplace provenance**: `ModelListing.author` routes an authored purchase's debit to the named peer (`moebius`) instead of the market house brand — the P5 tool-author value-graph edge, reused; the Salvaged Reason Core (600, ×0.85, r4/c2/rel2, footprint 3/1) is the trade made real: a stronger planner that slips twice as often;
+- the **leak rule at ecosystem scale**: the projection gains a read-only `assistants` surface with handle + model label + author *only* — which peer runs which assistant is observable inference, what it earns them never crosses the boundary (tests pin the exact key set and JSON-scan for hidden-truth numbers);
+- zero new commands, events, upkeep logic, or ledger cause kinds: `model buy/run/stop` already covered it, so the slice's whole surface is one optional state field, one pure function, one counterparty routing line, and read-only projection (476 tests / 49 files; one honest update: the listings count 4 → 5).
 
 Deliverables:
 - cloud/local model choices,

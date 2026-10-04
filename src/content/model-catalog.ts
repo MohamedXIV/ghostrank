@@ -81,6 +81,14 @@ export interface ModelListing {
    * arrives (see `systems/contention.ts`). Provisional tuning.
    */
   footprint: ModelFootprint;
+  /**
+   * Phase 5 P4 marketplace provenance: the fictional handle that authored and
+   * sells this model, exactly like a P5 player tool. When present, acquiring the
+   * model debits *this author* (a named peer edge in the value graph) instead of
+   * the anonymous market; when absent, it is a market house brand. Provisional
+   * tuning — only the in-fiction authored entries carry it.
+   */
+  author?: string;
 }
 
 export const MODEL_CATALOG: readonly ModelListing[] = [
@@ -138,6 +146,25 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
     properties: { reasoning: 4, context: 3, reliability: 2 },
     // The bigger local model is faster still, but demands more of the rig.
     footprint: { vram: 4, storage: 2 },
+  },
+  {
+    id: "model-local-salvage",
+    label: "Salvaged Reason Core",
+    source: "local",
+    dailyCost: 0,
+    cost: 600,
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.85 },
+    },
+    // A strong planner with a weak sense for when it is wrong: cheap to buy,
+    // prone to confident mistakes — the marketplace counterpart to the reliable
+    // but plodding workhorse. Provisional tuning.
+    properties: { reasoning: 4, context: 2, reliability: 2 },
+    footprint: { vram: 3, storage: 1 },
+    // Phase 5 P4 marketplace provenance: an in-fiction author sells this copy,
+    // so buying it credits a named peer, not the anonymous market.
+    author: "moebius",
   },
 ];
 

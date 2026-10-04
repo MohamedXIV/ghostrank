@@ -184,6 +184,15 @@ export interface UndergroundActor {
   discretion: number;
   /** Hidden truth: percent chance to act on each ecosystem tick. */
   activity: number;
+  /**
+   * Phase 5 P4: the catalog id of the model this actor runs as an assistant, or
+   * undefined when the actor works without AI. It is a hidden-truth input to the
+   * NPC-vs-NPC roll only — it never gates the player, and it is deliberately not
+   * projected (the projection shows *that* a peer runs an assistant, through the
+   * read-only `assistants` surface, never the raw skill this lifts). undefined is
+   * the untouched pre-P4 baseline: the actor's roll is exactly its old math.
+   */
+  modelId?: string;
   /** Operation target this actor owns; rank is kept in sync with it. */
   targetId?: string;
 }

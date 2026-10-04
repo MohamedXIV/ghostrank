@@ -1032,6 +1032,13 @@ export class CommandBus {
    * running them — so a cloud id here is a category error, not a price check.
    * Acquiring never starts the model: owning and running are separate choices,
    * so a purchase cannot silently swap out a running subscription.
+   *
+   * Phase 5 P4 marketplace provenance: when the catalog names an author (an
+   * in-fiction peer who wrote and sells the copy), the debit goes to *that*
+   * handle and seeds a named edge in the value graph, the same shape a P5 tool
+   * purchase has. Otherwise it goes to the anonymous market, as the house-brand
+   * models always did. Nothing else changes; the ownership and running rules
+   * are the same, so this is purely counterparty routing.
    */
   private acquireModel(modelId: string): CommandResult {
     const item = findModelItem(modelId);
@@ -1057,7 +1064,7 @@ export class CommandBus {
       amount: item.cost,
       causeKind: "model",
       causeId: item.id,
-      counterparty: MARKET_COUNTERPARTY,
+      counterparty: item.author ?? MARKET_COUNTERPARTY,
       worldMinute: this.world.worldMinute,
     });
 

@@ -1,6 +1,8 @@
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
+import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
+import { findModelItem } from "@/content/model-catalog";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -407,9 +409,37 @@ function runActorTick(
   const noise =
     hashUnit(seed, "roll", tickIndex, actor.id) * SUCCESS_NOISE_SPREAD -
     SUCCESS_NOISE_SPREAD / 2;
-  const succeeded = actor.skill - counterpart.defense + noise > 0;
+  // Phase 5 P4: a peer running a model gets an assist on this tick — either a
+  // small skill lift (reliable read) or an AI-assisted mistake (skill penalty
+  // and sloppier covering). An actor with no model returns { 0, 0 } and the
+  // roll is exactly the pre-P4 math.
+  const assist = npcAssistDeltas(
+    seed,
+    tickIndex,
+    actor.id,
+    actor.modelId ? findModelItem(actor.modelId) : undefined,
+  );
+  // The same math read from the defender's seat: an assistant watching logs is
+  // "automation to watch" — it raises this tick's defence when the read is good
+  // and lowers it when the model misses the pattern (docs/AI_SYSTEMS.md names
+  // "miss a pattern" as a failure mode). No model is again exactly { 0, 0 }.
+  const defense =
+    counterpart.defense +
+    npcAssistDeltas(
+      seed,
+      tickIndex,
+      counterpart.id,
+      counterpart.modelId ? findModelItem(counterpart.modelId) : undefined,
+    ).skillDelta;
+  const succeeded = actor.skill + assist.skillDelta - defense + noise > 0;
 
-  const discretion = succeeded ? counterpart.discretion : actor.discretion;
+  // The discretion that decides privacy stays exactly the pre-P4 pick (the
+  // victim's when the actor won, the actor's when it lost); an assist mistake
+  // only ever *lowers* it, and a no-model assist contributes 0, so an
+  // unassisted incident stays byte-identical.
+  const discretion =
+    (succeeded ? counterpart.discretion : actor.discretion) +
+    assist.discretionDelta;
   const isPublic =
     hashUnit(seed, "pub", tickIndex, actor.id) * 100 >= discretion;
 

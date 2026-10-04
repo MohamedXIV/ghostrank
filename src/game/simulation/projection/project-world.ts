@@ -249,6 +249,24 @@ export interface VisibleStance {
   stance: RelationshipStance;
 }
 
+/**
+ * Phase 5 P4: a peer's running assistant, name and model label only. This is
+ * the ecosystem-side half of "AI is part of the world, not a player-exclusive
+ * superpower" made visible without leaking anything: no skill/defense lift
+ * leaves the simulation (the roll uses `actor.modelId`, projection shows only
+ * *that* the peer runs a model, which every observer of the marketplace can
+ * already infer — the design's leak rule from D029 keeps hidden-truth numbers
+ * inside the simulation).
+ */
+export interface VisibleAssistant {
+  actorId: string;
+  handle: string;
+  /** Display label for the model this peer runs; raw id if the catalog dropped it. */
+  modelLabel: string;
+  /** Author provenance on the model label, so the peer's tool reads as authored. */
+  modelAuthor: string | null;
+}
+
 export interface VisibleMessage {
   id: string;
   fromHandle: string;
@@ -310,6 +328,8 @@ export interface UndergroundProjection {
   contracts: VisibleContract[];
   retaliations: VisibleRetaliation[];
   forum: VisibleForumPost[];
+  /** Phase 5 P4: which peers run which assistant (name + model label only). */
+  assistants: VisibleAssistant[];
 }
 
 export interface VisibleHardware {
@@ -431,6 +451,13 @@ export interface VisibleModelListing {
   deliveredFactor: number;
   /** The rig resources this model occupies while running (0/0 for cloud). */
   footprint: ModelFootprint;
+  /**
+   * Phase 5 P4 marketplace provenance: the author handle an in-fiction peer
+   * sells this copy under, or null for a market house brand. Buying an authored
+   * model debits this peer, so the value graph gains a named edge — the P5 tool
+   * template, reused. The Market panel shows `by <author>` only when present.
+   */
+  author: string | null;
   /** True for an owned local copy; always false for a cloud model. */
   owned: boolean;
   running: boolean;
@@ -702,6 +729,23 @@ function projectUnderground(
     );
   }
 
+  const assistants: VisibleAssistant[] = [];
+
+  for (const actor of underground.actors) {
+    if (!actor.modelId) {
+      continue;
+    }
+
+    const model = findModelItem(actor.modelId);
+
+    assistants.push({
+      actorId: actor.id,
+      handle: actor.handle,
+      modelLabel: model?.label ?? actor.modelId,
+      modelAuthor: model?.author ?? null,
+    });
+  }
+
   return {
     board,
     feed,
@@ -710,6 +754,7 @@ function projectUnderground(
     contracts,
     retaliations,
     forum,
+    assistants,
   };
 }
 
@@ -951,6 +996,7 @@ function projectEconomy(
         availablePool(capability, state.builds, findWorkflowSpec),
       ),
       footprint: { ...item.footprint },
+      author: item.author ?? null,
       owned: state.economy.ownedModels.includes(item.id),
       running: state.economy.activeModel === item.id,
     };

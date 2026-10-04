@@ -807,6 +807,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const retaliationTable = useTable("retaliations", runtime.projection);
   const descriptorTable = useTable("descriptors", runtime.projection);
   const forumTable = useTable("forum", runtime.projection);
+  const assistantsTable = useTable("assistants", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -844,6 +845,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
     ([idA, a], [idB, b]) =>
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  // Phase 5 P4: the ecosystem's AI users, read-only, name and model label only.
+  const assistants = Object.entries(assistantsTable).sort(([idA], [idB]) =>
+    idA.localeCompare(idB),
   );
 
   return (
@@ -1073,6 +1078,33 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             ))}
           </ul>
         )}
+      </section>
+
+      <section aria-label="Peer assistants">
+        <span className="panel-label">PEER ASSISTANTS // ECOSYSTEM AI</span>
+        {assistants.length === 0 ? (
+          <p className="underground-empty">No one in the scene is running an assistant.</p>
+        ) : (
+          <ul className="underground-assistants">
+            {assistants.map(([id, entry]) => (
+              <li key={id}>
+                <span>{String(entry.handle ?? id)}</span>
+                <span>
+                  {String(entry.modelLabel ?? "")}
+                  {entry.modelAuthor
+                    ? ` — by ${String(entry.modelAuthor)}`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="underground-note">
+          You see which peer runs which assistant, never what it earns them.
+          Peers using AI is part of the scene, not a player-only superpower —
+          and like yours, theirs is fallible, so the same model that helps a
+          peer can also make their work slip into the public feed.
+        </p>
       </section>
     </div>
   );
@@ -1820,6 +1852,13 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                       rig load {Number(entry.vram ?? 0)} vram /{" "}
                       {Number(entry.storage ?? 0)} storage · your rig{" "}
                       {Number(rig.vram ?? 0)} / {Number(rig.storage ?? 0)}
+                    </span>
+                  )}
+                  {entry.author && (
+                    // Phase 5 P4 marketplace provenance: an in-fiction peer
+                    // authored this copy and collects for it — like a P5 tool.
+                    <span className="market-time">
+                      by {String(entry.author)} · paid to them directly
                     </span>
                   )}
                   <span className="market-time">

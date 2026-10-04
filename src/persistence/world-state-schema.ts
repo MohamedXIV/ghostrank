@@ -78,6 +78,9 @@ const undergroundActorSchema = z.object({
   defense: percentSchema,
   discretion: percentSchema,
   activity: percentSchema,
+  // Phase 5 P4: the model id this peer runs as an assistant, or absent when the
+  // actor works without AI. Optional so legacy saves load as unassisted.
+  modelId: z.string().min(1).optional(),
   targetId: z.string().min(1).optional(),
 });
 

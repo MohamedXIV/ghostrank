@@ -187,12 +187,13 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P3)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4)
 
-The Phase 4 economy is live through P7, and Phase 5's model substrate (P0),
-compute contention (P1), AI analysis (P2) and software forge (P3) are live. This
-section describes what the simulation actually does today; the sections above
-remain the design target for later slices.
+The Phase 4 economy is live through P7, and all of Phase 5 is live: the model
+substrate (P0), compute contention (P1), AI analysis (P2), the software forge
+(P3), and the marketplace-plus-NPC-AI slice (P4). This section describes what
+the simulation actually does today; the sections above remain the design target
+for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -382,6 +383,30 @@ remain the design target for later slices.
   Market FORGE panel shows specs with this rig's estimate, the queue with due
   times, and the garage with report cards; a self-built copy permanently
   replaces a recurring fee with owned software.
+- **Marketplace provenance and NPC AI use (Phase 5 P4).** The model catalog
+  finally has an *author* side. `ModelListing.author` is catalog data: when
+  present, the one-time `model buy` debit goes to that named peer instead of
+  the anonymous market, so the value graph gains a `peer` node with a paid
+  total — the P5 tool-author template reused verbatim, with `market` still the
+  house brand for every unauthored copy. The Salvaged Reason Core (600, ×0.85,
+  reasoning 4 / reliability 2, footprint 3/1, author `moebius`) is the cheap
+  stronger planner: it out-plans the reliable workhorse and slips roughly twice
+  as often, the same reasoning-versus-reliability trade the player's own model
+  choice already prices. And AI is no longer player-exclusive: a peer can run a
+  model (`UndergroundActor.modelId`, hidden truth, never projected raw), and one
+  pure function turns it into that tick's assist — a competent read lifts the
+  actor's offence (band − 2, never a subtraction on a good read), while a miss
+  (`(6 − reliability)/12`, nonzero even at band 5 because fallible-never-
+  deterministic binds the whole ecosystem) costs skill *and* 18 discretion, so
+  an AI-assisted mistake is how a peer's incident surfaces in the public feed.
+  The same function read from the defender's seat is "automation to watch": a
+  watching assistant raises a box's defence on a good read and lowers it when
+  the model misses the pattern. No new command, event, or ledger cause kind —
+  `model buy/run/stop` already covered the flow — and no model is exact
+  `{ 0, 0 }`, so every world of unassisted peers keeps its old math to the
+  byte. The projection shows *that* a peer runs an assistant (handle + model
+  label + author only, never the lift), keeping D028's leak boundary intact at
+  ecosystem scale.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -389,7 +414,9 @@ remain the design target for later slices.
   `software` list (no running tools), an empty `playerTools` inventory, an
   empty `ownedMachines` rack, no `ownedModels`, no `ownedWorkflows`, and
   `activeModel: null` — the untouched baseline in every layer. Stored `analysis`
-  records and the in-flight `builds` queue likewise default to empty. A claim's
+  records and the in-flight `builds` queue likewise default to empty, and a
+  legacy actor without `modelId` loads as an unassisted peer — the pre-P4
+  ecosystem verbatim. A claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and
   do project, because they are the player's own ground truth.
