@@ -775,6 +775,24 @@ function ReactionCard({
   );
 }
 
+/**
+ * Phase 6 P1 — one piece of surfaced evidence, in the player's own words. The
+ * kinds are the docs' signal list; nothing here says how close anyone is,
+ * because the design refuses a countdown where ambiguity does the work.
+ */
+function describeSignal(kind: string, targetHandle: string): string {
+  switch (kind) {
+    case "unusual-login":
+      return `an unfamiliar login touched ${targetHandle} — not yours, not any relay you recognise`;
+    case "marketplace-behavior":
+      return `the market answered you differently about ${targetHandle}: shorter quotes, no haggling, one vendor gone`;
+    case "suspicious-message":
+      return `a message with no sender asked about your work on ${targetHandle} and nothing else`;
+    default:
+      return `something about ${targetHandle} landed in your logs`;
+  }
+}
+
 function describeIncident(
   actorHandle: string,
   counterpartHandle: string,
@@ -808,6 +826,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const descriptorTable = useTable("descriptors", runtime.projection);
   const forumTable = useTable("forum", runtime.projection);
   const assistantsTable = useTable("assistants", runtime.projection);
+  // Phase 6 P1: the case files and the evidence they have surfaced.
+  const investigationTable = useTable("investigations", runtime.projection);
+  const signalTable = useTable("investigationSignals", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -850,6 +871,22 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const assistants = Object.entries(assistantsTable).sort(([idA], [idB]) =>
     idA.localeCompare(idB),
   );
+  // Phase 6 P1: authority case files, read as evidence lists. The stage is a
+  // band and each row is a noticed thing; there is deliberately no number here
+  // to read as a meter, and no minute that implies a deadline.
+  const cases = Object.fromEntries(
+    Object.entries(investigationTable).map(([id, entry]) => [
+      id,
+      String(entry.stage ?? "probing"),
+    ]),
+  );
+  const signals = Object.entries(signalTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  const caseStage = (investigationId: string): string =>
+    cases[investigationId] ?? "probing";
 
   return (
     <div className="underground-app">
@@ -890,6 +927,39 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           </ul>
         </section>
       )}
+
+      <section aria-label="Attention">
+        <span className="panel-label">ATTENTION</span>
+        {signals.length === 0 ? (
+          <p className="underground-empty">
+            Nothing unusual in the logs. Nobody has asked about you yet.
+          </p>
+        ) : (
+          <ul className="underground-feed">
+            {signals.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
+                  {` // ${caseStage(String(entry.investigationId ?? ""))}`}
+                </span>
+                <span>
+                  {describeSignal(
+                    String(entry.kind ?? ""),
+                    String(entry.targetHandle ?? "unknown"),
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {signals.length > 0 && (
+          <p className="analysis-caveat">
+            Each line is a thing you noticed, not a verdict. None of them says
+            how close anyone is — lay low, change relays, or move, and see
+            whether the list stops growing.
+          </p>
+        )}
+      </section>
 
       <section aria-label="Contracts">
         <span className="panel-label">CONTRACTS</span>

@@ -85,6 +85,7 @@ describe("world projection store", () => {
           triggeredWorldMinute: 45,
         },
       ],
+      investigations: [],
       descriptors: [],
       underground: {
         board: [],

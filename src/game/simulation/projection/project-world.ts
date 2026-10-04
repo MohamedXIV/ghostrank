@@ -30,6 +30,7 @@ import {
   deliverableEffect,
 } from "@/game/simulation/systems/builds";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
+import { deriveInvestigationStage } from "@/game/simulation/systems/investigations";
 import {
   derivePresence,
   relocationMinutes,
@@ -83,6 +84,8 @@ import {
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
+  type InvestigationSignalKind,
+  type InvestigationStage,
   type LedgerCauseKind,
   type LedgerDirection,
   type OperationState,
@@ -234,6 +237,33 @@ export interface VisibleReaction {
   sourceTraceIds: string[];
   footprintScore: number;
   triggeredWorldMinute: number;
+}
+
+/**
+ * Phase 6 P1 — one piece of evidence a case file has surfaced. The player reads
+ * *what kind of thing they noticed* and when, plus a line of fiction in the
+ * target's own handle so the evidence names the thing it is about; the material
+ * behind it and the traces that produced it stay in the simulation (D028/D030).
+ */
+export interface VisibleInvestigationSignal {
+  id: string;
+  kind: InvestigationSignalKind;
+  targetHandle: string;
+  worldMinute: number;
+}
+
+/**
+ * An open authority case file, as the player can see it: whose target it is,
+ * the evidence list, and the band those items imply. `progress`, `sourceIds`,
+ * and `openedWorldMinute` are deliberately absent — the first is a hidden
+ * number, the second is causal provenance P5 reads, and the third would let a
+ * player subtract to find a deadline this design refuses to state.
+ */
+export interface VisibleInvestigation {
+  id: string;
+  targetId: string;
+  stage: InvestigationStage;
+  signals: VisibleInvestigationSignal[];
 }
 
 export interface VisibleHandle {
@@ -563,6 +593,12 @@ export interface WorldProjection {
   operation: OperationState | null;
   footprint: VisibleFootprint;
   reactions: VisibleReaction[];
+  /**
+   * Phase 6 P1: open authority case files, for known targets only. Empty is the
+   * pre-Phase-6 baseline, so a world with no footprint projects exactly what it
+   * projected before this slice existed.
+   */
+  investigations: VisibleInvestigation[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1197,6 +1233,50 @@ function projectAnalysis(
   return records;
 }
 
+/**
+ * Project the open case files, for known targets only, newest evidence first
+ * within each file. The hidden `progress`, the causal `sourceIds`, and the
+ * opening minute all stay in the simulation: the first is a number the design
+ * refuses to show, the second is the provenance P5's postmortem folds, and the
+ * third is the raw material of a countdown.
+ */
+function projectInvestigations(
+  state: WorldState,
+  knownTargets: Set<string>,
+): VisibleInvestigation[] {
+  const targetHandles = new Map(
+    state.targets.map((target) => [target.id, target.handle]),
+  );
+  const visible: VisibleInvestigation[] = [];
+
+  for (const investigation of state.investigations) {
+    if (!knownTargets.has(investigation.targetId)) {
+      continue;
+    }
+
+    visible.push({
+      id: investigation.id,
+      targetId: investigation.targetId,
+      stage: deriveInvestigationStage(investigation.signals),
+      signals: [...investigation.signals]
+        .reverse()
+        .map((signal) => ({
+          id: signal.id,
+          kind: signal.kind,
+          // A known target's handle is evidence the player already has; the
+          // signal never carries a machine, service, or actor id it has not
+          // earned.
+          targetHandle:
+            targetHandles.get(investigation.targetId) ??
+            investigation.targetId,
+          worldMinute: signal.surfacedWorldMinute,
+        })),
+    });
+  }
+
+  return visible;
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1287,6 +1367,7 @@ export function projectWorld(state: WorldState): WorldProjection {
       traceCount: state.traces.length,
     },
     reactions,
+    investigations: projectInvestigations(state, knownTargets),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),

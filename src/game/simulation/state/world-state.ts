@@ -167,6 +167,53 @@ export interface OpponentReaction {
   playerVisible: boolean;
 }
 
+/**
+ * One piece of evidence a case file has surfaced (Phase 6 P1). It is *not*
+ * hidden truth — the player reads it — but it is authoritative state, because
+ * the same evidence must not be re-surfaced every time the clock is advanced.
+ */
+export interface InvestigationSignal {
+  id: string;
+  kind: InvestigationSignalKind;
+  /** Review boundary this surfaced on. Never a countdown, never a deadline. */
+  surfacedWorldMinute: number;
+}
+
+/**
+ * An authority case file opened against the player's activity on one target
+ * (Phase 6 P1). What it *means* stays internal: `progress` is arithmetic over
+ * the footprint the player already emitted — never a roll against a hidden
+ * difficulty score, never an input from rank — and the player reads only the
+ * surfaced `signals` and the band they imply.
+ *
+ * `sourceIds` is the citable causal chain P5 folds over: the `OperationTrace`
+ * ids whose weights fed `progress`, plus the `OpponentReaction` ids on the same
+ * target, cited for provenance only (their footprint *is* those traces' weight,
+ * so counting a reaction again would charge the player twice).
+ */
+export interface Investigation {
+  id: string;
+  targetId: string;
+  /** Review boundary the file was opened on, not the minute of the last trace. */
+  openedWorldMinute: number;
+  /** Hidden truth: assembled case material. Never projected as a number. */
+  progress: number;
+  sourceIds: string[];
+  signals: InvestigationSignal[];
+}
+
+export type InvestigationSignalKind =
+  | "unusual-login"
+  | "marketplace-behavior"
+  | "suspicious-message";
+
+/**
+ * The player-visible band of a case file. Names, three of them, derived from
+ * how many signals have surfaced — the `FootprintLevel`/`relationshipStance`
+ * discipline, so there is no number anywhere to turn into a bar.
+ */
+export type InvestigationStage = "probing" | "warming" | "converging";
+
 export const PLAYER_ACTOR_ID = "player";
 
 export type UndergroundNetwork = "white" | "black";
@@ -432,6 +479,13 @@ export interface WorldState {
    * resumes on the same frozen clock.
    */
   builds: InFlightBuild[];
+  /**
+   * Authority case files opened against the player (Phase 6 P1). Advanced on
+   * the same fixed world-time boundaries as the ecosystem, from the footprint
+   * the player already emitted. Empty is the untouched pre-Phase-6 baseline, so
+   * a default world has no investigation and nothing to read.
+   */
+  investigations: Investigation[];
 }
 
 export interface InitialTargetState
@@ -452,6 +506,7 @@ export interface InitialWorldState {
   economy?: Partial<EconomyState>;
   analysis?: AnalysisRecord[];
   builds?: InFlightBuild[];
+  investigations?: Investigation[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -579,5 +634,8 @@ export function createInitialWorldState(
     economy: createInitialEconomy(initial.economy),
     analysis: initial.analysis ? structuredClone(initial.analysis) : [],
     builds: initial.builds ? structuredClone(initial.builds) : [],
+    investigations: initial.investigations
+      ? structuredClone(initial.investigations)
+      : [],
   };
 }

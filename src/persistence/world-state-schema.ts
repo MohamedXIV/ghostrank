@@ -267,6 +267,25 @@ const inFlightBuildSchema = z.object({
   outcome: z.enum(["clean", "warnings", "defective"]),
 });
 
+const investigationSignalSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum([
+    "unusual-login",
+    "marketplace-behavior",
+    "suspicious-message",
+  ]),
+  surfacedWorldMinute: z.number().int().nonnegative(),
+});
+
+const investigationSchema = z.object({
+  id: z.string().min(1),
+  targetId: z.string().min(1),
+  openedWorldMinute: z.number().int().nonnegative(),
+  progress: z.number().int().nonnegative(),
+  sourceIds: z.array(z.string().min(1)).default([]),
+  signals: z.array(investigationSignalSchema).default([]),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -283,6 +302,8 @@ const storedWorldStateSchema = z.object({
   economy: economySchema.optional(),
   analysis: z.array(analysisRecordSchema).default([]),
   builds: z.array(inFlightBuildSchema).default([]),
+  // Phase 6 P1: a legacy save simply has no open case files.
+  investigations: z.array(investigationSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
