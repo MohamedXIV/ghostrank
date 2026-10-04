@@ -136,6 +136,11 @@ describe("world projection store", () => {
               network: 2,
             },
             active: false,
+            // Phase 6 P0: same-district listing — reachable for 0 minutes, so
+            // signing it stays exactly as instant as it has always been.
+            kind: "residential",
+            anonymity: "public",
+            travelMinutes: 0,
           },
           {
             id: "housing-rented-lab",
@@ -149,6 +154,9 @@ describe("world projection store", () => {
               network: 0,
             },
             active: true,
+            kind: "residential",
+            anonymity: "public",
+            travelMinutes: 0,
           },
         ],
         software: {
@@ -430,9 +438,31 @@ describe("world projection store", () => {
           ],
         },
       },
+      presence: {
+        locationId: "housing-rented-lab",
+        label: "Rented Lab Bench",
+        kind: "residential",
+        anonymity: "public",
+        leased: true,
+        dailyCost: 60,
+        distanceMinutes: 0,
+      },
     };
 
     syncWorldProjection(store, projection);
+
+    // Phase 6 P0: presence reaches the store so the physical surface can read a
+    // real place instead of a hardcoded caption.
+    expect(store.getRow("presence", "current")).toEqual({
+      locationId: "housing-rented-lab",
+      label: "Rented Lab Bench",
+      kind: "residential",
+      anonymity: "public",
+      leased: true,
+      dailyCost: 60,
+      distanceMinutes: 0,
+    });
+    expect(store.getCell("presence", "current", "anonymity")).toBe("public");
 
     expect(store.getTable("player")).toEqual({
       current: {
@@ -779,6 +809,9 @@ describe("world projection store", () => {
         storage: 0,
         network: 2,
         active: false,
+        travelMinutes: 0,
+        kind: "residential",
+        anonymity: "public",
       },
       "housing-rented-lab": {
         label: "Rented Lab Bench",
@@ -789,6 +822,9 @@ describe("world projection store", () => {
         storage: 1,
         network: 0,
         active: true,
+        travelMinutes: 0,
+        kind: "residential",
+        anonymity: "public",
       },
     });
   });

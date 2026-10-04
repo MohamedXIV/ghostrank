@@ -31,10 +31,18 @@ import {
 } from "@/game/simulation/systems/builds";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import {
+  derivePresence,
+  relocationMinutes,
+} from "@/game/simulation/systems/location";
+import {
   deriveValueGraph,
   type ValueGraph,
 } from "@/game/simulation/systems/value-graph";
-import { HOUSING_CATALOG } from "@/content/housing-catalog";
+import {
+  HOUSING_CATALOG,
+  type HousingAnonymity,
+  type HousingKind,
+} from "@/content/housing-catalog";
 import {
   PLAYER_TOOL_CATALOG,
   findPlayerToolItem,
@@ -366,6 +374,38 @@ export interface VisibleHousing {
   dailyCost: number;
   capability: HardwareCapability;
   active: boolean;
+  /**
+   * Phase 6 P0: what kind of dwelling this is, and how public. Names, never
+   * numbers — `anonymity` is a band, and it is consumed by P3's physical
+   * retaliation, not by anything today.
+   */
+  kind: HousingKind | "baseline";
+  anonymity: HousingAnonymity;
+  /**
+   * World minutes a relocation here costs from the district you are in now.
+   * `0` means "next door — no time passes", which is why signing a Phase 4
+   * lease is still instant.
+   */
+  travelMinutes: number;
+}
+
+/**
+ * Phase 6 P0 — where the player physically is, derived from the lease they hold
+ * (`systems/location.ts`). It is on the world projection rather than the
+ * economy one because its consumer is the *physical* surface: the room renderer
+ * reads this instead of hardcoding a caption, and the bridge contract that
+ * reaches Phaser is built from it. Nothing here is authoritative state — it is
+ * a read of `economy.housing`, so eviction and relocation can never disagree
+ * with it.
+ */
+export interface VisiblePresence {
+  locationId: string;
+  label: string;
+  kind: HousingKind | "baseline";
+  anonymity: HousingAnonymity;
+  leased: boolean;
+  dailyCost: number;
+  distanceMinutes: number;
 }
 
 export interface VisibleSoftwareListing {
@@ -526,6 +566,13 @@ export interface WorldProjection {
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
+  /**
+   * Phase 6 P0: where the player physically is, derived from the held lease.
+   * A default world has no lease, so this is always the baseline room — the
+   * zero-regression identity that keeps every pre-Phase-6 projection test
+   * byte-identical while giving the physical surface real data to render.
+   */
+  presence: VisiblePresence;
 }
 
 function projectUnderground(
@@ -880,6 +927,11 @@ function projectEconomy(
     dailyCost: item.dailyCost,
     capability: { ...item.capability },
     active: state.economy.housing === item.id,
+    kind: item.kind ?? "residential",
+    anonymity: item.anonymity ?? "public",
+    // What a relocation *here* costs from where the player stands now, so the
+    // price of a move is legible before the player commits to it.
+    travelMinutes: relocationMinutes(state.economy.housing, item.id),
   }));
 
   const softwareListings: VisibleSoftwareListing[] = SOFTWARE_CATALOG.map(
@@ -1238,5 +1290,6 @@ export function projectWorld(state: WorldState): WorldProjection {
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),
+    presence: derivePresence(state.economy.housing),
   };
 }

@@ -226,6 +226,11 @@ export function syncWorldProjection(
         storage: listing.capability.storage,
         network: listing.capability.network,
         active: listing.active,
+        // Phase 6 P0: the price of *getting* there, shown before the player
+        // commits. Names for kind/anonymity — never numbers.
+        travelMinutes: listing.travelMinutes,
+        kind: listing.kind,
+        anonymity: listing.anonymity,
       },
     ]),
   );
@@ -579,5 +584,20 @@ export function syncWorldProjection(
     });
 
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
+
+    // Phase 6 P0 — physical presence. A dedicated cell because its consumer is
+    // the room surface, which reads the store rather than the core state.
+    // `anonymity` ships here as a name, never a number, and it is read by P3.
+    store.setTable("presence", {
+      current: {
+        locationId: projection.presence.locationId,
+        label: projection.presence.label,
+        kind: projection.presence.kind,
+        anonymity: projection.presence.anonymity,
+        leased: projection.presence.leased,
+        dailyCost: projection.presence.dailyCost,
+        distanceMinutes: projection.presence.distanceMinutes,
+      },
+    });
   });
 }

@@ -7,6 +7,7 @@ import {
 import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
 import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
+import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
 import {
@@ -664,23 +665,41 @@ export class CommandBus {
       return this.failure("ALREADY_RENTED");
     }
 
-    const minute = this.world.worldMinute;
-
     // Signing or switching a lease moves no credits in P3: the cost is levied
     // at the next whole-day boundary through advanceUpkeep. The choice is
     // therefore reversible, and switching never double-bills.
+    //
+    // Phase 6 P0 adds the one thing money was never the constraint on: *time*.
+    // Relocating to a dwelling in another district costs the difference in
+    // travel distance and is paid by advancing the world clock, so the world
+    // keeps acting while the player moves — relocation as a decision rather
+    // than a menu switch. A same-district lease declares no `travelMinutes`, so
+    // it resolves to 0 and emits no time events at all, which is what keeps
+    // every pre-Phase-6 lease test byte-identical.
+    //
+    // Ordering is deliberate: the journey happens *before* the new lease
+    // exists, so the player keeps paying wherever they actually slept during
+    // the travel, and presence — derived from the lease, not stored — flips on
+    // arrival. `HousingChanged` therefore carries the arrival minute.
+    const travel = relocationMinutes(this.world.economy.housing, item.id);
+    const events: SimulationEvent[] = [];
+
+    if (travel > 0) {
+      events.push(...this.advanceWorldTime(travel));
+    }
+
     this.world.economy.housing = item.id;
+
+    events.push({
+      type: "HousingChanged",
+      housingId: item.id,
+      dailyCost: item.dailyCost,
+      worldMinute: this.world.worldMinute,
+    });
 
     return {
       ok: true,
-      events: [
-        {
-          type: "HousingChanged",
-          housingId: item.id,
-          dailyCost: item.dailyCost,
-          worldMinute: minute,
-        },
-      ],
+      events,
     };
   }
 
@@ -689,18 +708,33 @@ export class CommandBus {
       return this.failure("NO_ACTIVE_LEASE");
     }
 
+    // Phase 6 P0: moving out is a journey too. Symmetric with signing so
+    // relocation stays a decision rather than a free one-way button — a player
+    // who fled to the outskirts pays the same trip to come back. Involuntary
+    // eviction (`advanceUpkeep`) deliberately keeps no travel cost: the world
+    // is acting on the player there, not the player choosing to move.
+    //
+    // Same-district travel is 0 minutes and emits no time events at all, which
+    // is what keeps every pre-Phase-6 lease test byte-identical.
+    const travel = relocationMinutes(this.world.economy.housing, null);
+    const events: SimulationEvent[] = [];
+
+    if (travel > 0) {
+      events.push(...this.advanceWorldTime(travel));
+    }
+
     this.world.economy.housing = null;
+
+    events.push({
+      type: "HousingChanged",
+      housingId: null,
+      dailyCost: 0,
+      worldMinute: this.world.worldMinute,
+    });
 
     return {
       ok: true,
-      events: [
-        {
-          type: "HousingChanged",
-          housingId: null,
-          dailyCost: 0,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+      events,
     };
   }
 

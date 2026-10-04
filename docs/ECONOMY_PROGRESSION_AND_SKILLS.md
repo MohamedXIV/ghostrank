@@ -187,13 +187,14 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0)
 
-The Phase 4 economy is live through P7, and all of Phase 5 is live: the model
+The Phase 4 economy is live through P7, all of Phase 5 is live: the model
 substrate (P0), compute contention (P1), AI analysis (P2), the software forge
-(P3), and the marketplace-plus-NPC-AI slice (P4). This section describes what
-the simulation actually does today; the sections above remain the design target
-for later slices.
+(P3), and the marketplace-plus-NPC-AI slice (P4). Phase 6 has begun: P0 gave
+physical life its first shipped mechanics — relocation and safehouses. This
+section describes what the simulation actually does today; the sections above
+remain the design target for later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -407,6 +408,30 @@ for later slices.
   byte. The projection shows *that* a peer runs an assistant (handle + model
   label + author only, never the lift), keeping D028's leak boundary intact at
   ecosystem scale.
+- **Physical life: relocation and safehouses (Phase 6 P0).** The *Physical life*
+  list above finally has shipped mechanics behind two of its lines. Where the
+  player physically **is** is derived from the lease they hold — there is no
+  second location field, so eviction, lapse, and relocation can never disagree,
+  and the slice adds no state, events, or save-schema surface. The design's
+  *relocation* lands as a cost paid in the triangle's other currency: catalog
+  dwellings may declare `travelMinutes`, and a move costs the **difference**
+  between districts (so it is symmetric — fleeing to the outskirts and coming
+  back each pay the journey), charged by advancing the world clock *before* the
+  lease changes. The player therefore pays rent wherever they actually slept
+  during the trip, the ecosystem keeps rolling while they travel, and nothing
+  moves credits: money was never the constraint on leaving town, exposure is.
+  *Short-term safe locations* land as two `kind: "safehouse"` dwellings that
+  contribute **zero capability on every axis** — concealment is bought with
+  distance and daily upkeep, never with power, so a safehouse cannot become a
+  purchase that gates anything and staying in one costs the rig lift a lab bench
+  would have given. Each listing carries an `anonymity` band
+  (`public`/`quiet`/`hidden`, names never numbers); nothing consumes it yet —
+  Phase 6 P3's physical retaliation does — and that is stated rather than
+  hidden. The room now renders the projected presence instead of a hardcoded
+  caption, and its MOVE / PACK UP controls issue physical intents that map onto
+  the same `rent` / `lease break` commands the Terminal and Market emit.
+  Holding no lease remains the free baseline, and involuntary eviction stays
+  instant — the world acting on the player is not the player choosing to travel.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -416,7 +441,9 @@ for later slices.
   `activeModel: null` — the untouched baseline in every layer. Stored `analysis`
   records and the in-flight `builds` queue likewise default to empty, and a
   legacy actor without `modelId` loads as an unassisted peer — the pre-P4
-  ecosystem verbatim. A claim's
+  ecosystem verbatim. Phase 6 P0 adds **nothing to persist**: presence is a read
+  of `economy.housing`, so a legacy save resumes at the baseline room and a
+  stale lease id resolves there rather than fabricating a place. A claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and
   do project, because they are the player's own ground truth.

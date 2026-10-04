@@ -1,10 +1,31 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useCell } from "tinybase/ui-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCell, useRow, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
+import { physicalIntentToCommand, presentRoom } from "@/game/phaser/bridge";
+import type { VisiblePresence } from "@/game/simulation/projection/project-world";
+import { derivePresence } from "@/game/simulation/systems/location";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
+
+/**
+ * The un-leased room, taken from the catalog's own baseline through the same
+ * derivation the simulation uses. A renderer fallback must not invent a place
+ * the world does not know, so this component contains no location literal.
+ */
+const BASELINE_PRESENCE: VisiblePresence = derivePresence(null);
+
+/**
+ * The anonymity band, rendered as fiction. A band is deliberately coarse, so the
+ * scene gets an atmosphere line rather than a number to optimise — and P0 gives
+ * it nothing else to read, since `anonymity` only becomes a threat input in P3.
+ */
+const ANONYMITY_FLAVOR: Record<VisiblePresence["anonymity"], string> = {
+  public: "anyone on the street could name this room",
+  quiet: "few notices, but the district still remembers faces",
+  hidden: "nobody here knows the handle on the screen",
+};
 
 interface RoomSurfaceProps {
   runtime: GameRuntime;
@@ -16,6 +37,62 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
   const worldMinute = Number(
     useCell("meta", "world", "worldMinute", runtime.projection) ?? 0,
   );
+  // Phase 6 P0: the room reads where the player *is* from the projection
+  // instead of naming a place in a string. Presence is derived from the held
+  // lease, so this cannot disagree with an eviction or a relocation. The
+  // fallback is the catalog's own baseline dwelling, not a local literal, so
+  // the renderer cannot invent a place the simulation does not know.
+  const presenceRow = useRow("presence", "current", runtime.projection);
+  const presence: VisiblePresence = presenceRow
+    ? {
+        locationId: String(presenceRow.locationId),
+        label: String(presenceRow.label),
+        kind: presenceRow.kind as VisiblePresence["kind"],
+        anonymity: presenceRow.anonymity as VisiblePresence["anonymity"],
+        leased: presenceRow.leased === true,
+        dailyCost: Number(presenceRow.dailyCost ?? 0),
+        distanceMinutes: Number(presenceRow.distanceMinutes ?? 0),
+      }
+    : BASELINE_PRESENCE;
+  const presentation = presentRoom(presence, worldMinute);
+
+  // Relocation controls read the *same* housing table the Market panel does, so
+  // the room can offer nothing the lease commands do not already accept, and the
+  // journey shown here is the journey the projection already priced.
+  const destinations = useTable("housing", runtime.projection);
+  const [destination, setDestination] = useState("");
+  const relocationOptions = useMemo(() => {
+    const rows: { id: string; label: string }[] = [];
+    for (const [id, entry] of Object.entries(destinations ?? {})) {
+      if (entry.active === true) {
+        continue;
+      }
+      const travel = Number(entry.travelMinutes ?? 0);
+      rows.push({
+        id,
+        label: `${String(entry.label ?? id)} · ${
+          travel === 0 ? "same district" : `${travel}m trip`
+        }`,
+      });
+    }
+    return rows.sort((a, b) => a.id.localeCompare(b.id));
+  }, [destinations]);
+
+  const onRelocate = useCallback(() => {
+    if (destination.length === 0) {
+      return;
+    }
+    runtime.execute(
+      physicalIntentToCommand({ type: "moveTo", housingId: destination }),
+    );
+    // The chosen dwelling becomes the active lease, which drops it from the
+    // list, so the selection resets rather than pointing at a removed option.
+    setDestination("");
+  }, [destination, runtime]);
+
+  const onLeave = useCallback(() => {
+    runtime.execute(physicalIntentToCommand({ type: "leave" }));
+  }, [runtime]);
 
   useEffect(() => {
     let disposed = false;
@@ -152,7 +229,7 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
       <div className="room-hud">
         <div>
           <span className="panel-label">LOCATION</span>
-          <strong>SHORT-TERM ROOM // UNIT 04</strong>
+          <strong>{presentation.label.toUpperCase()}</strong>
         </div>
         <div>
           <span className="panel-label">WORLD TIME</span>
@@ -163,10 +240,51 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
       <div ref={containerRef} className="phaser-room" />
 
       <div className="room-caption">
-        <span>fan hum // distant traffic // something red outside the window</span>
-        <button type="button" onClick={onUseDesk}>
-          USE WORKSTATION
-        </button>
+        <span>
+          {`fan hum // ${ANONYMITY_FLAVOR[presentation.anonymity]}`}
+          {presentation.distant ? " // the trip here cost hours" : ""}
+          {presentation.leased ? "" : " // no keys in this room"}
+        </span>
+        <div className="room-relocation">
+          <label className="panel-label">
+            RELOCATE
+            <select
+              value={destination}
+              onChange={(event) => setDestination(event.target.value)}
+            >
+              <option value="">—</option>
+              {relocationOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={destination.length === 0}
+            title={
+              destination.length === 0
+                ? "Choose a dwelling"
+                : "Sign this lease and travel there"
+            }
+            onClick={onRelocate}
+          >
+            MOVE
+          </button>
+          {presentation.leased ? (
+            <button
+              type="button"
+              title="Break the lease and pay the trip back to the baseline room"
+              onClick={onLeave}
+            >
+              PACK UP
+            </button>
+          ) : null}
+          <button type="button" onClick={onUseDesk}>
+            USE WORKSTATION
+          </button>
+        </div>
       </div>
     </section>
   );

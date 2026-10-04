@@ -303,9 +303,11 @@ Exit criteria:
 
 ## Phase 6 — Run Threat and Physical Consequences
 
-**Status: planned, kickoff plan delivered. Tracked by #24 (unblocked by #23).**
+**Status: in progress — P0 delivered (relocation, safehouses). Tracked by #24 (unblocked by #23).**
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-6-plan.md` — P0 physical presence (location derived from the lease, never a second source of truth), P1 authority investigation as a deadline-driven tick, P2 rival probes (carries the **"automation to watch the player"** handoff from #23, read from the same `npcAssistDeltas` primitive), P3 retaliation goes physical (carries the **build-interruption** handoff from #23 and D021's "lease loss as a scripted threat"), P4 catastrophic compromise as a durable condition, P5 postmortem causal chain as a pure derived read. The Phase 7 boundary is drawn explicitly: Phase 6 produces conditions and causes, #25 produces endings — `RunEnded` is not built here, because no terminal state exists yet to extend.
+
+**P0 delivered** (`docs/superpowers/plans/2026-10-04-phase-6-presence.md`, D031): presence is *derived* from `economy.housing` (`systems/location.ts`), so eviction, lapse, and relocation cannot disagree and the slice adds zero state, zero events, and zero save-schema surface. Relocation is priced in **world minutes** (`travelMinutes`, a symmetric difference between districts) and paid by advancing the clock *before* the lease changes, so the journey happens under the dwelling you slept in; same-district leases stay at 0 minutes, which is what keeps every pre-Phase-6 lease test byte-identical. Two zero-capability safehouses join the catalog (`anonymity` as a band nothing consumes yet — P3 reads it), `PhysicalIntent` gains `moveTo`/`leave` mapped onto the existing lease commands for Terminal/GUI/Phaser parity, and the room HUD's hardcoded caption is now a read of the projection. The kickoff plan's sketched `move`/`safehouse` verbs were rejected on contact with the code; D031 records the correction.
 
 Deliverables:
 - authority investigations,
