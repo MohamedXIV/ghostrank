@@ -303,7 +303,9 @@ Exit criteria:
 
 ## Phase 6 — Run Threat and Physical Consequences
 
-**Status: planned / blocked by #23. Tracked by #24.**
+**Status: planned, kickoff plan delivered. Tracked by #24 (unblocked by #23).**
+
+Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-6-plan.md` — P0 physical presence (location derived from the lease, never a second source of truth), P1 authority investigation as a deadline-driven tick, P2 rival probes (carries the **"automation to watch the player"** handoff from #23, read from the same `npcAssistDeltas` primitive), P3 retaliation goes physical (carries the **build-interruption** handoff from #23 and D021's "lease loss as a scripted threat"), P4 catastrophic compromise as a durable condition, P5 postmortem causal chain as a pure derived read. The Phase 7 boundary is drawn explicitly: Phase 6 produces conditions and causes, #25 produces endings — `RunEnded` is not built here, because no terminal state exists yet to extend.
 
 Deliverables:
 - authority investigations,
