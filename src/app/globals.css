@@ -678,6 +678,31 @@ button {
   font-size: 10px;
 }
 
+/* Phase 6 P0 — the room's own relocation controls. They render the projected
+   presence and issue physical intents only; the cost of a move stays in the
+   simulation. */
+.room-relocation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-relocation select {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  padding: 4px 6px;
+}
+
+.room-caption button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: transparent;
+  cursor: not-allowed;
+}
+
 .phaser-room {
   min-height: 0;
   width: 100%;

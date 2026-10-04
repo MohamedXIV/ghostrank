@@ -1447,6 +1447,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             {housing.map(([id, entry]) => {
               const cost = Number(entry.dailyCost ?? 0);
               const active = entry.active === true;
+              // Phase 6 P0: distance is part of the price of a dwelling, so it is
+              // shown with the rent. Names for kind/anonymity, never numbers.
+              const travel = Number(entry.travelMinutes ?? 0);
+              const anonymity = String(entry.anonymity ?? "public");
+              const kind = String(entry.kind ?? "residential");
               const stats = [
                 ["cpu", entry.compute],
                 ["mem", entry.memory],
@@ -1470,16 +1475,25 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                                 `${label} +${Number(value ?? 0)}`,
                             )
                             .join(" · ")}
+                      {` · ${kind} · ${anonymity}`}
                     </span>
                     <span className="market-time">
                       {cost.toLocaleString("en-US")} cr / day
-                      {active ? " · active lease" : ""}
+                      {active
+                        ? " · active lease"
+                        : travel > 0
+                          ? ` · ${travel} min travel from here`
+                          : " · same district"}
                     </span>
                   </div>
                   {active ? (
                     <button
                       type="button"
-                      title="Move out and return to the free baseline"
+                      title={
+                        travel > 0
+                          ? `Move out and return to the free baseline (${travel} min back)`
+                          : "Move out and return to the free baseline"
+                      }
                       onClick={() => runtime.execute(breakLeaseFromGui())}
                     >
                       MOVE OUT
@@ -1488,13 +1502,15 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                     <button
                       type="button"
                       title={
-                        currentHousingId
-                          ? "Switch to this lease (free to move)"
-                          : "Sign this lease"
+                        travel > 0
+                          ? `Sign this lease and spend ${travel} min travelling there`
+                          : currentHousingId
+                            ? "Switch to this lease (same district, no travel)"
+                            : "Sign this lease"
                       }
                       onClick={() => runtime.execute(rentHousingFromGui(id))}
                     >
-                      MOVE IN
+                      {travel > 0 ? "TRAVEL & SIGN" : "MOVE IN"}
                     </button>
                   )}
                 </li>
@@ -1504,9 +1520,12 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         )}
         <p className="market-hint">
           A lease adds capability while you keep paying its daily upkeep — it
-          never unlocks or blocks a target. Moving in, switching, or moving out
-          costs nothing; rent is only levied at each world-day boundary. Miss a
-          payment and you simply return to the free baseline. No debt, no gate.
+          never unlocks or blocks a target. Signing, switching, and moving out
+          move no credits, and rent is only levied at each world-day boundary;
+          miss a payment and you simply return to the free baseline. No debt, no
+          gate. Dwellings marked <em>safehouse</em> contribute no capability at
+          all: what they sell is distance, and distance is paid in world time,
+          which is also exposure. Moving out of one pays the trip back.
         </p>
       </section>
 
