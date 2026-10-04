@@ -8,10 +8,10 @@ import {
   HOUSING_CATALOG,
 } from "@/content/housing-catalog";
 import {
-  advanceUpkeep,
   deriveLeaseCapability,
   effectiveCapability,
 } from "@/game/simulation/systems/housing";
+import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { projectWorld } from "@/game/simulation/projection/project-world";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import type { WorldState } from "@/game/simulation/state/world-state";

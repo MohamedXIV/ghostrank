@@ -165,6 +165,16 @@ Upkeep is levied only at crossed whole-world-day boundaries (`advanceUpkeep(worl
 
 Accepted 2026-10-04 as the P3 slice. Listing daily costs and capability lifts are provisional tuning; per-day billing at a lease's first partial day, rival landlords, and lease loss as a scripted threat remain open for later phases.
 
+## D022 — Software marketplace model (Phase 4 P4)
+
+Premium software is a stackable, *recurring* capability layer — licenses that make the same rig more productive. Licenses come in two shapes: capability licenses fold raw axes into `effectiveCapability` (hardware + lease + software), and modifier licenses multiply derived hardware minutes by a discount factor after the P1 acceleration curve, respecting its one-minute floor. Baseline with no licenses is identity (zero lift, factor 1), so all pre-P4 behaviour is the untouched default and software is never a gate.
+
+Enabling and stopping a license move no credits; the daily fee is levied only at crossed whole-world-day boundaries by a single `advanceUpkeep` that now bills the lease first (cause `upkeep`, counterparty `landlord`) and then every active license in activation order (cause `license`, counterparty `vendor`). Each obligation is all-or-nothing per boundary: an unpayable license lapses just that one license — no charge, no debt, no penalty beyond losing its lift, and it can be re-run later.
+
+The only new state is `economy.software: string[]` (active ids); legacy saves default to the empty list.
+
+Accepted 2026-10-04 as the P4 slice. License costs, capability contributions, and discount factors are provisional tuning; tool authorship/provenance, player-tool trading, and vram-consuming local-model tools remain open for later slices.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

@@ -209,7 +209,12 @@ export interface UndergroundState {
 }
 
 export type LedgerDirection = "credit" | "debit";
-export type LedgerCauseKind = "contract" | "hardware" | "housing" | "upkeep";
+export type LedgerCauseKind =
+  | "contract"
+  | "hardware"
+  | "housing"
+  | "upkeep"
+  | "license";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -236,6 +241,11 @@ export interface EconomyState {
   hardware: OwnedHardware[];
   /** The catalog id of the held lease, or null for the free baseline. */
   housing: string | null;
+  /**
+   * Catalog ids of active software licenses, kept in catalog order. An empty
+   * list is the free baseline: no recurring license fees, no software lift.
+   */
+  software: string[];
 }
 
 export interface WorldState {
@@ -325,6 +335,7 @@ function createInitialEconomy(
     ledger: initial?.ledger ? structuredClone(initial.ledger) : [],
     hardware: initial?.hardware ? structuredClone(initial.hardware) : [],
     housing: initial?.housing ?? null,
+    software: initial?.software ? [...initial.software] : [],
   };
 }
 

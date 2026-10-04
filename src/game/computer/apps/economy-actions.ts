@@ -19,3 +19,17 @@ export function breakLeaseFromGui(): SimulationCommand {
     type: "breakLease",
   };
 }
+
+export function enableSoftwareFromGui(softwareId: string): SimulationCommand {
+  return {
+    type: "enableSoftware",
+    softwareId,
+  };
+}
+
+export function disableSoftwareFromGui(softwareId: string): SimulationCommand {
+  return {
+    type: "disableSoftware",
+    softwareId,
+  };
+}

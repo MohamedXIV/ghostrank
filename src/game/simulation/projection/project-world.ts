@@ -9,12 +9,15 @@ import {
 import { type HardwareCapability } from "@/game/simulation/systems/hardware";
 import {
   deriveLeaseCapability,
+  deriveSoftwareCapability,
   effectiveCapability,
 } from "@/game/simulation/systems/housing";
+import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
+import { HOUSING_CATALOG } from "@/content/housing-catalog";
 import {
-  HOUSING_CATALOG,
-  findHousingItem,
-} from "@/content/housing-catalog";
+  SOFTWARE_CATALOG,
+  actionDurationFactor,
+} from "@/content/software-catalog";
 import {
   RECON_ACTIONS,
   actionDuration,
@@ -211,15 +214,28 @@ export interface VisibleHousing {
   active: boolean;
 }
 
+export interface VisibleSoftwareListing {
+  id: string;
+  label: string;
+  dailyCost: number;
+  /** Flat capability contribution, if the license models raw capability. */
+  capability: HardwareCapability | null;
+  /** Multiplicative duration shortcut, if the license is an efficiency tool. */
+  discountFactor: number | null;
+  active: boolean;
+}
+
 export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
   lease: HardwareCapability;
+  software: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
   discoveryScope: number;
   currentHousingId: string | null;
   dailyCost: number;
   housing: VisibleHousing[];
+  softwareListings: VisibleSoftwareListing[];
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -533,14 +549,15 @@ function projectEconomy(
     }));
 
   const lease = deriveLeaseCapability(state.economy);
+  const software = deriveSoftwareCapability(state.economy);
   const capability = effectiveCapability(state.economy);
+  const factor = actionDurationFactor(state.economy.software);
   const actionMinutes = Object.fromEntries(
-    RECON_ACTIONS.map((action) => [action, actionDuration(action, capability)]),
+    RECON_ACTIONS.map((action) => [
+      action,
+      actionDuration(action, capability, factor),
+    ]),
   ) as Record<ReconAction, number>;
-
-  const housingItem = state.economy.housing
-    ? findHousingItem(state.economy.housing)
-    : undefined;
 
   const housing: VisibleHousing[] = HOUSING_CATALOG.map((item) => ({
     id: item.id,
@@ -550,15 +567,32 @@ function projectEconomy(
     active: state.economy.housing === item.id,
   }));
 
+  const softwareListings: VisibleSoftwareListing[] = SOFTWARE_CATALOG.map(
+    (item) => ({
+      id: item.id,
+      label: item.label,
+      dailyCost: item.dailyCost,
+      capability:
+        item.effect.kind === "capability"
+          ? { ...item.effect.capability }
+          : null,
+      discountFactor:
+        item.effect.kind === "modifier" ? item.effect.discount.factor : null,
+      active: state.economy.software.includes(item.id),
+    }),
+  );
+
   return {
     credits: state.economy.credits,
     capability,
     lease,
+    software,
     actionMinutes,
     discoveryScope: discoveryScope(capability.memory),
     currentHousingId: state.economy.housing,
-    dailyCost: housingItem?.dailyCost ?? 0,
+    dailyCost: recurringDailyCost(state.economy.housing, state.economy.software),
     housing,
+    softwareListings,
     hardware,
     catalog,
     ledger,

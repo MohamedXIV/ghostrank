@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  disableSoftwareFromGui,
+  enableSoftwareFromGui,
   rentHousingFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
@@ -62,6 +64,58 @@ describe("rent / lease commands", () => {
       "lease",
       "lease break now",
       "lease renew",
+    ]) {
+      expect(parseTerminalCommand(input)).toEqual({
+        ok: false,
+        error: "INVALID_ARGUMENT",
+      });
+    }
+  });
+});
+
+describe("use / stop software commands", () => {
+  it("shares enableSoftware between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("use software-net-monitor");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: {
+        type: "enableSoftware",
+        softwareId: "software-net-monitor",
+      },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(enableSoftwareFromGui("software-net-monitor")).toEqual(
+      terminal.command,
+    );
+  });
+
+  it("shares disableSoftware between Terminal and GUI", () => {
+    const terminal = parseTerminalCommand("stop software-net-monitor");
+
+    expect(terminal).toEqual({
+      ok: true,
+      command: {
+        type: "disableSoftware",
+        softwareId: "software-net-monitor",
+      },
+    });
+    if (!terminal.ok) {
+      throw new Error("expected terminal command");
+    }
+    expect(disableSoftwareFromGui("software-net-monitor")).toEqual(
+      terminal.command,
+    );
+  });
+
+  it("rejects malformed software arguments", () => {
+    for (const input of [
+      "use",
+      "use software-net-monitor software-auto-recon",
+      "stop",
+      "stop a b",
     ]) {
       expect(parseTerminalCommand(input)).toEqual({
         ok: false,

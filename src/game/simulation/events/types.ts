@@ -205,6 +205,13 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "SoftwareChanged";
+      softwareId: string;
+      active: boolean;
+      dailyCost: number;
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

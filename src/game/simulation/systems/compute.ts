@@ -84,10 +84,16 @@ export function actionBaseMinutes(action: ReconAction): number {
  * a pure function of the base table and the derived rig capability. Splitting a
  * wait or restoring a save cannot change it, because it does not depend on when
  * or how often it is read.
+ *
+ * `factor` carries the shortcut from efficiency-oriented software licenses:
+ * hardware minutes above the base are scaled by it (never dropping below the
+ * one-minute floor). At the default 1 — the no-license baseline — durations are
+ * exactly the P1 hardware table.
  */
 export function actionDuration(
   action: ReconAction,
   capability: HardwareCapability,
+  factor = 1,
 ): number {
   const base = ACTION_BASE_MINUTES[action];
   const axis = actionAxis(action, capability);
@@ -96,5 +102,11 @@ export function actionDuration(
     return base;
   }
 
-  return acceleratedMinutes(base, axis);
+  const hardwareMinutes = acceleratedMinutes(base, axis);
+
+  if (factor >= 1 || hardwareMinutes <= 1) {
+    return hardwareMinutes;
+  }
+
+  return Math.max(1, Math.ceil(hardwareMinutes * factor));
 }

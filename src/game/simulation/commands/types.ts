@@ -49,6 +49,14 @@ export type SimulationCommand =
       type: "breakLease";
     }
   | {
+      type: "enableSoftware";
+      softwareId: string;
+    }
+  | {
+      type: "disableSoftware";
+      softwareId: string;
+    }
+  | {
       type: "advanceTime";
       minutes: number;
     };

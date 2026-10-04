@@ -90,6 +90,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "ValueTransferred":
     case "HardwareAcquired":
     case "HousingChanged":
+    case "SoftwareChanged":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;

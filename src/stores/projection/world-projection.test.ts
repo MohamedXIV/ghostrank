@@ -97,7 +97,7 @@ describe("world projection store", () => {
           network: 0,
         },
         currentHousingId: "housing-rented-lab",
-        dailyCost: 60,
+        dailyCost: 160,
         housing: [
           {
             id: "housing-cowork-loft",
@@ -123,6 +123,37 @@ describe("world projection store", () => {
               storage: 1,
               network: 0,
             },
+            active: true,
+          },
+        ],
+        software: {
+          compute: 0,
+          memory: 0,
+          vram: 0,
+          storage: 0,
+          network: 0,
+        },
+        softwareListings: [
+          {
+            id: "software-net-monitor",
+            label: "Commercial Monitoring Suite",
+            dailyCost: 40,
+            capability: {
+              compute: 0,
+              memory: 0,
+              vram: 0,
+              storage: 0,
+              network: 2,
+            },
+            discountFactor: null,
+            active: false,
+          },
+          {
+            id: "software-analysis-pipeline",
+            label: "Optimized Analysis Pipeline",
+            dailyCost: 100,
+            capability: null,
+            discountFactor: 0.85,
             active: true,
           },
         ],
@@ -231,7 +262,7 @@ describe("world projection store", () => {
     });
     expect(store.getCell("meta", "world", "worldMinute")).toBe(45);
     expect(store.getCell("meta", "wallet", "credits")).toBe(320);
-    expect(store.getCell("meta", "wallet", "dailyCost")).toBe(60);
+    expect(store.getCell("meta", "wallet", "dailyCost")).toBe(160);
     expect(store.getCell("meta", "wallet", "currentHousingId")).toBe(
       "housing-rented-lab",
     );
@@ -255,6 +286,37 @@ describe("world projection store", () => {
       vram: 0,
       storage: 1,
       network: 0,
+    });
+    expect(store.getRow("rig", "softwareLift")).toEqual({
+      compute: 0,
+      memory: 0,
+      vram: 0,
+      storage: 0,
+      network: 0,
+    });
+    expect(store.getTable("software")).toEqual({
+      "software-net-monitor": {
+        label: "Commercial Monitoring Suite",
+        dailyCost: 40,
+        compute: 0,
+        memory: 0,
+        vram: 0,
+        storage: 0,
+        network: 2,
+        discountFactor: 1,
+        active: false,
+      },
+      "software-analysis-pipeline": {
+        label: "Optimized Analysis Pipeline",
+        dailyCost: 100,
+        compute: 0,
+        memory: 0,
+        vram: 0,
+        storage: 0,
+        network: 0,
+        discountFactor: 0.85,
+        active: true,
+      },
     });
     expect(store.getTable("hardware")).toEqual({
       "hw:1": {

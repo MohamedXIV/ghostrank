@@ -230,6 +230,23 @@ export function syncWorldProjection(
     ]),
   );
 
+  const softwareRows = Object.fromEntries(
+    projection.economy.softwareListings.map((listing) => [
+      listing.id,
+      {
+        label: listing.label,
+        dailyCost: listing.dailyCost,
+        compute: listing.capability?.compute ?? 0,
+        memory: listing.capability?.memory ?? 0,
+        vram: listing.capability?.vram ?? 0,
+        storage: listing.capability?.storage ?? 0,
+        network: listing.capability?.network ?? 0,
+        discountFactor: listing.discountFactor ?? 1,
+        active: listing.active,
+      },
+    ]),
+  );
+
   store.transaction(() => {
     store.setTable("player", {
       current: {
@@ -253,6 +270,7 @@ export function syncWorldProjection(
     store.setTable("catalog", catalogRows);
     store.setTable("ledger", ledgerRows);
     store.setTable("housing", housingRows);
+    store.setTable("software", softwareRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
     store.setCell(
       "meta",
@@ -289,6 +307,13 @@ export function syncWorldProjection(
         vram: projection.economy.lease.vram,
         storage: projection.economy.lease.storage,
         network: projection.economy.lease.network,
+      },
+      softwareLift: {
+        compute: projection.economy.software.compute,
+        memory: projection.economy.software.memory,
+        vram: projection.economy.software.vram,
+        storage: projection.economy.software.storage,
+        network: projection.economy.software.network,
       },
     });
     store.setCell(

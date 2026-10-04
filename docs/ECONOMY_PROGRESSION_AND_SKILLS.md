@@ -187,17 +187,18 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P3)
+## Implementation status (Phase 4 P0–P4)
 
-The economy substrate is live through P3. This section describes what the
+The economy substrate is live through P4. This section describes what the
 simulation actually does today; the sections above remain the design target for
 later slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
-  resulting balance, cause (`contract`, `hardware`, `housing`, or `upkeep`), and
-  counterparty. Credits can never go negative: a transfer that would take the
-  balance below zero is rejected and mutates nothing. There is no debt.
+  resulting balance, cause (`contract`, `hardware`, `housing`, `upkeep`, or
+  `license`), and counterparty. Credits can never go negative: a transfer that
+  would take the balance below zero is rejected and mutates nothing. There is
+  no debt.
 - **Income.** Contract delivery is the first income source and pays a
   deterministic amount — `80 + 40 × requiredServices` for a recon report, `260`
   for an intrusion. Payout is never random and never rank-dependent.
@@ -207,8 +208,8 @@ later slices.
   `buyHardware` command, shared by Terminal (`buy <catalog-id>`) and the Market
   app, and costing no world time.
 - **Capability, not level.** Rig capability is *derived* — the sum of owned
-  hardware plus the current lease (see P3) — it is never stored and never gates a
-  target or a purchase.
+  hardware, the current lease, and capability-bearing licenses (see P3/P4) — it
+  is never stored and never gates a target or a purchase.
 - **Compute budgeting (P1).** Capability's first consumer is operation speed:
   survey reads network, inspect/escalate read compute, and an action costs
   `max(1, ceil(base / capability))` world minutes above baseline (the starter
@@ -238,7 +239,22 @@ later slices.
   boundary, no debt, and no penalty beyond losing the capability lift. Housing is
   therefore always a lift, never a gate or a punishment; the Market app lists
   locations with MOVE IN / MOVE OUT and shows the current daily upkeep.
+- **Software marketplace (P4).** A second recurring sink that is *stackable*:
+  premium tool licenses (`src/content/software-catalog.ts`) make the same rig
+  more productive — capability tools (a monitoring suite lifts network, an
+  automation framework lifts memory/network) fold into the same effective
+  profile, and an efficiency tool (an analysis pipeline) multiplies derived
+  hardware action minutes by a discount factor, still respecting the
+  one-minute floor. Enabling (`use <id>`) and stopping (`stop <id>`) a license
+  cost nothing; the daily fee accrues only at world-day boundaries through the
+  same `advanceUpkeep` that also bills the lease — lease first (landlord),
+  licenses after (vendor), deterministic and split-invariant. Each obligation
+  is all-or-nothing: an unpayable license lapses just that one tool with no
+  debt and no penalty, and can be re-run later. Software is always a lift,
+  never a gate; the Market app lists tools with RUN / STOP and folds their cost
+  into the wallet's combined daily upkeep.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
-  wallet on legacy snapshots, so older saves resume cleanly. Durations and scope
-  derive at action time, so there is nothing to migrate; a legacy economy loads with
-  `housing: null` (the free baseline), and the held lease id round-trips with it.
+  wallet on legacy snapshots, so older saves resume cleanly. Durations, scope
+  and license effects derive at action time, so there is nothing to migrate; a
+  legacy economy loads with `housing: null` (the free baseline) and an empty
+  `software` list (no running tools).

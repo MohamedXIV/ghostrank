@@ -62,6 +62,18 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "lease":
       return parseLeaseCommand(args);
 
+    case "use":
+      return singleIdCommand(args, (softwareId) => ({
+        type: "enableSoftware",
+        softwareId,
+      }));
+
+    case "stop":
+      return singleIdCommand(args, (softwareId) => ({
+        type: "disableSoftware",
+        softwareId,
+      }));
+
     case "op":
       return parseOperationCommand(args);
 

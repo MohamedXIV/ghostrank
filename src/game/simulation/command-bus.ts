@@ -5,16 +5,15 @@ import {
   findCatalogItem,
 } from "@/content/hardware-catalog";
 import { transferValue } from "@/game/simulation/systems/economy";
-import {
-  advanceUpkeep,
-  effectiveCapability,
-} from "@/game/simulation/systems/housing";
+import { effectiveCapability } from "@/game/simulation/systems/housing";
+import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { findHousingItem } from "@/content/housing-catalog";
 import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
 import { discoveryScope } from "@/game/simulation/systems/scale";
+import { actionDurationFactor, findSoftwareItem } from "@/content/software-catalog";
 import {
   advanceUnderground,
   applyProvocation,
@@ -94,6 +93,12 @@ export class CommandBus {
 
       case "breakLease":
         return this.breakLease();
+
+      case "enableSoftware":
+        return this.enableSoftware(command.softwareId);
+
+      case "disableSoftware":
+        return this.disableSoftware(command.softwareId);
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
@@ -640,8 +645,74 @@ export class CommandBus {
     };
   }
 
+  private enableSoftware(softwareId: string): CommandResult {
+    const item = findSoftwareItem(softwareId);
+
+    if (!item) {
+      return this.failure("SOFTWARE_NOT_FOUND");
+    }
+
+    if (this.world.economy.software.includes(softwareId)) {
+      return this.failure("ALREADY_ACTIVE");
+    }
+
+    // Activating a license moves no credits in P4: the daily fee is levied at
+    // the next whole-day boundary through advanceUpkeep. The choice is free and
+    // reversible, so stacking or swapping tools never double-bills.
+    this.world.economy.software = [
+      ...this.world.economy.software,
+      item.id,
+    ];
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "SoftwareChanged",
+          softwareId: item.id,
+          active: true,
+          dailyCost: item.dailyCost,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private disableSoftware(softwareId: string): CommandResult {
+    const item = findSoftwareItem(softwareId);
+
+    if (!item) {
+      return this.failure("SOFTWARE_NOT_FOUND");
+    }
+
+    if (!this.world.economy.software.includes(softwareId)) {
+      return this.failure("NOT_RUNNING");
+    }
+
+    this.world.economy.software = this.world.economy.software.filter(
+      (candidate) => candidate !== item.id,
+    );
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "SoftwareChanged",
+          softwareId: item.id,
+          active: false,
+          dailyCost: 0,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
   private rigActionMinutes(action: ReconAction): number {
-    return actionDuration(action, effectiveCapability(this.world.economy));
+    return actionDuration(
+      action,
+      effectiveCapability(this.world.economy),
+      actionDurationFactor(this.world.economy.software),
+    );
   }
 
   private rigDiscoveryScope(): number {

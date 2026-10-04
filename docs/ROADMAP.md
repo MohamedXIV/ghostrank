@@ -202,6 +202,12 @@ P3 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-housing-costs.md`):
 - an unpayable boundary moves the player out instead of charging: back to the free baseline, no debt, no penalty beyond losing the lift — housing is capability, never a gate or a punishment,
 - new state is one nullable `housing` id on the economy (legacy saves load as the free baseline); new commands `rentHousing` (`rent <id>`) and `breakLease` (`lease break`) are shared by Terminal and the Market housing app, which shows listings, daily upkeep, and the lease lift inside RIG CAPABILITY.
 
+P4 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-software-market.md`):
+- a second recurring sink: stackable **software licenses** (`src/content/software-catalog.ts`) that make the same rig more productive — capability tools fold new axes into `effectiveCapability`, an efficiency tool multiplies derived hardware minutes by a discount factor — without ever gating a target,
+- a unified `advanceUpkeep` now bills the lease *and* every active license at each crossed world-day boundary (lease `upkeep`/landlord first, licenses `license`/vendor after), deterministic and split-invariant,
+- each obligation is all-or-nothing: an unpayable license lapses just that one tool (no debt, no penalty, re-runnable) while the rest keep running — software is a lift, never a punishment,
+- `use <id>` / `stop <id>` shared by Terminal and the Market SOFTWARE panel (RUN/STOP, combined daily upkeep in the wallet, lease + software lift annotated on RIG CAPABILITY); the only new state is a `software: string[]` id list that legacy saves default to empty.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,

@@ -39,7 +39,13 @@ describe("worldStateSchema", () => {
       knownTargetIds: [],
     });
 
-    expect(state.economy).toEqual({ credits: 0, ledger: [], hardware: [], housing: null });
+    expect(state.economy).toEqual({
+      credits: 0,
+      ledger: [],
+      hardware: [],
+      housing: null,
+      software: [],
+    });
   });
 
   it("round-trips credits, ledger entries and owned hardware", () => {
@@ -86,6 +92,68 @@ describe("worldStateSchema", () => {
     });
 
     expect(state.economy.housing).toBeNull();
+  });
+
+  it("defaults a legacy economy without software to no active licenses", () => {
+    const state = worldStateSchema.parse({
+      worldMinute: 30,
+      player: { handle: "CobaltXZ", rank: 100256 },
+      targets: [],
+      knownTargetIds: [],
+      economy: { credits: 100, ledger: [], hardware: [], housing: null },
+    });
+
+    expect(state.economy.software).toEqual([]);
+  });
+
+  it("round-trips active software licenses and license ledger causes", () => {
+    const state = worldStateSchema.parse({
+      worldMinute: 30,
+      player: { handle: "CobaltXZ", rank: 100256 },
+      targets: [],
+      knownTargetIds: [],
+      economy: {
+        credits: 100,
+        ledger: [
+          {
+            id: "value:1",
+            worldMinute: 1440,
+            direction: "debit",
+            amount: 40,
+            balanceAfter: 100,
+            cause: { kind: "license", id: "software-net-monitor" },
+            counterparty: "vendor",
+          },
+        ],
+        hardware: [],
+        housing: null,
+        software: ["software-net-monitor"],
+      },
+    });
+
+    expect(state.economy.software).toEqual(["software-net-monitor"]);
+    expect(state.economy.ledger[0]).toMatchObject({
+      cause: { kind: "license", id: "software-net-monitor" },
+      counterparty: "vendor",
+    });
+  });
+
+  it("rejects a non-array software list", () => {
+    expect(
+      worldStateSchema.safeParse({
+        worldMinute: 0,
+        player: { handle: "CobaltXZ", rank: 100256 },
+        targets: [],
+        knownTargetIds: [],
+        economy: {
+          credits: 0,
+          ledger: [],
+          hardware: [],
+          housing: null,
+          software: "software-net-monitor",
+        },
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects an empty housing id", () => {

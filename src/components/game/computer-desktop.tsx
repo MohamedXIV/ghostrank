@@ -19,6 +19,8 @@ import {
 import {
   breakLeaseFromGui,
   buyHardwareFromGui,
+  disableSoftwareFromGui,
+  enableSoftwareFromGui,
   rentHousingFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
@@ -236,6 +238,8 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
         "rent <housing-id>    sign a housing lease (recurring upkeep, capability lift)",
         "lease break          move out and return to the free baseline",
+        "use <software-id>    run a premium tool (recurring license fee)",
+        "stop <software-id>   stop a tool (its fee stops with it)",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -313,6 +317,10 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "lease signed // location capability active";
     case "breakLease":
       return "lease broken // back to the free baseline";
+    case "enableSoftware":
+      return "license activated // recurring fee starts at the next day";
+    case "disableSoftware":
+      return "license stopped // fee stops with it";
     case "advanceTime":
       return "world clock advanced";
   }
@@ -928,9 +936,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
   const scale = useRow("rig", "scale", runtime.projection);
   const lease = useRow("rig", "lease", runtime.projection);
+  const softwareLift = useRow("rig", "softwareLift", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const housingTable = useTable("housing", runtime.projection);
+  const softwareTable = useTable("software", runtime.projection);
   const ledgerTable = useTable("ledger", runtime.projection);
 
   const capability = [
@@ -941,12 +951,15 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     ["network", rig.network],
   ] as const;
 
-  const leaseRows = [
-    ["compute", lease.compute],
-    ["memory", lease.memory],
-    ["vram", lease.vram],
-    ["storage", lease.storage],
-    ["network", lease.network],
+  const liftRows = [
+    ["compute", Number(lease.compute ?? 0) + Number(softwareLift.compute ?? 0)],
+    ["memory", Number(lease.memory ?? 0) + Number(softwareLift.memory ?? 0)],
+    ["vram", Number(lease.vram ?? 0) + Number(softwareLift.vram ?? 0)],
+    [
+      "storage",
+      Number(lease.storage ?? 0) + Number(softwareLift.storage ?? 0),
+    ],
+    ["network", Number(lease.network ?? 0) + Number(softwareLift.network ?? 0)],
   ] as const;
 
   const ownedHardware = Object.entries(hardwareTable).sort(
@@ -961,6 +974,12 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   );
 
   const housing = Object.entries(housingTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+      idA.localeCompare(idB),
+  );
+
+  const software = Object.entries(softwareTable).sort(
     ([idA, a], [idB, b]) =>
       Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
       idA.localeCompare(idB),
@@ -997,10 +1016,10 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             </li>
           ))}
         </ul>
-        {leaseRows.some(([, value]) => Number(value ?? 0) > 0) && (
+        {liftRows.some(([, value]) => Number(value ?? 0) > 0) && (
           <p className="market-hint">
-            Includes lease lift:{" "}
-            {leaseRows
+            Includes lease + software lift:{" "}
+            {liftRows
               .filter(([, value]) => Number(value ?? 0) > 0)
               .map(([label, value]) => `${label} +${Number(value ?? 0)}`)
               .join(" · ")}
@@ -1185,6 +1204,76 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           never unlocks or blocks a target. Moving in, switching, or moving out
           costs nothing; rent is only levied at each world-day boundary. Miss a
           payment and you simply return to the free baseline. No debt, no gate.
+        </p>
+      </section>
+
+      <section aria-label="Software market">
+        <span className="panel-label">SOFTWARE // RECURRING</span>
+        {software.length === 0 ? (
+          <p className="market-empty">No tools listed.</p>
+        ) : (
+          <ul className="market-catalog">
+            {software.map(([id, entry]) => {
+              const cost = Number(entry.dailyCost ?? 0);
+              const active = entry.active === true;
+              const factor = Number(entry.discountFactor ?? 1);
+              const stats = [
+                ["cpu", entry.compute],
+                ["mem", entry.memory],
+                ["vrm", entry.vram],
+                ["sto", entry.storage],
+                ["net", entry.network],
+              ].filter(([, value]) => Number(value ?? 0) > 0);
+
+              return (
+                <li key={id} className={active ? "is-owned" : undefined}>
+                  <div>
+                    <span className="panel-label">{String(entry.label ?? id)}</span>
+                    <span>
+                      {factor < 1
+                        ? `×${factor} action time`
+                        : stats.length === 0
+                          ? "no capability lift"
+                          : stats
+                              .map(
+                                ([label, value]) =>
+                                  `${label} +${Number(value ?? 0)}`,
+                              )
+                              .join(" · ")}
+                    </span>
+                    <span className="market-time">
+                      {cost.toLocaleString("en-US")} cr / day
+                      {active ? " · running" : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    title={
+                      active
+                        ? "Stop this license (fee stops with it)"
+                        : "Run this license (fee starts at the next day)"
+                    }
+                    onClick={() =>
+                      runtime.execute(
+                        active
+                          ? disableSoftwareFromGui(id)
+                          : enableSoftwareFromGui(id),
+                      )
+                    }
+                  >
+                    {active ? "STOP" : "RUN"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="market-hint">
+          Premium tools make the same rig more productive — wider passes, faster
+          work — for a daily license fee. Running, swapping, or stopping a tool
+          costs nothing; only each world-day boundary bills. A fee you cannot
+          pay just lapses that one license. Tools never unlock or block a
+          target. No debt, no gate.
         </p>
       </section>
 
