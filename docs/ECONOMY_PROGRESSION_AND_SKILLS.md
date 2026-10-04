@@ -187,9 +187,9 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P1)
+## Implementation status (Phase 4 P0–P2)
 
-The economy substrate is live through P1. This section describes what the
+The economy substrate is live through P2. This section describes what the
 simulation actually does today; the sections above remain the design target for
 later slices.
 
@@ -216,6 +216,14 @@ later slices.
   money-vs-time trade: hardware buys elapsed time back, requirements and
   outcomes are untouched, and a weak rig is never slower than baseline. The
   Market app shows the rig's current per-action minutes.
+- **Workload scale (P2).** The memory axis decides how much one pass of
+  scoped work covers: `discoveryScope = max(1, floor(memory))`, so a survey
+  can discover several machines and an inspection several services in one
+  action, charging one pass's duration. The starter rig sits at scope 1 — the
+  original one-item-per-pass rhythm. Breadth, never a gate: every item is
+  discoverable on any rig; modest hardware just needs more passes, each
+  costing its own time. Market shows items-per-pass next to per-action
+  minutes; both halves of the money↔time trade are visible before buying.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations derive at
   action time, so there is nothing to migrate.

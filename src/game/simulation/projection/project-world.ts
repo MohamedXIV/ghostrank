@@ -15,6 +15,7 @@ import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
+import { discoveryScope } from "@/game/simulation/systems/scale";
 import {
   findCatalogItem,
   HARDWARE_CATALOG,
@@ -200,6 +201,7 @@ export interface EconomyProjection {
   credits: number;
   capability: HardwareCapability;
   actionMinutes: Record<ReconAction, number>;
+  discoveryScope: number;
   hardware: VisibleHardware[];
   catalog: VisibleCatalogItem[];
   ledger: VisibleLedgerEntry[];
@@ -521,6 +523,7 @@ function projectEconomy(
     credits: state.economy.credits,
     capability,
     actionMinutes,
+    discoveryScope: discoveryScope(capability.memory),
     hardware,
     catalog,
     ledger,

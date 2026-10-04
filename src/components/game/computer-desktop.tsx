@@ -225,8 +225,8 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         `> ${raw}`,
         "observe <target-id>  resolve a target profile",
         "op open <target-id>  start a recon-stage operation",
-        "survey <target-id>   discover one machine in the active operation (rig speed)",
-        "inspect <machine-id> inspect one known machine in the active operation (rig speed)",
+        "survey <target-id>   discover machines in the active operation (rig scale + speed)",
+        "inspect <machine-id> inspect known machines in the active operation (rig scale + speed)",
         "op escalate          cross the fictional recon boundary (rig speed)",
         "op exit              disengage from the active operation (3m)",
         "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
@@ -910,6 +910,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   );
   const rig = useRow("rig", "capability", runtime.projection);
   const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
+  const scale = useRow("rig", "scale", runtime.projection);
   const hardwareTable = useTable("hardware", runtime.projection);
   const catalogTable = useTable("catalog", runtime.projection);
   const ledgerTable = useTable("ledger", runtime.projection);
@@ -974,6 +975,20 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         <p className="market-hint">
           Better hardware works faster. It never unlocks or blocks a target —
           capability is speed and scale, not a level gate.
+        </p>
+      </section>
+
+      <section aria-label="Rig scale">
+        <span className="panel-label">RIG SCALE // ITEMS PER PASS</span>
+        <ul className="market-speed">
+          <li>
+            <span>SURVEY + INSPECT</span>
+            <strong>×{Number(scale.discoveryScope ?? 1)}</strong>
+          </li>
+        </ul>
+        <p className="market-hint">
+          Memory decides how many machines or services one pass covers. A modest
+          rig still discovers everything — it just needs more passes.
         </p>
       </section>
 

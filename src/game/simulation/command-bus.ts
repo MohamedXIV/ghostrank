@@ -10,6 +10,7 @@ import {
   actionDuration,
   type ReconAction,
 } from "@/game/simulation/systems/compute";
+import { discoveryScope } from "@/game/simulation/systems/scale";
 import {
   advanceUnderground,
   applyProvocation,
@@ -182,36 +183,40 @@ export class CommandBus {
       return this.failure("TARGET_NOT_OBSERVED");
     }
 
-    const machine = target.machines.find(
-      (candidate) => !this.hasEvidence("machine-presence", candidate.id),
-    );
+    const scope = this.rigDiscoveryScope();
+    const discovered = target.machines
+      .filter((candidate) => !this.hasEvidence("machine-presence", candidate.id))
+      .slice(0, scope);
 
-    if (!machine) {
+    if (discovered.length === 0) {
       return this.failure("NO_NEW_MACHINE_EVIDENCE");
     }
 
     const timeEvents = this.advanceWorldTime(this.rigActionMinutes("survey"));
 
-    this.recordEvidence({
-      id: `machine-presence:${machine.id}`,
-      kind: "machine-presence",
-      subjectId: machine.id,
-      confidence: "observed",
-      source: "direct-observation",
-      worldMinute: this.world.worldMinute,
-    });
+    const events: SimulationEvent[] = [...timeEvents];
+
+    for (const machine of discovered) {
+      this.recordEvidence({
+        id: `machine-presence:${machine.id}`,
+        kind: "machine-presence",
+        subjectId: machine.id,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+
+      events.push({
+        type: "MachineObserved",
+        targetId: target.id,
+        machineId: machine.id,
+        worldMinute: this.world.worldMinute,
+      });
+    }
 
     return {
       ok: true,
-      events: [
-        ...timeEvents,
-        {
-          type: "MachineObserved",
-          targetId: target.id,
-          machineId: machine.id,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+      events,
     };
   }
 
@@ -236,37 +241,41 @@ export class CommandBus {
       return this.failure("MACHINE_NOT_OBSERVED");
     }
 
-    const service = located.machine.services.find(
-      (candidate) => !this.hasEvidence("service-presence", candidate.id),
-    );
+    const scope = this.rigDiscoveryScope();
+    const discovered = located.machine.services
+      .filter((candidate) => !this.hasEvidence("service-presence", candidate.id))
+      .slice(0, scope);
 
-    if (!service) {
+    if (discovered.length === 0) {
       return this.failure("NO_NEW_SERVICE_EVIDENCE");
     }
 
     const timeEvents = this.advanceWorldTime(this.rigActionMinutes("inspect"));
 
-    this.recordEvidence({
-      id: `service-presence:${service.id}`,
-      kind: "service-presence",
-      subjectId: service.id,
-      confidence: "observed",
-      source: "direct-observation",
-      worldMinute: this.world.worldMinute,
-    });
+    const events: SimulationEvent[] = [...timeEvents];
+
+    for (const service of discovered) {
+      this.recordEvidence({
+        id: `service-presence:${service.id}`,
+        kind: "service-presence",
+        subjectId: service.id,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+
+      events.push({
+        type: "ServiceObserved",
+        targetId: located.target.id,
+        machineId: located.machine.id,
+        serviceId: service.id,
+        worldMinute: this.world.worldMinute,
+      });
+    }
 
     return {
       ok: true,
-      events: [
-        ...timeEvents,
-        {
-          type: "ServiceObserved",
-          targetId: located.target.id,
-          machineId: located.machine.id,
-          serviceId: service.id,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+      events,
     };
   }
 
@@ -572,6 +581,10 @@ export class CommandBus {
 
   private rigActionMinutes(action: ReconAction): number {
     return actionDuration(action, deriveRigCapability(this.world.economy));
+  }
+
+  private rigDiscoveryScope(): number {
+    return discoveryScope(deriveRigCapability(this.world.economy).memory);
   }
 
   private advanceWorldTime(minutes: number): SimulationEvent[] {

@@ -147,7 +147,15 @@ Derived rig capability is consumed as operation speed, never as an availability 
 
 Duration is derived at action time from owned hardware, so it adds no state, no events and no save-schema surface.
 
-Accepted 2026-10-04. The base table, axis mapping and the division curve are provisional tuning; memory/vram/storage axes still have no consumer and remain open.
+Accepted 2026-10-04. The base table, axis mapping and the division curve are provisional tuning; the vram/storage axes remain unconsumed (memory was consumed by D020) and contention remains open.
+
+## D020 — Workload scale model (Phase 4 P2)
+
+The memory axis is consumed as workload breadth: one scoped pass (survey over a target's machines, inspect over a machine's services) processes `max(1, floor(memory))` previously-undiscovered items, charges its action duration once, and emits one observation event per item. Baseline scope 1 is the starter rig, so Phase 2's one-item-per-pass behaviour is the untouched default. Scale is breadth, never a gate: every item is discoverable on any rig; modest hardware costs more passes and therefore more world time. Escalation and disengagement stay single-step moments.
+
+Scope derives at action time from owned hardware; no state, events or save-schema surface is added.
+
+Accepted 2026-10-04. The memory catalog values are provisional tuning; vram and storage remain unconsumed pending contention/background-workload and archive decisions.
 
 ## Open decisions
 

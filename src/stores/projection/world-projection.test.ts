@@ -88,6 +88,7 @@ describe("world projection store", () => {
           escalate: 2,
           disengage: 3,
         },
+        discoveryScope: 5,
         hardware: [
           {
             id: "hw:1",
@@ -206,6 +207,7 @@ describe("world projection store", () => {
       escalate: 2,
       disengage: 3,
     });
+    expect(store.getRow("rig", "scale")).toEqual({ discoveryScope: 5 });
     expect(store.getTable("hardware")).toEqual({
       "hw:1": {
         catalogId: "rig-starter",

@@ -251,6 +251,9 @@ export function syncWorldProjection(
         escalate: projection.economy.actionMinutes.escalate,
         disengage: projection.economy.actionMinutes.disengage,
       },
+      scale: {
+        discoveryScope: projection.economy.discoveryScope,
+      },
     });
     store.setCell(
       "meta",

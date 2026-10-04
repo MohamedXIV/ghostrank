@@ -191,6 +191,11 @@ P1 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-compute-budgeting.m
 - requirements and outcomes are untouched by hardware — no gates — and the Market app shows the rig's per-action minutes,
 - duration derives at action time: no new state, events, or save-schema surface.
 
+P2 delivered (see `docs/superpowers/plans/2026-10-04-phase-4-workload-scale.md`):
+- the memory axis now sets workload breadth: one survey pass can discover several machines and one inspection pass several services (`max(1, floor(memory))` items, one pass-duration per pass),
+- the starter rig sits at scope 1, so Phase 2's one-item-per-pass rhythm is untouched; scale saves passes and time, and every item stays discoverable on any rig — breadth, never a gate,
+- Market surfaces RIG SCALE (items per pass) beside RIG SPEED, so both halves of the money↔time trade are legible before buying.
+
 Deliverables:
 - hardware catalog,
 - compute budgeting,
