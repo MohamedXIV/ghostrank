@@ -207,6 +207,14 @@ The two sources are opposite economic shapes, each reusing an established templa
 
 Accepted 2026-10-04 as the P0 slice. Catalog names, prices, factors, and property bands are provisional tuning; compute contention (vram/storage consumers), fallible AI analysis, provider privacy/refusal/rate-limit drama, and NPC model use remain open for later slices.
 
+## D027 — Compute contention taxes a local model's shortcut, never the player (Phase 5 P1)
+
+The two capability axes Phase 4 P0 seeded and never consumed — `vram` and `storage` — finally get their reader, discharging the #22 *constraints* handoff: a running **local** model occupies a catalog footprint (`ModelListing.footprint`) on the player's own rig, and how well the derived pool (`effectiveCapability`) covers it decides how much of the model's advertised shortcut arrives (`min` of per-axis `have/need`, capped at 1; the scarcer axis bottlenecks). **Cloud models carry a zero footprint**: the provider hosts them, so renting never contends — the deliberate counterweight to their daily fee, completing the P0 rent-vs-property symmetry (rent costs credits and is rig-free; property is free to run and rig-hungry).
+
+The direction of the squeeze is the load-bearing decision. Contention scales only *the model's own factor*, sliding it from its catalog promise toward ×1 — the exact speed of running no model — so it is mathematically incapable of slowing any action below the no-model baseline, preserving the Phase 4 rule that hardware is a lift and never a punishment; a starved local model still runs, still helps less, never blocks, never bills. And it stays **pure derived physics**: no reservation state, no new commands (the `docs/AI_SYSTEMS.md` remedies — pause, drop quality, rent compute — map onto the already-shipped stop/switch/run and the existing GPU/storage purchases), one optional `pool` parameter on `combinedActionDurationFactor` whose absence reproduces P0 exactly, so every existing caller and the 28 P0 model tests stay untouched. The projection surfaces the choice before it costs anything: each listing shows its footprint and the factor *this rig* would deliver.
+
+Accepted 2026-10-04 as the P1 slice. Footprints and coverage math are provisional tuning; multi-tenant pressure on the pool arrives with P3's build queue (the designed next holder), and housing currently contributes storage but no content carries vram in a lease — a lab-with-accelerators beat, not a mechanic.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:

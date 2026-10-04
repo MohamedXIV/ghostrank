@@ -187,11 +187,12 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0)
+## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P1)
 
-The Phase 4 economy is live through P7, and Phase 5's model substrate through
-P0. This section describes what the simulation actually does today; the
-sections above remain the design target for later slices.
+The Phase 4 economy is live through P7, and Phase 5's model substrate (P0) and
+compute contention (P1) are live. This section describes what the simulation
+actually does today; the sections above remain the design target for later
+slices.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,
@@ -309,8 +310,26 @@ sections above remain the design target for later slices.
   listing shows its factor and rent-or-property price; the wallet's combined
   daily upkeep folds in a running cloud subscription). Model properties
   (reasoning/context/reliability) ship as seeded data nothing consumes yet —
-  reserved for the analysis and build slices, as vram/storage await the
-  contention slice — never a gate.
+  reserved for the analysis and build slices — never a gate.
+- **Compute contention (Phase 5 P1).** The `vram` and `storage` axes — summed
+  by every catalog since the substrate but read by nothing until now — became
+  live consumers, discharging the #22 *constraints* handoff and turning
+  hardware into a decision rather than a passive bonus. A running **local**
+  model occupies a footprint on the player's own rig, and how well the rig's
+  pool covers it decides how much of the model's advertised shortcut actually
+  arrives: the scarcer of the two axes bottlenecks (a `min` of coverage). A
+  fully-provisioned rig gets the full factor, a starved one drifts to ×1 —
+  exactly the speed of running no model — so contention **taxes only the
+  model's own shortcut, never the player below the baseline** (the standing
+  lift-never-punishment rule) and a starved model stays runnable, helps less,
+  and never blocks or bills. **Cloud models carry a zero footprint**: the
+  provider hosts them, so renting never contends with the rig — the
+  counterweight to their daily fee (rent costs credits and is rig-free;
+  property runs free and is rig-hungry). This is pure derived physics — no
+  reservation, no new state or commands (feed the pool with the existing GPU
+  and storage buys, stop the model, or rent from the cloud) — and the Market
+  listings show each model's footprint and the factor *this rig* would deliver,
+  making the feed-it-or-rent-it choice legible before it costs anything.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;

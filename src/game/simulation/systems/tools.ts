@@ -1,11 +1,13 @@
 import type { HardwareCapability } from "@/content/hardware-catalog";
-import { modelEffectOf } from "@/content/model-catalog";
+import { findModelItem } from "@/content/model-catalog";
 import { playerToolEffects } from "@/content/player-tool-catalog";
 import {
   actionDurationFactor,
   combineCapabilities,
   combineFactors,
+  type SoftwareEffect,
 } from "@/content/software-catalog";
+import { contestedModelFactor } from "@/game/simulation/systems/contention";
 import type { EconomyState } from "@/game/simulation/state/world-state";
 
 /**
@@ -34,15 +36,43 @@ export function derivePlayerToolCapability(
  * neither automation, a resale tool, nor an AI assistant can make work free;
  * the one-minute floor belongs to P1. No model running — the baseline — adds
  * exactly nothing, so pre-Phase-5 durations are untouched.
+ *
+ * When a `pool` is passed (the derived rig capability), the running model's
+ * shortcut is first reduced by *contention* (Phase 5 P1): a local model only
+ * delivers its advertised speed to the extent the rig's VRAM and storage cover
+ * its footprint, and a starved one drifts toward ×1 — the no-model baseline —
+ * never below it. A cloud model has a zero footprint, so it is never contended
+ * by the player's own rig. With no `pool`, or no model running, the factor is
+ * exactly the licenses × tools × catalog-model composition of P0, so every
+ * existing caller and test is untouched.
  */
 export function combinedActionDurationFactor(
   economy: EconomyState,
+  pool?: HardwareCapability,
 ): number {
   const licenseFactor = actionDurationFactor(economy.software);
   const toolEffects = playerToolEffects(
     economy.playerTools.map((tool) => tool.catalogId),
   );
-  const modelEffect = modelEffectOf(economy.activeModel);
+
+  const model = economy.activeModel
+    ? findModelItem(economy.activeModel)
+    : undefined;
+  const modelEffects: SoftwareEffect[] = [];
+
+  if (model && model.effect.kind === "modifier") {
+    const catalogFactor = model.effect.discount.factor;
+    const delivered = pool
+      ? contestedModelFactor(catalogFactor, model.footprint, pool)
+      : catalogFactor;
+
+    if (delivered < 1) {
+      modelEffects.push({
+        kind: "modifier",
+        discount: { kind: "action-duration", factor: delivered },
+      });
+    }
+  }
 
   return combineFactors([
     {
@@ -50,7 +80,7 @@ export function combinedActionDurationFactor(
       discount: { kind: "action-duration", factor: licenseFactor },
     },
     ...toolEffects,
-    ...(modelEffect ? [modelEffect] : []),
+    ...modelEffects,
   ]);
 }
 

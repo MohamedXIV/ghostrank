@@ -1138,10 +1138,14 @@ export class CommandBus {
   }
 
   private rigActionMinutes(action: ReconAction): number {
+    // Phase 5 P1: the rig's vram/storage pool contends a running local model,
+    // so the duration factor is read against the same derived pool.
+    const capability = effectiveCapability(this.world.economy);
+
     return actionDuration(
       action,
-      effectiveCapability(this.world.economy),
-      combinedActionDurationFactor(this.world.economy),
+      capability,
+      combinedActionDurationFactor(this.world.economy, capability),
     );
   }
 

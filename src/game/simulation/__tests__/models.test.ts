@@ -3,12 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CommandBus } from "@/game/simulation/command-bus";
 import { createGameRuntime } from "@/game/runtime/game-runtime";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
-import {
-  MODEL_CATALOG,
-  PROVIDER_COUNTERPARTY,
-  findModelItem,
-  modelEffectOf,
-} from "@/content/model-catalog";
+import { MODEL_CATALOG, PROVIDER_COUNTERPARTY, findModelItem } from "@/content/model-catalog";
 import { VENDOR_COUNTERPARTY } from "@/content/software-catalog";
 import { MARKET_COUNTERPARTY } from "@/content/hardware-catalog";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
@@ -71,11 +66,9 @@ describe("model catalog", () => {
     }
   });
 
-  it("findModelItem and modelEffectOf skip unknown ids and the empty slot", () => {
+  it("findModelItem skips unknown ids", () => {
     expect(findModelItem(CLOUD_FRONTIER)?.label).toBe("Frontier Class API");
     expect(findModelItem("model-nonexistent")).toBeUndefined();
-    expect(modelEffectOf(null)).toBeUndefined();
-    expect(modelEffectOf("model-nonexistent")).toBeUndefined();
   });
 
   it("no model running is identity: the factor stays exactly 1", () => {

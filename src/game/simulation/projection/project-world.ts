@@ -9,7 +9,8 @@ import {
 import {
   deriveMachineCapability,
   type HardwareCapability,
-} from "@/game/simulation/systems/hardware";import {
+} from "@/game/simulation/systems/hardware";
+import {
   deriveLeaseCapability,
   deriveSoftwareCapability,
   effectiveCapability,
@@ -36,8 +37,10 @@ import {
 } from "@/content/machine-catalog";
 import {
   MODEL_CATALOG,
+  type ModelFootprint,
   type ModelSource,
 } from "@/content/model-catalog";
+import { contestedModelFactor } from "@/game/simulation/systems/contention";
 import {
   SOFTWARE_CATALOG,
   type SoftwareEffect,
@@ -310,8 +313,17 @@ export interface VisibleModelListing {
   cost: number;
   /** Credits per crossed world day while running; 0 for a local model. */
   dailyCost: number;
-  /** The speed shortcut this model applies while running (< 1 is faster). */
+  /** The catalog shortcut this model advertises while running (< 1 is faster). */
   factor: number;
+  /**
+   * The shortcut this model would *actually deliver on the current rig*, after
+   * Phase 5 P1 contention. A cloud model always matches `factor` (no rig
+   * footprint); an under-provisioned rig delivers closer to 1 — the speed of
+   * running nothing — and never below it.
+   */
+  deliveredFactor: number;
+  /** The rig resources this model occupies while running (0/0 for cloud). */
+  footprint: ModelFootprint;
   /** True for an owned local copy; always false for a cloud model. */
   owned: boolean;
   running: boolean;
@@ -678,7 +690,11 @@ function projectEconomy(
   const playerTools = derivePlayerToolCapability(state.economy);
   const ownedMachineCapability = deriveMachineCapability(state.economy);
   const capability = effectiveCapability(state.economy);
-  const factor = combinedActionDurationFactor(state.economy);
+  // Phase 5 P1: a running local model contends with the rig's vram/storage
+  // pool, so both the combined factor and each listing's *delivered* factor
+  // are read against the derived pool. Cloud footprints are zero, so renting
+  // is never contended by the player's own hardware.
+  const factor = combinedActionDurationFactor(state.economy, capability);
   const actionMinutes = Object.fromEntries(
     RECON_ACTIONS.map((action) => [
       action,
@@ -786,20 +802,31 @@ function projectEconomy(
     }),
   );
 
-  // Models list every catalog entry with its two-state tag. The running model's
-  // shortcut is shown per listing so the player can compare before starting —
-  // `factor` above is the *combined* result of licenses × tools × this model.
-  const modelListings: VisibleModelListing[] = MODEL_CATALOG.map((item) => ({
-    id: item.id,
-    label: item.label,
-    source: item.source,
-    cost: item.cost,
-    dailyCost: item.dailyCost,
-    factor:
-      item.effect.kind === "modifier" ? item.effect.discount.factor : 1,
-    owned: state.economy.ownedModels.includes(item.id),
-    running: state.economy.activeModel === item.id,
-  }));
+  // Models list every catalog entry with its two-state tag. The catalog factor
+  // is what the model advertises; the *delivered* factor is what this rig
+  // actually gives it after contention — `factor` above is the *combined*
+  // result of licenses × tools × the running model's delivered shortcut.
+  const modelListings: VisibleModelListing[] = MODEL_CATALOG.map((item) => {
+    const catalogFactor =
+      item.effect.kind === "modifier" ? item.effect.discount.factor : 1;
+
+    return {
+      id: item.id,
+      label: item.label,
+      source: item.source,
+      cost: item.cost,
+      dailyCost: item.dailyCost,
+      factor: catalogFactor,
+      deliveredFactor: contestedModelFactor(
+        catalogFactor,
+        item.footprint,
+        capability,
+      ),
+      footprint: { ...item.footprint },
+      owned: state.economy.ownedModels.includes(item.id),
+      running: state.economy.activeModel === item.id,
+    };
+  });
 
   return {
     credits: state.economy.credits,

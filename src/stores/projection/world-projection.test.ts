@@ -271,6 +271,10 @@ describe("world projection store", () => {
             cost: 0,
             dailyCost: 120,
             factor: 0.7,
+            // Cloud runs on the provider's hardware: no rig footprint, so no
+            // contention — it delivers its advertised shortcut on any rig.
+            deliveredFactor: 0.7,
+            footprint: { vram: 0, storage: 0 },
             owned: false,
             running: true,
           },
@@ -281,6 +285,11 @@ describe("world projection store", () => {
             cost: 900,
             dailyCost: 0,
             factor: 0.9,
+            // This fixture's rig has vram 0 / storage 2 against a 2/1
+            // footprint: VRAM bottlenecks coverage to 0, so the starved local
+            // model drifts to the no-model baseline of exactly 1.
+            deliveredFactor: 1,
+            footprint: { vram: 2, storage: 1 },
             owned: true,
             running: false,
           },
@@ -466,6 +475,9 @@ describe("world projection store", () => {
         cost: 0,
         dailyCost: 120,
         factor: 0.7,
+        deliveredFactor: 0.7,
+        vram: 0,
+        storage: 0,
         owned: false,
         running: true,
       },
@@ -475,6 +487,9 @@ describe("world projection store", () => {
         cost: 900,
         dailyCost: 0,
         factor: 0.9,
+        deliveredFactor: 1,
+        vram: 2,
+        storage: 1,
         owned: true,
         running: false,
       },

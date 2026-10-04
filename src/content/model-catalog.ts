@@ -15,10 +15,16 @@ import type { SoftwareEffect } from "@/content/software-catalog";
  * - **cloud** models are *rent*: no acquisition cost, running one moves no
  *   credits, and the subscription bills every crossed world-day boundary while
  *   it runs. An unpayable boundary **lapses** the model — stop, no debt, no
- *   penalty beyond losing the speed — the license semantics, unchanged.
+ *   penalty beyond losing the speed — the license semantics, unchanged. Cloud
+ *   models run on the provider's hardware, so they carry **no rig footprint**
+ *   and never contend with the player's own VRAM or storage.
  * - **local** models are *property*: a one-time acquisition debit, then
- *   running them costs nothing forever. The hardware footprint they impose is
- *   the next slice's (compute contention), not this one's.
+ *   running them costs nothing forever — but they occupy the player's
+ *   **VRAM and storage**, and Phase 5 P1 contention turns that footprint into
+ *   a real decision: a rig whose pool covers the footprint delivers the model's
+ *   full shortcut, a rig that under-provisions it delivers only part of it
+ *   (never less than running no model at all). Buying the GPU is how you pay
+ *   for the speed locally instead of renting it.
  *
  * Model *properties* (reasoning, context, reliability) are catalog data seeded
  * now so later slices — AI analysis that can be wrong, builds whose defects
@@ -44,6 +50,13 @@ export interface ModelProperties {
   reliability: number;
 }
 
+export interface ModelFootprint {
+  /** VRAM units the model occupies on the host rig while running. */
+  vram: number;
+  /** Storage units the weights and working set occupy on the host rig. */
+  storage: number;
+}
+
 export interface ModelListing {
   id: string;
   label: string;
@@ -59,6 +72,15 @@ export interface ModelListing {
   effect: SoftwareEffect;
   /** Catalog data reserved for the AI-analysis and build slices. */
   properties: ModelProperties;
+  /**
+   * The rig footprint while running (Phase 5 P1 contention). A *cloud* model
+   * runs on the provider's hardware — its footprint here is 0/0, which is
+   * exactly why renting never contends with the rig. A *local* model occupies
+   * VRAM and storage on the player's own machines; how well the rig's pool
+   * covers that footprint decides how much of the model's shortcut actually
+   * arrives (see `systems/contention.ts`). Provisional tuning.
+   */
+  footprint: ModelFootprint;
 }
 
 export const MODEL_CATALOG: readonly ModelListing[] = [
@@ -73,6 +95,8 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
       discount: { kind: "action-duration", factor: 0.7 },
     },
     properties: { reasoning: 5, context: 4, reliability: 3 },
+    // A cloud frontier model runs entirely on the provider's hardware.
+    footprint: { vram: 0, storage: 0 },
   },
   {
     id: "model-cloud-compact",
@@ -85,6 +109,7 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
       discount: { kind: "action-duration", factor: 0.85 },
     },
     properties: { reasoning: 3, context: 2, reliability: 4 },
+    footprint: { vram: 0, storage: 0 },
   },
   {
     id: "model-local-workhorse",
@@ -97,6 +122,8 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
       discount: { kind: "action-duration", factor: 0.9 },
     },
     properties: { reasoning: 3, context: 2, reliability: 4 },
+    // A modest, well-quantized local model: a small but real footprint.
+    footprint: { vram: 2, storage: 1 },
   },
   {
     id: "model-local-tuned",
@@ -109,24 +136,21 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
       discount: { kind: "action-duration", factor: 0.8 },
     },
     properties: { reasoning: 4, context: 3, reliability: 2 },
+    // The bigger local model is faster still, but demands more of the rig.
+    footprint: { vram: 4, storage: 2 },
   },
 ];
 
 /** The recurring counterparty for cloud subscriptions: the providers. */
 export const PROVIDER_COUNTERPARTY = "provider";
 
+/**
+ * The raw catalog entry for a model id, or `undefined` for an unknown id.
+ * Content stays pure: it takes the plain id, never game state, so a stale save
+ * reference resolves to nothing rather than breaking a fold. The *delivered*
+ * effect (which depends on the rig's contention) is computed in the simulation
+ * layer, not here.
+ */
 export function findModelItem(modelId: string): ModelListing | undefined {
   return MODEL_CATALOG.find((item) => item.id === modelId);
-}
-
-/**
- * The effect of the running model, or `undefined` for the no-model baseline.
- * Content stays pure: it takes the plain id, never game state, and unknown ids
- * are inert — a stale save reference contributes no factor rather than
- * breaking the fold.
- */
-export function modelEffectOf(
-  modelId: string | null,
-): SoftwareEffect | undefined {
-  return modelId ? findModelItem(modelId)?.effect : undefined;
 }

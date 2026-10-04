@@ -244,7 +244,7 @@ Exit criteria:
 
 ## Phase 5 — AI Economy and Software Creation
 
-**Status: in progress — P0 delivered. Tracked by #23 (unblocked by #22).**
+**Status: in progress — P0 and P1 delivered. Tracked by #23 (unblocked by #22).**
 
 Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-phase-5-plan.md` — P0 model catalog/substrate, P1 compute contention (vram/storage become live; carries the *constraints* handoff from #22), P2 AI analysis, P3 software spec + workflow/IR build system (carries the *author* handoff from #22), P4 marketplace + NPC AI use. Proficiency is explicitly deferred until playtesting earns it.
 
@@ -254,6 +254,12 @@ P0 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-models.md`):
 - starting, switching, and stopping move no credits and cannot double-bill; `model buy <id>` / `model run <id>` / `model stop` (argument-free — the slot holds exactly one) are shared by Terminal and the Market AI MODELS panel, which shows each model's factor, its rent-or-property price shape, and owned/running state;
 - model *properties* (reasoning/context/reliability, 1–5 bands) ship as seeded catalog data consumed by no one yet — stated plainly, reserved for P2 analysis and P3 builds; the hardware footprint waits for P1 contention, so both #22 handoffs stay on-map;
 - the `provider` joins the value graph as a fifth institution role, and the wallet's combined daily upkeep now folds lease + licenses + a running cloud subscription.
+
+P1 delivered (see `docs/superpowers/plans/2026-10-04-phase-5-contention.md`) — **the #22 constraints handoff, discharged**:
+- **compute contention** makes the two dead axes live at last: `vram` and `storage`, summed by every Phase 4 catalog since P0 but read by no one, now decide how much of a running *local* model's shortcut the rig actually delivers (footprint `2/1` workhorse, `4/2` tuned; cloud carries `0/0` — the provider hosts it, so renting never contends, the counterweight to its daily fee);
+- contention scales only *the model's own factor* between its catalog promise and ×1 — the speed of running nothing — so it is mathematically incapable of slowing a player below baseline (the standing lift-never-punishment rule) and a starved model stays runnable: it helps less, never blocks, never bills;
+- pure derived physics: zero new state, reservation, or save surface — deterministic by construction, with remedies that are already-shipped choices (buy GPUs/storage, stop the model, rent from the cloud) rather than new commands, and the scarcer axis bottlenecks via `min` across the pool;
+- one optional `pool` parameter on `combinedActionDurationFactor` plus the two real consumers (command bus, projection) means every existing caller behaves exactly as before — the 28 P0 model tests and 26 tool tests re-ran untouched — while listings, the `rig.assistant` row, and a new Market "rig load / your rig / delivers ×" line make the feed-it-or-rent-it decision legible before spending.
 
 Deliverables:
 - cloud/local model choices,

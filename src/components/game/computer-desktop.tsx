@@ -1693,6 +1693,10 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             const running = Boolean(entry.running ?? false);
             const cloud = String(entry.source ?? "cloud") === "cloud";
             const factor = Number(entry.factor ?? 1);
+            const delivered = Number(entry.deliveredFactor ?? factor);
+            // Contention pulls a local model's delivered shortcut toward ×1;
+            // "starved" means the rig covers less than the model asked for.
+            const starved = !cloud && delivered > factor;
 
             return (
               <li key={id} className={running ? "is-owned" : undefined}>
@@ -1702,7 +1706,20 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                   </span>
                   <span>
                     analysis ×{factor} action minutes
+                    {starved && (
+                      <>
+                        {" — this rig delivers "}
+                        <strong>×{delivered}</strong>
+                      </>
+                    )}
                   </span>
+                  {!cloud && (
+                    <span className="market-time">
+                      rig load {Number(entry.vram ?? 0)} vram /{" "}
+                      {Number(entry.storage ?? 0)} storage · your rig{" "}
+                      {Number(rig.vram ?? 0)} / {Number(rig.storage ?? 0)}
+                    </span>
+                  )}
                   <span className="market-time">
                     {cloud
                       ? `${perDay.toLocaleString("en-US")} cr / day while running`
@@ -1726,7 +1743,9 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                     title={
                       cloud
                         ? "Start renting this cloud model (bills daily while it runs)"
-                        : "Run this owned model (costs nothing)"
+                        : starved
+                          ? "Run this owned model — your rig under-provisions it, so it helps less"
+                          : "Run this owned model (costs nothing)"
                     }
                   >
                     RUN
@@ -1754,9 +1773,14 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           the minutes accelerated actions cost, composed with your licenses and
           tools under the same one-minute floor. Cloud models rent — starting or
           stopping moves nothing, the fee lands at each crossed day and an
-          unpayable one simply stops the model. Local models are property — one
-          purchase, then running them is free forever. No model at all is the
-          baseline, and an assistant never unlocks or blocks a target.
+          unpayable one simply stops the model; they run on the provider&apos;s
+          hardware, so your rig never contends with them. Local models are
+          property — one purchase, then running them is free forever — but they
+          occupy your VRAM and storage: a rig that covers the footprint gets the
+          full shortcut, one that under-provisions it gets less, never worse
+          than running nothing at all. Buy GPUs and storage to feed a local
+          model, or rent the speed from the cloud instead. No model at all is
+          the baseline, and an assistant never unlocks or blocks a target.
         </p>
       </section>
 
