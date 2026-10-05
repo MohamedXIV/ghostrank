@@ -297,6 +297,7 @@ describe("world projection store", () => {
               storage: 2,
               network: 1,
             },
+            exotic: false,
           },
           {
             id: "box-burner",
@@ -310,6 +311,7 @@ describe("world projection store", () => {
               storage: 1,
               network: 1,
             },
+            exotic: false,
           },
         ],
         modelListings: [
