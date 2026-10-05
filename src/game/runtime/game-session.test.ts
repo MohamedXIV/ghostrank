@@ -313,4 +313,49 @@ describe("GameSession", () => {
       triggeredWorldMinute: 28,
     });
   });
+  it("recovers a terminal active snapshot into completed-run history on boot", async () => {
+    const ended = createInitialWorldState({
+      worldMinute: 720,
+      run: {
+        status: "ended",
+        ending: {
+          id: "run-ending:1",
+          kind: "compromised",
+          causeKind: "compromise",
+          causeId: "compromise:1",
+          worldMinute: 720,
+        },
+      },
+    });
+    let active: typeof ended | null = structuredClone(ended);
+    const history: typeof ended[] = [];
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        active ? structuredClone(active) : null,
+      saveActiveState: async (state) => {
+        active = structuredClone(state);
+      },
+      completeRun: async (state) => {
+        history.push(structuredClone(state));
+        active = null;
+      },
+      loadCompletedStates: async () => structuredClone(history),
+    };
+
+    const session = await createGameSession({
+      initialState: createInitialWorldState(),
+      persistence,
+    });
+
+    expect(session.snapshot().run.status).toBe("ended");
+    expect(active).toBeNull();
+    expect(await session.history()).toEqual([ended]);
+    expect(session.execute({ type: "advanceTime", minutes: 1 })).toEqual({
+      ok: false,
+      events: [],
+      error: "RUN_ENDED",
+    });
+  });
+
 });
