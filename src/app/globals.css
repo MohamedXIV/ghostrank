@@ -255,6 +255,13 @@ button {
   height: min(66vh, 600px);
 }
 
+.os-window-history {
+  top: 9%;
+  left: 20%;
+  width: min(52vw, 700px);
+  height: min(72vh, 650px);
+}
+
 .window-titlebar {
   height: 34px;
   display: flex;
@@ -821,6 +828,46 @@ button {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
+}
+
+/* Run history */
+
+.history-app {
+  height: 100%;
+  overflow: auto;
+  padding: 14px;
+}
+
+.history-runs {
+  display: grid;
+  gap: 12px;
+}
+
+.history-run {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 12px;
+}
+
+.history-run-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.history-run-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.history-postmortem {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
 }
 
 /* Market */
