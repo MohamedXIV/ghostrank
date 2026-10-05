@@ -108,6 +108,9 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "NpcAssistantAdopted":
     case "CompromiseRecorded":
     case "RunEnded":
+    case "RetirementPlanned":
+    case "RetirementCoolingStarted":
+    case "RetirementCancelled":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;
