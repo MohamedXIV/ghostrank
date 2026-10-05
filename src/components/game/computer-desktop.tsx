@@ -2303,6 +2303,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
               const cost = Number(entry.cost ?? 0);
               const affordable = credits >= cost;
               const owned = Number(entry.ownedCount ?? 0);
+              const exotic = entry.exotic === true;
               const stats = [
                 ["cpu", entry.compute],
                 ["mem", entry.memory],
@@ -2318,6 +2319,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                 >
                   <div>
                     <span className="panel-label">
+                      {exotic ? "EXOTIC // " : ""}
                       {String(entry.label ?? id)}
                     </span>
                     <span>
@@ -2333,6 +2335,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                     <span className="market-time">
                       {cost.toLocaleString("en-US")} cr one-time
                       {owned > 0 ? ` · owned ×${owned}` : ""}
+                      {exotic ? " · one-shot off-market stock" : ""}
                     </span>
                   </div>
                   <button
@@ -2353,11 +2356,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           </ul>
         )}
         <p className="market-hint">
-          A machine is a whole named box — buy as many racks as you can afford,
-          rename each so you remember what it is for, and sell it back through
-          the fence for half of what you paid. Every owned box folds into the
-          same rig profile that drives speed and scale: multiple machines
-          multiply your capability, never unlock or block a target.
+          A machine is a whole named box. Standard stock can be bought in
+          multiples; rare off-market stock appears only when this run has earned
+          it and can be claimed once. Every box still folds into the same rig
+          capability profile — exotic hardware adds no new attack verb, success
+          roll, or target gate.
         </p>
       </section>
 
