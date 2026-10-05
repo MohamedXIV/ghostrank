@@ -69,10 +69,10 @@ world days.
 ### Contractor
 
 - 28/32 end **ARRESTED**, 4/32 remain active;
-- median run: 26,640 minutes (18.5 days);
+- median run: 25,920 minutes (18 days);
 - 797 accepted and 797 completed contracts across the sample;
-- median final credits: 3,880;
-- median rank-number improvement: 9,617;
+- median final credits: 3,750;
+- median rank-number improvement: 9,239;
 - 25/32 finish in VETERAN pressure;
 - totals: 426 escalations, 403 probes, 258 physical threats, 57 compromise
   records, 96 surfaced investigation signals and 224 retaliations.
@@ -83,10 +83,10 @@ contract mix drives substantial intrusive exposure.
 ### Reckless
 
 - 28/32 end **ARRESTED**, 2/32 **STRANDED**, 2/32 remain active;
-- median run: 22,320 minutes (15.5 days);
+- median run: 22,140 minutes (~15.4 days);
 - 709/709 accepted contracts complete;
-- median final credits: 3,620;
-- median rank-number improvement: 2,336;
+- median final credits: 3,390;
+- median rank-number improvement: 2,322;
 - totals: 475 escalations, 336 probes, 221 physical threats, 60 compromise
   records and 236 retaliations.
 
@@ -95,10 +95,10 @@ contract mix drives substantial intrusive exposure.
 - 20/32 reach **RETIRED**;
 - 12/32 end **ARRESTED** before retirement;
 - no sample remains active at the horizon;
-- median run: 23,187 minutes (~16.1 days);
+- median run: 23,186.5 minutes (~16.1 days);
 - 356 completed contracts;
-- median final credits: 1,940;
-- median rank-number improvement: 4,007;
+- median final credits: 1,930;
+- median rank-number improvement: 3,997;
 - 25/32 finish in VETERAN pressure.
 
 No VANISHED result appears under this deliberately generic policy; P1 does not
@@ -147,6 +147,8 @@ P1 tests pin:
 - contractor earns real contract income/rank movement and discovers content;
 - reckless produces real threat activity;
 - career-exit reaches actual retirement in at least part of the seed set;
-- numeric summaries remain non-negative and ordered.
+- numeric summaries remain non-negative and ordered;
+- even-sized numeric samples use the mathematical median;
+- career-exit never advances beyond the requested telemetry horizon.
 
 Full web CI remains the normal acceptance gate.
