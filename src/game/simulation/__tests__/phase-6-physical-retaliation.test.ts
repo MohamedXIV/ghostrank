@@ -8,6 +8,7 @@ import {
   advanceBuilds,
   settledBuildDueMinute,
 } from "@/game/simulation/systems/builds";
+import { derivePresence } from "@/game/simulation/systems/location";
 import {
   applyActiveOutageToBuild,
   PHYSICAL_ASSISTANT_ADOPTION_PERCENT,
@@ -61,6 +62,9 @@ function physicalWorld(
       actorId: ACTOR_ID,
       subject,
       correct,
+      ...(subject === "dwelling"
+        ? { locationId: derivePresence(state.economy.housing).locationId }
+        : {}),
       worldMinute: 0,
     },
   ];
@@ -230,6 +234,7 @@ describe("Phase 6 P3 — physical retaliation", () => {
     expect(state.builds[0]).toMatchObject({
       ...frozen,
       pausedAtWorldMinute: 360,
+      pausedByThreatId: "physical:1",
     });
     expect(state.builds[0]!.dueWorldMinute).toBe(frozen!.dueWorldMinute);
     expect(state.builds[0]!.outcome).toBe(frozen!.outcome);
@@ -288,11 +293,64 @@ describe("Phase 6 P3 — physical retaliation", () => {
     expect(state.builds[0]).toMatchObject({
       dueWorldMinute: 484,
       pausedAtWorldMinute: 400,
+      pausedByThreatId: "physical:1",
       outcome: "warnings",
     });
     expect(state.physicalThreats[0]!.affectedBuildIds).toContain(
       "workflow:late",
     );
+  });
+
+  it("settles only the outage that owns a pause across sequential outages", () => {
+    const state = physicalWorld("rig", true);
+    addBoundaryBuild(state, 2_000);
+    const locationId = derivePresence(state.economy.housing).locationId;
+
+    // The first outage already settled once, but remains durable provenance.
+    // The build is now paused by a later outage. Re-visiting the old record must
+    // not steal/clear the newer pause.
+    state.physicalThreats = [
+      {
+        id: "physical:1",
+        actorId: ACTOR_ID,
+        kind: "outage",
+        signalKind: "outage",
+        sourceProbeId: "probe:old",
+        sourceInvestigationIds: [],
+        locationId,
+        worldMinute: 360,
+        endsWorldMinute: 720,
+        affectedBuildIds: ["workflow:1"],
+        destroyedHardwareIds: [],
+      },
+      {
+        id: "physical:2",
+        actorId: ACTOR_ID,
+        kind: "outage",
+        signalKind: "outage",
+        sourceProbeId: "probe:new",
+        sourceInvestigationIds: [],
+        locationId,
+        worldMinute: 720,
+        endsWorldMinute: 1_080,
+        affectedBuildIds: ["workflow:1"],
+        destroyedHardwareIds: [],
+      },
+    ];
+    state.builds[0]!.pausedAtWorldMinute = 720;
+    state.builds[0]!.pausedByThreatId = "physical:2";
+    state.builds[0]!.accumulatedPausedMinutes = 360;
+    state.probes = [];
+    state.underground.relationships = [];
+
+    physicalRetaliationTick(state, 3, 1_080);
+
+    expect(state.builds[0]).toMatchObject({
+      pausedAtWorldMinute: undefined,
+      pausedByThreatId: undefined,
+      accumulatedPausedMinutes: 720,
+    });
+    expect(settledBuildDueMinute(state.builds[0]!)).toBe(2_720);
   });
 
   it("a mid-outage save restores the same pause and completion", () => {
@@ -340,8 +398,10 @@ describe("Phase 6 P3 — physical retaliation", () => {
   });
 
   it("a correct dwelling read may destroy property but never the capability floor", () => {
-    const state = arm(physicalWorld("dwelling", true));
+    const state = physicalWorld("dwelling", true);
     state.economy.housing = "housing-rented-lab";
+    state.probes[0]!.locationId = derivePresence(state.economy.housing).locationId;
+    arm(state);
     expect(state.economy.hardware).toHaveLength(1);
 
     physicalRetaliationTick(state, 1, 360);
@@ -367,6 +427,53 @@ describe("Phase 6 P3 — physical retaliation", () => {
     );
   });
 
+  it("relocation invalidates a once-correct dwelling address", () => {
+    const state = physicalWorld("dwelling", true);
+    state.economy.housing = "housing-rented-lab";
+    state.probes[0]!.locationId = derivePresence(state.economy.housing).locationId;
+    const hardwareBefore = structuredClone(state.economy.hardware);
+
+    // The player moves after the probe but before the physical tick.
+    state.economy.housing = "housing-sleeper-unit";
+    arm(state);
+    physicalRetaliationTick(state, 1, 360);
+
+    expect(state.physicalThreats[0]).toMatchObject({
+      kind: "warning",
+      signalKind: "door-camera-motion",
+    });
+    expect(state.economy.hardware).toEqual(hardwareBefore);
+  });
+
+  it("never reuses a hardware instance id after physical destruction", () => {
+    const state = physicalWorld("dwelling", true);
+    state.economy.housing = "housing-rented-lab";
+    state.probes[0]!.locationId = derivePresence(state.economy.housing).locationId;
+    state.economy.credits = 2_000;
+    state.economy.hardware.push({
+      id: "hw:2",
+      catalogId: "cpu-overclock",
+      acquiredWorldMinute: 0,
+    });
+    arm(state);
+
+    physicalRetaliationTick(state, 1, 360);
+    expect(state.physicalThreats[0]!.destroyedHardwareIds).toHaveLength(1);
+
+    const bus = new CommandBus(state);
+    const result = bus.execute({ type: "buyHardware", catalogId: "ram-bank" });
+    const acquired = result.events.find(
+      (event) => event.type === "HardwareAcquired",
+    );
+
+    expect(acquired).toMatchObject({ hardwareId: "hw:3" });
+    const ids = bus.snapshot().economy.hardware.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).not.toContain(
+      bus.snapshot().physicalThreats[0]!.destroyedHardwareIds[0],
+    );
+  });
+
   it("projection/store expose only the ambiguous physical signal", () => {
     const state = arm(physicalWorld("rig", true));
     addBoundaryBuild(state);
@@ -378,9 +485,11 @@ describe("Phase 6 P3 — physical retaliation", () => {
         id: "physical:1",
         kind: "outage",
         worldMinute: 360,
+        atCurrentLocation: true,
       },
     ]);
     expect(Object.keys(projection.physicalSignals[0]!).sort()).toEqual([
+      "atCurrentLocation",
       "id",
       "kind",
       "worldMinute",
@@ -395,8 +504,14 @@ describe("Phase 6 P3 — physical retaliation", () => {
       "physical:1": {
         kind: "outage",
         worldMinute: 360,
+        atCurrentLocation: true,
       },
     });
+
+    // Moving later keeps the evidence in ATTENTION history but marks it as an
+    // old room's event, so RoomSurface can refuse to render it as current.
+    state.economy.housing = "housing-sleeper-unit";
+    expect(projectWorld(state).physicalSignals[0]!.atCurrentLocation).toBe(false);
   });
 
   it("the D030 peer-assistant beat has deterministic provenance", () => {
