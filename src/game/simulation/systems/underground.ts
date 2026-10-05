@@ -5,6 +5,7 @@ import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
 import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
+import { compromiseTick } from "@/game/simulation/systems/compromise";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -1046,6 +1047,10 @@ export function advanceUnderground(
     // retaliation spends grudge; this tick's new probe is created below and
     // cannot turn into a room hit in the same breath.
     events.push(...physicalRetaliationTick(world, tickIndex, worldMinute));
+    // P4 consumes only consequences that actually landed on this boundary. It
+    // runs after all P3 actors, so one eviction cannot change another actor's
+    // physical odds halfway through the same tick.
+    events.push(...compromiseTick(world, worldMinute));
     events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge
