@@ -1457,16 +1457,20 @@ function projectRetirement(state: WorldState): VisibleRetirement | null {
     return null;
   }
 
+  if (plan.stage === "planning") {
+    return {
+      status: "planning",
+      blockers: retirementBlockers(state),
+      startedWorldMinute: plan.startedWorldMinute,
+    };
+  }
+
   return {
     status: retirementStatus(state),
-    blockers: plan.stage === "planning" ? retirementBlockers(state) : [],
+    blockers: [],
     startedWorldMinute: plan.startedWorldMinute,
-    ...(plan.committedWorldMinute === undefined
-      ? {}
-      : { committedWorldMinute: plan.committedWorldMinute }),
-    ...(plan.coolingUntilWorldMinute === undefined
-      ? {}
-      : { readyWorldMinute: plan.coolingUntilWorldMinute }),
+    committedWorldMinute: plan.committedWorldMinute,
+    readyWorldMinute: plan.coolingUntilWorldMinute,
   };
 }
 
