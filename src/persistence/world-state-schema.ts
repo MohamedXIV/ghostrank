@@ -340,6 +340,26 @@ const investigationSchema = z.object({
   signals: z.array(investigationSignalSchema).default([]),
 });
 
+const runEndingSchema = z.object({
+  status: z.enum([
+    "arrested",
+    "unmasked",
+    "missing",
+    "compromised",
+    "stranded",
+    "retired",
+    "vanished",
+  ]),
+  causeKind: z.enum([
+    "compromise",
+    "investigation",
+    "physical-threat",
+    "retirement",
+  ]),
+  causeId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -364,6 +384,8 @@ const storedWorldStateSchema = z.object({
   physicalThreats: z.array(physicalThreatSchema).default([]),
   // Phase 6 P4: and no catastrophic condition has been recorded yet.
   compromises: z.array(compromiseSchema).default([]),
+  // Phase 7 P0: legacy runs are live until an ending is explicitly recorded.
+  ending: runEndingSchema.nullable().default(null),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
