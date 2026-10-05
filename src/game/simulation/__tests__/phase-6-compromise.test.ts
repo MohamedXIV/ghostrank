@@ -173,6 +173,13 @@ describe("Phase 6 P4 — catastrophic compromise", () => {
         sourceThreatId: "physical:2",
       }),
     ]);
+    expect(
+      state.compromises.filter((entry) => entry.kind === "stranded"),
+    ).toEqual([
+      expect.objectContaining({
+        sourceThreatId: "physical:2",
+      }),
+    ]);
   });
 
   it("does not call the rig lost while a complete owned machine survives", () => {
@@ -379,6 +386,25 @@ describe("Phase 6 P4 — catastrophic compromise", () => {
         state.compromises.some((entry) => entry.kind === "stranded"),
       ).toBe(false);
     }
+  });
+
+  it("attributes eviction-only stranded state to the hit that burned the lease", () => {
+    const state = p4World();
+    state.economy.hardware = [];
+    state.economy.credits = 0;
+    state.physicalThreats.push(
+      propertyThreat(state, { destroyedHardwareIds: [] }),
+    );
+
+    compromiseTick(state, 360);
+
+    expect(
+      state.compromises.filter((entry) => entry.kind === "stranded"),
+    ).toEqual([
+      expect.objectContaining({
+        sourceThreatId: "physical:1",
+      }),
+    ]);
   });
 
   it("does not call the player stranded while a sellable authored tool remains", () => {
