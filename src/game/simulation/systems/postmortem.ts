@@ -99,8 +99,10 @@ function describeTrace(world: WorldState, trace: OperationTrace): string {
   switch (trace.cause) {
     case "operation-escalation":
       return `you escalated an operation against ${handle}`;
-    case "operation-disengagement":
-      return `you disengaged from ${handle} after a ${trace.stage} operation`;
+    case "operation-disengagement": {
+      const article = trace.stage === "intrusive" ? "an" : "a";
+      return `you disengaged from ${handle} after ${article} ${trace.stage} operation`;
+    }
   }
 }
 
@@ -313,8 +315,8 @@ export function derivePostmortem(
     worldMinute: compromise.worldMinute,
     attribution: complete ? "complete" : "incomplete",
     note: complete
-      ? "These facts are selected by stored provenance and ordered by time; adjacent lines are not claimed as one hidden edge. Hidden identities and hidden correctness remain withheld."
-      : "Incomplete attribution: the surviving record does not contain a citable player-caused trace for the whole chain, so no missing blame is invented.",
+      ? "These facts are selected by stored provenance and ordered by time; adjacent lines are not claimed as one hidden edge. Private identities and private reads remain withheld."
+      : "Incomplete attribution: no citable player-caused trace survives for the whole chain, so no missing blame is invented.",
     steps: ordered.map((step, index) => ({
       id: `${compromise.id}:step:${index + 1}`,
       kind: step.kind,
