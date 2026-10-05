@@ -336,7 +336,9 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: planned / next — Phase 6 is complete. Tracked by #25.**
+**Status: in progress — P0 run lifecycle + browser completed-run archive delivered (D037); P1 consequence-driven forced endings next. Tracked by #25.**
+
+Execution map: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`. P0 establishes one terminal boundary before any eligibility policy: `WorldState.run` is active/ended, `endRun` emits one idempotent `RunEnded`, every simulation command rejects after terminality, and the live projection shows only ending kind/label/minute. Browser IndexedDB v2 atomically moves the final validated portable state from `active-run` to `run-history`; later history screens derive summaries/postmortems from that final truth rather than storing a second hand-maintained summary. P0 deliberately makes **no Phase 6 condition terminal by itself** — P1 owns forced-ending eligibility. Tauri/SQLite completed-history parity remains deferred to #19/Phase 10 and is not a web gameplay gate.
 
 Deliverables:
 - voluntary exit plan,
