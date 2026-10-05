@@ -43,6 +43,7 @@ import {
   derivePresence,
   relocationMinutes,
 } from "@/game/simulation/systems/location";
+import { runEndingLabel } from "@/game/simulation/systems/run-lifecycle";
 import {
   deriveValueGraph,
   type ValueGraph,
@@ -101,6 +102,7 @@ import {
   type LedgerDirection,
   type OperationState,
   type RetaliationKind,
+  type RunEndingKind,
   type UndergroundNetwork,
   type WorkflowOutcome,
   type OpponentReactionKind,
@@ -652,8 +654,18 @@ export interface EconomyProjection {
   valueGraph: ValueGraph;
 }
 
+export interface VisibleRunLifecycle {
+  status: "active" | "ended";
+  ending?: {
+    kind: RunEndingKind;
+    label: string;
+    worldMinute: number;
+  };
+}
+
 export interface WorldProjection {
   worldMinute: number;
+  run: VisibleRunLifecycle;
   player: {
     handle: string;
     rank: number;
@@ -1475,6 +1487,17 @@ export function projectWorld(state: WorldState): WorldProjection {
 
   return {
     worldMinute: state.worldMinute,
+    run:
+      state.run.status === "ended"
+        ? {
+            status: "ended",
+            ending: {
+              kind: state.run.ending.kind,
+              label: runEndingLabel(state.run.ending.kind),
+              worldMinute: state.run.ending.worldMinute,
+            },
+          }
+        : { status: "active" },
     player: {
       handle: state.player.handle,
       rank: state.player.rank,
