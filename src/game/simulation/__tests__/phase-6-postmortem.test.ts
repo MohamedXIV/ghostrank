@@ -260,7 +260,7 @@ describe("Phase 6 P5 — postmortem causal chain", () => {
         worldMinute: 1080,
         attribution: "complete",
         note:
-          "These facts are selected by stored provenance and ordered by time; adjacent lines are not claimed as one hidden edge. Hidden identities and hidden correctness remain withheld.",
+          "These facts are selected by stored provenance and ordered by time; adjacent lines are not claimed as one hidden edge. Private identities and private reads remain withheld.",
         stepCount: 8,
       },
     });
