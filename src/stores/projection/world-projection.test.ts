@@ -681,6 +681,7 @@ describe("world projection store", () => {
         vram: 0,
         storage: 2,
         network: 1,
+        exotic: false,
       },
       "box-burner": {
         label: "Burner Laptop",
@@ -691,6 +692,7 @@ describe("world projection store", () => {
         vram: 0,
         storage: 1,
         network: 1,
+        exotic: false,
       },
     });
     expect(store.getTable("ownedTools")).toEqual({
