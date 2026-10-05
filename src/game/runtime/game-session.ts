@@ -10,6 +10,7 @@ import type { RunPersistence } from "@/persistence/run-persistence";
 
 export interface GameSession extends GameRuntime {
   flush: () => Promise<void>;
+  history: () => Promise<WorldState[]>;
 }
 
 interface CreateGameSessionOptions {
@@ -30,6 +31,17 @@ export async function createGameSession({
     await persistence.saveActiveState(runtime.snapshot(), []);
   }
 
+  // Recovery path: an older/fallback adapter may have durably saved the
+  // terminal snapshot but failed before archiving it. Browser P0 can finish the
+  // move on next boot; the in-memory session remains ended so the player sees
+  // the same terminal run for this boot rather than silently resuming it.
+  if (
+    persistence?.completeRun &&
+    restoredState?.run.status === "ended"
+  ) {
+    await persistence.completeRun(restoredState, []);
+  }
+
   let saveQueue: Promise<void> = Promise.resolve();
   let persistedEventCount = 0;
 
@@ -47,7 +59,12 @@ export async function createGameSession({
           persistedEventCount,
         );
 
-        await persistence.saveActiveState(snapshot, newEvents);
+        if (snapshot.run.status === "ended" && persistence.completeRun) {
+          await persistence.completeRun(snapshot, newEvents);
+        } else {
+          await persistence.saveActiveState(snapshot, newEvents);
+        }
+
         persistedEventCount = allEvents.length;
       });
   };
@@ -75,6 +92,14 @@ export async function createGameSession({
 
     async flush() {
       await saveQueue;
+    },
+
+    async history() {
+      if (!persistence?.loadCompletedStates) {
+        return [];
+      }
+
+      return persistence.loadCompletedStates();
     },
   };
 }
