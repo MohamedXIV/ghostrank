@@ -160,6 +160,18 @@ export function syncWorldProjection(
     ),
   );
 
+  const retirementRows = projection.retirement
+    ? {
+        current: {
+          status: projection.retirement.status,
+          blockers: projection.retirement.blockers.join(","),
+          startedWorldMinute: projection.retirement.startedWorldMinute,
+          committedWorldMinute: projection.retirement.committedWorldMinute ?? 0,
+          readyWorldMinute: projection.retirement.readyWorldMinute ?? 0,
+        },
+      }
+    : {};
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -550,6 +562,7 @@ export function syncWorldProjection(
     store.setTable("compromises", compromiseRows);
     store.setTable("postmortems", postmortemRows);
     store.setTable("postmortemSteps", postmortemStepRows);
+    store.setTable("retirement", retirementRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
