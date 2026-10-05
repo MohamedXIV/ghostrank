@@ -66,13 +66,13 @@ function forgeBus(modelId: string = CLOUD_FRONTIER): CommandBus {
 const specOf = findWorkflowSpec;
 
 describe("the workflow spec catalog", () => {
-  it("mirrors the three premium licenses one-for-one", () => {
-    // The exit criterion needs a bijection: three specs, three distinct
-    // licenses, and every `replaces` id a real catalog entry.
+  it("mirrors the premium licenses one-for-one", () => {
+    // The exit criterion needs a bijection: one spec per distinct premium
+    // license, and every `replaces` id a real catalog entry.
     const replaces = WORKFLOW_SPEC_CATALOG.map((spec) => spec.replaces);
 
     expect(WORKFLOW_SPEC_CATALOG).toHaveLength(5);
-    expect(new Set(replaces).size).toBe(3);
+    expect(new Set(replaces).size).toBe(5);
     for (const id of replaces) {
       expect(findSoftwareItem(id)).toBeDefined();
     }
