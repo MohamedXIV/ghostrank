@@ -582,6 +582,27 @@ function expireContracts(
   return events;
 }
 
+export function contractOfferPercent(
+  world: WorldState,
+  atMinute = world.worldMinute,
+): number {
+  return Math.min(
+    100,
+    OFFER_PERCENT +
+      deriveLongRunPressure(world, atMinute).contractOfferBonusPercent,
+  );
+}
+
+export function contractOpenLimit(
+  world: WorldState,
+  atMinute = world.worldMinute,
+): number {
+  return Math.max(
+    MAX_OPEN_CONTRACTS,
+    deriveLongRunPressure(world, atMinute).maxOpenContracts,
+  );
+}
+
 function offerContracts(
   world: WorldState,
   tickIndex: number,
@@ -590,10 +611,8 @@ function offerContracts(
   const { underground } = world;
   const { seed } = underground;
   const events: SimulationEvent[] = [];
-  const longRunPressure = deriveLongRunPressure(world, worldMinute);
-  const offerPercent =
-    OFFER_PERCENT + longRunPressure.contractOfferBonusPercent;
-  const maxOpenContracts = longRunPressure.maxOpenContracts;
+  const offerPercent = contractOfferPercent(world, worldMinute);
+  const maxOpenContracts = contractOpenLimit(world, worldMinute);
 
   if (world.targets.length === 0) {
     return events;
