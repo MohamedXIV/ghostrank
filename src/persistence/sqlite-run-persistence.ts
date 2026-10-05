@@ -106,6 +106,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "RivalProbe":
     case "PhysicalThreat":
     case "NpcAssistantAdopted":
+    case "CompromiseRecorded":
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;
