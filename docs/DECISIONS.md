@@ -556,3 +556,22 @@ Phase 6 already solved where the player is: `economy.housing` is the authoritati
 **Breadth must not silently retune the world.** P1's telemetry policies never rent housing, so P4 is required to leave their endings, economy, rank, contracts, threats and exposure unchanged. The authored-content count alone moves from four to eight housing listings. Any other telemetry delta is a regression, not intended balance.
 
 Accepted 2026-10-06 as the Phase 8 P4 location/physical-life breadth contract. P5 owns market breadth through the existing capability/economy/contention systems.
+
+
+## D049 — Market breadth extends catalogs through existing economic/effect contracts (Phase 8 P5)
+
+Content Alpha needs more equipment and software decisions, not another progression layer. P5 therefore broadens six existing catalogs while keeping their economic shapes and effect language unchanged: hardware **6→8**, machines **5→7**, models **5→7**, player tools **3→5**, software licenses **3→5**, and self-built workflow specs **3→5**. P4 housing remains eight.
+
+**Components and boxes remain the same capability system.** Balanced Compute Module (compute 2 / memory 1) and Memory Accelerator (memory 1 / VRAM 3) are ordinary hardware purchases. Archive Node and Model Host are ordinary non-exotic complete machines specializing in storage and local-model capacity respectively. They flow into the same five-axis capability fold; the Cryogenic Annealing Rack remains the only exotic listing and its Phase 7 eligibility rule is untouched.
+
+**AI breadth keeps the cloud/local economic split.** Long-Context Class API is another cloud rental: zero acquisition cost, zero local footprint, daily provider upkeep. Reliable Compact 7B is local property: one-time purchase, local VRAM/storage contention, no recurring fee, and named author LATTICE in the value graph. Neither source creates a new model mechanic, and rank affects neither acquisition nor running.
+
+**Authored tools remain property with provenance.** VESPER's Map Stitcher adds memory/storage/network capability; LATTICE's Trace Comparator contributes the existing action-duration modifier. Buying/reselling them uses the same tool inventory, fence resale, ledger and named-author provenance paths as the original three tools.
+
+**Premium software and self-built software stay one-to-one.** Indexed Storage Suite and Batch Scheduler extend the rental catalog. Local Storage Index and Self-Built Batch Scheduler are Forge specs whose `SoftwareEffect` values exactly equal the licenses they replace. Build time, contention footprint, frozen quality outcome and defective-effect degradation remain the existing Forge rules. P5 adds no executable host code or new effect type.
+
+**No new progression authority appears.** There is no command, event, state field, RNG stream, capability axis, unlock level, player-rank gate or save migration. Existing catalog ids are unchanged; stale ids keep the same inert lookup behavior.
+
+**Telemetry must stay mechanically identical.** The P1 policies do not buy market content, enable licenses, run models or build workflows. P5 therefore may change only authored-content counts in the report. Endings, economy, rank, contracts, threats and exposure must remain identical to P4; any other delta is a regression. P6 owns explicit alpha calibration.
+
+Accepted 2026-10-06 as the Phase 8 P5 market-breadth contract. P6 owns social/event breadth and final Content Alpha calibration.

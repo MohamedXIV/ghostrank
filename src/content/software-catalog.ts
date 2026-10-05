@@ -62,6 +62,24 @@ export const SOFTWARE_CATALOG: readonly SoftwareCatalogItem[] = [
       discount: { kind: "action-duration", factor: 0.85 },
     },
   },
+  {
+    id: "software-storage-index",
+    label: "Indexed Storage Suite",
+    dailyCost: 50,
+    effect: {
+      kind: "capability",
+      capability: { compute: 0, memory: 1, vram: 0, storage: 3, network: 0 },
+    },
+  },
+  {
+    id: "software-batch-scheduler",
+    label: "Batch Scheduler",
+    dailyCost: 90,
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.9 },
+    },
+  },
 ];
 
 /** The recurring counterparty for license fees: the fictional vendors. */
