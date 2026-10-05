@@ -4,6 +4,7 @@ import { contractPayout, transferValue } from "@/game/simulation/systems/economy
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
 import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
+import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -27,6 +28,13 @@ export const TICK_MINUTES = 360;
  * command can never stall the browser.
  */
 export const MAX_CATCHUP_TICKS = 28;
+
+export interface UndergroundAdvanceHooks {
+  /** Advance deadline systems to this tick before NPC actions at the same minute. */
+  beforeTick?: (worldMinute: number) => void;
+  /** Fold exact-boundary completions after NPC actions at this minute. */
+  afterTick?: (worldMinute: number) => void;
+}
 
 const SUCCESS_NOISE_SPREAD = 40;
 
@@ -1001,6 +1009,7 @@ export function applyProvocation(
 export function advanceUnderground(
   world: WorldState,
   toMinute: number,
+  hooks?: UndergroundAdvanceHooks,
 ): SimulationEvent[] {
   const { underground } = world;
   const events: SimulationEvent[] = [];
@@ -1024,6 +1033,7 @@ export function advanceUnderground(
   ) {
     const worldMinute = tickIndex * TICK_MINUTES;
 
+    hooks?.beforeTick?.(worldMinute);
     events.push(...expireContracts(world, worldMinute));
 
     if (underground.actors.length >= 2) {
@@ -1032,6 +1042,10 @@ export function advanceUnderground(
       }
     }
 
+    // P3 consumes only probes from earlier ticks. It acts before social
+    // retaliation spends grudge; this tick's new probe is created below and
+    // cannot turn into a room hit in the same breath.
+    events.push(...physicalRetaliationTick(world, tickIndex, worldMinute));
     events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge
@@ -1047,6 +1061,7 @@ export function advanceUnderground(
     events.push(
       ...probeTick(world, tickIndex, worldMinute, probeCandidates(world)),
     );
+    hooks?.afterTick?.(worldMinute);
   }
 
   underground.lastTickMinute = Math.max(underground.lastTickMinute, toMinute);
