@@ -31,6 +31,7 @@ import {
 } from "@/game/simulation/systems/probes";
 import { MAX_CATCHUP_TICKS, TICK_MINUTES } from "@/game/simulation/systems/underground";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
+import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import {
   createInitialWorldState,
   PLAYER_ACTOR_ID,
@@ -175,6 +176,64 @@ function grudge(fromId: string, value: number): UndergroundRelationship {
  * untouched wherever nothing probes. The values were captured from the code
  * *before* P2 existed.
  */
+function preP3ContractVocabulary(state: WorldState): WorldState {
+  const legacy = structuredClone(state);
+  const { seed } = legacy.underground;
+
+  for (const contract of legacy.underground.contracts) {
+    const tickIndex = contract.offeredWorldMinute / TICK_MINUTES;
+    const oldObjective =
+      hashUnit(seed, "offer-objective", tickIndex, contract.issuerId) < 0.5
+        ? "recon-report"
+        : "intrusion";
+
+    contract.objective = oldObjective;
+    delete contract.requiredMachines;
+
+    if (oldObjective === "recon-report") {
+      const target = legacy.targets.find(
+        (candidate) => candidate.id === contract.targetId,
+      );
+      const serviceCount =
+        target?.machines.reduce(
+          (sum, machine) => sum + machine.services.length,
+          0,
+        ) ?? 1;
+      const asked =
+        1 +
+        Math.floor(
+          hashUnit(seed, "offer-services", tickIndex, contract.issuerId) * 2,
+        );
+      contract.requiredServices = Math.max(
+        1,
+        Math.min(asked, serviceCount),
+      );
+    } else {
+      delete contract.requiredServices;
+    }
+
+    if (
+      contract.acceptedWorldMinute !== undefined &&
+      contract.dueWorldMinute !== undefined
+    ) {
+      contract.dueWorldMinute =
+        contract.acceptedWorldMinute +
+        (oldObjective === "recon-report" ? 2 * DAY : 4 * DAY);
+    }
+  }
+
+  return legacy;
+}
+
+/**
+ * P3 intentionally changes only the contract objective vocabulary in these
+ * historical worlds. Normalize that one later feature back to the pre-P3
+ * stateless-hash mapping, then demand the original Phase 6 digest unchanged.
+ */
+function historicalEcosystemDigest(state: WorldState): string {
+  return ecosystemDigest(preP3ContractVocabulary(state));
+}
+
 function ecosystemDigest(state: WorldState): string {
   const {
     incidents,
@@ -221,19 +280,23 @@ describe("byte identity: probes only fire where they are earned", () => {
   it("replays pre-P2 golden digests wherever Phase 7 P5 remains neutral", () => {
     const idle = new CommandBus(preContentAlphaBreadthWorld());
     wait(idle, 60 * DAY);
-    expect(ecosystemDigest(idle.snapshot())).toBe(PRE_P2_DIGESTS["idle-60d"]);
+    expect(historicalEcosystemDigest(idle.snapshot())).toBe(
+      PRE_P2_DIGESTS["idle-60d"],
+    );
 
     const quiet = new CommandBus(preContentAlphaBreadthWorld());
     quiet.execute({ type: "observeTarget", targetId: "nightshade" });
     quiet.execute({ type: "openOperation", targetId: "nightshade" });
     quiet.execute({ type: "disengageOperation" });
     wait(quiet, 30 * DAY);
-    expect(ecosystemDigest(quiet.snapshot())).toBe(PRE_P2_DIGESTS["quiet-30d"]);
+    expect(historicalEcosystemDigest(quiet.snapshot())).toBe(
+      PRE_P2_DIGESTS["quiet-30d"],
+    );
 
     const reckless6 = new CommandBus(preContentAlphaBreadthWorld());
     recklessCycles(reckless6, 1);
     wait(reckless6, 6 * DAY);
-    expect(ecosystemDigest(reckless6.snapshot())).toBe(
+    expect(historicalEcosystemDigest(reckless6.snapshot())).toBe(
       PRE_P2_DIGESTS["reckless-6d"],
     );
 
