@@ -532,6 +532,41 @@ export interface OwnedMachine {
   acquiredWorldMinute: number;
 }
 
+/**
+ * Phase 7 P0 — terminal run lifecycle. The ending vocabulary comes directly
+ * from WORLD_RUNS_AND_ENDINGS; later slices decide eligibility and variants.
+ */
+export type RunEndingKind =
+  | "arrested"
+  | "unmasked"
+  | "captured"
+  | "killed"
+  | "missing"
+  | "compromised"
+  | "stranded"
+  | "forced-disappearance"
+  | "retired"
+  | "vanished";
+
+export type RunEndingCauseKind =
+  | "compromise"
+  | "investigation"
+  | "physical-threat"
+  | "retirement";
+
+export interface RunEnding {
+  id: string;
+  kind: RunEndingKind;
+  causeKind: RunEndingCauseKind;
+  causeId: string;
+  worldMinute: number;
+}
+
+export interface RunLifecycle {
+  status: "active" | "ended";
+  ending?: RunEnding;
+}
+
 export interface EconomyState {
   credits: number;
   ledger: ValueLedgerEntry[];
@@ -578,6 +613,8 @@ export interface EconomyState {
 
 export interface WorldState {
   worldMinute: number;
+  /** Phase 7 P0: one terminal lifecycle record; active is the legacy default. */
+  run: RunLifecycle;
   player: PlayerState;
   targets: TargetState[];
   knownTargetIds: string[];
@@ -628,6 +665,7 @@ export interface InitialTargetState
 
 export interface InitialWorldState {
   worldMinute?: number;
+  run?: RunLifecycle;
   player?: PlayerState;
   targets?: InitialTargetState[];
   knownTargetIds?: string[];
@@ -744,6 +782,7 @@ export function createInitialWorldState(
 
   return {
     worldMinute,
+    run: initial.run ? structuredClone(initial.run) : { status: "active" },
     player: initial.player ?? {
       handle: "unknown",
       rank: 100_000,
