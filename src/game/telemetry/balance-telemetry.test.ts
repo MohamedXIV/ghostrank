@@ -17,7 +17,7 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       targetMachines: 14,
       targetServices: 17,
       hardwareListings: 6,
-      housingListings: 4,
+      housingListings: 8,
       machineListings: 5,
       modelListings: 5,
       playerToolListings: 3,

@@ -140,6 +140,12 @@ Critical invariants include:
 - contract objective deadlines, payouts, acceptance and completion are rank-independent,
 - Terminal and GUI continue to emit the same accept/decline/deliver commands for every P3 objective,
 - expanded contract objective shapes round-trip through the canonical save schema without invalidating legacy recon-report/intrusion saves,
+- Phase 8 P4 location breadth is catalog-only: new rows must use the existing lease/presence/upkeep/relocation/capability systems with no new authoritative location state,
+- all P4 locations are rank-independent and relocation remains symmetric in world minutes,
+- housing kind stays descriptive; physical counterplay continues to read only the existing anonymity band plus causal threat state,
+- concealment-only safehouses continue to contribute zero capability on every axis,
+- the player projection may expose listing price/capability/kind/anonymity/travel but must not create a second physical-location authority,
+- P4 raises authored housing breadth from 4 to 8; telemetry policies that never lease housing must otherwise remain outcome-identical to the P3 report,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing

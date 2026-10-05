@@ -541,3 +541,18 @@ Phase 8 needs more opportunity shapes, but contracts must stay inside the same f
 **Telemetry remains a real-command policy.** The P1 harness learns the two new objectives by surveying and disengaging through CommandBus; it does not mark them complete directly. P3 reruns the 32-seed report so any distribution shift is attributable to opportunity mix rather than hidden retuning.
 
 Accepted 2026-10-05 as the Phase 8 P3 contract-breadth contract. P4 owns location + physical-life breadth after P3 gates and telemetry are reconciled.
+
+
+## D048 — Location breadth is authored lease trade-offs, not a second physical-world system (Phase 8 P4)
+
+Phase 6 already solved where the player is: `economy.housing` is the authoritative lease and `derivePresence` is the physical read. P4 therefore adds **content only**. The housing catalog expands from four to eight entries while the four existing listings remain unchanged.
+
+**The four new locations occupy existing trade-off space.** Night-Shift Office (quiet workspace, 30m travel, storage/network lift), Sublet Studio (quiet residential, 45m travel, compute/memory lift), Archive Lockup (hidden workspace, 120m travel, storage-heavy lift), and Cellar Studio (hidden residential, 150m travel, memory/network lift) all use the same daily upkeep, capability vector, anonymity band and relocation-distance fields as the shipped Phase 6 locations. They are data rows, not location classes.
+
+**Presence still has one source of truth.** P4 adds no location field, command, event, scheduler, RNG stream, persistence object or migration. Renting any new listing still writes only the ordinary housing id; presence, travel, upkeep, projection and physical-retaliation exposure derive from it. A stale or absent id still falls back to the baseline room exactly as before.
+
+**Anonymity remains counterplay, not a power gate.** Public/quiet/hidden continues to feed the existing physical-retaliation percentage. Housing kind remains descriptive. Rank never participates in availability or leasing. The two safehouses remain capability-zero concealment choices; P4 does not turn a safehouse into a stat upgrade.
+
+**Breadth must not silently retune the world.** P1's telemetry policies never rent housing, so P4 is required to leave their endings, economy, rank, contracts, threats and exposure unchanged. The authored-content count alone moves from four to eight housing listings. Any other telemetry delta is a regression, not intended balance.
+
+Accepted 2026-10-06 as the Phase 8 P4 location/physical-life breadth contract. P5 owns market breadth through the existing capability/economy/contention systems.

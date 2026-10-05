@@ -455,10 +455,10 @@ describe("save and load", () => {
 });
 
 describe("catalog breadth", () => {
-  it("lists two safehouses among four dwellings", () => {
+  it("lists two safehouses among eight dwellings", () => {
     const safehouses = HOUSING_CATALOG.filter((item) => item.kind === "safehouse");
 
-    expect(HOUSING_CATALOG).toHaveLength(4);
+    expect(HOUSING_CATALOG).toHaveLength(8);
     expect(safehouses).toHaveLength(2);
   });
 
