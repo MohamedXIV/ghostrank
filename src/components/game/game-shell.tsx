@@ -123,7 +123,7 @@ function ActiveGameShell({
             final // {formatWorldTime(endingMinute)}
           </div>
           <div className="boot-line">
-            this run is closed // history and new-run flow arrive later in Phase 7
+            the handle is closed // this run accepts no further commands
           </div>
         </section>
       </main>
