@@ -338,6 +338,23 @@ Phase 6 already stores enough causal links to explain a catastrophic condition w
 
 Accepted 2026-10-05 as the Phase 6 P5 architectural contract. This completes Phase 6's causal-learning layer; future content may add more provenance-bearing systems, but they must join the read without weakening the epistemic boundary above.
 
+
+## D037 — Every ending uses one durable one-way terminal record (Phase 7 P0)
+
+Phase 7 begins with an important absence: before this slice Ghostrank had no terminal state at all. Phase 6 deliberately stopped at consequences and causal conditions, so a compromised world remained fully playable. P0 introduces the boundary every later ending must share instead of letting each ending invent its own boolean, screen, or command gate.
+
+**There is exactly one authoritative terminal record.** `WorldState.ending` is either `null` (the run is live) or one `RunEndingRecord` containing a status, a typed cause kind/id, and the world minute at which the run ended. `endRun` is the only primitive that writes it. The first ending wins; a second attempt emits nothing and cannot rewrite history. This is why arrested, unmasked, missing, compromised, stranded, retired, and VANISHED are one vocabulary rather than seven unrelated flags.
+
+**Terminality lives in the simulation, not the UI.** Once `ending` is non-null, `CommandBus.execute` rejects every gameplay command with `RUN_ENDED` before any system can mutate state or advance time. The final screen is merely a projection of that fact. Removing or replacing the screen could not make the run live again. The existing testing invariant that run-ending events are terminal is therefore enforced structurally.
+
+**P0 defines the contract but triggers no ending.** Normal worlds still begin with `ending: null`, legacy saves default to `null`, and advancing time cannot spontaneously end a run in this slice. P1 and later slices own eligibility. This separation prevents terminality from being smuggled into Phase 6 compromise logic and lets forced endings, retirement, and rare VANISHED all share one tested transition.
+
+**The cause is durable but not automatically public.** The authoritative record keeps `causeKind` and `causeId` so Phase 7 history and debugging can cite why the run ended. The live final projection exposes only status, label, and minute. Hidden cause ids do not enter TinyBase. A future final report can combine the ending record with Phase 6's player-safe postmortem read instead of dumping hidden provenance.
+
+**Persistence follows the existing active-run contract for now.** P0 adds the terminal record to the canonical WorldState schema and portable save, with `null` as the legacy default. Browser persistence can therefore restore an ended active snapshot faithfully. Moving that snapshot out of the active slot into completed-run history is intentionally P4; P0 does not prematurely expand the persistence interface before the history model exists.
+
+Accepted 2026-10-05 as the Phase 7 P0 terminal contract. Ending eligibility, retirement mechanics, history archival, long-run pressure, and exotic capability remain later Phase 7 slices.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
