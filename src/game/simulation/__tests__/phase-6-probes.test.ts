@@ -56,6 +56,38 @@ import {
 
 const DAY = 24 * 60;
 
+const LEGACY_PHASE_7_ACTOR_IDS = new Set([
+  "nightshade",
+  "vesper",
+  "lattice",
+  "halfmoon",
+  "kestrel",
+]);
+
+/**
+ * Phase 8 P2 intentionally broadens the canonical world. Phase 6's historical
+ * byte-identity proof still matters, so replay that proof against the exact
+ * pre-Content-Alpha roster instead of pretending new authored peers are a
+ * simulation regression.
+ */
+function preContentAlphaBreadthWorld(): WorldState {
+  const state = createSliceWorldState();
+
+  state.underground.actors = state.underground.actors.filter((actor) =>
+    LEGACY_PHASE_7_ACTOR_IDS.has(actor.id),
+  );
+  state.targets = state.targets.filter((target) => target.id === "nightshade");
+  state.underground.relationships = state.underground.relationships.filter(
+    (entry) =>
+      LEGACY_PHASE_7_ACTOR_IDS.has(entry.fromId) &&
+      (entry.toId === PLAYER_ACTOR_ID ||
+        LEGACY_PHASE_7_ACTOR_IDS.has(entry.toId)),
+  );
+
+  return state;
+}
+
+
 /** Waits in <= 7 day steps, the ecosystem tests' discipline against capped catch-up. */
 function wait(bus: CommandBus, minutes: number) {
   let remaining = minutes;
@@ -187,18 +219,18 @@ const PRE_P2_DIGESTS = {
 
 describe("byte identity: probes only fire where they are earned", () => {
   it("replays pre-P2 golden digests wherever Phase 7 P5 remains neutral", () => {
-    const idle = new CommandBus(createSliceWorldState());
+    const idle = new CommandBus(preContentAlphaBreadthWorld());
     wait(idle, 60 * DAY);
     expect(ecosystemDigest(idle.snapshot())).toBe(PRE_P2_DIGESTS["idle-60d"]);
 
-    const quiet = new CommandBus(createSliceWorldState());
+    const quiet = new CommandBus(preContentAlphaBreadthWorld());
     quiet.execute({ type: "observeTarget", targetId: "nightshade" });
     quiet.execute({ type: "openOperation", targetId: "nightshade" });
     quiet.execute({ type: "disengageOperation" });
     wait(quiet, 30 * DAY);
     expect(ecosystemDigest(quiet.snapshot())).toBe(PRE_P2_DIGESTS["quiet-30d"]);
 
-    const reckless6 = new CommandBus(createSliceWorldState());
+    const reckless6 = new CommandBus(preContentAlphaBreadthWorld());
     recklessCycles(reckless6, 1);
     wait(reckless6, 6 * DAY);
     expect(ecosystemDigest(reckless6.snapshot())).toBe(
