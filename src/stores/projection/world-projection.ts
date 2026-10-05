@@ -104,6 +104,19 @@ export function syncWorldProjection(
     ]),
   );
 
+  // P3 — physical evidence only. Actor, source probe, investigation
+  // provenance, outage end, and property impact never enter TinyBase.
+  const physicalSignalRows = Object.fromEntries(
+    projection.physicalSignals.map((signal) => [
+      signal.id,
+      {
+        kind: signal.kind,
+        worldMinute: signal.worldMinute,
+        atCurrentLocation: signal.atCurrentLocation,
+      },
+    ]),
+  );
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -440,6 +453,7 @@ export function syncWorldProjection(
         modelLabel: build.modelLabel,
         startedWorldMinute: build.startedWorldMinute,
         dueWorldMinute: build.dueWorldMinute,
+        paused: build.paused,
         vram: build.footprint.vram,
         storage: build.footprint.storage,
       },
@@ -489,6 +503,7 @@ export function syncWorldProjection(
     store.setTable("investigations", investigationRows);
     store.setTable("investigationSignals", signalRows);
     store.setTable("probes", probeRows);
+    store.setTable("physicalSignals", physicalSignalRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);

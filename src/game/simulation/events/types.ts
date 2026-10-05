@@ -8,6 +8,8 @@ import type {
   LedgerCauseKind,
   LedgerDirection,
   OpponentReactionKind,
+  PhysicalSignalKind,
+  PhysicalThreatKind,
   RetaliationKind,
   RivalProbeArtifactKind,
   RivalProbeSubject,
@@ -334,6 +336,25 @@ export type SimulationEvent =
       subject: RivalProbeSubject;
       /** The observable artifact: the only part of a probe a player can see. */
       artifactKind: RivalProbeArtifactKind;
+      worldMinute: number;
+    }
+  | {
+      type: "PhysicalThreat";
+      threatId: string;
+      /** Hidden cause truth for simulation provenance; projections omit it. */
+      actorId: string;
+      kind: PhysicalThreatKind;
+      signalKind: PhysicalSignalKind;
+      sourceProbeId: string;
+      affectedBuildIds: string[];
+      destroyedHardwareIds: string[];
+      worldMinute: number;
+    }
+  | {
+      type: "NpcAssistantAdopted";
+      actorId: string;
+      modelId: string;
+      causeThreatId: string;
       worldMinute: number;
     }
   | {

@@ -8,6 +8,7 @@ import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
 import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
+import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
@@ -607,6 +608,33 @@ export class CommandBus {
     };
   }
 
+  /**
+   * Hardware can now be destroyed by P3. Length-based ids would reuse a
+   * destroyed suffix and can collide with a surviving row (or with provenance).
+   * Scan both owned and destroyed instance ids so identity stays monotonic for
+   * the whole run, just like sold tools/machines.
+   */
+  private nextHardwareId(): string {
+    let max = 0;
+    const consider = (id: string) => {
+      const suffix = Number(id.slice(id.lastIndexOf(":") + 1));
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    };
+
+    for (const owned of this.world.economy.hardware) {
+      consider(owned.id);
+    }
+    for (const threat of this.world.physicalThreats) {
+      for (const destroyedId of threat.destroyedHardwareIds) {
+        consider(destroyedId);
+      }
+    }
+
+    return `hw:${max + 1}`;
+  }
+
   private buyHardware(catalogId: string): CommandResult {
     const item = findCatalogItem(catalogId);
 
@@ -634,7 +662,7 @@ export class CommandBus {
     }
 
     const owned: OwnedHardware = {
-      id: `hw:${this.world.economy.hardware.length + 1}`,
+      id: this.nextHardwareId(),
       catalogId: item.id,
       acquiredWorldMinute: minute,
     };
@@ -1359,6 +1387,9 @@ export class CommandBus {
       ),
     };
 
+    // A job commissioned while power is already out joins that pause. The
+    // commissioning due minute and frozen outcome above are never rewritten.
+    applyActiveOutageToBuild(this.world, build);
     this.world.builds.push(build);
 
     return {
@@ -1425,23 +1456,64 @@ export class CommandBus {
 
   private advanceWorldTime(minutes: number): SimulationEvent[] {
     const fromMinute = this.world.worldMinute;
-    this.world.worldMinute += minutes;
+    const toMinute = fromMinute + minutes;
+    this.world.worldMinute = toMinute;
+
+    const upkeepEvents: SimulationEvent[] = [];
+    const buildEvents: SimulationEvent[] = [];
+    const investigationEvents: SimulationEvent[] = [];
+    let cursor = fromMinute;
+
+    // P3 makes chronology observable: a lease can lapse before a later tick,
+    // an investigation can warm before a rival acts, and an outage can beat a
+    // build due at the exact same boundary. The underground loop still owns tick
+    // selection and the 28-tick catch-up cap; hooks only fold deadline systems
+    // around the ticks it actually chose to run.
+    const undergroundEvents = advanceUnderground(this.world, toMinute, {
+      beforeTick: (tickMinute) => {
+        upkeepEvents.push(...advanceUpkeep(this.world, cursor, tickMinute));
+
+        // Strictly earlier jobs have already landed. An exact tie waits until
+        // after the NPC tick so a physical outage can pause it (D034).
+        if (tickMinute > 0) {
+          buildEvents.push(...advanceBuilds(this.world, tickMinute - 1));
+        }
+
+        investigationEvents.push(
+          ...advanceInvestigations(this.world, tickMinute),
+        );
+        cursor = tickMinute;
+      },
+      afterTick: (tickMinute) => {
+        buildEvents.push(...advanceBuilds(this.world, tickMinute));
+      },
+    });
+
+    // A final partial tick still pays bills, completes work, and advances
+    // derived case material even though no ecosystem action was scheduled.
+    if (cursor < toMinute) {
+      upkeepEvents.push(...advanceUpkeep(this.world, cursor, toMinute));
+      investigationEvents.push(...advanceInvestigations(this.world, toMinute));
+      buildEvents.push(...advanceBuilds(this.world, toMinute));
+    } else if (cursor === fromMinute) {
+      // No ecosystem boundary crossed.
+      upkeepEvents.push(...advanceUpkeep(this.world, fromMinute, toMinute));
+      investigationEvents.push(...advanceInvestigations(this.world, toMinute));
+      buildEvents.push(...advanceBuilds(this.world, toMinute));
+    }
 
     return [
       {
         type: "WorldTimeAdvanced",
         fromMinute,
-        toMinute: this.world.worldMinute,
+        toMinute,
       },
-      ...advanceUpkeep(this.world, fromMinute, this.world.worldMinute),
-      // Builds complete on the clock, like upkeep: the same due minute lands
-      // the same frozen outcome whether the wait was one command or ten.
-      ...advanceBuilds(this.world, this.world.worldMinute),
-      // Phase 6 P1: authority case files are reviewed on the same boundaries.
-      // It runs before the ecosystem so a file opened by this tick's footprint
-      // surfaces evidence on the next boundary, not the one that created it.
-      ...advanceInvestigations(this.world, this.world.worldMinute),
-      ...advanceUnderground(this.world, this.world.worldMinute),
+      // Preserve the established category order for callers; each event carries
+      // its true world minute even though execution above is interleaved.
+      ...upkeepEvents,
+      ...buildEvents,
+      ...investigationEvents,
+      ...undergroundEvents,
     ];
   }
 

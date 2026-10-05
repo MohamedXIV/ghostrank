@@ -118,8 +118,17 @@ export interface InFlightBuild {
   /** The assistant running when the build was commissioned. */
   modelId: string;
   startedWorldMinute: number;
-  /** World minute the finished workflow lands in the garage. */
+  /**
+   * Frozen completion minute captured at commissioning. Phase 6 P3 never
+   * rewrites it: physical outages pause the clock around the job instead.
+   */
   dueWorldMinute: number;
+  /** Minute the current physical outage paused this job. Absent while running. */
+  pausedAtWorldMinute?: number;
+  /** The physical threat that owns the active pause; prevents cross-outage settlement. */
+  pausedByThreatId?: string;
+  /** Closed pause intervals already paid by the clock. Absent means zero. */
+  accumulatedPausedMinutes?: number;
   outcome: WorkflowOutcome;
 }
 
@@ -252,7 +261,49 @@ export interface RivalProbe {
   subject: RivalProbeSubject;
   /** Hidden truth: whether the read matched reality. Never projected. */
   correct: boolean;
+  /**
+   * For a dwelling read only: which derived physical location the rival read.
+   * Hidden and optional so pre-P3/P2 saves remain valid. A later relocation can
+   * therefore invalidate a once-correct address instead of teleporting the hit.
+   */
+  locationId?: string;
   worldMinute: number;
+}
+
+/** Physical evidence named by WORLD_RUNS_AND_ENDINGS. */
+export type PhysicalSignalKind =
+  | "strange-vehicle"
+  | "footsteps"
+  | "knock"
+  | "unknown-call"
+  | "door-camera-motion"
+  | "outage"
+  | "unusual-connectivity"
+  | "unexpected-delivery"
+  | "nearby-activity";
+
+export type PhysicalThreatKind = "warning" | "outage" | "property-hit";
+
+/**
+ * Durable truth behind one physical escalation. The surface receives only the
+ * signal and its minute; causes, outage end, and impact stay simulation truth.
+ */
+export interface PhysicalThreat {
+  id: string;
+  actorId: string;
+  kind: PhysicalThreatKind;
+  signalKind: PhysicalSignalKind;
+  sourceProbeId: string;
+  sourceInvestigationIds: string[];
+  /** Physical place where this consequence actually landed. */
+  locationId: string;
+  worldMinute: number;
+  /** Hidden end of a temporary outage — never projected as a countdown. */
+  endsWorldMinute?: number;
+  affectedBuildIds: string[];
+  destroyedHardwareIds: string[];
+  /** P3's D030 beat: a peer may adopt automation as part of an escalation. */
+  assistantAdoptedModelId?: string;
 }
 
 /**
@@ -542,6 +593,8 @@ export interface WorldState {
    * is hidden truth that never projects, and nothing outside P3 consumes it.
    */
   probes: RivalProbe[];
+  /** Phase 6 P3 physical escalation records; empty is the untouched baseline. */
+  physicalThreats: PhysicalThreat[];
 }
 
 export interface InitialTargetState
@@ -564,6 +617,7 @@ export interface InitialWorldState {
   builds?: InFlightBuild[];
   investigations?: Investigation[];
   probes?: RivalProbe[];
+  physicalThreats?: PhysicalThreat[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -695,5 +749,8 @@ export function createInitialWorldState(
       ? structuredClone(initial.investigations)
       : [],
     probes: initial.probes ? structuredClone(initial.probes) : [],
+    physicalThreats: initial.physicalThreats
+      ? structuredClone(initial.physicalThreats)
+      : [],
   };
 }

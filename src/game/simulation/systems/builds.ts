@@ -33,10 +33,10 @@ import type {
  *   minutes are computed once, when the job is commissioned, from the rig and
  *   the *delivered* model shortcut at that minute. `dueWorldMinute` is then
  *   plain clock arithmetic, so splitting a wait, restoring a save, or swapping
- *   models mid-build cannot re-time the job — the split-invariance every
- *   prior slice has held. "Interruptions" from the docs land as the designed
- *   consequence of this: mid-build changes affect *future* builds and the
- *   contention pool, never the frozen clock of the current one.
+ *   models mid-build cannot re-roll or rewrite the job — the split-invariance
+ *   every prior slice has held. Phase 6 P3 represents interruptions as separate
+ *   pause intervals: the frozen due minute remains immutable while the derived
+ *   completion boundary gains only time the world was actually out.
  * - **Quality is one frozen roll.** At start, `reasoning` sets the odds of a
  *   clean build (capped below certainty — the docs' "remains fallible"), and
  *   `reliability` splits a non-clean roll between warnings (cosmetic) and
@@ -304,6 +304,14 @@ export function nextBuildId(
 }
 
 /**
+ * Derived completion boundary: frozen commissioning due + closed outage time.
+ * An actively paused build has no finish boundary yet and cannot complete.
+ */
+export function settledBuildDueMinute(build: InFlightBuild): number {
+  return build.dueWorldMinute + (build.accumulatedPausedMinutes ?? 0);
+}
+
+/**
  * Turn every due in-flight build into an owned workflow. Like upkeep, it works
  * from the clock alone: a job whose `dueWorldMinute` has been reached completes
  * once, on the tick that crosses it, and a split wait or save/restore visits
@@ -322,20 +330,23 @@ export function advanceBuilds(
     return events;
   }
 
-  const due = world.builds.filter((build) => build.dueWorldMinute <= toMinute);
+  const due = world.builds.filter(
+    (build) =>
+      build.pausedAtWorldMinute === undefined &&
+      settledBuildDueMinute(build) <= toMinute,
+  );
 
   if (due.length === 0) {
     return events;
   }
 
-  world.builds = world.builds.filter(
-    (build) => build.dueWorldMinute > toMinute,
-  );
+  const dueIds = new Set(due.map((build) => build.id));
+  world.builds = world.builds.filter((build) => !dueIds.has(build.id));
 
-  // Due jobs complete in due-minute order (ties: queue order), so the inventory
-  // and the event list are deterministic regardless of how the queue formed.
+  // Due jobs complete in effective due-minute order (ties: queue order). D034
+  // never rewrites the original due minute or frozen outcome.
   const ordered = [...due].sort(
-    (a, b) => a.dueWorldMinute - b.dueWorldMinute,
+    (a, b) => settledBuildDueMinute(a) - settledBuildDueMinute(b),
   );
 
   for (const build of ordered) {
@@ -348,7 +359,7 @@ export function advanceBuilds(
       label,
       outcome: build.outcome,
       builtWithModelId: build.modelId,
-      acquiredWorldMinute: build.dueWorldMinute,
+      acquiredWorldMinute: settledBuildDueMinute(build),
     });
 
     events.push({
@@ -357,7 +368,7 @@ export function advanceBuilds(
       specId: build.specId,
       modelId: build.modelId,
       outcome: build.outcome,
-      worldMinute: build.dueWorldMinute,
+      worldMinute: settledBuildDueMinute(build),
     });
   }
 

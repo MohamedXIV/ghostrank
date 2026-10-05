@@ -330,6 +330,11 @@ export function probeTick(
       actorId: actor.id,
       subject,
       correct,
+      // A dwelling read is an address, not a homing beacon. Persist the place
+      // the rival actually read so P3 can degrade it after the player relocates.
+      ...(subject === "dwelling"
+        ? { locationId: derivePresence(world.economy.housing).locationId }
+        : {}),
       worldMinute,
     };
     world.probes.push(probe);
