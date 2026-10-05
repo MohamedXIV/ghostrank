@@ -117,6 +117,19 @@ export function syncWorldProjection(
     ]),
   );
 
+  // P4 — condition name and minute only. P5 owns causal explanation; threat,
+  // probe, investigation, and location ids stay out of TinyBase during the run.
+  const compromiseRows = Object.fromEntries(
+    projection.compromises.map((record) => [
+      record.id,
+      {
+        kind: record.kind,
+        label: record.label,
+        worldMinute: record.worldMinute,
+      },
+    ]),
+  );
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -504,6 +517,7 @@ export function syncWorldProjection(
     store.setTable("investigationSignals", signalRows);
     store.setTable("probes", probeRows);
     store.setTable("physicalSignals", physicalSignalRows);
+    store.setTable("compromises", compromiseRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
