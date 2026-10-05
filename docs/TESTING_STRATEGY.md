@@ -108,6 +108,12 @@ Critical invariants include:
 - retirement variant/detail survive save/restore as derived presentation without leaking hidden relationship/probe/investigation truth,
 - completed history archives final authoritative state once; browse summaries are derived, read-only, and cannot expose hidden ending/probe/investigation/relationship truth,
 - a failed archive may delay the active→history move but must never make a terminal run playable again,
+- long-run pressure is a strict no-op before day 14 and calendar age alone never raises it,
+- veteran pressure derives from causal history, never rank or the starting network,
+- long-run pressure may amplify only existing contract/probe/physical routes and may not fabricate their prerequisites,
+- whole and split waits crossing the veteran-pressure activation boundary produce the same causal state,
+- player-facing long-run pressure exposes only a coarse band and broad reasons, never the numeric score/bonuses or hidden source truth,
+- P5 adds no authoritative save field; save/restore must derive the same pressure from existing history,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
