@@ -4,6 +4,7 @@ import {
   BALANCE_TELEMETRY_HORIZON_DAYS,
   BALANCE_TELEMETRY_SEEDS,
   authoredContentCounts,
+  numericSummary,
   runBalanceTelemetry,
   sampleBalanceRun,
 } from "@/game/telemetry/balance-telemetry";
@@ -23,6 +24,28 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       softwareListings: 3,
       workflowSpecs: 3,
     });
+  });
+
+  it("uses the mathematical median for even sample counts", () => {
+    expect(numericSummary([1, 2, 100, 200])).toEqual({
+      min: 1,
+      median: 51,
+      max: 200,
+      mean: 75.75,
+    });
+  });
+
+  it("never lets career-exit telemetry advance past the requested horizon", () => {
+    const horizonDays = 15;
+    const report = runBalanceTelemetry({
+      seeds: [1, 2, 3, 4, 5, 6, 7, 8],
+      horizonDays,
+      scenarios: ["career-exit"],
+    });
+
+    expect(report.scenarios["career-exit"].runMinutes.max).toBeLessThanOrEqual(
+      horizonDays * 24 * 60,
+    );
   });
 
   it("is deterministic for the same seed, policy and horizon", () => {
