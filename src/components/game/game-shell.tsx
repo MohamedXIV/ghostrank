@@ -113,6 +113,9 @@ function ActiveGameShell({
   const endingMinute = Number(
     useCell("meta", "run", "worldMinute", session.projection) ?? 0,
   );
+  const endingDetail = String(
+    useCell("meta", "run", "detail", session.projection) ?? "",
+  );
 
   if (ended) {
     return (
@@ -123,7 +126,8 @@ function ActiveGameShell({
             final // {formatWorldTime(endingMinute)}
           </div>
           <div className="boot-line">
-            the handle is closed // this run accepts no further commands
+            {endingDetail ||
+              "the handle is closed // this run accepts no further commands"}
           </div>
         </section>
       </main>
