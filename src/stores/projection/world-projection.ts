@@ -175,6 +175,13 @@ export function syncWorldProjection(
       }
     : {};
 
+  const longRunPressureRows = {
+    current: {
+      band: projection.longRunPressure.band,
+      reasons: projection.longRunPressure.reasons.join(","),
+    },
+  };
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -566,6 +573,7 @@ export function syncWorldProjection(
     store.setTable("postmortems", postmortemRows);
     store.setTable("postmortemSteps", postmortemStepRows);
     store.setTable("retirement", retirementRows);
+    store.setTable("longRunPressure", longRunPressureRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);
