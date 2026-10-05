@@ -8,10 +8,7 @@ import {
   derivePostmortems,
 } from "@/game/simulation/systems/postmortem";
 import { probeArtifactOf } from "@/game/simulation/systems/probes";
-import type {
-  CompromiseRecord,
-  WorldState,
-} from "@/game/simulation/state/world-state";
+import type { WorldState } from "@/game/simulation/state/world-state";
 import {
   createWorldProjectionStore,
   syncWorldProjection,
