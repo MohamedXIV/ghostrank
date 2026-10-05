@@ -520,7 +520,12 @@ describe("machine projection", () => {
   it("surfaces an empty rack and full listings by default", () => {
     const economy = projectWorld(createSliceWorldState()).economy;
     expect(economy.ownedMachines).toEqual([]);
-    expect(economy.machineListings).toHaveLength(MACHINE_CATALOG.length);
+    expect(economy.machineListings).toHaveLength(
+      MACHINE_CATALOG.filter((item) => !item.exotic).length,
+    );
+    expect(economy.machineListings.every((item) => item.exotic === false)).toBe(
+      true,
+    );
     expect(economy.ownedMachineCapability).toEqual({
       compute: 0,
       memory: 0,
