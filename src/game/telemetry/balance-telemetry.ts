@@ -69,11 +69,13 @@ export interface BalanceTelemetrySample {
   ledgerValueMoved: number;
   contractCredits: number;
   contracts: {
-    offered: number;
-    accepted: number;
+    created: number;
+    everAccepted: number;
     completed: number;
     expired: number;
     declined: number;
+    openOffered: number;
+    openAccepted: number;
   };
   escalations: number;
   compromises: number;
@@ -114,11 +116,13 @@ export interface BalanceTelemetryScenarioSummary {
     improvement: NumericSummary;
   };
   contracts: {
-    offered: number;
-    accepted: number;
+    created: number;
+    everAccepted: number;
     completed: number;
     expired: number;
     declined: number;
+    openOffered: number;
+    openAccepted: number;
   };
   pressureBands: Record<LongRunPressureBand, number>;
   threat: {
@@ -443,16 +447,26 @@ function sampleFromWorld(
   world: WorldState,
 ): BalanceTelemetrySample {
   const contractCounts = {
-    offered: 0,
-    accepted: 0,
-    completed: 0,
-    expired: 0,
-    declined: 0,
+    created: world.underground.contracts.length,
+    everAccepted: world.underground.contracts.filter(
+      (contract) => contract.acceptedWorldMinute !== undefined,
+    ).length,
+    completed: world.underground.contracts.filter(
+      (contract) => contract.status === "completed",
+    ).length,
+    expired: world.underground.contracts.filter(
+      (contract) => contract.status === "expired",
+    ).length,
+    declined: world.underground.contracts.filter(
+      (contract) => contract.status === "declined",
+    ).length,
+    openOffered: world.underground.contracts.filter(
+      (contract) => contract.status === "offered",
+    ).length,
+    openAccepted: world.underground.contracts.filter(
+      (contract) => contract.status === "accepted",
+    ).length,
   };
-
-  for (const contract of world.underground.contracts) {
-    contractCounts[contract.status] += 1;
-  }
 
   const compromiseKinds: Record<CompromiseKind, number> = {
     "rig-lost": 0,
@@ -614,11 +628,13 @@ function summarizeScenario(
   const contractIssuerIds = new Set<string>();
 
   const contractTotals = {
-    offered: 0,
-    accepted: 0,
+    created: 0,
+    everAccepted: 0,
     completed: 0,
     expired: 0,
     declined: 0,
+    openOffered: 0,
+    openAccepted: 0,
   };
   const threat = {
     escalations: 0,
