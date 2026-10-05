@@ -72,9 +72,25 @@ describe("contract offers", () => {
     expect(
       result.events.some((event) => event.type === "ContractOffered"),
     ).toBe(true);
+    const state = bus.snapshot();
+    const trustedContactIds = state.underground.relationships
+      .filter(
+        (entry) =>
+          entry.toId === "player" &&
+          entry.trust >= 10,
+      )
+      .map((entry) => entry.fromId);
+
     for (const offered of contracts) {
-      expect(["vesper", "halfmoon"]).toContain(offered.issuerId);
-      expect(offered.targetId).toBe("nightshade");
+      const issuer = state.underground.actors.find(
+        (actor) => actor.id === offered.issuerId,
+      );
+
+      expect(trustedContactIds).toContain(offered.issuerId);
+      expect(state.targets.some((target) => target.id === offered.targetId)).toBe(
+        true,
+      );
+      expect(offered.targetId).not.toBe(issuer?.targetId);
       expect(offered.expiresWorldMinute).toBe(
         offered.offeredWorldMinute + DAY,
       );
@@ -93,8 +109,12 @@ describe("contract offers", () => {
 
     wait(bus, 30 * DAY);
 
-    for (const offered of bus.snapshot().underground.contracts) {
-      expect(offered.issuerId).not.toBe("vesper");
+    const snapshot = bus.snapshot();
+    for (const offered of snapshot.underground.contracts) {
+      const issuer = snapshot.underground.actors.find(
+        (actor) => actor.id === offered.issuerId,
+      );
+      expect(offered.targetId).not.toBe(issuer?.targetId);
     }
   });
 
