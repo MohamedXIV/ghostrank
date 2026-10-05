@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
@@ -38,6 +38,8 @@ import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
+import type { GameSession } from "@/game/runtime/game-session";
+import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import {
   type ComputerWindowId,
@@ -45,7 +47,7 @@ import {
 } from "@/stores/ui/use-ui-store";
 
 interface ComputerDesktopProps {
-  runtime: GameRuntime;
+  runtime: GameSession;
   onReturnToRoom: () => void;
 }
 
@@ -54,6 +56,7 @@ const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   recon: "RECON INDEX",
   underground: "UNDERGROUND INDEX",
   market: "MARKET // RIG",
+  history: "RUN HISTORY",
 };
 
 const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
@@ -122,6 +125,10 @@ export function ComputerDesktop({
             <span className="launcher-glyph">⌸</span>
             Market
           </button>
+          <button type="button" onClick={() => openWindow("history")}>
+            <span className="launcher-glyph">▤</span>
+            History
+          </button>
         </nav>
 
         <div className="desktop-grid" aria-hidden="true" />
@@ -173,6 +180,17 @@ export function ComputerDesktop({
             <MarketApp runtime={runtime} />
           </WindowFrame>
         )}
+        {openWindows.includes("history") && (
+          <WindowFrame
+            id="history"
+            title={WINDOW_LABELS.history}
+            focused={focusedWindow === "history"}
+            onFocus={() => focusWindow("history")}
+            onClose={() => closeWindow("history")}
+          >
+            <HistoryApp runtime={runtime} />
+          </WindowFrame>
+        )}
       </div>
 
       <footer className="os-footer">
@@ -217,6 +235,145 @@ function WindowFrame({
       </header>
       <div className="window-content">{children}</div>
     </section>
+  );
+}
+
+
+function HistoryApp({ runtime }: { runtime: GameSession }) {
+  const [runs, setRuns] = useState<CompletedRunSummary[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void runtime
+      .history()
+      .then((history) => {
+        if (mounted) {
+          setRuns(history);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setRuns([]);
+          setError("completed-run history could not be read");
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [runtime]);
+
+  return (
+    <div className="history-app">
+      <section aria-label="Completed runs">
+        <span className="panel-label">COMPLETED RUNS</span>
+        {runs === null ? (
+          <p className="underground-empty">Reading local archive…</p>
+        ) : error ? (
+          <p className="underground-empty">{error}</p>
+        ) : runs.length === 0 ? (
+          <p className="underground-empty">
+            No completed runs are archived on this browser yet.
+          </p>
+        ) : (
+          <div className="history-runs">
+            {runs.map((run, index) => (
+              <article
+                className="history-run"
+                key={`${run.endingStatus}:${run.endingWorldMinute}:${index}`}
+              >
+                <div className="history-run-heading">
+                  <div>
+                    <span className="panel-label">
+                      {run.endingLabel}
+                      {run.retirementVariant
+                        ? ` // ${run.retirementVariant
+                            .replaceAll("-", " ")
+                            .toUpperCase()}`
+                        : ""}
+                    </span>
+                    <strong>{run.handle}</strong>
+                  </div>
+                  <span className="underground-time">
+                    {formatWorldTime(run.endingWorldMinute)}
+                  </span>
+                </div>
+
+                {run.endingDetail && (
+                  <p className="analysis-caveat">{run.endingDetail}</p>
+                )}
+
+                <ul className="underground-feed">
+                  <li>
+                    <span>final rank</span>
+                    <span>#{run.finalRank.toLocaleString("en-US")}</span>
+                  </li>
+                  <li>
+                    <span>credits left</span>
+                    <span>{run.finalCredits.toLocaleString("en-US")} cr</span>
+                  </li>
+                  <li>
+                    <span>value moved</span>
+                    <span>{run.valueMoved.toLocaleString("en-US")} cr</span>
+                  </li>
+                  <li>
+                    <span>completed contracts</span>
+                    <span>{run.completedContracts}</span>
+                  </li>
+                  <li>
+                    <span>intrusive escalations</span>
+                    <span>{run.operationEscalations}</span>
+                  </li>
+                  <li>
+                    <span>authored workflows</span>
+                    <span>{run.authoredWorkflows}</span>
+                  </li>
+                  <li>
+                    <span>compromises</span>
+                    <span>{run.compromiseCount}</span>
+                  </li>
+                </ul>
+
+                {run.descriptors.length > 0 && (
+                  <p className="underground-note">
+                    reputation //{" "}
+                    {run.descriptors.map((entry) => entry.label).join(" · ")}
+                  </p>
+                )}
+
+                {run.postmortems.map((postmortem) => (
+                  <div
+                    className="history-postmortem"
+                    key={postmortem.compromiseId}
+                  >
+                    <span className="panel-label">
+                      POSTMORTEM // {postmortem.compromiseLabel} //{" "}
+                      {postmortem.attribution === "complete"
+                        ? "COMPLETE"
+                        : "INCOMPLETE ATTRIBUTION"}
+                    </span>
+                    <ul className="underground-feed">
+                      {postmortem.steps.map((step) => (
+                        <li key={step.id}>
+                          <span className="underground-time">
+                            {formatWorldTime(step.worldMinute)}
+                          </span>
+                          <span>{step.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="underground-note">{postmortem.note}</p>
+                  </div>
+                ))}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
