@@ -339,7 +339,7 @@ function HistoryApp({ runtime }: { runtime: GameSession }) {
 
                 {run.descriptors.length > 0 && (
                   <p className="underground-note">
-                    reputation //{" "}
+                    {"reputation // "}
                     {run.descriptors.map((entry) => entry.label).join(" · ")}
                   </p>
                 )}
@@ -350,7 +350,9 @@ function HistoryApp({ runtime }: { runtime: GameSession }) {
                     key={postmortem.compromiseId}
                   >
                     <span className="panel-label">
-                      POSTMORTEM // {postmortem.compromiseLabel} //{" "}
+                      {"POSTMORTEM // "}
+                      {postmortem.compromiseLabel}
+                      {" // "}
                       {postmortem.attribution === "complete"
                         ? "COMPLETE"
                         : "INCOMPLETE ATTRIBUTION"}
