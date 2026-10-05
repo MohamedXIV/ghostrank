@@ -10,7 +10,7 @@ import type { SoftwareEffect } from "@/content/software-catalog";
  * here executes, parses a shell, or touches the real machine, which is the
  * docs' "safe virtual data, not executable host code" rule made structural.
  *
- * The specs mirror the three premium licenses one-for-one, on purpose: #23's
+ * The specs mirror the premium licenses one-for-one, on purpose: #23's
  * exit criterion is "the player can replace at least one premium workflow with
  * a self-built alternative", and the only way to *check* that is to build the
  * same effects the vendor rents. Core rule from the issue: software creation
