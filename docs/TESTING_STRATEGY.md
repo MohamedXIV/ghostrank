@@ -96,6 +96,8 @@ Critical invariants include:
 - resource balances do not become negative without explicit debt mechanics,
 - run-ending events are terminal unless a documented continuation rule exists,
 - the first terminal ending is immutable and later gameplay commands cannot mutate or advance that run,
+- an ending inside a time command clamps authoritative time to that boundary and prevents all later same-tick/tail systems from running,
+- forced-ending eligibility is deterministic from causal history and never player rank,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
