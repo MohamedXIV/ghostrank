@@ -336,7 +336,7 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0–P4 delivered; P5 exceptional long-run pressure is next. Tracked by #25.**
+**Status: in progress — P0–P5 delivered; P6 bounded exotic/quantum capability is next. Tracked by #25.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
@@ -346,7 +346,7 @@ Grounded slice order:
 - **P2 — voluntary exit plan** *(delivered; D039)*: PLAN → visible wind-down checklist → 60-minute COMMIT → two-day live-world cooling → derived READY, with cancellation and no ending decision yet.
 - **P3 — retirement variants + rare White VANISHED** *(delivered; D040)*: READY closes only on explicit finish; VANISHED/RETIRED tone derives from completed-work/reputation/consequence history, never the starting board or rank.
 - **P4 — completed-run history** *(delivered; D041)*: browser IndexedDB atomically moves the canonical final state from active to history; summaries/postmortems are derived on demand in a read-only GHOST/OS History app, while fresh active-run creation remains separate. Closed #40 supplied only the archive pattern; D037 remains the terminal model.
-- **P5 — exceptional long-run pressure**: veteran-run pressure from world history rather than rank grind.
+- **P5 — exceptional long-run pressure** *(delivered; D042 / #46)*: after a strict two-week no-op gate, accumulated causal history can increase existing contract/probe/physical pressure in bounded bands; age alone, rank, and starting board never create difficulty.
 - **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-terminal-contract.md`, D037): Phase 7 now has one simulation-owned terminal contract instead of an ending screen convention. `WorldState.ending` is null while live and becomes one immutable `RunEndingRecord` when `endRun` succeeds; the first final status wins and later attempts cannot rewrite it. Every gameplay command is rejected with `RUN_ENDED` before dispatch once terminality exists, so time and state cannot move after a run ends. The canonical save schema persists the record with a legacy `null` default, while the player projection/TinyBase expose only final status/label/minute and keep the authoritative cause id private. GameShell renders the final state from that projection. No eligibility rule ships in P0: an ordinary live run still cannot end spontaneously.
