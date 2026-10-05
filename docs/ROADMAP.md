@@ -336,7 +336,18 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: planned / next — Phase 6 is complete. Tracked by #25.**
+**Status: in progress — P0 terminal contract delivered; P1 forced-ending eligibility is next. Tracked by #25.**
+
+Grounded slice order:
+- **P0 — terminal run contract + outcome projection** *(delivered; D037)*: one durable `WorldState.ending` record, shared `endRun` transition, `RunEnded` event, terminal command guard, legacy-save default, safe final projection and in-world final screen. P0 triggers no ending by itself.
+- **P1 — forced ending eligibility**: deterministically consume existing Phase 6 conditions/provenance for arrested / unmasked / missing / compromised / stranded endings, never rank-as-power.
+- **P2 — voluntary exit plan**: retirement as a world-time operation, not a menu button.
+- **P3 — retirement variants + rare White VANISHED**: ending identity derives from actual run history/context rather than starting package alone.
+- **P4 — completed-run history**: archive summaries/postmortems behind the persistence boundary while keeping active-run creation separate.
+- **P5 — exceptional long-run pressure**: veteran-run pressure from world history rather than rank grind.
+- **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
+
+**P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-terminal-contract.md`, D037): Phase 7 now has one simulation-owned terminal contract instead of an ending screen convention. `WorldState.ending` is null while live and becomes one immutable `RunEndingRecord` when `endRun` succeeds; the first final status wins and later attempts cannot rewrite it. Every gameplay command is rejected with `RUN_ENDED` before dispatch once terminality exists, so time and state cannot move after a run ends. The canonical save schema persists the record with a legacy `null` default, while the player projection/TinyBase expose only final status/label/minute and keep the authoritative cause id private. GameShell renders the final state from that projection. No eligibility rule ships in P0: an ordinary live run still cannot end spontaneously, leaving P1 to decide which concrete Phase 6 histories actually cross the terminal boundary.
 
 Deliverables:
 - voluntary exit plan,
