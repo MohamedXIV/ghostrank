@@ -374,7 +374,7 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: active — P0–P2 delivered; P3 contract breadth is next. Tracked by #26.**
+**Status: active — P0–P3 delivered; P4 location + physical-life breadth is next. Tracked by #26.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
 
@@ -382,7 +382,7 @@ Grounded slice order:
 - **P0 — data-driven world-content roster** *(delivered; D044 / #48)*: authored peers/targets/infrastructure move out of `slice-world.ts` into a typed, validated, clone-on-instantiation content roster while the default Phase 2–7 world remains behaviorally identical.
 - **P1 — local balance telemetry baseline** *(delivered; D045 / #49)*: 32 fixed seeds × four real-command policies over 30 world days report run length, endings, economy/rank movement, contract/threat activity and content exposure before breadth tuning.
 - **P2 — target + NPC breadth** *(delivered; D046 / #50)*: expand to 10 peers / 6 targets / 14 machines / 17 services through the P0 roster only; all targets reuse the same evidence/operation rules and no rank gate or target level is added.
-- **P3 — contract breadth**: broaden opportunities through existing evidence/operation/value/relationship rules.
+- **P3 — contract breadth** *(delivered; D047 / #51)*: expand from two to four objective predicates — service report, infrastructure map, quiet recon, intrusion — all verified from existing evidence/traces and resolved through the same contract/value/relationship path.
 - **P4 — location + physical-life breadth**: broaden existing capability/anonymity/travel/upkeep trade-offs.
 - **P5 — market breadth**: broaden tools/machines/models/software/workflows through existing rules.
 - **P6 — social/event breadth + alpha calibration**: broaden authored situations, then tune with telemetry.
@@ -393,6 +393,9 @@ Grounded slice order:
 
 
 **P2 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-target-npc-breadth.md`, D046): the authored world now contains ten peers and six targets. VELVETWIRE, IRONVEIL, TALLYMAN, DAYSTAR and ROOKERY add scam/extortion/predatory-market/corporate/rival topology through ordinary actor/target/machine/service records; archetypes remain editorial-only. Generic operation tests prove the new targets use the same command/evidence path at rank 1 and rank 999,999. P1 telemetry confirms the breadth is reachable (all six targets and all ten actors appear), while also measuring the expected ecosystem-density increase; no P2 mechanic retune hides that change, leaving explicit calibration to P6.
+
+
+**P3 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-contract-breadth.md`, D047): contracts remain predicates over the freeform simulation rather than scripted missions. `recon-report` still sells observed service evidence; `infrastructure-map` asks for observed machine coverage; `quiet-recon` requires known infrastructure plus a post-acceptance recon-stage disengagement; `intrusion` keeps the post-acceptance escalation requirement. All four reuse accept/decline/deliver, ordinary expiry, ledger payout, issuer trust, forum provenance and reputation movement. `requiredMachines` parallels `requiredServices` as visible persisted scope; no mission-progress flag, new gameplay verb, target level or rank gate is introduced. P1 telemetry is rerun through public commands so P6 can later calibrate the measured opportunity mix rather than P3 hiding its consequences.
 
 
 Deliverables:
