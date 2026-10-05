@@ -13,6 +13,23 @@ export type RetirementBlocker =
 
 export type RetirementStatus = "idle" | "planning" | "cooling" | "ready";
 
+export type RetirementVariant =
+  | "vanished"
+  | "white-quiet"
+  | "black-prosperous"
+  | "black-watchful"
+  | "black-quiet"
+  | "mixed-exit";
+
+export interface RetirementOutcome {
+  status: "retired" | "vanished";
+  variant: RetirementVariant;
+  detail: string;
+}
+
+export const VANISHED_WHITE_COMPLETIONS = 3;
+export const BLACK_PROSPEROUS_CREDITS = 500;
+
 export function retirementBlockers(world: WorldState): RetirementBlocker[] {
   const blockers: RetirementBlocker[] = [];
 
@@ -75,6 +92,123 @@ export function commandAllowedDuringRetirementCooling(type: string): boolean {
   return (
     type === "advanceTime" ||
     type === "readMessage" ||
-    type === "cancelRetirement"
+    type === "cancelRetirement" ||
+    type === "finishRetirement"
   );
+}
+
+function completedContractsByNetwork(
+  world: WorldState,
+  network: "white" | "black",
+): number {
+  const actors = new Map(
+    world.underground.actors.map((actor) => [actor.id, actor.network]),
+  );
+
+  return world.underground.contracts.filter(
+    (contract) =>
+      contract.status === "completed" &&
+      actors.get(contract.issuerId) === network,
+  ).length;
+}
+
+function acceptedContractFailures(world: WorldState): number {
+  return world.underground.contracts.filter(
+    (contract) =>
+      contract.status === "expired" &&
+      contract.acceptedWorldMinute !== undefined,
+  ).length;
+}
+
+function escalationCount(world: WorldState): number {
+  return world.traces.filter(
+    (trace) => trace.cause === "operation-escalation",
+  ).length;
+}
+
+function visibleRetirementPressure(world: WorldState): boolean {
+  return (
+    world.underground.retaliations.length > 0 ||
+    world.physicalThreats.length > 0 ||
+    world.compromises.length > 0
+  );
+}
+
+/**
+ * Phase 7 P3 — derive retirement identity from actual run history, never from
+ * the starting White/Black package and never from player rank.
+ *
+ * VANISHED is deliberately narrow: sustained White-scene work, no Black-scene
+ * completed work, no failed accepted obligation, no Predator-level escalation
+ * pattern, no catastrophic compromise, and no social unmasking incident.
+ * Everything else still retires successfully; the variant changes only the
+ * closing tone.
+ */
+export function deriveRetirementOutcome(
+  world: WorldState,
+): RetirementOutcome | null {
+  if (!retirementReady(world)) {
+    return null;
+  }
+
+  const whiteCompleted = completedContractsByNetwork(world, "white");
+  const blackCompleted = completedContractsByNetwork(world, "black");
+  const missedAccepted = acceptedContractFailures(world);
+  const escalations = escalationCount(world);
+  const unmasked = world.underground.retaliations.some(
+    (retaliation) => retaliation.kind === "unmasking",
+  );
+
+  if (
+    whiteCompleted >= VANISHED_WHITE_COMPLETIONS &&
+    blackCompleted === 0 &&
+    missedAccepted === 0 &&
+    escalations < 3 &&
+    world.compromises.length === 0 &&
+    !unmasked
+  ) {
+    return {
+      status: "vanished",
+      variant: "vanished",
+      detail: "the old handle stays silent; nothing calls it back",
+    };
+  }
+
+  if (blackCompleted >= 2 && blackCompleted > whiteCompleted) {
+    if (visibleRetirementPressure(world)) {
+      return {
+        status: "retired",
+        variant: "black-watchful",
+        detail: "the work stops; the habit of watching the door does not",
+      };
+    }
+
+    if (world.economy.credits >= BLACK_PROSPEROUS_CREDITS) {
+      return {
+        status: "retired",
+        variant: "black-prosperous",
+        detail: "the handle closes with money left after the last job",
+      };
+    }
+
+    return {
+      status: "retired",
+      variant: "black-quiet",
+      detail: "the market loses a handle without getting a final story",
+    };
+  }
+
+  if (whiteCompleted > blackCompleted && whiteCompleted > 0) {
+    return {
+      status: "retired",
+      variant: "white-quiet",
+      detail: "the handle goes quiet after leaving more promises kept than broken",
+    };
+  }
+
+  return {
+    status: "retired",
+    variant: "mixed-exit",
+    detail: "the handle closes without belonging cleanly to either side",
+  };
 }
