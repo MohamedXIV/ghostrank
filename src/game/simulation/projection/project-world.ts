@@ -34,6 +34,12 @@ import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import { deriveInvestigationStage } from "@/game/simulation/systems/investigations";
 import { probeArtifactOf } from "@/game/simulation/systems/probes";
 import {
+  compromiseLabel,
+  derivePostmortems,
+  type PostmortemAttribution,
+  type PostmortemStepKind,
+} from "@/game/simulation/systems/postmortem";
+import {
   derivePresence,
   relocationMinutes,
 } from "@/game/simulation/systems/location";
@@ -312,6 +318,28 @@ export interface VisibleCompromise {
   kind: CompromiseKind;
   label: string;
   worldMinute: number;
+}
+
+/**
+ * P5's postmortem is a safe derived read over hidden provenance. The text has
+ * already been constrained to player-knowable facts; no source ids or hidden
+ * truth fields cross this interface.
+ */
+export interface VisiblePostmortemStep {
+  id: string;
+  kind: PostmortemStepKind;
+  worldMinute: number;
+  text: string;
+}
+
+export interface VisiblePostmortem {
+  compromiseId: string;
+  compromiseKind: CompromiseKind;
+  compromiseLabel: string;
+  worldMinute: number;
+  attribution: PostmortemAttribution;
+  note: string;
+  steps: VisiblePostmortemStep[];
 }
 
 export interface VisibleHandle {
@@ -657,6 +685,8 @@ export interface WorldProjection {
   physicalSignals: VisiblePhysicalSignal[];
   /** Phase 6 P4: durable named compromise conditions, newest first. */
   compromises: VisibleCompromise[];
+  /** Phase 6 P5: player-safe causal reads, one per compromise. */
+  postmortems: VisiblePostmortem[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1361,18 +1391,11 @@ function projectPhysicalSignals(state: WorldState): VisiblePhysicalSignal[] {
   }));
 }
 
-const COMPROMISE_LABELS: Record<CompromiseKind, string> = {
-  "rig-lost": "RIG LOST",
-  "dwelling-lost": "DWELLING LOST",
-  "identity-exposed": "IDENTITY EXPOSED",
-  stranded: "STRANDED",
-};
-
 function projectCompromises(state: WorldState): VisibleCompromise[] {
   return [...state.compromises].reverse().map((record) => ({
     id: record.id,
     kind: record.kind,
-    label: COMPROMISE_LABELS[record.kind],
+    label: compromiseLabel(record.kind),
     worldMinute: record.worldMinute,
   }));
 }
@@ -1471,6 +1494,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     probes: projectProbes(state),
     physicalSignals: projectPhysicalSignals(state),
     compromises: projectCompromises(state),
+    postmortems: derivePostmortems(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),
