@@ -814,6 +814,31 @@ function describeProbeTell(artifactKind: string): string {
   }
 }
 
+function describePhysicalSignal(kind: string): string {
+  switch (kind) {
+    case "strange-vehicle":
+      return "the same unfamiliar vehicle has been sitting where it can see the entrance";
+    case "footsteps":
+      return "footsteps stopped outside long enough to listen";
+    case "knock":
+      return "someone knocked once and left before you reached the door";
+    case "unknown-call":
+      return "an unknown caller rang and said nothing";
+    case "door-camera-motion":
+      return "the door camera caught movement that never reached the door";
+    case "outage":
+      return "power dropped without the rest of the block going dark";
+    case "unusual-connectivity":
+      return "your local connection changed shape for a few minutes";
+    case "unexpected-delivery":
+      return "a delivery appeared that nobody here ordered";
+    case "nearby-activity":
+      return "there is too much quiet activity close to the room";
+    default:
+      return "something outside the network does not fit";
+  }
+}
+
 function describeIncident(
   actorHandle: string,
   counterpartHandle: string,
@@ -852,6 +877,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const signalTable = useTable("investigationSignals", runtime.projection);
   // Phase 6 P2: the tells rival probes leaked into your logs.
   const probeTable = useTable("probes", runtime.projection);
+  // Phase 6 P3: physical evidence only — never the cause or a countdown.
+  const physicalSignalTable = useTable("physicalSignals", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -913,6 +940,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
+  const physicalSignals = Object.entries(physicalSignalTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
   const caseStage = (investigationId: string): string =>
     cases[investigationId] ?? "probing";
 
@@ -958,7 +990,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
 
       <section aria-label="Attention">
         <span className="panel-label">ATTENTION</span>
-        {signals.length === 0 && tells.length === 0 ? (
+        {signals.length === 0 &&
+        tells.length === 0 &&
+        physicalSignals.length === 0 ? (
           <p className="underground-empty">
             Nothing unusual in the logs. Nobody has asked about you yet.
           </p>
@@ -986,9 +1020,19 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span>{describeProbeTell(String(entry.artifactKind ?? ""))}</span>
               </li>
             ))}
+            {physicalSignals.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))} // OUTSIDE
+                </span>
+                <span>{describePhysicalSignal(String(entry.kind ?? ""))}</span>
+              </li>
+            ))}
           </ul>
         )}
-        {(signals.length > 0 || tells.length > 0) && (
+        {(signals.length > 0 ||
+          tells.length > 0 ||
+          physicalSignals.length > 0) && (
           <p className="analysis-caveat">
             Each line is a thing you noticed, not a verdict. None of them says
             how close anyone is — lay low, change relays, or move, and see
@@ -2113,8 +2157,10 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                     {Number(entry.storage ?? 0)} storage
                   </span>
                   <span className="market-time">
-                    started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} · due{" "}
-                    {formatWorldTime(Number(entry.dueWorldMinute ?? 0))}
+                    started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} ·{" "}
+                    {entry.paused === true
+                      ? `PAUSED // frozen due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`
+                      : `due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`}
                   </span>
                 </div>
                 <button
