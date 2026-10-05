@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "telemetry:balance": "vitest run src/game/telemetry/balance-telemetry.test.ts --reporter=verbose"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.1",
