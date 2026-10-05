@@ -1023,7 +1023,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             {physicalSignals.map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
-                  {formatWorldTime(Number(entry.worldMinute ?? 0))} // OUTSIDE
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))} {"// OUTSIDE"}
                 </span>
                 <span>{describePhysicalSignal(String(entry.kind ?? ""))}</span>
               </li>
