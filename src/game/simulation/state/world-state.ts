@@ -36,12 +36,17 @@ export interface RunEndingRecord {
  */
 export type RetirementStage = "planning" | "cooling";
 
-export interface RetirementPlan {
-  stage: RetirementStage;
-  startedWorldMinute: number;
-  committedWorldMinute?: number;
-  coolingUntilWorldMinute?: number;
-}
+export type RetirementPlan =
+  | {
+      stage: "planning";
+      startedWorldMinute: number;
+    }
+  | {
+      stage: "cooling";
+      startedWorldMinute: number;
+      committedWorldMinute: number;
+      coolingUntilWorldMinute: number;
+    };
 
 export type EvidenceKind =
   | "target-profile"
