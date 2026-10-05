@@ -125,6 +125,8 @@ export interface InFlightBuild {
   dueWorldMinute: number;
   /** Minute the current physical outage paused this job. Absent while running. */
   pausedAtWorldMinute?: number;
+  /** The physical threat that owns the active pause; prevents cross-outage settlement. */
+  pausedByThreatId?: string;
   /** Closed pause intervals already paid by the clock. Absent means zero. */
   accumulatedPausedMinutes?: number;
   outcome: WorkflowOutcome;
@@ -259,6 +261,12 @@ export interface RivalProbe {
   subject: RivalProbeSubject;
   /** Hidden truth: whether the read matched reality. Never projected. */
   correct: boolean;
+  /**
+   * For a dwelling read only: which derived physical location the rival read.
+   * Hidden and optional so pre-P3/P2 saves remain valid. A later relocation can
+   * therefore invalidate a once-correct address instead of teleporting the hit.
+   */
+  locationId?: string;
   worldMinute: number;
 }
 
@@ -287,6 +295,8 @@ export interface PhysicalThreat {
   signalKind: PhysicalSignalKind;
   sourceProbeId: string;
   sourceInvestigationIds: string[];
+  /** Physical place where this consequence actually landed. */
+  locationId: string;
   worldMinute: number;
   /** Hidden end of a temporary outage — never projected as a countdown. */
   endsWorldMinute?: number;
