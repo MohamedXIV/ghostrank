@@ -117,6 +117,12 @@ export function compromiseTick(
   const threats = world.physicalThreats.filter(
     (threat) => threat.worldMinute === worldMinute,
   );
+  // P3 applies every actor's destruction before P4 folds the boundary. The
+  // last current-minute destructive threat is therefore the one that actually
+  // removed the final component when the component inventory ended empty.
+  const finalDestructiveThreatId = [...threats]
+    .reverse()
+    .find((threat) => threat.destroyedHardwareIds.length > 0)?.id;
 
   for (const threat of threats) {
     if (threat.kind !== "property-hit") {
@@ -127,8 +133,9 @@ export function compromiseTick(
     // catastrophic state only when that hit actually removed the final owned
     // hardware instance. Baseline play still exists; this is condition, not gate.
     if (
-      threat.destroyedHardwareIds.length > 0 &&
-      world.economy.hardware.length === 0
+      threat.id === finalDestructiveThreatId &&
+      world.economy.hardware.length === 0 &&
+      world.economy.ownedMachines.length === 0
     ) {
       const recorded = appendCompromise(world, threat, "rig-lost", worldMinute);
       if (recorded) {
@@ -189,7 +196,9 @@ export function compromiseTick(
     if (
       world.economy.credits === 0 &&
       world.economy.housing === null &&
-      world.economy.hardware.length === 0
+      world.economy.hardware.length === 0 &&
+      world.economy.ownedMachines.length === 0 &&
+      world.economy.playerTools.length === 0
     ) {
       const recorded = appendCompromise(world, threat, "stranded", worldMinute);
       if (recorded) {
