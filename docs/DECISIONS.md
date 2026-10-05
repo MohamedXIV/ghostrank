@@ -338,6 +338,23 @@ Phase 6 already stores enough causal links to explain a catastrophic condition w
 
 Accepted 2026-10-05 as the Phase 6 P5 architectural contract. This completes Phase 6's causal-learning layer; future content may add more provenance-bearing systems, but they must join the read without weakening the epistemic boundary above.
 
+
+## D037 — A run ends once, becomes command-terminal, and archives its final authoritative state (Phase 7 P0)
+
+Phase 7 cannot safely implement arrested, unmasked, retirement, VANISHED, or any other ending as unrelated UI branches. They need one lifecycle boundary first. P0 therefore introduces `WorldState.run` with exactly two states: `active` and `ended`. An ended run owns one `RunEnding` record — kind, cause kind/id, and world minute — and `endRun` is idempotent: the first ending wins permanently. Every simulation command returns `RUN_ENDED` after that point. This is the terminality invariant from `TESTING_STRATEGY.md` made structural rather than left to each future ending.
+
+**P0 defines the vocabulary and boundary, not ending eligibility.** The ending kinds mirror `WORLD_RUNS_AND_ENDINGS.md`: arrested, unmasked, captured, killed, missing, compromised, stranded, forced disappearance, retired, and vanished. No P0 system decides that any current Phase 6 condition deserves one of them. Later Phase 7 slices own those policies and call the same `endRun` primitive. This keeps controversial balance/eligibility out of the lifecycle contract and prevents a P4 compromise from silently becoming terminal just because the terminal machinery now exists.
+
+**The final save is the run-history source of truth.** Storing a second hand-maintained "summary row" alongside WorldState would duplicate exactly the data the project has spent six phases making citable: ledger, traces, relationships, compromises, and P5 postmortems. The browser archive therefore stores the complete validated final portable state. Run-history screens later derive days survived, value moved, major operations, compromises, descriptors, and postmortem from that final state. Irrecoverable statistics, if Phase 7 later proves one cannot be reconstructed, must be added explicitly then rather than guessed in P0.
+
+**Web completion is an atomic move, not save-then-delete.** IndexedDB schema v2 adds a `run-history` store. On completion the final portable state is written to history and the `active-run` slot is deleted inside one transaction, so a crash cannot leave divergent active/history copies or erase both. A recovery path handles the only legacy/fallback edge: if a terminal active snapshot is found on boot, the browser adapter archives it immediately while the current in-memory session stays ended for that boot. The next boot has no active save and may begin a fresh run; a later Phase 7 slice owns an explicit history/new-run surface.
+
+**Desktop remains deferred without becoming an ending dependency.** #19 deliberately moved Tauri/SQLite host hardening after web gameplay completion. The shared persistence boundary therefore makes completed-history methods optional in P0. The web adapter implements them now; the deferred SQLite adapter continues to persist a terminal active snapshot and already understands the `RunEnded` event timestamp. No ending decision depends on archive support, and Phase 10 must reconcile completed-run storage before desktop release.
+
+**Player projection keeps causal privacy.** The live projection exposes only active/ended status and, when ended, the ending kind, label, and minute. Ending cause ids stay authoritative and unprojected; final explanation continues to flow through P5's player-safe postmortem rather than through a terminal-state leak. The first UI is intentionally minimal — a terminal shell proving the lifecycle is observable — while ending-specific presentation belongs to later slices.
+
+Accepted 2026-10-05 as the Phase 7 P0 lifecycle contract. Future ending systems may decide eligibility and presentation, but they must reuse this terminal boundary rather than inventing parallel end-state flags or bypassing the completed-run archive.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
