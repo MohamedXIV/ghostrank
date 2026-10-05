@@ -5,6 +5,12 @@ import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
+  describeForumContractCopy,
+  describeForumUnmaskingCopy,
+  describeIncidentCopy,
+  describePhysicalSignalCopy,
+} from "@/content/social-copy";
+import {
   analyzeTargetFromGui,
   disengageOperationFromGui,
   escalateOperationFromGui,
@@ -986,41 +992,6 @@ function describeProbeTell(artifactKind: string): string {
   }
 }
 
-function describePhysicalSignal(kind: string): string {
-  switch (kind) {
-    case "strange-vehicle":
-      return "the same unfamiliar vehicle has been sitting where it can see the entrance";
-    case "footsteps":
-      return "footsteps stopped outside long enough to listen";
-    case "knock":
-      return "someone knocked once and left before you reached the door";
-    case "unknown-call":
-      return "an unknown caller rang and said nothing";
-    case "door-camera-motion":
-      return "the door camera caught movement that never reached the door";
-    case "outage":
-      return "power dropped without the rest of the block going dark";
-    case "unusual-connectivity":
-      return "your local connection changed shape for a few minutes";
-    case "unexpected-delivery":
-      return "a delivery appeared that nobody here ordered";
-    case "nearby-activity":
-      return "there is too much quiet activity close to the room";
-    default:
-      return "something outside the network does not fit";
-  }
-}
-
-function describeIncident(
-  actorHandle: string,
-  counterpartHandle: string,
-  outcome: string,
-): string {
-  return outcome === "succeeded"
-    ? `${actorHandle} got through ${counterpartHandle}'s defenses`
-    : `${counterpartHandle} turned ${actorHandle} away`;
-}
-
 function describeContract(
   objective: string,
   targetHandle: string,
@@ -1286,7 +1257,12 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))} {"// OUTSIDE"}
                 </span>
-                <span>{describePhysicalSignal(String(entry.kind ?? ""))}</span>
+                <span>
+                  {describePhysicalSignalCopy(
+                    id,
+                    String(entry.kind ?? ""),
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -1510,8 +1486,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                     {String(entry.fromHandle ?? "unknown")} · {id}
                   </span>
                   <span>
-                    heard that{" "}
-                    {describeIncident(
+                    {describeIncidentCopy(
+                      "message",
+                      id,
                       String(entry.claimActorHandle ?? "unknown"),
                       String(entry.claimCounterpartHandle ?? "unknown"),
                       String(entry.claimOutcome ?? ""),
@@ -1547,10 +1524,18 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
                 <span>
                   {entry.subjectKind === "unmasking"
-                    ? `unmasking is a line nobody crosses — ${String(entry.unmaskerHandle ?? "someone")} did`
+                    ? describeForumUnmaskingCopy(
+                        id,
+                        String(entry.unmaskerHandle ?? "someone"),
+                      )
                     : entry.subjectKind === "contract"
-                      ? `vouching for CobaltXZ on the ${String(entry.targetHandle ?? "")} job`
-                      : describeIncident(
+                      ? describeForumContractCopy(
+                          id,
+                          String(entry.targetHandle ?? "unknown"),
+                        )
+                      : describeIncidentCopy(
+                          "forum",
+                          id,
                           String(entry.actorHandle ?? "unknown"),
                           String(entry.counterpartHandle ?? "unknown"),
                           String(entry.outcome ?? ""),
@@ -1589,7 +1574,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
                 <span>
-                  {describeIncident(
+                  {describeIncidentCopy(
+                    "feed",
+                    id,
                     String(entry.actorHandle ?? "unknown"),
                     String(entry.counterpartHandle ?? "unknown"),
                     String(entry.outcome ?? ""),
