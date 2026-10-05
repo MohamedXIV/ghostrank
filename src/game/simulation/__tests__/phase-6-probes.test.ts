@@ -186,7 +186,7 @@ const PRE_P2_DIGESTS = {
 } as const;
 
 describe("byte identity: probes only fire where they are earned", () => {
-  it("replays the golden pre-P2 digests for every scenario", () => {
+  it("replays pre-P2 golden digests wherever Phase 7 P5 remains neutral", () => {
     const idle = new CommandBus(createSliceWorldState());
     wait(idle, 60 * DAY);
     expect(ecosystemDigest(idle.snapshot())).toBe(PRE_P2_DIGESTS["idle-60d"]);
@@ -205,25 +205,10 @@ describe("byte identity: probes only fire where they are earned", () => {
       PRE_P2_DIGESTS["reckless-6d"],
     );
 
-    const reckless60 = new CommandBus(createSliceWorldState());
-    recklessCycles(reckless60, 1);
-    wait(reckless60, 60 * DAY);
-    expect(ecosystemDigest(reckless60.snapshot())).toBe(
-      PRE_P2_DIGESTS["reckless-60d"],
-    );
-
-    const provoked = new CommandBus(createSliceWorldState());
-    recklessCycles(provoked, 3);
-    wait(provoked, 30 * DAY);
-    expect(ecosystemDigest(provoked.snapshot())).toBe(
-      PRE_P2_DIGESTS["provoked-30d"],
-    );
-
-    const housed = new CommandBus(createSliceWorldState());
-    recklessCycles(housed, 2);
-    housed.execute({ type: "rentHousing", housingId: "housing-sleeper-unit" });
-    wait(housed, 20 * DAY);
-    expect(ecosystemDigest(housed.snapshot())).toBe(PRE_P2_DIGESTS["housed-20d"]);
+    // The older 20–60 day reckless/provoked fixtures are intentionally no
+    // longer byte-identity contracts: Phase 7 P5 is the first later slice whose
+    // explicit job is to let accumulated veteran history alter those runs.
+    // P5 owns deterministic coverage of that activation and split invariance.
   });
 
   it("the provoked scenarios really do produce probes — the identity is not vacuous", () => {
