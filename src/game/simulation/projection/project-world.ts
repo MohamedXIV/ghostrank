@@ -49,7 +49,6 @@ import {
   retirementStatus,
   type RetirementBlocker,
   type RetirementStatus,
-  type RetirementVariant,
 } from "@/game/simulation/systems/retirement";
 import {
   deriveValueGraph,
@@ -359,7 +358,6 @@ export interface VisibleRunEnding {
   status: RunEndingStatus;
   label: string;
   worldMinute: number;
-  retirementVariant?: RetirementVariant;
   detail?: string;
 }
 
@@ -1457,12 +1455,7 @@ function projectEnding(state: WorldState): VisibleRunEnding | null {
     status: state.ending.status,
     label: RUN_ENDING_LABELS[state.ending.status],
     worldMinute: state.ending.worldMinute,
-    ...(retirementOutcome
-      ? {
-          retirementVariant: retirementOutcome.variant,
-          detail: retirementOutcome.detail,
-        }
-      : {}),
+    ...(retirementOutcome ? { detail: retirementOutcome.detail } : {}),
   };
 }
 
