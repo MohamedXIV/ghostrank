@@ -44,6 +44,12 @@ import {
   relocationMinutes,
 } from "@/game/simulation/systems/location";
 import {
+  retirementBlockers,
+  retirementStatus,
+  type RetirementBlocker,
+  type RetirementStatus,
+} from "@/game/simulation/systems/retirement";
+import {
   deriveValueGraph,
   type ValueGraph,
 } from "@/game/simulation/systems/value-graph";
@@ -351,6 +357,14 @@ export interface VisibleRunEnding {
   status: RunEndingStatus;
   label: string;
   worldMinute: number;
+}
+
+export interface VisibleRetirement {
+  status: RetirementStatus;
+  blockers: RetirementBlocker[];
+  startedWorldMinute: number;
+  committedWorldMinute?: number;
+  readyWorldMinute?: number;
 }
 
 export interface VisibleHandle {
@@ -700,6 +714,8 @@ export interface WorldProjection {
   postmortems: VisiblePostmortem[];
   /** Phase 7 P0: null while live, terminal status once the run has ended. */
   ending: VisibleRunEnding | null;
+  /** Phase 7 P2: player-controlled wind-down/cooling plan, null when idle. */
+  retirement: VisibleRetirement | null;
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1435,6 +1451,25 @@ function projectEnding(state: WorldState): VisibleRunEnding | null {
   };
 }
 
+function projectRetirement(state: WorldState): VisibleRetirement | null {
+  const plan = state.retirement;
+  if (!plan) {
+    return null;
+  }
+
+  return {
+    status: retirementStatus(state),
+    blockers: plan.stage === "planning" ? retirementBlockers(state) : [],
+    startedWorldMinute: plan.startedWorldMinute,
+    ...(plan.committedWorldMinute === undefined
+      ? {}
+      : { committedWorldMinute: plan.committedWorldMinute }),
+    ...(plan.coolingUntilWorldMinute === undefined
+      ? {}
+      : { readyWorldMinute: plan.coolingUntilWorldMinute }),
+  };
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1531,6 +1566,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     compromises: projectCompromises(state),
     postmortems: derivePostmortems(state),
     ending: projectEnding(state),
+    retirement: projectRetirement(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),
