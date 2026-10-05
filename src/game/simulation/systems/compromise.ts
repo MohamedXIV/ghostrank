@@ -117,24 +117,39 @@ export function compromiseTick(
   const threats = world.physicalThreats.filter(
     (threat) => threat.worldMinute === worldMinute,
   );
-  // P3 applies every actor's destruction before P4 folds the boundary. The
-  // last current-minute destructive threat is therefore the one that actually
-  // removed the final component when the component inventory ended empty.
-  const finalDestructiveThreatId = [...threats]
-    .reverse()
-    .find((threat) => threat.destroyedHardwareIds.length > 0)?.id;
+  // P3 applies every actor's destruction before P4 folds the boundary, so the
+  // live inventory is already the *final* one. Reconstruct the component count
+  // that existed at the start of this boundary, then replay only the recorded
+  // destructive ids in threat order. This gives rig-loss/stranded provenance to
+  // the threat that actually crossed the floor instead of whichever row P4 saw
+  // first after the globally-mutated inventory was already empty.
+  let remainingComponentCount =
+    world.economy.hardware.length +
+    threats.reduce(
+      (sum, threat) => sum + threat.destroyedHardwareIds.length,
+      0,
+    );
 
   for (const threat of threats) {
     if (threat.kind !== "property-hit") {
       continue;
     }
 
+    const beforeComponents = remainingComponentCount;
+    remainingComponentCount = Math.max(
+      0,
+      remainingComponentCount - threat.destroyedHardwareIds.length,
+    );
+    const removedFinalComponent =
+      beforeComponents > 0 &&
+      remainingComponentCount === 0 &&
+      threat.destroyedHardwareIds.length > 0;
+
     // The P3 property hit already performed the destruction. P4 names the
-    // catastrophic state only when that hit actually removed the final owned
-    // hardware instance. Baseline play still exists; this is condition, not gate.
+    // catastrophic state only when this threat crossed the reconstructed
+    // component count to zero and no complete owned machine survives.
     if (
-      threat.id === finalDestructiveThreatId &&
-      world.economy.hardware.length === 0 &&
+      removedFinalComponent &&
       world.economy.ownedMachines.length === 0
     ) {
       const recorded = appendCompromise(world, threat, "rig-lost", worldMinute);
@@ -196,7 +211,7 @@ export function compromiseTick(
     if (
       world.economy.credits === 0 &&
       world.economy.housing === null &&
-      world.economy.hardware.length === 0 &&
+      remainingComponentCount === 0 &&
       world.economy.ownedMachines.length === 0 &&
       world.economy.playerTools.length === 0
     ) {
