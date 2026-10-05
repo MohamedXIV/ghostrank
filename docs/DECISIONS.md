@@ -494,11 +494,11 @@ Phase 8 needs a stable pre-breadth reference before P2–P6 add content. P1 ther
 
 **Policies are scripted players, not state editors.** The four baseline policies are IDLE, CONTRACTOR, RECKLESS, and CAREER-EXIT. Operator policies discover targets/services, accept and deliver contracts, escalate/disengage, wait, and retire only through the same typed commands available to the game. The only seed variation is applied to the initial ecosystem seed before CommandBus takes authority. Outcomes, evidence, endings, money and rank are never written directly by the harness.
 
-**The canonical baseline is 32 fixed seeds over 30 world days.** On the P0 content roster:
+**The canonical baseline is 32 fixed seeds over 30 world days.** The reporting horizon is a hard boundary: a policy may not begin or continue a multi-step retirement sequence past it. Numeric summaries use the mathematical median, averaging the two middle samples for an even seed count. On the P0 content roster:
 - IDLE: 32/32 runs remain active at day 30, with zero money/rank/threat movement; 571 offers were created and left untouched (541 expired, 30 still open).
-- CONTRACTOR: median run length 26,640 minutes (18.5 days); 28/32 end ARRESTED and 4/32 remain active; 797 contracts complete; median final credits 3,880; median rank improvement 9,617 places; 25/32 finish in the VETERAN pressure band.
-- RECKLESS: median run length 22,320 minutes (15.5 days); 28/32 end ARRESTED, 2/32 STRANDED, 2/32 remain active; 709 contracts complete; 475 escalations and 60 compromise records are observed across the sample.
-- CAREER-EXIT: median run length 23,187 minutes (~16.1 days); 20/32 successfully RETIRE and 12/32 end ARRESTED before closure; median final credits 1,940; median rank improvement 4,007 places.
+- CONTRACTOR: median run length 25,920 minutes (18 days); 28/32 end ARRESTED and 4/32 remain active; 797 contracts complete; median final credits 3,750; median rank improvement 9,239 places; 25/32 finish in the VETERAN pressure band.
+- RECKLESS: median run length 22,140 minutes (~15.4 days); 28/32 end ARRESTED, 2/32 STRANDED, 2/32 remain active; 709 contracts complete; 475 escalations and 60 compromise records are observed across the sample.
+- CAREER-EXIT: median run length 23,186.5 minutes (~16.1 days); 20/32 successfully RETIRE and 12/32 end ARRESTED before closure; median final credits 1,930; median rank improvement 3,997 places.
 
 Those numbers describe **these exact policies and this exact content baseline**. They are not hidden difficulty targets, balance acceptance bands, or promises that later content must preserve the same counts. P2–P6 may intentionally change distributions; when they do, the report is rerun so the change is visible and attributable instead of silently retuning the game.
 
