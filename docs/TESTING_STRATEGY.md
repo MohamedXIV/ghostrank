@@ -146,6 +146,11 @@ Critical invariants include:
 - concealment-only safehouses continue to contribute zero capability on every axis,
 - the player projection may expose listing price/capability/kind/anonymity/travel but must not create a second physical-location authority,
 - P4 raises authored housing breadth from 4 to 8; telemetry policies that never lease housing must otherwise remain outcome-identical to the P3 report,
+- Phase 8 P5 market breadth is catalog-only: new hardware/machines/models/tools/software/workflows must use the existing purchase/rent/run/build/projection paths with no special-case command or unlock branch,
+- P5 market actions are rank-independent; rank 1 and rank 999,999 receive the same command results when credits/ownership state match,
+- every new premium software effect has a self-built workflow spec whose effect is exactly equal and whose replacement id resolves to that license,
+- cloud/local model source economics and local contention remain unchanged for new model rows,
+- P5 raises authored market counts only; telemetry policies that never consume market content must remain outcome-identical to P4/P3,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
