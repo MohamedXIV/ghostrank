@@ -753,7 +753,7 @@ export function isObjectiveMet(
       (trace) =>
         trace.targetId === contract.targetId &&
         trace.cause === "operation-escalation" &&
-        trace.worldMinute >= acceptedWorldMinute,
+        trace.worldMinute > acceptedWorldMinute,
     );
   }
 
@@ -788,7 +788,7 @@ export function isObjectiveMet(
         trace.targetId === contract.targetId &&
         trace.cause === "operation-disengagement" &&
         trace.stage === "recon" &&
-        trace.worldMinute >= acceptedWorldMinute,
+        trace.worldMinute > acceptedWorldMinute,
     );
 
     return hasKnownMachine && hasQuietExit;
