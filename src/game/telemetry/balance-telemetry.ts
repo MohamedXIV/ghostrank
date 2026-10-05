@@ -13,7 +13,11 @@ import {
   deriveLongRunPressure,
   type LongRunPressureBand,
 } from "@/game/simulation/systems/long-run-pressure";
-import { retirementStatus } from "@/game/simulation/systems/retirement";
+import {
+  retirementStatus,
+  RETIREMENT_COMMIT_MINUTES,
+  RETIREMENT_COOLING_MINUTES,
+} from "@/game/simulation/systems/retirement";
 import type {
   CompromiseKind,
   RunEndingCauseKind,
@@ -340,11 +344,23 @@ function completedContracts(state: WorldState): number {
   ).length;
 }
 
-function attemptRetirement(bus: CommandBus): void {
+function attemptRetirement(
+  bus: CommandBus,
+  horizonMinute: number,
+): void {
   if (!isLive(bus)) return;
 
   disengageIfOpen(bus);
   const before = bus.snapshot();
+  const retirementMinutes =
+    RETIREMENT_COMMIT_MINUTES + RETIREMENT_COOLING_MINUTES;
+
+  // Telemetry must never observe events after the requested reporting window.
+  // If there is not enough horizon left for the complete voluntary-exit
+  // sequence, this policy simply keeps the run live for the remaining sample.
+  if (horizonMinute - before.worldMinute < retirementMinutes) {
+    return;
+  }
 
   if (
     before.underground.contracts.some(
@@ -368,14 +384,26 @@ function attemptRetirement(bus: CommandBus): void {
     const plan = state.retirement;
     if (!plan || plan.stage !== "cooling") break;
 
-    const remaining = plan.coolingUntilWorldMinute - state.worldMinute;
+    const coolingRemaining =
+      plan.coolingUntilWorldMinute - state.worldMinute;
+    const horizonRemaining = horizonMinute - state.worldMinute;
+    if (horizonRemaining <= 0) break;
+
     execute(bus, {
       type: "advanceTime",
-      minutes: Math.min(TICK_MINUTES, Math.max(1, remaining)),
+      minutes: Math.min(
+        TICK_MINUTES,
+        Math.max(1, coolingRemaining),
+        horizonRemaining,
+      ),
     });
   }
 
-  if (isLive(bus) && retirementStatus(bus.snapshot()) === "ready") {
+  if (
+    isLive(bus) &&
+    bus.snapshot().worldMinute <= horizonMinute &&
+    retirementStatus(bus.snapshot()) === "ready"
+  ) {
     execute(bus, { type: "finishRetirement" });
   }
 }
@@ -419,7 +447,7 @@ function runScenario(
             (contract) => contract.status === "accepted",
           )
         ) {
-          attemptRetirement(bus);
+          attemptRetirement(bus, horizonMinute);
         } else {
           processOneContract(bus);
         }
@@ -564,10 +592,17 @@ function sampleFromWorld(
 function numericSummary(values: readonly number[]): NumericSummary {
   const sorted = [...values].sort((a, b) => a - b);
   const total = sorted.reduce((sum, value) => sum + value, 0);
+  const midpoint = Math.floor(sorted.length / 2);
+  const median =
+    sorted.length === 0
+      ? 0
+      : sorted.length % 2 === 0
+        ? ((sorted[midpoint - 1] ?? 0) + (sorted[midpoint] ?? 0)) / 2
+        : (sorted[midpoint] ?? 0);
 
   return {
     min: sorted[0] ?? 0,
-    median: sorted[Math.floor(sorted.length / 2)] ?? 0,
+    median,
     max: sorted.at(-1) ?? 0,
     mean: sorted.length === 0 ? 0 : Number((total / sorted.length).toFixed(2)),
   };
