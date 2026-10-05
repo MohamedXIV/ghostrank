@@ -11,6 +11,14 @@ import { advanceInvestigations } from "@/game/simulation/systems/investigations"
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { compromiseTick } from "@/game/simulation/systems/compromise";
 import { forcedEndingTick } from "@/game/simulation/systems/endings";
+import {
+  RETIREMENT_COMMIT_MINUTES,
+  beginRetirementPlan,
+  cancelRetirementPlan,
+  commandAllowedDuringRetirementCooling,
+  commitRetirementPlan,
+  retirementBlockers,
+} from "@/game/simulation/systems/retirement";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
@@ -89,6 +97,13 @@ export class CommandBus {
   execute(command: SimulationCommand): CommandResult {
     if (this.world.ending) {
       return this.failure("RUN_ENDED");
+    }
+
+    if (
+      this.world.retirement?.stage === "cooling" &&
+      !commandAllowedDuringRetirementCooling(command.type)
+    ) {
+      return this.failure("RETIREMENT_COOLING_ACTIVE");
     }
 
     switch (command.type) {
@@ -170,6 +185,15 @@ export class CommandBus {
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
+
+      case "startRetirement":
+        return this.startRetirement();
+
+      case "commitRetirement":
+        return this.commitRetirement();
+
+      case "cancelRetirement":
+        return this.cancelRetirement();
     }
   }
 
@@ -613,6 +637,81 @@ export class CommandBus {
           worldMinute: minute,
         },
         ...rewardContract(this.world, contract, minute),
+      ],
+    };
+  }
+
+  private startRetirement(): CommandResult {
+    if (this.world.retirement) {
+      return this.failure("RETIREMENT_ALREADY_ACTIVE");
+    }
+
+    beginRetirementPlan(this.world);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "RetirementPlanned",
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private commitRetirement(): CommandResult {
+    const plan = this.world.retirement;
+    if (!plan) {
+      return this.failure("NO_RETIREMENT_PLAN");
+    }
+    if (plan.stage !== "planning") {
+      return this.failure("RETIREMENT_ALREADY_COMMITTED");
+    }
+    if (retirementBlockers(this.world).length > 0) {
+      return this.failure("RETIREMENT_BLOCKED");
+    }
+
+    const timeEvents = this.advanceWorldTime(RETIREMENT_COMMIT_MINUTES);
+    if (this.world.ending) {
+      return { ok: true, events: timeEvents };
+    }
+
+    commitRetirementPlan(this.world);
+    const readyWorldMinute = this.world.retirement?.coolingUntilWorldMinute;
+    if (readyWorldMinute === undefined) {
+      return this.failure("RETIREMENT_COMMIT_FAILED");
+    }
+
+    return {
+      ok: true,
+      events: [
+        ...timeEvents,
+        {
+          type: "RetirementCoolingStarted",
+          readyWorldMinute,
+          worldMinute: this.world.worldMinute,
+        },
+      ],
+    };
+  }
+
+  private cancelRetirement(): CommandResult {
+    const plan = this.world.retirement;
+    if (!plan) {
+      return this.failure("NO_RETIREMENT_PLAN");
+    }
+
+    const stage = plan.stage;
+    cancelRetirementPlan(this.world);
+
+    return {
+      ok: true,
+      events: [
+        {
+          type: "RetirementCancelled",
+          stage,
+          worldMinute: this.world.worldMinute,
+        },
       ],
     };
   }
