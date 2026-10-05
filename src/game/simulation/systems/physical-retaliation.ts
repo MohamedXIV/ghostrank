@@ -110,6 +110,7 @@ export function applyActiveOutageToBuild(
   }
 
   build.pausedAtWorldMinute = world.worldMinute;
+  build.pausedByThreatId = outage.id;
   if (!outage.affectedBuildIds.includes(build.id)) {
     outage.affectedBuildIds.push(build.id);
   }
@@ -128,7 +129,11 @@ function settleExpiredOutages(world: WorldState, worldMinute: number): void {
     for (const buildId of outage.affectedBuildIds) {
       const build = world.builds.find((candidate) => candidate.id === buildId);
 
-      if (!build || build.pausedAtWorldMinute === undefined) {
+      if (
+        !build ||
+        build.pausedAtWorldMinute === undefined ||
+        build.pausedByThreatId !== outage.id
+      ) {
         continue;
       }
 
@@ -139,6 +144,7 @@ function settleExpiredOutages(world: WorldState, worldMinute: number): void {
       build.accumulatedPausedMinutes =
         (build.accumulatedPausedMinutes ?? 0) + pausedMinutes;
       delete build.pausedAtWorldMinute;
+      delete build.pausedByThreatId;
     }
   }
 }
@@ -160,6 +166,7 @@ function pauseBuilds(
     }
 
     build.pausedAtWorldMinute = worldMinute;
+    build.pausedByThreatId = threat.id;
     threat.affectedBuildIds.push(build.id);
   }
 }
@@ -217,10 +224,19 @@ function consequenceOf(
         return { kind: "outage", signalKind: "outage" };
       }
       return { kind: "warning", signalKind: "unusual-connectivity" };
-    case "dwelling":
-      return probe.correct
+    case "dwelling": {
+      // A correct address can become stale. Relocation is real counterplay: a
+      // probe of the old room cannot follow the player into the new safehouse.
+      const currentLocationId = derivePresence(world.economy.housing).locationId;
+      const stillAtProbedDwelling =
+        probe.correct &&
+        probe.locationId !== undefined &&
+        probe.locationId === currentLocationId;
+
+      return stillAtProbedDwelling
         ? { kind: "property-hit", signalKind: "strange-vehicle" }
         : { kind: "warning", signalKind: "door-camera-motion" };
+    }
     case "habits":
       return { kind: "warning", signalKind: "nearby-activity" };
   }
@@ -280,6 +296,7 @@ export function physicalRetaliationTick(
       sourceInvestigationIds: world.investigations
         .filter((investigation) => investigation.progress > 0)
         .map((investigation) => investigation.id),
+      locationId: derivePresence(world.economy.housing).locationId,
       worldMinute,
       ...(consequence.kind === "outage"
         ? { endsWorldMinute: worldMinute + PHYSICAL_OUTAGE_MINUTES }
