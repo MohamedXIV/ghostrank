@@ -456,3 +456,18 @@ Phase 7 needs unusually long survival to become harder without quietly turning r
 **P5 intentionally narrows an older golden-digest promise.** Phase 6's byte-identity digests remain pinned for early or neutral scenarios where later systems should still be inert. The old 20–60-day reckless/provoked digests are no longer “must never change” contracts: P5 is the first explicit later slice whose job is to alter veteran causal histories. Dedicated P5 tests now own that activation and whole/split determinism instead of blessing a new opaque hash.
 
 Accepted 2026-10-05 as the Phase 7 P5 exceptional-long-run-pressure contract. P6 now owns bounded exotic/quantum capability; P5 introduces no new capability tier itself.
+
+
+## D043 — Exotic capability is scarce access to ordinary capability, never a new power axis (Phase 7 P6)
+
+Phase 7's final slice ships one fictional quantum-adjacent artifact, the **Cryogenic Annealing Rack**, without creating a parallel “quantum hacking” ruleset. The rack is a normal machine as far as the simulation is concerned: it is bought through `buyMachine`, emits the existing machine/value events, lives in `economy.ownedMachines`, and contributes through the existing five-axis `HardwareCapability` fold.
+
+**Late and rare comes from run history, not rank.** The off-market listing appears only after P5 derives the run as **VETERAN** and the player has completed at least one **clean self-authored workflow**. Rank, starting White/Black board, and target rank are not inputs. Before eligibility the listing is absent from the Market projection, and guessing its catalog id through `box buy` is rejected by the same simulation boundary rather than relying on UI secrecy.
+
+**The lift is deliberately bounded.** The rack contributes `memory +8 / vram +5 / storage +4`, with **compute 0 and network 0**. It therefore widens the existing memory-driven discovery scope and increases local model/build headroom, but it does not shorten survey/inspect/escalate/disengage action minutes, grant a new verb, alter a success roll, bypass evidence, unlock a target, or erase the ordinary constraints that made the run difficult. “Quantum” is fiction/content framing around ordinary capability, not an omnipotent cryptography switch.
+
+**The opportunity is one-shot without a new state flag.** A successful purchase already leaves an append-only machine debit in the authoritative value ledger. That existing provenance is the claim record: once the rack has ever been purchased, selling it does not respawn the offer. Save/restore preserves the same result because both the owned machine and the purchase ledger were already canonical persisted state.
+
+**No new subsystem is introduced.** P6 adds no authoritative WorldState field, migration, RNG stream, command family, event family, capability axis, or host-specific persistence rule. Terminal and GUI both reuse the existing machine purchase command. Player-facing projection exposes only the stock once it is legitimately available plus the ordinary capability numbers and an EXOTIC/one-shot label.
+
+Accepted 2026-10-05 as the Phase 7 P6 bounded-exotic-capability contract. With P0–P6 delivered, Phase 7's planned slices and exit criteria are complete; Phase 8 / #26 becomes the next gameplay phase.
