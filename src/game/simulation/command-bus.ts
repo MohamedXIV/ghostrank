@@ -676,6 +676,18 @@ export class CommandBus {
       return { ok: true, events: timeEvents };
     }
 
+    // The world is live during the commit hour. Re-check the same visible
+    // obligations at the arrival minute before freezing the cooling deadline.
+    // A newly-active obligation keeps the plan in PLANNING, but the hour was
+    // still spent and its world events remain authoritative.
+    if (retirementBlockers(this.world).length > 0) {
+      return {
+        ok: false,
+        events: timeEvents,
+        error: "RETIREMENT_BLOCKED",
+      };
+    }
+
     commitRetirementPlan(this.world);
     const committed = this.world.retirement;
     if (!committed || committed.stage !== "cooling") {
