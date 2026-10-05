@@ -38,7 +38,7 @@ Before authored content becomes authoritative simulation state, P0 rejects:
 - duplicate target ids;
 - duplicate machine ids across targets;
 - duplicate service ids across targets;
-- actor skill/defense/discretion/activity outside 0–100;
+- actor skill/defense/discretion/activity outside integer 0–100;
 - invalid actor/target ranks;
 - unknown assistant model ids;
 - targets with no infrastructure;
