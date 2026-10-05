@@ -101,6 +101,7 @@ import {
   type LedgerDirection,
   type OperationState,
   type RetaliationKind,
+  type RunEndingStatus,
   type UndergroundNetwork,
   type WorkflowOutcome,
   type OpponentReactionKind,
@@ -340,6 +341,16 @@ export interface VisiblePostmortem {
   attribution: PostmortemAttribution;
   note: string;
   steps: VisiblePostmortemStep[];
+}
+
+/**
+ * P0 terminal projection. The cause id remains authoritative provenance for
+ * later run history; the live final screen needs only the final status + time.
+ */
+export interface VisibleRunEnding {
+  status: RunEndingStatus;
+  label: string;
+  worldMinute: number;
 }
 
 export interface VisibleHandle {
@@ -687,6 +698,8 @@ export interface WorldProjection {
   compromises: VisibleCompromise[];
   /** Phase 6 P5: player-safe causal reads, one per compromise. */
   postmortems: VisiblePostmortem[];
+  /** Phase 7 P0: null while live, terminal status once the run has ended. */
+  ending: VisibleRunEnding | null;
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1400,6 +1413,28 @@ function projectCompromises(state: WorldState): VisibleCompromise[] {
   }));
 }
 
+const RUN_ENDING_LABELS: Record<RunEndingStatus, string> = {
+  arrested: "ARRESTED",
+  unmasked: "UNMASKED",
+  missing: "MISSING",
+  compromised: "COMPROMISED",
+  stranded: "STRANDED",
+  retired: "RETIRED",
+  vanished: "VANISHED",
+};
+
+function projectEnding(state: WorldState): VisibleRunEnding | null {
+  if (!state.ending) {
+    return null;
+  }
+
+  return {
+    status: state.ending.status,
+    label: RUN_ENDING_LABELS[state.ending.status],
+    worldMinute: state.ending.worldMinute,
+  };
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1495,6 +1530,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     physicalSignals: projectPhysicalSignals(state),
     compromises: projectCompromises(state),
     postmortems: derivePostmortems(state),
+    ending: projectEnding(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),

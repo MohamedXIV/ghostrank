@@ -22,6 +22,8 @@ Phase 3 adds `WorldState.underground` (actors, relationships, incidents, ecosyst
 
 Phase 4 adds `WorldState.economy` (a `credits` balance, an append-only value ledger and the list of owned hardware) to the same validated contract. `economy` is optional in the schema; saves written before Phase 4 load with an empty wallet (zero credits, no ledger, no hardware). Credits are validated non-negative integers, so a corrupted negative balance is rejected rather than repaired. Ledger entries carry direction, amount, resulting balance, cause and counterparty. Rig capability is derived from owned hardware at projection time and is never stored, matching the derived-not-stored rule used for reputation descriptors.
 
+Phase 7 P0 adds one legacy-defaulted terminal field to the same authoritative save: `WorldState.ending`. It is `null` for a live run and one immutable status/cause/minute record after `RunEnded`. Browser/portable saves preserve it, but completed-run archival is intentionally not part of the active-run adapter yet; Phase 7 P4 will extend the persistence boundary once the history summary contract exists. Player-facing projections omit the hidden cause id.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:
