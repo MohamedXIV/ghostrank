@@ -133,6 +133,18 @@ describe("Phase 7 P2 — voluntary retirement plan", () => {
     expect(legacy.retirement).toBeNull();
   });
 
+  it("rejects a persisted cooling plan that has no frozen deadline", () => {
+    const broken = {
+      ...createSliceWorldState(),
+      retirement: {
+        stage: "cooling",
+        startedWorldMinute: 0,
+      },
+    };
+
+    expect(worldStateSchema.safeParse(broken).success).toBe(false);
+  });
+
   it("reports only visible wind-down blockers", () => {
     expect(retirementBlockers(blockedWorld())).toEqual([
       "active-operation",
