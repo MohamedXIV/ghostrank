@@ -5,6 +5,7 @@ import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
 import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
+import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -589,6 +590,10 @@ function offerContracts(
   const { underground } = world;
   const { seed } = underground;
   const events: SimulationEvent[] = [];
+  const longRunPressure = deriveLongRunPressure(world, worldMinute);
+  const offerPercent =
+    OFFER_PERCENT + longRunPressure.contractOfferBonusPercent;
+  const maxOpenContracts = longRunPressure.maxOpenContracts;
 
   if (world.targets.length === 0) {
     return events;
@@ -597,7 +602,7 @@ function offerContracts(
   for (const issuer of underground.actors) {
     const open = underground.contracts.filter(isOpenContract);
 
-    if (open.length >= MAX_OPEN_CONTRACTS) {
+    if (open.length >= maxOpenContracts) {
       break;
     }
 
@@ -624,7 +629,7 @@ function offerContracts(
 
     if (
       hashUnit(seed, "offer", tickIndex, issuer.id) * 100 >=
-      OFFER_PERCENT
+      offerPercent
     ) {
       continue;
     }
