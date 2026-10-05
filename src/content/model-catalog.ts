@@ -148,6 +148,33 @@ export const MODEL_CATALOG: readonly ModelListing[] = [
     footprint: { vram: 4, storage: 2 },
   },
   {
+    id: "model-cloud-context",
+    label: "Long-Context Class API",
+    source: "cloud",
+    dailyCost: 80,
+    cost: 0,
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.8 },
+    },
+    properties: { reasoning: 4, context: 5, reliability: 3 },
+    footprint: { vram: 0, storage: 0 },
+  },
+  {
+    id: "model-local-reliable",
+    label: "Reliable Compact 7B",
+    source: "local",
+    dailyCost: 0,
+    cost: 750,
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.93 },
+    },
+    properties: { reasoning: 2, context: 3, reliability: 5 },
+    footprint: { vram: 1, storage: 1 },
+    author: "lattice",
+  },
+  {
     id: "model-local-salvage",
     label: "Salvaged Reason Core",
     source: "local",
