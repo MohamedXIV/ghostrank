@@ -146,6 +146,13 @@ Critical invariants include:
 - concealment-only safehouses continue to contribute zero capability on every axis,
 - the player projection may expose listing price/capability/kind/anonymity/travel but must not create a second physical-location authority,
 - P4 raises authored housing breadth from 4 to 8; telemetry policies that never lease housing must otherwise remain outcome-identical to the P3 report,
+- Phase 8 P5 market breadth changes catalog data only; new items must route through existing buy/rent/run/build/resale/upkeep/projection paths with no new effect kind or progression authority,
+- market acquisition, activation and building remain rank-independent for every new P5 entry,
+- cloud model additions keep zero local footprint and recurring provider upkeep; local model additions require ownership and retain local contention,
+- authored tool/model purchases preserve named counterparty provenance through the existing value ledger,
+- every premium software license added in P5 has exactly one Forge replacement with an equal SoftwareEffect,
+- the Phase 7 exotic machine remains the only exotic listing and P5 ordinary machines cannot bypass its derived availability rule,
+- P5 raises authored catalog counts to hardware 8 / machines 7 / models 7 / tools 5 / software 5 / workflows 5; telemetry policies that never touch the market must otherwise remain outcome-identical to P4,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
