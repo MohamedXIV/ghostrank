@@ -336,7 +336,7 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0–P2 delivered; P3 retirement variants is next. Tracked by #25.**
+**Status: in progress — P0–P3 delivered; P4 completed-run history is next. Tracked by #25.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
@@ -344,7 +344,7 @@ Grounded slice order:
 - **P0 — terminal run contract + outcome projection** *(delivered; D037 / #41)*: one durable `WorldState.ending` record, shared `endRun` transition, `RunEnded` event, terminal command guard, legacy-save default, safe final projection and in-world final screen. P0 triggers no ending by itself.
 - **P1 — forced ending eligibility** *(delivered; D038)*: current Phase 6 conditions/provenance deterministically produce ARRESTED / UNMASKED / MISSING / STRANDED / COMPROMISED, with rank absent and exact-tick terminal freeze.
 - **P2 — voluntary exit plan** *(delivered; D039)*: PLAN → visible wind-down checklist → 60-minute COMMIT → two-day live-world cooling → derived READY, with cancellation and no ending decision yet.
-- **P3 — retirement variants + rare White VANISHED**: ending identity derives from actual run history/context rather than starting package alone.
+- **P3 — retirement variants + rare White VANISHED** *(delivered; D040)*: READY closes only on explicit finish; VANISHED/RETIRED tone derives from completed-work/reputation/consequence history, never the starting board or rank.
 - **P4 — completed-run history**: archive summaries/postmortems behind the persistence boundary while keeping active-run creation separate. Closed #40 remains an implementation reference for browser archival only; its competing terminal schema is superseded by D037.
 - **P5 — exceptional long-run pressure**: veteran-run pressure from world history rather than rank grind.
 - **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
