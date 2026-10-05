@@ -524,3 +524,20 @@ P0 created the world-content authoring boundary and P1 measured the one-target b
 **P1 telemetry is rerun rather than ignored.** The expanded roster is reachable: the 32-seed report exposes all ten actors and all six targets; the contractor policy encounters twelve distinct target machines and twelve services. It also shows a material activity increase: contractor probes rise from 403 to 1,723, while ARRESTED outcomes move from 28/32 to 30/32; idle still remains 32/32 active with zero player-driven threat and ORDINARY pressure. P2 records this as a measured consequence of more autonomous actors and opportunities. It does not secretly retune Phase 6/7 mechanics to reproduce the P1 distribution; P6 owns explicit alpha calibration.
 
 Accepted 2026-10-05 as the Phase 8 P2 target/NPC breadth contract. P3 now owns contract breadth through the existing evidence/operation/value/relationship model.
+
+
+## D047 — Contract breadth is a predicate over existing world facts, never a mission-script layer (Phase 8 P3)
+
+Phase 8 needs more opportunity shapes, but contracts must stay inside the same freeform simulation as every other operation. P3 therefore expands the contract objective vocabulary from two kinds to four without adding a mission engine, objective-completion flag, special action verb, or target class.
+
+**Objectives ask for facts the simulation already records.** `recon-report` still requires observed service evidence. `infrastructure-map` requires observed machine evidence. `quiet-recon` requires at least one known target machine plus a post-acceptance recon-stage disengagement trace; an intrusive exit does not count. `intrusion` still requires a post-acceptance escalation trace. The player earns every predicate through the ordinary observe/open/survey/inspect/escalate/disengage path.
+
+**Chronology is authoritative.** Trace-based objectives only accept qualifying traces strictly after the contract's acceptance minute. Acceptance itself costs no world time, so strict chronology prevents an earlier zero-time-adjacent trace at the same minute from retroactively completing newly accepted work. Existing evidence may be sold/reported later where that is the actual objective — machine/service knowledge is durable player knowledge, not a per-contract collectible.
+
+**Rewards and deadlines reuse existing systems.** All four objectives resolve through the same accept/decline/deliver commands, ordinary contract expiry, issuer trust change, forum provenance, value-ledger payout, and 1% reputation/rank improvement. Initial deterministic tuning is: recon-report 2 days / 80 + 40 per service; infrastructure-map 3 days / 90 + 45 per machine; quiet-recon 2 days / 180; intrusion 4 days / 260. Rank is never an eligibility, payout, or completion input.
+
+**The only new contract datum is visible scope.** `requiredMachines` parallels the existing optional `requiredServices`. It is persisted and projected because the player must know what the issuer asked for. The projection still does not reveal which machines or services exist; it exposes only the requested count, objective, handles, status, and deadlines.
+
+**Telemetry remains a real-command policy.** The P1 harness learns the two new objectives by surveying and disengaging through CommandBus; it does not mark them complete directly. P3 reruns the 32-seed report so any distribution shift is attributable to opportunity mix rather than hidden retuning.
+
+Accepted 2026-10-05 as the Phase 8 P3 contract-breadth contract. P4 owns location + physical-life breadth after P3 gates and telemetry are reconciled.

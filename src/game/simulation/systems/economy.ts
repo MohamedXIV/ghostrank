@@ -13,6 +13,9 @@ type ValueTransferredEvent = Extract<
 
 const RECON_BASE_PAYOUT = 80;
 const RECON_PER_SERVICE = 40;
+const MAP_BASE_PAYOUT = 90;
+const MAP_PER_MACHINE = 45;
+const QUIET_RECON_PAYOUT = 180;
 const INTRUSION_PAYOUT = 260;
 
 /**
@@ -20,13 +23,21 @@ const INTRUSION_PAYOUT = 260;
  * random, never rank-dependent. This closes the payment Phase 3 deferred.
  */
 export function contractPayout(contract: UndergroundContract): number {
-  if (contract.objective === "intrusion") {
-    return INTRUSION_PAYOUT;
+  switch (contract.objective) {
+    case "intrusion":
+      return INTRUSION_PAYOUT;
+    case "quiet-recon":
+      return QUIET_RECON_PAYOUT;
+    case "infrastructure-map":
+      return (
+        MAP_BASE_PAYOUT + MAP_PER_MACHINE * (contract.requiredMachines ?? 1)
+      );
+    case "recon-report":
+      return (
+        RECON_BASE_PAYOUT +
+        RECON_PER_SERVICE * (contract.requiredServices ?? 1)
+      );
   }
-
-  return (
-    RECON_BASE_PAYOUT + RECON_PER_SERVICE * (contract.requiredServices ?? 1)
-  );
 }
 
 /**

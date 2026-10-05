@@ -10,6 +10,7 @@ import {
   PLAYER_ACTOR_ID,
   type ForumPost,
   type ForumSubjectKind,
+  type ContractObjectiveKind,
   type UndergroundActor,
   type UndergroundContract,
   type UndergroundNetwork,
@@ -63,7 +64,16 @@ const OFFER_PERCENT = 10;
 const MAX_OPEN_CONTRACTS = 3;
 const OFFER_WINDOW_MINUTES = 24 * 60;
 const RECON_DUE_MINUTES = 2 * 24 * 60;
+const MAP_DUE_MINUTES = 3 * 24 * 60;
+const QUIET_RECON_DUE_MINUTES = 2 * 24 * 60;
 const INTRUSION_DUE_MINUTES = 4 * 24 * 60;
+
+const CONTRACT_OBJECTIVES: readonly ContractObjectiveKind[] = [
+  "recon-report",
+  "infrastructure-map",
+  "quiet-recon",
+  "intrusion",
+];
 const CONTRACT_DELIVERED_TRUST = 15;
 const CONTRACT_MISSED_TRUST = -15;
 
@@ -661,13 +671,17 @@ function offerContracts(
         )
       ];
     const objective =
-      hashUnit(seed, "offer-objective", tickIndex, issuer.id) < 0.5
-        ? "recon-report"
-        : "intrusion";
+      CONTRACT_OBJECTIVES[
+        Math.floor(
+          hashUnit(seed, "offer-objective", tickIndex, issuer.id) *
+            CONTRACT_OBJECTIVES.length,
+        )
+      ] ?? "recon-report";
     const serviceCount = target.machines.reduce(
       (sum, machine) => sum + machine.services.length,
       0,
     );
+    const machineCount = target.machines.length;
 
     const contract: UndergroundContract = {
       id: `contract:${underground.contracts.length + 1}`,
@@ -686,6 +700,13 @@ function offerContracts(
           hashUnit(seed, "offer-services", tickIndex, issuer.id) * 2,
         );
       contract.requiredServices = Math.max(1, Math.min(asked, serviceCount));
+    } else if (objective === "infrastructure-map") {
+      const asked =
+        1 +
+        Math.floor(
+          hashUnit(seed, "offer-machines", tickIndex, issuer.id) * 2,
+        );
+      contract.requiredMachines = Math.max(1, Math.min(asked, machineCount));
     }
 
     underground.contracts.push(contract);
@@ -708,12 +729,16 @@ export function contractDueMinute(
   contract: Pick<UndergroundContract, "objective">,
   worldMinute: number,
 ): number {
-  return (
-    worldMinute +
-    (contract.objective === "recon-report"
-      ? RECON_DUE_MINUTES
-      : INTRUSION_DUE_MINUTES)
-  );
+  switch (contract.objective) {
+    case "recon-report":
+      return worldMinute + RECON_DUE_MINUTES;
+    case "infrastructure-map":
+      return worldMinute + MAP_DUE_MINUTES;
+    case "quiet-recon":
+      return worldMinute + QUIET_RECON_DUE_MINUTES;
+    case "intrusion":
+      return worldMinute + INTRUSION_DUE_MINUTES;
+  }
 }
 
 /** Objectives are verified from evidence and traces the player already has. */
@@ -721,12 +746,14 @@ export function isObjectiveMet(
   world: WorldState,
   contract: UndergroundContract,
 ): boolean {
+  const acceptedWorldMinute = contract.acceptedWorldMinute ?? 0;
+
   if (contract.objective === "intrusion") {
     return world.traces.some(
       (trace) =>
         trace.targetId === contract.targetId &&
         trace.cause === "operation-escalation" &&
-        trace.worldMinute >= (contract.acceptedWorldMinute ?? 0),
+        trace.worldMinute > acceptedWorldMinute,
     );
   }
 
@@ -738,7 +765,36 @@ export function isObjectiveMet(
     return false;
   }
 
-  const known = new Set(
+  const knownMachines = new Set(
+    world.evidence
+      .filter((record) => record.kind === "machine-presence")
+      .map((record) => record.subjectId),
+  );
+
+  if (contract.objective === "infrastructure-map") {
+    const count = target.machines.filter((machine) =>
+      knownMachines.has(machine.id),
+    ).length;
+
+    return count >= (contract.requiredMachines ?? 1);
+  }
+
+  if (contract.objective === "quiet-recon") {
+    const hasKnownMachine = target.machines.some((machine) =>
+      knownMachines.has(machine.id),
+    );
+    const hasQuietExit = world.traces.some(
+      (trace) =>
+        trace.targetId === contract.targetId &&
+        trace.cause === "operation-disengagement" &&
+        trace.stage === "recon" &&
+        trace.worldMinute > acceptedWorldMinute,
+    );
+
+    return hasKnownMachine && hasQuietExit;
+  }
+
+  const knownServices = new Set(
     world.evidence
       .filter((record) => record.kind === "service-presence")
       .map((record) => record.subjectId),
@@ -746,7 +802,7 @@ export function isObjectiveMet(
   const count = target.machines.reduce(
     (sum, machine) =>
       sum +
-      machine.services.filter((service) => known.has(service.id)).length,
+      machine.services.filter((service) => knownServices.has(service.id)).length,
     0,
   );
 

@@ -134,6 +134,12 @@ Critical invariants include:
 - historical byte-golden tests whose contract predates content breadth reconstruct that historical roster instead of blessing replacement hashes from the expanded world,
 - balance/probability unit tests isolate the causal input they claim to measure from unrelated newly authored contacts,
 - post-breadth telemetry must demonstrate actual non-NIGHTSHADE exposure; activity shifts are recorded for P6 calibration rather than hidden by P2 tuning,
+- Phase 8 P3 contract completion derives only from existing evidence/traces; no objective stores an authoritative completed-progress flag,
+- infrastructure-map can count only player-earned machine-presence evidence and projection exposes only the requested count, never hidden topology,
+- quiet-recon requires a post-acceptance recon-stage disengagement; intrusive or pre-acceptance exits cannot satisfy it,
+- contract objective deadlines, payouts, acceptance and completion are rank-independent,
+- Terminal and GUI continue to emit the same accept/decline/deliver commands for every P3 objective,
+- expanded contract objective shapes round-trip through the canonical save schema without invalidating legacy recon-report/intrusion saves,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing

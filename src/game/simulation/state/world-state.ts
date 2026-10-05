@@ -480,7 +480,11 @@ export interface UndergroundRetaliation {
   worldMinute: number;
 }
 
-export type ContractObjectiveKind = "recon-report" | "intrusion";
+export type ContractObjectiveKind =
+  | "recon-report"
+  | "infrastructure-map"
+  | "quiet-recon"
+  | "intrusion";
 export type ContractStatus =
   | "offered"
   | "accepted"
@@ -495,6 +499,8 @@ export interface UndergroundContract {
   objective: ContractObjectiveKind;
   /** Recon reports only: how many services of the target must be known. */
   requiredServices?: number;
+  /** Infrastructure-map only: how many machines of the target must be known. */
+  requiredMachines?: number;
   status: ContractStatus;
   offeredWorldMinute: number;
   expiresWorldMinute: number;

@@ -1025,13 +1025,24 @@ function describeContract(
   objective: string,
   targetHandle: string,
   requiredServices: number | undefined,
+  requiredMachines: number | undefined,
 ): string {
-  if (objective === "recon-report") {
-    const count = requiredServices ?? 1;
-    return `report ${count} service${count === 1 ? "" : "s"} you have observed on ${targetHandle}`;
+  switch (objective) {
+    case "recon-report": {
+      const count = requiredServices ?? 1;
+      return `report ${count} service${count === 1 ? "" : "s"} you have observed on ${targetHandle}`;
+    }
+    case "infrastructure-map": {
+      const count = requiredMachines ?? 1;
+      return `map ${count} host${count === 1 ? "" : "s"} on ${targetHandle}'s simulated infrastructure`;
+    }
+    case "quiet-recon":
+      return `verify ${targetHandle}'s infrastructure and leave the operation at recon stage`;
+    case "intrusion":
+      return `cross the intrusive boundary on ${targetHandle}`;
+    default:
+      return `work against ${targetHandle}`;
   }
-
-  return `get through ${targetHandle}'s defenses`;
 }
 
 function describeLongRunPressureReason(reason: string): string {
@@ -1448,6 +1459,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                         entry.requiredServices === undefined
                           ? undefined
                           : Number(entry.requiredServices),
+                        entry.requiredMachines === undefined
+                          ? undefined
+                          : Number(entry.requiredMachines),
                       )}
                     </span>
                     <span className="underground-time">

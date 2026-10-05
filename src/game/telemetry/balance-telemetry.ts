@@ -198,6 +198,36 @@ function ensureOperation(bus: CommandBus, targetId: string): boolean {
   return execute(bus, { type: "openOperation", targetId }) && isLive(bus);
 }
 
+function knownMachineCount(state: WorldState, targetId: string): number {
+  const target = state.targets.find((candidate) => candidate.id === targetId);
+  if (!target) return 0;
+
+  return target.machines.filter((machine) =>
+    evidenceHas(state, "machine-presence", machine.id),
+  ).length;
+}
+
+function ensureKnownMachines(
+  bus: CommandBus,
+  targetId: string,
+  required: number,
+): boolean {
+  if (!ensureTargetObserved(bus, targetId)) return false;
+  if (!ensureOperation(bus, targetId)) return false;
+
+  for (let pass = 0; pass < 32 && isLive(bus); pass += 1) {
+    if (knownMachineCount(bus.snapshot(), targetId) >= required) {
+      return true;
+    }
+
+    if (!execute(bus, { type: "surveyTarget", targetId })) {
+      return false;
+    }
+  }
+
+  return knownMachineCount(bus.snapshot(), targetId) >= required;
+}
+
 function knownServiceCount(state: WorldState, targetId: string): number {
   const target = state.targets.find((candidate) => candidate.id === targetId);
   if (!target) return 0;
@@ -285,15 +315,50 @@ function fulfillAcceptedContract(
 ): boolean {
   if (!isLive(bus)) return false;
 
-  if (contract.objective === "intrusion") {
-    if (!performIntrusion(bus, contract.targetId)) return false;
-  } else {
-    const required = contract.requiredServices ?? 1;
-    if (!ensureKnownServices(bus, contract.targetId, required)) {
+  switch (contract.objective) {
+    case "intrusion":
+      if (!performIntrusion(bus, contract.targetId)) return false;
+      break;
+
+    case "recon-report": {
+      const required = contract.requiredServices ?? 1;
+      if (!ensureKnownServices(bus, contract.targetId, required)) {
+        disengageIfOpen(bus);
+        return false;
+      }
       disengageIfOpen(bus);
-      return false;
+      break;
     }
-    disengageIfOpen(bus);
+
+    case "infrastructure-map": {
+      const required = contract.requiredMachines ?? 1;
+      if (!ensureKnownMachines(bus, contract.targetId, required)) {
+        disengageIfOpen(bus);
+        return false;
+      }
+      disengageIfOpen(bus);
+      break;
+    }
+
+    case "quiet-recon": {
+      if (!ensureKnownMachines(bus, contract.targetId, 1)) {
+        disengageIfOpen(bus);
+        return false;
+      }
+
+      const operation = bus.snapshot().operation;
+      if (operation?.stage === "intrusive") {
+        disengageIfOpen(bus);
+        if (!isLive(bus) || !ensureOperation(bus, contract.targetId)) {
+          return false;
+        }
+      } else if (!operation && !ensureOperation(bus, contract.targetId)) {
+        return false;
+      }
+
+      disengageIfOpen(bus);
+      break;
+    }
   }
 
   if (!isLive(bus)) return false;
