@@ -1085,7 +1085,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           {postmortems.map(([id, entry]) => (
             <div key={`postmortem:${id}`}>
               <span className="panel-label">
-                POSTMORTEM // {String(entry.compromiseLabel ?? "COMPROMISE")} //{" "}
+                POSTMORTEM {"//"}{" "}
+                {String(entry.compromiseLabel ?? "COMPROMISE")} {"//"}{" "}
                 {entry.attribution === "complete"
                   ? "COMPLETE"
                   : "INCOMPLETE ATTRIBUTION"}
