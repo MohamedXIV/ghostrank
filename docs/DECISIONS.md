@@ -355,6 +355,23 @@ Phase 7 begins with an important absence: before this slice Ghostrank had no ter
 
 Accepted 2026-10-05 as the Phase 7 P0 terminal contract. Ending eligibility, retirement mechanics, history archival, long-run pressure, and exotic capability remain later Phase 7 slices.
 
+
+## D038 — Forced endings consume the current causal boundary and freeze that tick immediately (Phase 7 P1)
+
+Phase 6 deliberately recorded dangerous **conditions** rather than endings. Phase 7 P1 now decides when those conditions become terminal, but it does not collapse the distinction by saying “every compromise ends the run.” The evaluator consumes only P4 records created on the **current ecosystem boundary**. Historical Phase 6 compromise rows loaded from an older save remain history; they are not retroactively reinterpreted as terminal just because the executable gained Phase 7 rules.
+
+**Identity exposure is a branch point, not one ending.** The same P4 `identity-exposed` condition can resolve differently depending on the causal history that already exists. If one of its cited authority files has actually surfaced the full visible `converging` evidence band, the ending is **ARRESTED** and cites that investigation. Otherwise, if the physical actor behind the source threat is the same actor who already committed the underground's social unmasking retaliation, the ending is **UNMASKED**. Otherwise the physical actor reached the person without either stronger history, so the ending is **MISSING** and cites the physical threat. This uses existing facts; no new roll, rank threshold, or omniscient morality flag is introduced.
+
+**Resource/infrastructure endings stay bounded.** `stranded` is terminal only because P4 already proved the explicit recovery floor — zero credits, no lease, no component rig, no complete machine, and no authored tool left to sell. A generic **COMPROMISED** ending requires `rig-lost` and `dwelling-lost` on the same current boundary. Losing only a rig or only a dwelling remains recoverable, preserving Phase 6's rule that severe consequences do not automatically erase the run. If several terminal conditions coexist, identity exposure has priority, then stranded, then generic infrastructure compromise; D037's first-ending-wins record makes that ordering final.
+
+**Ending inside a long command ends world time there, not at the requested destination.** `advanceWorldTime` used to set `worldMinute` to the requested `toMinute` before folding ecosystem ticks. P1 keeps that implementation convenience during the fold, but if `RunEnded` is produced it clamps authoritative `worldMinute` and the emitted `WorldTimeAdvanced.toMinute` back to the terminal tick. The ecosystem loop breaks immediately after the P4/P1 physical boundary. No later social retaliation, contract offer, current-tick probe, exact-tick build completion, upkeep, investigation, or partial-tail work may mutate the run after the ending. Work strictly earlier than the terminal tick still happened and remains valid.
+
+**Rank remains irrelevant.** Forced-ending eligibility reads compromise provenance, surfaced evidence, retaliation history, physical threat identity, property/resource conditions, and time. Player rank is not an input. Two otherwise identical histories at rank 1 and rank 999,999 end identically.
+
+**P1 does not invent mechanics for names the simulation cannot yet justify.** The world document lists captured/killed/forced-disappearance possibilities, but the shipped causal state currently supports the five forced statuses above: ARRESTED, UNMASKED, MISSING, COMPROMISED, and STRANDED. New ending names require a concrete causal condition before they can call `endRun`; a label alone is not an implementation.
+
+Accepted 2026-10-05 as the Phase 7 P1 forced-ending contract. Retirement remains P2 and uses the same D037 terminal primitive rather than a second lifecycle.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
