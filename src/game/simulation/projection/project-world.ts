@@ -28,6 +28,7 @@ import {
   availablePool,
   buildMinutes,
   deliverableEffect,
+  settledBuildDueMinute,
 } from "@/game/simulation/systems/builds";
 import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import { deriveInvestigationStage } from "@/game/simulation/systems/investigations";
@@ -87,6 +88,7 @@ import {
   type ContractStatus,
   type InvestigationSignalKind,
   type InvestigationStage,
+  type PhysicalSignalKind,
   type RivalProbeArtifactKind,
   type LedgerCauseKind,
   type LedgerDirection,
@@ -201,6 +203,8 @@ export interface VisibleBuild {
   modelLabel: string;
   startedWorldMinute: number;
   dueWorldMinute: number;
+  /** Status only — the hidden outage end is never projected as a countdown. */
+  paused: boolean;
   footprint: { vram: number; storage: number };
 }
 
@@ -283,6 +287,13 @@ export interface VisibleInvestigation {
 export interface VisibleProbe {
   id: string;
   artifactKind: RivalProbeArtifactKind;
+  worldMinute: number;
+}
+
+/** P3's observable physical evidence; every cause and impact field stays hidden. */
+export interface VisiblePhysicalSignal {
+  id: string;
+  kind: PhysicalSignalKind;
   worldMinute: number;
 }
 
@@ -625,6 +636,8 @@ export interface WorldProjection {
    * what it did before this slice existed.
    */
   probes: VisibleProbe[];
+  /** Phase 6 P3: ambiguous physical evidence, newest first. */
+  physicalSignals: VisiblePhysicalSignal[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1148,7 +1161,9 @@ function projectEconomy(
       specLabel: spec?.label ?? build.specId,
       modelLabel: findModelItem(build.modelId)?.label ?? build.modelId,
       startedWorldMinute: build.startedWorldMinute,
-      dueWorldMinute: build.dueWorldMinute,
+      // Stored due is immutable; only closed pause time shifts this derived view.
+      dueWorldMinute: settledBuildDueMinute(build),
+      paused: build.pausedAtWorldMinute !== undefined,
       footprint: spec
         ? { ...spec.footprint }
         : { vram: 0, storage: 0 },
@@ -1316,6 +1331,14 @@ function projectProbes(state: WorldState): VisibleProbe[] {
   }));
 }
 
+function projectPhysicalSignals(state: WorldState): VisiblePhysicalSignal[] {
+  return [...state.physicalThreats].reverse().map((threat) => ({
+    id: threat.id,
+    kind: threat.signalKind,
+    worldMinute: threat.worldMinute,
+  }));
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1408,6 +1431,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     reactions,
     investigations: projectInvestigations(state, knownTargets),
     probes: projectProbes(state),
+    physicalSignals: projectPhysicalSignals(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),
