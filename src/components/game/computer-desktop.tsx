@@ -879,6 +879,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const probeTable = useTable("probes", runtime.projection);
   // Phase 6 P3: physical evidence only — never the cause or a countdown.
   const physicalSignalTable = useTable("physicalSignals", runtime.projection);
+  // Phase 6 P4: named catastrophic conditions, still without causal internals.
+  const compromiseTable = useTable("compromises", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -941,6 +943,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
   const physicalSignals = Object.entries(physicalSignalTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  const compromises = Object.entries(compromiseTable).sort(
     ([idA, a], [idB, b]) =>
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
@@ -1040,6 +1047,26 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           </p>
         )}
       </section>
+
+      {compromises.length > 0 && (
+        <section aria-label="Compromise">
+          <span className="panel-label">COMPROMISE</span>
+          <ul className="underground-feed">
+            {compromises.map(([id, entry]) => (
+              <li key={id}>
+                <span className="underground-time">
+                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
+                </span>
+                <span>{String(entry.label ?? entry.kind ?? "COMPROMISED")}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="analysis-caveat">
+            This is a condition, not an ending. The system still answers; what
+            you can recover from here belongs to the run, not this warning.
+          </p>
+        </section>
+      )}
 
       <section aria-label="Contracts">
         <span className="panel-label">CONTRACTS</span>
