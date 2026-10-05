@@ -374,6 +374,18 @@ describe("Phase 7 P1 — forced ending eligibility", () => {
       result.events.some((event) => event.type === "BuildCompleted"),
     ).toBe(false);
 
+    // The requested wait reached a full day, but terminality at minute 360
+    // means the unelapsed tail never reaches the day-boundary upkeep charge.
+    expect(state.economy.credits).toBe(1_000);
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === "ValueTransferred" &&
+          event.causeKind === "upkeep" &&
+          event.worldMinute > MINUTE,
+      ),
+    ).toBe(false);
+
     // Social retaliation/offers/current-tick probes are later in the ecosystem
     // tick and are frozen out by terminality.
     expect(
