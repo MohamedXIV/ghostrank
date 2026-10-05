@@ -454,9 +454,9 @@ the sections above remain the design target for later slices.
   evidence list — an unusual login, changed marketplace behavior, a message with
   no sender — at most one item per boundary, described in the Underground app's
   ATTENTION panel beside the social HEAT list. Pressure past the third band
-  (`probing` / `warming` / `converging`) keeps accruing as hidden truth nothing
-  consumes *yet*: Phase 6 P3's physical retaliation reads it as a targeting
-  input alongside P0's anonymity band, and P4's compromise reads both.
+  (`probing` / `warming` / `converging`) keeps accruing as hidden truth:
+  Phase 6 P3 physical retaliation now reads it as a targeting input alongside
+  P0's anonymity band, and P4's compromise reads both next.
   Relocation and safehouses are how a player answers it today — time and
   distance, both already priced in world minutes — because a converging file
   blocks nothing: no action, no target, no purchase. Threat is evidence, never
@@ -484,6 +484,29 @@ the sections above remain the design target for later slices.
   — a ping, a call, a contact gone quiet — beside P1's authority evidence in the
   same ATTENTION panel. No verb was added, so parity stays structural, and no
   probe gates anything: every action still answers in a world that has read you.
+- **Physical retaliation and interruption (Phase 6 P3).** A peer can cross the
+  network/room boundary only from existing causal facts: enough grudge, the
+  existing Black-network backing seat, and a **prior** P2 probe. Rank never enters
+  the roll. P0 anonymity lowers physical exposure and P1 investigation progress
+  raises it, so the same choices already priced in time/economy now alter threat
+  rather than creating a separate heat currency. Probe correctness stays causal:
+  a correct rig read may produce an outage while a wrong one becomes unusual
+  connectivity; a correct dwelling read may destroy one hardware instance while a
+  wrong one leaves only door-camera motion. The capability floor survives loss —
+  zero owned hardware still permits baseline actions — and P3 does not destroy the
+  lease; D021's scripted lease loss is now explicitly P4 catastrophic-compromise
+  scope. #23's build-interruption handoff is a **pause outside the frozen build
+  clock**: commissioning `startedWorldMinute`, `dueWorldMinute`, model/spec and
+  quality outcome never change; optional active/accumulated pause state shifts only
+  the derived completion boundary. A job started during an outage joins the pause,
+  an outage on the exact due tick wins the tie, and save/restore preserves the
+  interruption. Upkeep, investigation and build deadlines are therefore folded
+  around the ecosystem's existing tick loop so one long wait and equivalent split
+  waits see the same as-of-tick state without a second scheduler. The durable
+  `PhysicalThreat` keeps actor/probe/citation/impact truth for P5, while ATTENTION
+  and the room receive only the ambiguous signal and past minute — never a cause,
+  correctness flag, destroyed id or outage countdown. No `RunEnded`: Phase 7
+  still owns endings.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -504,7 +527,10 @@ the sections above remain the design target for later slices.
   pre-Phase-6 save resumes with no rival having read you and the first probe is
   rolled on a tick that actually runs — and it sits at `WorldState` top level
   rather than inside `underground` specifically so the ecosystem object's exact
-  legacy shape stays untouched. A
+  legacy shape stays untouched. Phase 6 P3 adds `physicalThreats`, legacy-defaulted
+  to `[]`, and only optional pause fields on in-flight builds, so untouched jobs
+  retain their pre-P3 shape. Hidden outage ends, source probes/citations and impact
+  ids survive a save; projection strips them. A
   claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and
