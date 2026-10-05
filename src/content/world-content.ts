@@ -181,12 +181,19 @@ export interface InstantiatedWorldContent {
  * duplicate ids, dangling actor-owned targets, invalid 0–100 actor inputs,
  * unknown assistant models, and empty target infrastructure fail loudly.
  */
+function requireContentString(
+  value: string,
+  label: string,
+): void {
+  if (value.trim().length === 0) {
+    throw new Error(`${label} must not be empty`);
+  }
+}
+
 export function validateWorldContentRoster(
   roster: WorldContentRoster,
 ): void {
-  if (roster.id.trim().length === 0) {
-    throw new Error("World content roster id must not be empty");
-  }
+  requireContentString(roster.id, "World content roster id");
 
   const actorIds = new Set<string>();
   const targetIds = new Set<string>();
@@ -194,6 +201,16 @@ export function validateWorldContentRoster(
   const serviceIds = new Set<string>();
 
   for (const { actor } of roster.actors) {
+    requireContentString(actor.id, "World actor id");
+    requireContentString(actor.handle, `World actor ${actor.id} handle`);
+
+    if (actor.targetId !== undefined) {
+      requireContentString(
+        actor.targetId,
+        `World actor ${actor.id} targetId`,
+      );
+    }
+
     if (actorIds.has(actor.id)) {
       throw new Error(`Duplicate world actor id: ${actor.id}`);
     }
@@ -205,7 +222,7 @@ export function validateWorldContentRoster(
       ["discretion", actor.discretion],
       ["activity", actor.activity],
     ] as const) {
-      if (!Number.isFinite(value) || value < 0 || value > 100) {
+      if (!Number.isInteger(value) || value < 0 || value > 100) {
         throw new Error(
           `World actor ${actor.id} has invalid ${field}: ${value}`,
         );
@@ -224,6 +241,9 @@ export function validateWorldContentRoster(
   }
 
   for (const { target } of roster.targets) {
+    requireContentString(target.id, "World target id");
+    requireContentString(target.handle, `World target ${target.id} handle`);
+
     if (targetIds.has(target.id)) {
       throw new Error(`Duplicate world target id: ${target.id}`);
     }
@@ -238,6 +258,16 @@ export function validateWorldContentRoster(
     }
 
     for (const machine of target.machines) {
+      requireContentString(machine.id, "World machine id");
+      requireContentString(
+        machine.label,
+        `World machine ${machine.id} label`,
+      );
+      requireContentString(
+        machine.role,
+        `World machine ${machine.id} role`,
+      );
+
       if (machineIds.has(machine.id)) {
         throw new Error(`Duplicate world machine id: ${machine.id}`);
       }
@@ -250,6 +280,16 @@ export function validateWorldContentRoster(
       }
 
       for (const service of machine.services) {
+        requireContentString(service.id, "World service id");
+        requireContentString(
+          service.label,
+          `World service ${service.id} label`,
+        );
+        requireContentString(
+          service.kind,
+          `World service ${service.id} kind`,
+        );
+
         if (serviceIds.has(service.id)) {
           throw new Error(`Duplicate world service id: ${service.id}`);
         }
