@@ -486,3 +486,24 @@ Phase 8 needs substantially more peers, targets and infrastructure, but the runt
 **P0's compatibility bar is byte identity.** The `alpha-core` roster is the prior NIGHTSHADE / VESPER / LATTICE / HALFMOON / KESTREL content moved verbatim. No peer, target, model, seed, starting relationship, capability, evidence or mechanic is added. Existing deterministic Phase 2–7 tests therefore remain the strongest regression proof; later Phase 8 breadth slices may intentionally change the canonical roster only with new explicit evidence.
 
 Accepted 2026-10-05 as the Phase 8 P0 content-boundary contract. P1 should measure the unchanged baseline before P2 broadens target/NPC content.
+
+
+## D045 — Balance telemetry measures policies through real commands; it is evidence, not a gameplay oracle (Phase 8 P1)
+
+Phase 8 needs a stable pre-breadth reference before P2–P6 add content. P1 therefore adds a **developer-only deterministic telemetry harness** over the real `CommandBus`. It does not add telemetry fields to `WorldState`, emit gameplay events, expose hidden data to the player, or create a second simulation path.
+
+**Policies are scripted players, not state editors.** The four baseline policies are IDLE, CONTRACTOR, RECKLESS, and CAREER-EXIT. Operator policies discover targets/services, accept and deliver contracts, escalate/disengage, wait, and retire only through the same typed commands available to the game. The only seed variation is applied to the initial ecosystem seed before CommandBus takes authority. Outcomes, evidence, endings, money and rank are never written directly by the harness.
+
+**The canonical baseline is 32 fixed seeds over 30 world days.** The reporting horizon is a hard boundary: a policy may not begin or continue a multi-step retirement sequence past it. Numeric summaries use the mathematical median, averaging the two middle samples for an even seed count. On the P0 content roster:
+- IDLE: 32/32 runs remain active at day 30, with zero money/rank/threat movement; 571 offers were created and left untouched (541 expired, 30 still open).
+- CONTRACTOR: median run length 25,920 minutes (18 days); 28/32 end ARRESTED and 4/32 remain active; 797 contracts complete; median final credits 3,750; median rank improvement 9,239 places; 25/32 finish in the VETERAN pressure band.
+- RECKLESS: median run length 22,140 minutes (~15.4 days); 28/32 end ARRESTED, 2/32 STRANDED, 2/32 remain active; 709 contracts complete; 475 escalations and 60 compromise records are observed across the sample.
+- CAREER-EXIT: median run length 23,186.5 minutes (~16.1 days); 20/32 successfully RETIRE and 12/32 end ARRESTED before closure; median final credits 1,930; median rank improvement 3,997 places.
+
+Those numbers describe **these exact policies and this exact content baseline**. They are not hidden difficulty targets, balance acceptance bands, or promises that later content must preserve the same counts. P2–P6 may intentionally change distributions; when they do, the report is rerun so the change is visible and attributable instead of silently retuning the game.
+
+**Content exposure is measured alongside outcomes.** The report records encountered actor/target/machine/service/contract-issuer ids plus authored catalog counts. At P1 the structural baseline is five peers, one target, two target machines, two services, and the existing 6/4/5/5/3/3/3 hardware/housing/machine/model/player-tool/software/workflow catalogs. This gives Content Alpha a direct way to show that breadth actually increased rather than merely adding unreachable rows.
+
+**The harness is local tooling, not a mandatory production dependency.** `npm run telemetry:balance` runs the same deterministic report. The full report is also test-covered for determinism and core invariants; exact distribution numbers are printed for evidence rather than asserted as brittle pass/fail thresholds. Human playtests still decide whether the measured behavior feels fair or interesting.
+
+Accepted 2026-10-05 as the Phase 8 P1 telemetry contract. P2 may now broaden target/NPC content against a measured unchanged baseline.
