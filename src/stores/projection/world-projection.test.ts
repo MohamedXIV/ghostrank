@@ -92,6 +92,10 @@ describe("world projection store", () => {
       postmortems: [],
       ending: null,
       retirement: null,
+      longRunPressure: {
+        band: "ordinary",
+        reasons: [],
+      },
       descriptors: [],
       underground: {
         board: [],

@@ -28,6 +28,8 @@ Phase 7 P2 adds the legacy-defaulted `WorldState.retirement` plan; READY remains
 
 Phase 7 P4 upgrades browser IndexedDB to version 2 with a `run-history` store. Browser completion atomically writes the final portable `WorldState` to history and deletes the `active-run` slot in the same transaction; only an existing active slot may move, so a successful retry cannot duplicate the archive. If archival fails, GameSession saves the terminal snapshot back to the active slot before surfacing the error, and the next boot retries the move without reviving gameplay. Once the move succeeds, a later boot creates a fresh active run independently. Completed summaries are not persisted: `deriveCompletedRunSummary` rebuilds the player-safe history view from the archived final state, including the already-safe P5 postmortems. Completed-run methods remain optional on `RunPersistence`; native SQLite/Tauri history parity stays deferred to #19.
 
+Phase 7 P5 adds no persisted veteran-pressure field and requires no migration. `deriveLongRunPressure` rebuilds the pressure band from already-authoritative timestamped history (contracts, traces, surfaced investigation signals, retaliation, probes, physical threats, compromises). During a long command callers pass the exact ecosystem boundary being folded, so future records already present in the mutable draft cannot leak backward into an earlier pressure decision. Save/restore therefore preserves P5 behavior by preserving the causal records it already depended on.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:

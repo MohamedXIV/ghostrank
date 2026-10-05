@@ -34,6 +34,11 @@ import { recurringDailyCost } from "@/game/simulation/systems/upkeep";
 import { deriveInvestigationStage } from "@/game/simulation/systems/investigations";
 import { probeArtifactOf } from "@/game/simulation/systems/probes";
 import {
+  deriveLongRunPressure,
+  type LongRunPressureBand,
+  type LongRunPressureReason,
+} from "@/game/simulation/systems/long-run-pressure";
+import {
   compromiseLabel,
   derivePostmortems,
   type PostmortemAttribution,
@@ -681,6 +686,11 @@ export interface EconomyProjection {
   valueGraph: ValueGraph;
 }
 
+export interface VisibleLongRunPressure {
+  band: LongRunPressureBand;
+  reasons: LongRunPressureReason[];
+}
+
 export interface WorldProjection {
   worldMinute: number;
   player: {
@@ -720,6 +730,12 @@ export interface WorldProjection {
   ending: VisibleRunEnding | null;
   /** Phase 7 P2: player-controlled wind-down/cooling plan, null when idle. */
   retirement: VisibleRetirement | null;
+  /**
+   * Phase 7 P5: coarse player-safe veteran pressure. Numeric bonuses remain
+   * simulation internals; the surface gets only the band and the history
+   * categories that caused it.
+   */
+  longRunPressure: VisibleLongRunPressure;
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1489,6 +1505,17 @@ function projectRetirement(state: WorldState): VisibleRetirement | null {
   };
 }
 
+function projectLongRunPressure(
+  state: WorldState,
+): VisibleLongRunPressure {
+  const pressure = deriveLongRunPressure(state);
+
+  return {
+    band: pressure.band,
+    reasons: [...pressure.reasons],
+  };
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1586,6 +1613,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     postmortems: derivePostmortems(state),
     ending: projectEnding(state),
     retirement: projectRetirement(state),
+    longRunPressure: projectLongRunPressure(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),

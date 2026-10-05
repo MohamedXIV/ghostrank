@@ -5,6 +5,7 @@ import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
 import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
+import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import {
   PLAYER_ACTOR_ID,
   type ForumPost,
@@ -581,6 +582,27 @@ function expireContracts(
   return events;
 }
 
+export function contractOfferPercent(
+  world: WorldState,
+  atMinute = world.worldMinute,
+): number {
+  return Math.min(
+    100,
+    OFFER_PERCENT +
+      deriveLongRunPressure(world, atMinute).contractOfferBonusPercent,
+  );
+}
+
+export function contractOpenLimit(
+  world: WorldState,
+  atMinute = world.worldMinute,
+): number {
+  return Math.max(
+    MAX_OPEN_CONTRACTS,
+    deriveLongRunPressure(world, atMinute).maxOpenContracts,
+  );
+}
+
 function offerContracts(
   world: WorldState,
   tickIndex: number,
@@ -589,6 +611,8 @@ function offerContracts(
   const { underground } = world;
   const { seed } = underground;
   const events: SimulationEvent[] = [];
+  const offerPercent = contractOfferPercent(world, worldMinute);
+  const maxOpenContracts = contractOpenLimit(world, worldMinute);
 
   if (world.targets.length === 0) {
     return events;
@@ -597,7 +621,7 @@ function offerContracts(
   for (const issuer of underground.actors) {
     const open = underground.contracts.filter(isOpenContract);
 
-    if (open.length >= MAX_OPEN_CONTRACTS) {
+    if (open.length >= maxOpenContracts) {
       break;
     }
 
@@ -624,7 +648,7 @@ function offerContracts(
 
     if (
       hashUnit(seed, "offer", tickIndex, issuer.id) * 100 >=
-      OFFER_PERCENT
+      offerPercent
     ) {
       continue;
     }

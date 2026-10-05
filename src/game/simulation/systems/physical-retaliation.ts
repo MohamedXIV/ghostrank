@@ -1,6 +1,7 @@
 import { derivePresence } from "@/game/simulation/systems/location";
 import { settledBuildDueMinute } from "@/game/simulation/systems/builds";
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
+import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   PLAYER_ACTOR_ID,
@@ -62,10 +63,13 @@ function ambientInvestigationPressure(world: WorldState): number {
 export function physicalThreatPercent(
   world: WorldState,
   actor: UndergroundActor,
+  atMinute = world.worldMinute,
 ): number {
   const grudge = grudgeOf(world, actor.id);
   const presence = derivePresence(world.economy.housing);
   const grudgePressure = Math.min(20, Math.max(0, grudge - PHYSICAL_MIN_GRUDGE));
+  const longRunPressure =
+    deriveLongRunPressure(world, atMinute).physicalThreatBonusPercent;
 
   return Math.max(
     PHYSICAL_MIN_PERCENT,
@@ -74,6 +78,7 @@ export function physicalThreatPercent(
       PHYSICAL_BASE_PERCENT +
         grudgePressure +
         ambientInvestigationPressure(world) +
+        longRunPressure +
         (ANONYMITY_ADJUST[presence.anonymity] ?? 0),
     ),
   );
@@ -273,7 +278,7 @@ export function physicalRetaliationTick(
       continue;
     }
 
-    const percent = physicalThreatPercent(world, actor);
+    const percent = physicalThreatPercent(world, actor, worldMinute);
     const roll =
       hashUnit(
         world.underground.seed,

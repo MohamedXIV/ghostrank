@@ -175,6 +175,19 @@ export function syncWorldProjection(
       }
     : {};
 
+  // Manual/legacy projection fixtures that predate P5 are equivalent to the
+  // ordinary band. Real projectWorld output always supplies this read.
+  const longRunPressure = projection.longRunPressure ?? {
+    band: "ordinary",
+    reasons: [],
+  };
+  const longRunPressureRows = {
+    current: {
+      band: longRunPressure.band,
+      reasons: longRunPressure.reasons.join(","),
+    },
+  };
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -566,6 +579,7 @@ export function syncWorldProjection(
     store.setTable("postmortems", postmortemRows);
     store.setTable("postmortemSteps", postmortemStepRows);
     store.setTable("retirement", retirementRows);
+    store.setTable("longRunPressure", longRunPressureRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);

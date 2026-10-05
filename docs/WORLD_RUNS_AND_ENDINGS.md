@@ -294,3 +294,36 @@ durable for boot recovery. After a successful active→history move, a later boo
 creates a fresh active run separately. Native SQLite/Tauri completed-history
 parity remains deferred to #19.
 
+
+### Shipped exceptional long-run pressure (Phase 7 P5)
+
+Long survival now becomes harder only when the run has accumulated enough
+causal history to justify it.
+
+The P5 layer is completely inert before **day 14**. Crossing that date does not
+raise difficulty by itself: an old run with no meaningful work, intrusion,
+attention, retaliation, probes, physical incidents, or compromises remains
+**ORDINARY**.
+
+After the gate, the run derives one coarse pressure band from existing history:
+
+- **ORDINARY**
+- **KNOWN**
+- **ENTANGLED**
+- **VETERAN**
+
+Pressure can increase how often contracts arrive, how many offers may remain
+open at the higher bands, how often an already-hostile peer attempts a probe,
+and how likely an already-valid Black-network physical retaliation route is to
+land. It never creates the prerequisites for those routes: no grudge is
+invented, no rival becomes a probe candidate from age alone, and no actor gains
+physical reach without the existing Black-network + grudge + prior-probe chain.
+
+Rank and the starting White/Black package are not inputs. The Underground index
+shows only the band and broad causes from the run's visible history; the numeric
+score and probability bonuses remain hidden implementation detail.
+
+Pressure is derived at each ecosystem boundary from history that existed by that
+minute, so one long wait and the equivalent split waits behave the same when
+crossing day 14. Nothing new is persisted for P5.
+
