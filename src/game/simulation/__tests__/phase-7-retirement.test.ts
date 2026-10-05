@@ -224,6 +224,41 @@ describe("Phase 7 P2 — voluntary retirement plan", () => {
     expect(bus.snapshot().ending).toBeNull();
   });
 
+  it("derives the same READY state from split and whole cooling waits", () => {
+    const whole = new CommandBus(createSliceWorldState());
+    const split = new CommandBus(createSliceWorldState());
+
+    for (const bus of [whole, split]) {
+      expect(bus.execute({ type: "startRetirement" }).ok).toBe(true);
+      expect(bus.execute({ type: "commitRetirement" }).ok).toBe(true);
+    }
+
+    expect(
+      whole.execute({
+        type: "advanceTime",
+        minutes: RETIREMENT_COOLING_MINUTES,
+      }).ok,
+    ).toBe(true);
+    expect(
+      split.execute({
+        type: "advanceTime",
+        minutes: RETIREMENT_COOLING_MINUTES / 2,
+      }).ok,
+    ).toBe(true);
+    expect(
+      split.execute({
+        type: "advanceTime",
+        minutes: RETIREMENT_COOLING_MINUTES / 2,
+      }).ok,
+    ).toBe(true);
+
+    expect(retirementStatus(whole.snapshot())).toBe("ready");
+    expect(retirementStatus(split.snapshot())).toBe("ready");
+    expect(whole.snapshot().retirement).toEqual(split.snapshot().retirement);
+    expect(whole.snapshot().ending).toBeNull();
+    expect(split.snapshot().ending).toBeNull();
+  });
+
   it("restricts active play during cooling but lets the player wait or cancel", () => {
     const bus = new CommandBus(createSliceWorldState());
     bus.execute({ type: "startRetirement" });
