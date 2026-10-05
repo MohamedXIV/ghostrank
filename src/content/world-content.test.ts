@@ -6,7 +6,133 @@ import {
   validateWorldContentRoster,
   type WorldContentRoster,
 } from "@/content/world-content";
-import { createSliceWorldState } from "@/game/runtime/slice-world";
+import {
+  createSliceWorldState,
+  SLICE_WORLD_SEED,
+} from "@/game/runtime/slice-world";
+import { STARTER_RIG_ID } from "@/content/hardware-catalog";
+import { createInitialWorldState } from "@/game/simulation/state/world-state";
+
+function legacyPreP0SliceWorld() {
+  return createInitialWorldState({
+    player: {
+      handle: "CobaltXZ",
+      rank: 100_256,
+    },
+    knownTargetIds: [],
+    evidence: [],
+    economy: {
+      credits: 0,
+      ledger: [],
+      hardware: [
+        {
+          id: "hw:1",
+          catalogId: STARTER_RIG_ID,
+          acquiredWorldMinute: 0,
+        },
+      ],
+    },
+    underground: {
+      seed: SLICE_WORLD_SEED,
+      playerNetwork: "white",
+      actors: [
+        {
+          id: "nightshade",
+          handle: "NIGHTSHADE",
+          rank: 10,
+          network: "black",
+          skill: 92,
+          defense: 88,
+          discretion: 70,
+          activity: 12,
+          targetId: "nightshade",
+        },
+        {
+          id: "vesper",
+          handle: "VESPER",
+          rank: 480,
+          network: "white",
+          skill: 70,
+          defense: 60,
+          discretion: 40,
+          activity: 25,
+        },
+        {
+          id: "lattice",
+          handle: "LATTICE",
+          rank: 3_400,
+          network: "black",
+          skill: 62,
+          defense: 55,
+          discretion: 55,
+          activity: 30,
+          modelId: "model-local-workhorse",
+        },
+        {
+          id: "halfmoon",
+          handle: "HALFMOON",
+          rank: 22_000,
+          network: "white",
+          skill: 45,
+          defense: 40,
+          discretion: 30,
+          activity: 35,
+          modelId: "model-local-salvage",
+        },
+        {
+          id: "kestrel",
+          handle: "KESTREL",
+          rank: 61_000,
+          network: "black",
+          skill: 35,
+          defense: 30,
+          discretion: 20,
+          activity: 35,
+        },
+      ],
+    },
+    targets: [
+      {
+        id: "nightshade",
+        handle: "NIGHTSHADE",
+        rank: 10,
+        machines: [
+          {
+            id: "ns-relay",
+            label: "Outer Relay",
+            role: "relay",
+            services: [
+              {
+                id: "ns-signal",
+                label: "Signal Broker",
+                kind: "signal",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "ns-vault",
+            label: "Cold Vault",
+            role: "vault",
+            services: [
+              {
+                id: "ns-archive",
+                label: "Archive Index",
+                kind: "archive",
+                state: "online",
+              },
+            ],
+          },
+        ],
+        hidden: {
+          operationalSkill: 99,
+          sponsorId: "black-index",
+          note: "Authoritative operation truth; infrastructure stays hidden until supported by evidence.",
+        },
+      },
+    ],
+  });
+}
 
 describe("Phase 8 P0 — world content roster", () => {
   it("describes the canonical peers and target outside runtime state", () => {
@@ -48,6 +174,10 @@ describe("Phase 8 P0 — world content roster", () => {
     expect(second.actors[0].skill).toBe(92);
     expect(second.targets[0].machines[0].label).toBe("Outer Relay");
     expect(CORE_WORLD_CONTENT.actors[0].actor.skill).toBe(92);
+  });
+
+  it("preserves the complete pre-P0 default world byte-for-byte as data", () => {
+    expect(createSliceWorldState()).toEqual(legacyPreP0SliceWorld());
   });
 
   it("preserves the canonical slice-world roster and public identity", () => {
