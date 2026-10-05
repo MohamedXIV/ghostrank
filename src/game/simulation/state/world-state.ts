@@ -3,6 +3,33 @@ export interface PlayerState {
   rank: number;
 }
 
+/**
+ * Phase 7 P0 — the durable terminal identity of a completed run. These names
+ * are intentionally broader than the current P1 triggers: later slices decide
+ * eligibility, while P0 defines the one-way contract every ending must use.
+ */
+export type RunEndingStatus =
+  | "arrested"
+  | "unmasked"
+  | "missing"
+  | "compromised"
+  | "stranded"
+  | "retired"
+  | "vanished";
+
+export type RunEndingCauseKind =
+  | "compromise"
+  | "investigation"
+  | "physical-threat"
+  | "retirement";
+
+export interface RunEndingRecord {
+  status: RunEndingStatus;
+  causeKind: RunEndingCauseKind;
+  causeId: string;
+  worldMinute: number;
+}
+
 export type EvidenceKind =
   | "target-profile"
   | "machine-presence"
@@ -619,6 +646,11 @@ export interface WorldState {
   physicalThreats: PhysicalThreat[];
   /** Phase 6 P4 catastrophic conditions; empty is the pre-compromise baseline. */
   compromises: CompromiseRecord[];
+  /**
+   * Phase 7 P0 terminal record. Null means the run is live. Once non-null it is
+   * immutable: the command bus rejects further gameplay commands.
+   */
+  ending: RunEndingRecord | null;
 }
 
 export interface InitialTargetState
@@ -643,6 +675,7 @@ export interface InitialWorldState {
   probes?: RivalProbe[];
   physicalThreats?: PhysicalThreat[];
   compromises?: CompromiseRecord[];
+  ending?: RunEndingRecord | null;
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -780,5 +813,9 @@ export function createInitialWorldState(
     compromises: initial.compromises
       ? structuredClone(initial.compromises)
       : [],
+    ending:
+      initial.ending === undefined
+        ? null
+        : structuredClone(initial.ending),
   };
 }
