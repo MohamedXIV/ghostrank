@@ -1034,6 +1034,21 @@ function describeContract(
   return `get through ${targetHandle}'s defenses`;
 }
 
+function describeLongRunPressureReason(reason: string): string {
+  switch (reason) {
+    case "completed-work":
+      return "completed and missed obligations have left a longer paper trail";
+    case "intrusive-history":
+      return "intrusive work and surfaced authority attention have accumulated";
+    case "counterpressure":
+      return "retaliation and rival probing have become part of this run's history";
+    case "physical-history":
+      return "physical incidents and compromises have made the infrastructure harder to keep quiet";
+    default:
+      return reason.replaceAll("-", " ");
+  }
+}
+
 function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const board = useTable("board", runtime.projection);
   const feed = useTable("feed", runtime.projection);
@@ -1057,6 +1072,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const postmortemTable = useTable("postmortems", runtime.projection);
   const postmortemStepTable = useTable("postmortemSteps", runtime.projection);
   const retirement = useRow("retirement", "current", runtime.projection);
+  const longRunPressure = useRow(
+    "longRunPressure",
+    "current",
+    runtime.projection,
+  );
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -1147,6 +1167,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const exitBlockers = String(retirement.blockers ?? "")
     .split(",")
     .filter(Boolean);
+  const pressureBand = String(longRunPressure.band ?? "ordinary");
+  const pressureReasons = String(longRunPressure.reasons ?? "")
+    .split(",")
+    .filter(Boolean);
 
   return (
     <div className="underground-app">
@@ -1166,6 +1190,32 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             ))}
           </ul>
         )}
+      </section>
+
+      <section aria-label="Long-run pressure">
+        <span className="panel-label">
+          {"LONG-RUN PRESSURE // "}
+          {pressureBand.toUpperCase()}
+        </span>
+        {pressureBand === "ordinary" ? (
+          <p className="underground-empty">
+            This run has not accumulated veteran pressure yet.
+          </p>
+        ) : (
+          <ul className="underground-feed">
+            {pressureReasons.map((reason) => (
+              <li key={reason}>
+                <span>{describeLongRunPressureReason(reason)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="analysis-caveat">
+          Pressure comes from the history this run has accumulated, not from
+          rank. It can make work arrive more often and existing enemies pay more
+          attention, but it never creates a grudge, probe, or physical reach
+          from nothing.
+        </p>
       </section>
 
       {heat.length > 0 && (
