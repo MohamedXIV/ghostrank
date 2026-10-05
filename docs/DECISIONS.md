@@ -437,3 +437,22 @@ A completed run must remain inspectable without creating a second mutable lifecy
 **P4 is web-first.** Completed-run methods remain optional on `RunPersistence`; browser IndexedDB implements them now, while the deferred Tauri/SQLite adapter keeps its terminal active snapshot until #19 / the desktop phase reconciles native history storage.
 
 Accepted 2026-10-05 as the Phase 7 P4 completed-run history contract. P5 now owns exceptional long-run pressure; archive/history itself does not make veteran runs harder.
+
+
+## D042 — Veteran pressure compounds existing causal routes; it never creates them (Phase 7 P5)
+
+Phase 7 needs unusually long survival to become harder without quietly turning rank into combat power or punishing the player for the calendar alone. P5 therefore derives pressure from **history that actually happened**, and only after the run has survived long enough for that history to matter.
+
+**Two world weeks is a gate, not a difficulty switch.** Before day 14 the P5 layer is a strict no-op regardless of activity. After day 14, age by itself still contributes nothing: a causally quiet 120-day run remains ORDINARY. Pressure reads completed/missed obligations, intrusive escalation, surfaced authority evidence, retaliation, probes, physical threats, and compromises that existed by the exact tick being evaluated.
+
+**Pressure is bounded and derived.** The current history score maps to ORDINARY / KNOWN / ENTANGLED / VETERAN, with KNOWN/ENTANGLED/VETERAN beginning at 6/12/20. The applicable contract-offer, rival-probe, and physical-retaliation rolls receive only +4/+8/+12 percentage points. Higher bands may also raise the concurrent open-contract ceiling from 3 to 4/5. There is no stored veteran level, no new RNG stream, no rank input, and no starting-board input.
+
+**P5 amplifies routes; it does not manufacture prerequisites.** More accumulated history may make contract offers arrive more often. A rival may try probing more often only if that actor already satisfies the existing grudge candidate rule. Physical retaliation may become more likely only after the existing Black-network + grudge + prior-probe chain exists. P5 does not create grudge, grant physical reach, bypass probe provenance, accelerate a quiet investigation, impose a veteran tax, or gate commands.
+
+**Long waits read pressure at the tick, not at the requested destination.** CommandBus may temporarily hold a far-future destination while the ecosystem folds fixed boundaries. P5 therefore derives from facts whose timestamps are at or before the current tick. A single long wait and equivalent split waits cross day 14 with the same pressure and produce the same state.
+
+**The screen receives interpretation, not the hidden math.** WorldProjection/TinyBase expose only the coarse band and broad causal categories (completed work, intrusive history, counterpressure, physical history). Numeric score, percentage bonuses, raw relationship values, probe truth, and investigation progress remain simulation internals.
+
+**P5 intentionally narrows an older golden-digest promise.** Phase 6's byte-identity digests remain pinned for early or neutral scenarios where later systems should still be inert. The old 20–60-day reckless/provoked digests are no longer “must never change” contracts: P5 is the first explicit later slice whose job is to alter veteran causal histories. Dedicated P5 tests now own that activation and whole/split determinism instead of blessing a new opaque hash.
+
+Accepted 2026-10-05 as the Phase 7 P5 exceptional-long-run-pressure contract. P6 now owns bounded exotic/quantum capability; P5 introduces no new capability tier itself.
