@@ -2,6 +2,7 @@ import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import { derivePresence } from "@/game/simulation/systems/location";
+import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   PLAYER_ACTOR_ID,
@@ -276,6 +277,17 @@ export function probeCorrectPercent(
  * holds anything against you returns no candidates, so the whole fold is a no-op
  * and the ecosystem replays byte-for-byte as it did before P2 existed.
  */
+export function probeAttemptPercent(
+  world: WorldState,
+  atMinute = world.worldMinute,
+): number {
+  return Math.min(
+    100,
+    PROBE_TICK_PERCENT +
+      deriveLongRunPressure(world, atMinute).probeAttemptBonusPercent,
+  );
+}
+
 export function probeCandidates(world: WorldState): UndergroundActor[] {
   return world.underground.actors.filter(
     (actor) =>
@@ -303,11 +315,12 @@ export function probeTick(
 ): SimulationEvent[] {
   const events: SimulationEvent[] = [];
   const { underground } = world;
+  const attemptPercent = probeAttemptPercent(world, worldMinute);
 
   for (const actor of candidates) {
     if (
       hashUnit(underground.seed, "probe-try", tickIndex, actor.id) * 100 >=
-      PROBE_TICK_PERCENT
+      attemptPercent
     ) {
       continue;
     }
