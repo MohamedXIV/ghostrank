@@ -12,6 +12,8 @@ import type {
   PhysicalSignalKind,
   PhysicalThreatKind,
   RetaliationKind,
+  RunEndingCauseKind,
+  RunEndingStatus,
   RivalProbeArtifactKind,
   RivalProbeSubject,
   UndergroundNetwork,
@@ -365,6 +367,13 @@ export type SimulationEvent =
       sourceThreatId: string;
       sourceProbeId: string;
       sourceInvestigationIds: string[];
+      worldMinute: number;
+    }
+  | {
+      type: "RunEnded";
+      status: RunEndingStatus;
+      causeKind: RunEndingCauseKind;
+      causeId: string;
       worldMinute: number;
     }
   | {
