@@ -119,7 +119,7 @@ describe("Phase 8 P5 — market breadth", () => {
     expect(bus.execute({ type: "stopModel" }).ok).toBe(true);
 
     const localStart = bus.execute(runModelFromGui("model-local-reliable"));
-    expect(localStart.error).toBe("MODEL_NOT_OWNED");
+    expect(localStart.error).toBe("LOCAL_MODEL_NOT_OWNED");
 
     expect(
       bus.execute(acquireModelFromGui("model-local-reliable")).ok,
