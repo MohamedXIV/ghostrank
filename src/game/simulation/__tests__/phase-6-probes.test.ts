@@ -37,6 +37,7 @@ import {
   PLAYER_ACTOR_ID,
   type OperationTrace,
   type UndergroundActor,
+  type UndergroundContract,
   type UndergroundRelationship,
   type WorldState,
 } from "@/game/simulation/state/world-state";
@@ -180,15 +181,25 @@ function preP3ContractVocabulary(state: WorldState): WorldState {
   const legacy = structuredClone(state);
   const { seed } = legacy.underground;
 
-  for (const contract of legacy.underground.contracts) {
+  legacy.underground.contracts = legacy.underground.contracts.map((contract) => {
     const tickIndex = contract.offeredWorldMinute / TICK_MINUTES;
     const oldObjective =
       hashUnit(seed, "offer-objective", tickIndex, contract.issuerId) < 0.5
         ? "recon-report"
         : "intrusion";
 
-    contract.objective = oldObjective;
-    delete contract.requiredMachines;
+    // Rebuild, don't mutate: the Phase 6 byte proof includes JSON property
+    // order. In the old runtime objective-specific scope was appended at offer
+    // creation, before acceptance/resolution timestamps were appended later.
+    const normalized: UndergroundContract = {
+      id: contract.id,
+      issuerId: contract.issuerId,
+      targetId: contract.targetId,
+      objective: oldObjective,
+      status: contract.status,
+      offeredWorldMinute: contract.offeredWorldMinute,
+      expiresWorldMinute: contract.expiresWorldMinute,
+    };
 
     if (oldObjective === "recon-report") {
       const target = legacy.targets.find(
@@ -204,23 +215,28 @@ function preP3ContractVocabulary(state: WorldState): WorldState {
         Math.floor(
           hashUnit(seed, "offer-services", tickIndex, contract.issuerId) * 2,
         );
-      contract.requiredServices = Math.max(
+      normalized.requiredServices = Math.max(
         1,
         Math.min(asked, serviceCount),
       );
-    } else {
-      delete contract.requiredServices;
     }
 
-    if (
-      contract.acceptedWorldMinute !== undefined &&
-      contract.dueWorldMinute !== undefined
-    ) {
-      contract.dueWorldMinute =
-        contract.acceptedWorldMinute +
-        (oldObjective === "recon-report" ? 2 * DAY : 4 * DAY);
+    if (contract.acceptedWorldMinute !== undefined) {
+      normalized.acceptedWorldMinute = contract.acceptedWorldMinute;
     }
-  }
+    if (contract.dueWorldMinute !== undefined) {
+      normalized.dueWorldMinute =
+        contract.acceptedWorldMinute === undefined
+          ? contract.dueWorldMinute
+          : contract.acceptedWorldMinute +
+            (oldObjective === "recon-report" ? 2 * DAY : 4 * DAY);
+    }
+    if (contract.resolvedWorldMinute !== undefined) {
+      normalized.resolvedWorldMinute = contract.resolvedWorldMinute;
+    }
+
+    return normalized;
+  });
 
   return legacy;
 }
