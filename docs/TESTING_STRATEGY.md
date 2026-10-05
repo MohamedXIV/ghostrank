@@ -95,6 +95,7 @@ Critical invariants include:
 - hidden information does not appear in normal player projections,
 - resource balances do not become negative without explicit debt mechanics,
 - run-ending events are terminal unless a documented continuation rule exists,
+- the first terminal ending is immutable and later gameplay commands cannot mutate or advance that run,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
