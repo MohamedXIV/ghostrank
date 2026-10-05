@@ -32,7 +32,7 @@ visible causal record.
 
 Variant selection is:
 
-- deterministic from the existing visible record id + presentation surface;
+- deterministic from the existing visible record id + presentation surface + visible causal handles/target where relevant;
 - presentation-only (a private stable string hash, **not** simulation RNG);
 - stable across save/load and split/whole waits because the underlying record id
   is stable;
