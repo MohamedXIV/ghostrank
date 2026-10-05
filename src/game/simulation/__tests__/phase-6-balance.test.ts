@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CommandBus } from "@/game/simulation/command-bus";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
+import type { CompromiseKind } from "@/game/simulation/state/world-state";
 
 const DAY = 24 * 60;
 const TICK = 360;
@@ -16,16 +17,27 @@ function recklessCycle(bus: CommandBus): void {
   bus.execute({ type: "disengageOperation" });
 }
 
+interface CompromiseSample {
+  minute: number;
+  kinds: CompromiseKind[];
+}
+
 function firstCompromiseBy(
   bus: CommandBus,
   endMinute: number,
-): number | null {
+): CompromiseSample | null {
   while (bus.snapshot().worldMinute < endMinute) {
     const remaining = endMinute - bus.snapshot().worldMinute;
     bus.execute({ type: "advanceTime", minutes: Math.min(TICK, remaining) });
-    const first = bus.snapshot().compromises[0];
+    const state = bus.snapshot();
+    const first = state.compromises[0];
     if (first) {
-      return first.worldMinute;
+      return {
+        minute: first.worldMinute,
+        kinds: state.compromises
+          .filter((record) => record.worldMinute === first.worldMinute)
+          .map((record) => record.kind),
+      };
     }
   }
 
@@ -38,7 +50,7 @@ function sampledWorld(seed: number): CommandBus {
   return new CommandBus(state);
 }
 
-function recklessSample(seed: number): number | null {
+function recklessSample(seed: number): CompromiseSample | null {
   const bus = sampledWorld(seed);
 
   // Five back-to-back intrusions: the first establishes the watch; the next
@@ -50,7 +62,7 @@ function recklessSample(seed: number): number | null {
   return firstCompromiseBy(bus, 10 * DAY);
 }
 
-function measuredSample(seed: number): number | null {
+function measuredSample(seed: number): CompromiseSample | null {
   const bus = sampledWorld(seed);
 
   // A player who repeatedly disengages and spaces their escalation out gives
@@ -65,28 +77,43 @@ function measuredSample(seed: number): number | null {
   return firstCompromiseBy(bus, 10 * DAY);
 }
 
-function summary(minutes: readonly (number | null)[]) {
-  const concrete = minutes.filter((value): value is number => value !== null);
+function summary(samples: readonly (CompromiseSample | null)[]) {
+  const concrete = samples.filter(
+    (value): value is CompromiseSample => value !== null,
+  );
+  const minutes = concrete.map((value) => value.minute);
+  const conditionCounts: Record<CompromiseKind, number> = {
+    "rig-lost": 0,
+    "dwelling-lost": 0,
+    "identity-exposed": 0,
+    stranded: 0,
+  };
+
+  for (const sample of concrete) {
+    for (const kind of sample.kinds) {
+      conditionCounts[kind] += 1;
+    }
+  }
+
   return {
-    sample: minutes.length,
-    compromisedBy3d: concrete.filter((minute) => minute <= 3 * DAY).length,
-    compromisedBy5d: concrete.filter((minute) => minute <= 5 * DAY).length,
-    compromisedBy10d: concrete.filter((minute) => minute <= 10 * DAY).length,
-    survived10d: minutes.filter((minute) => minute === null).length,
-    earliestMinute: concrete.length > 0 ? Math.min(...concrete) : null,
+    sample: samples.length,
+    compromisedBy3d: minutes.filter((minute) => minute <= 3 * DAY).length,
+    compromisedBy5d: minutes.filter((minute) => minute <= 5 * DAY).length,
+    compromisedBy10d: minutes.filter((minute) => minute <= 10 * DAY).length,
+    survived10d: samples.filter((value) => value === null).length,
+    earliestMinute: minutes.length > 0 ? Math.min(...minutes) : null,
     medianMinute:
-      concrete.length > 0
-        ? [...concrete].sort((a, b) => a - b)[
-            Math.floor(concrete.length / 2)
-          ]!
+      minutes.length > 0
+        ? [...minutes].sort((a, b) => a - b)[Math.floor(minutes.length / 2)]!
         : null,
+    conditionCounts,
   };
 }
 
 describe("Phase 6 P4 balance harness", () => {
   it("samples real P1→P4 causal runs instead of tuning from isolated rolls", () => {
-    const reckless: (number | null)[] = [];
-    const measured: (number | null)[] = [];
+    const reckless: (CompromiseSample | null)[] = [];
+    const measured: (CompromiseSample | null)[] = [];
 
     for (let seed = 1; seed <= SAMPLE_SEEDS; seed += 1) {
       reckless.push(recklessSample(seed));
