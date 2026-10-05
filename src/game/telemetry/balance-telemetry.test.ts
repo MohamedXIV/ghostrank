@@ -35,6 +35,20 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     });
   });
 
+  it("normalizes fractional day horizons once to whole world minutes", () => {
+    const sample = sampleBalanceRun("idle", 1, 1 / 7);
+
+    expect(sample.finalMinute).toBe(Math.floor((24 * 60) / 7));
+  });
+
+  it("keeps reckless priming inside the requested horizon", () => {
+    const zero = sampleBalanceRun("reckless", 1, 0);
+
+    expect(zero.finalMinute).toBe(0);
+    expect(zero.escalations).toBe(0);
+    expect(zero.contracts.created).toBe(0);
+  });
+
   it("never lets career-exit telemetry advance past the requested horizon", () => {
     const horizonDays = 15;
     const report = runBalanceTelemetry({
