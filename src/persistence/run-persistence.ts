@@ -7,4 +7,18 @@ export interface RunPersistence {
     state: WorldState,
     newEvents: readonly SimulationEvent[],
   ) => Promise<void>;
+
+  /**
+   * Phase 7 P0 optional completed-run boundary.
+   *
+   * The browser adapter implements both methods now. The deferred desktop
+   * adapter may continue persisting the terminal active snapshot until #19
+   * reconciles final run-history storage; gameplay never depends on history
+   * availability to decide an ending.
+   */
+  loadCompletedStates?: () => Promise<WorldState[]>;
+  completeRun?: (
+    state: WorldState,
+    newEvents: readonly SimulationEvent[],
+  ) => Promise<void>;
 }
