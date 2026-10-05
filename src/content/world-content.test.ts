@@ -148,6 +148,11 @@ describe("Phase 8 P0 — world content roster", () => {
       { archetype: "automation-specialist", id: "lattice" },
       { archetype: "reckless-tinkerer", id: "halfmoon" },
       { archetype: "street-operator", id: "kestrel" },
+      { archetype: "scam-operator", id: "velvetwire" },
+      { archetype: "extortion-operator", id: "ironveil" },
+      { archetype: "market-predator", id: "tallyman" },
+      { archetype: "corporate-operator", id: "daystar" },
+      { archetype: "rival-operator", id: "rookery" },
     ]);
     expect(
       CORE_WORLD_CONTENT.targets.map(({ archetype, target }) => ({
@@ -156,6 +161,11 @@ describe("Phase 8 P0 — world content roster", () => {
       })),
     ).toEqual([
       { archetype: "elite-underground-operator", id: "nightshade" },
+      { archetype: "scam-network", id: "velvetwire" },
+      { archetype: "extortion-crew", id: "ironveil" },
+      { archetype: "predatory-market", id: "tallyman" },
+      { archetype: "corporate-infrastructure", id: "daystar" },
+      { archetype: "rival-infrastructure", id: "rookery" },
     ]);
   });
 
@@ -163,8 +173,8 @@ describe("Phase 8 P0 — world content roster", () => {
     const first = instantiateWorldContent();
     const second = instantiateWorldContent();
 
-    expect(first.actors).toHaveLength(5);
-    expect(first.targets).toHaveLength(1);
+    expect(first.actors).toHaveLength(10);
+    expect(first.targets).toHaveLength(6);
     expect(first.actors[0]).not.toHaveProperty("archetype");
     expect(first.targets[0]).not.toHaveProperty("archetype");
 
@@ -176,8 +186,20 @@ describe("Phase 8 P0 — world content roster", () => {
     expect(CORE_WORLD_CONTENT.actors[0].actor.skill).toBe(92);
   });
 
-  it("preserves the complete pre-P0 default world byte-for-byte as data", () => {
-    expect(createSliceWorldState()).toEqual(legacyPreP0SliceWorld());
+  it("preserves every pre-P0 authored entry while P2 adds breadth around it", () => {
+    const current = createSliceWorldState();
+    const legacy = legacyPreP0SliceWorld();
+
+    expect(current.underground.actors.slice(0, 5)).toEqual(
+      legacy.underground.actors,
+    );
+    expect(current.targets[0]).toEqual(legacy.targets[0]);
+    expect(current.player).toEqual(legacy.player);
+    expect(current.economy).toEqual(legacy.economy);
+    expect(current.underground.seed).toBe(legacy.underground.seed);
+    expect(current.underground.playerNetwork).toBe(
+      legacy.underground.playerNetwork,
+    );
   });
 
   it("preserves the canonical slice-world roster and public identity", () => {
@@ -189,8 +211,20 @@ describe("Phase 8 P0 — world content roster", () => {
       "lattice",
       "halfmoon",
       "kestrel",
+      "velvetwire",
+      "ironveil",
+      "tallyman",
+      "daystar",
+      "rookery",
     ]);
-    expect(state.targets.map((target) => target.id)).toEqual(["nightshade"]);
+    expect(state.targets.map((target) => target.id)).toEqual([
+      "nightshade",
+      "velvetwire",
+      "ironveil",
+      "tallyman",
+      "daystar",
+      "rookery",
+    ]);
     expect(state.underground.actors[0]).toMatchObject({
       id: "nightshade",
       handle: "NIGHTSHADE",
@@ -202,6 +236,22 @@ describe("Phase 8 P0 — world content roster", () => {
       handle: "NIGHTSHADE",
       rank: 10,
     });
+
+    for (const target of state.targets.slice(1)) {
+      const owner = state.underground.actors.find(
+        (actor) => actor.targetId === target.id,
+      );
+      expect(owner).toBeDefined();
+      expect(owner?.handle).toBe(target.handle);
+      expect(owner?.rank).toBe(target.rank);
+      expect(target.machines.length).toBeGreaterThanOrEqual(2);
+      expect(
+        target.machines.reduce(
+          (sum, machine) => sum + machine.services.length,
+          0,
+        ),
+      ).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it("rejects duplicate authored ids before they enter simulation state", () => {

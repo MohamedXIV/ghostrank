@@ -507,3 +507,20 @@ Those numbers describe **these exact policies and this exact content baseline**.
 **The harness is local tooling, not a mandatory production dependency.** `npm run telemetry:balance` runs the same deterministic report. The full report is also test-covered for determinism and core invariants; exact distribution numbers are printed for evidence rather than asserted as brittle pass/fail thresholds. Human playtests still decide whether the measured behavior feels fair or interesting.
 
 Accepted 2026-10-05 as the Phase 8 P1 telemetry contract. P2 may now broaden target/NPC content against a measured unchanged baseline.
+
+
+## D046 — Content Alpha target breadth is authored topology, not a target-class ruleset (Phase 8 P2)
+
+P0 created the world-content authoring boundary and P1 measured the one-target baseline. P2 uses that boundary exactly as intended: it broadens the fictional roster from five peers / one target to **ten peers / six targets**, with fourteen authored target machines and seventeen services, without teaching the simulation any new target class.
+
+**The five new target owners are ordinary actors with ordinary targets.** VELVETWIRE (scam-network), IRONVEIL (extortion-crew), TALLYMAN (predatory-market), DAYSTAR (corporate-infrastructure), and ROOKERY (rival-infrastructure) are authored through the same `UndergroundActor` / `TargetState` / machine / service shapes as NIGHTSHADE. Their archetype tags remain editorial metadata and are stripped before `WorldState`. No target-level, universal difficulty score, command branch, event family, RNG stream, persistence field, or player-rank requirement is introduced.
+
+**Existing relationship rules remain the only starting social rule.** DAYSTAR and ROOKERY are White-network peers, so a White-starting run receives the same existing starting-network trust initialization that already applied to VESPER and HALFMOON. P2 does not seed bespoke relationships for any archetype. Black-network additions receive no special starting trust.
+
+**Every target shares the same epistemic/operation path.** Dedicated tests run all five new targets through observe → open → survey → disengage, and compare player rank 1 with rank 999,999. Command results, discovered evidence, chronology, and traces agree. Distinct machine/service topology creates informational variety; it does not create a second operation engine.
+
+**Historical golden proofs remain historical.** Phase 6's pre-probe byte hashes were not replaced with hashes from the expanded world. Their regression now reconstructs the exact pre-Content-Alpha five-peer / NIGHTSHADE roster and replays the old proof there. Likewise, Phase 7's P5 contract-pressure probability test isolates its intended trusted issuer so P2's extra White contacts cannot masquerade as a pressure regression.
+
+**P1 telemetry is rerun rather than ignored.** The expanded roster is reachable: the 32-seed report exposes all ten actors and all six targets; the contractor policy encounters twelve distinct target machines and twelve services. It also shows a material activity increase: contractor probes rise from 403 to 1,723, while ARRESTED outcomes move from 28/32 to 30/32; idle still remains 32/32 active with zero player-driven threat and ORDINARY pressure. P2 records this as a measured consequence of more autonomous actors and opportunities. It does not secretly retune Phase 6/7 mechanics to reproduce the P1 distribution; P6 owns explicit alpha calibration.
+
+Accepted 2026-10-05 as the Phase 8 P2 target/NPC breadth contract. P3 now owns contract breadth through the existing evidence/operation/value/relationship model.

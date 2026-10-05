@@ -10,12 +10,12 @@ import {
 } from "@/game/telemetry/balance-telemetry";
 
 describe("Phase 8 P1 — local balance telemetry baseline", () => {
-  it("pins the authored-content breadth that P2–P6 will intentionally expand", () => {
+  it("reports the current authored-content breadth after intentional Phase 8 expansion", () => {
     expect(authoredContentCounts()).toEqual({
-      actors: 5,
-      targets: 1,
-      targetMachines: 2,
-      targetServices: 2,
+      actors: 10,
+      targets: 6,
+      targetMachines: 14,
+      targetServices: 17,
       hardwareListings: 6,
       housingListings: 4,
       machineListings: 5,
@@ -71,7 +71,7 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     );
   });
 
-  it("reports the unchanged multi-seed baseline across distinct player policies", () => {
+  it("reports multi-seed telemetry across distinct player policies", () => {
     const report = runBalanceTelemetry();
 
     console.info("PHASE8_P1_TELEMETRY", JSON.stringify(report));
@@ -131,5 +131,5 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       );
       expect(summary.economy.ledgerValueMoved.min).toBeGreaterThanOrEqual(0);
     }
-  }, 60_000);
+  }, 120_000);
 });

@@ -34,6 +34,8 @@ Phase 7 P6 adds no persisted exotic-capability field and requires no migration. 
 
 Phase 8 P0 adds no persisted world-content metadata and requires no migration. `src/content/world-content.ts` is an authoring catalog used only to instantiate the initial actor/target/infrastructure records. Editorial archetype tags are stripped before `WorldState` exists. After startup, the same canonical simulation state remains authoritative and portable/browser saves continue to persist the instantiated facts, not a live dependency on catalog metadata.
 
+Phase 8 P2 adds no new persistence shape or migration. The five additional target-owner pairs are authored catalog rows that instantiate into the same existing actor/target/machine/service arrays as NIGHTSHADE. Their archetype labels are still stripped before authoritative state exists. Saves therefore persist the concrete instantiated world and its later mutations exactly as before; they do not persist or re-resolve editorial archetype metadata on load.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:

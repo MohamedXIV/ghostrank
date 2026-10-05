@@ -246,6 +246,7 @@ describe("Phase 7 P5 — exceptional long-run pressure", () => {
       LONG_RUN_PRESSURE_START_MINUTES - TICK_MINUTES;
     baseline.underground.seed = seed;
     quietActors(baseline);
+    baseline.underground.relationships = [];
     setRelationship(baseline, "vesper", { trust: 20 });
 
     const veteran = withCompletedHistory(20);
@@ -253,6 +254,7 @@ describe("Phase 7 P5 — exceptional long-run pressure", () => {
       LONG_RUN_PRESSURE_START_MINUTES - TICK_MINUTES;
     veteran.underground.seed = seed;
     quietActors(veteran);
+    veteran.underground.relationships = [];
     setRelationship(veteran, "vesper", { trust: 20 });
 
     advanceUnderground(baseline, LONG_RUN_PRESSURE_START_MINUTES);

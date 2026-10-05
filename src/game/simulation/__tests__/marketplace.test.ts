@@ -143,10 +143,15 @@ describe("npc AI use in the ecosystem", () => {
     const projection = projectWorld(createSliceWorldState());
 
     const assistants = projection.underground.assistants;
-    expect(assistants.map((entry) => entry.actorId).sort()).toEqual([
-      "halfmoon",
-      "lattice",
-    ]);
+    const expectedActors = createSliceWorldState()
+      .underground.actors
+      .filter((actor) => actor.modelId !== undefined)
+      .map((actor) => actor.id)
+      .sort();
+
+    expect(assistants.map((entry) => entry.actorId).sort()).toEqual(
+      expectedActors,
+    );
     expect(
       assistants.find((entry) => entry.actorId === "lattice")?.modelLabel,
     ).toBe("Quantized Workhorse 13B");
