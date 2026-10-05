@@ -556,20 +556,3 @@ Phase 6 already solved where the player is: `economy.housing` is the authoritati
 **Breadth must not silently retune the world.** P1's telemetry policies never rent housing, so P4 is required to leave their endings, economy, rank, contracts, threats and exposure unchanged. The authored-content count alone moves from four to eight housing listings. Any other telemetry delta is a regression, not intended balance.
 
 Accepted 2026-10-06 as the Phase 8 P4 location/physical-life breadth contract. P5 owns market breadth through the existing capability/economy/contention systems.
-
-
-## D049 — Market breadth is authored trade-offs inside the existing capability/economy graph (Phase 8 P5)
-
-Phase 8 needs a larger market, but breadth must not become a second progression tree. P5 therefore expands the existing catalogs only: hardware 6→8, machines 5→7, models 5→7, player tools 3→5, software licenses 3→5, and self-built workflow specs 3→5. Housing remains P4's eight listings.
-
-**Every new listing speaks an existing language.** Hardware and machines add only the existing compute/memory/VRAM/storage/network vector. Tools and software use the existing capability-or-action-duration `SoftwareEffect`. Models keep the existing cloud-rent versus local-property split, existing local contention footprint, model property bands, and optional author counterparty. Workflows keep the existing Forge spec/build/outcome path.
-
-**There is no market unlock layer.** Rank never participates in listing visibility, affordability rules, acquisition, activation, model running, or workflow building. The Phase 7 exotic rack remains the only derived-stock exception and keeps its existing veteran-history rule; P5 does not generalize that into a level/unlock system.
-
-**The new rows are trade-offs, not strict upgrades.** Balanced Compute Module trades some raw CPU lift for memory; Memory Accelerator emphasizes VRAM. Archive Node emphasizes storage; Model Host emphasizes memory/VRAM. Long-Context API rents high context at a mid/high recurring fee; Reliable Compact 7B is cheap/local/reliable but a weaker speed shortcut. New tools and licenses split capability lifts versus modest duration shortcuts instead of duplicating the strongest existing entries.
-
-**Self-built parity remains contractual.** Indexed Storage Suite and Batch Scheduler each gain a Forge spec with the exact same `SoftwareEffect`, so the player can still replace rent with world-time/model work rather than being forced into a premium-only effect.
-
-**Telemetry must remain behaviorally unchanged.** P1's scripted policies do not purchase market content, enable licenses, run models, or build workflows. Therefore P5 is allowed to change only authored-content counts in that report. Any ending/economy/rank/contract/threat/exposure delta is a regression and belongs nowhere in P5. P6 remains the explicit social breadth + alpha calibration slice.
-
-Accepted 2026-10-06 as the Phase 8 P5 market-breadth contract. P6 owns authored social/event breadth and measured alpha calibration.
