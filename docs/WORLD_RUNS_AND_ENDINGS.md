@@ -132,6 +132,25 @@ The handle is abandoned under pressure without a clean exit.
 ### Voluntary retirement
 The player intentionally plans an exit while still capable of continuing.
 
+
+### Shipped forced-ending mapping (Phase 7 P1)
+
+The first forced-ending policy consumes Phase 6 causal history rather than a
+generic death roll:
+
+- **ARRESTED** — a current identity-exposure condition cites an authority file
+  whose player-visible evidence has already reached the converging band.
+- **UNMASKED** — current identity exposure follows a physical actor who had
+  already performed the underground's unmasking retaliation.
+- **MISSING** — current physical identity exposure without either stronger
+  authority/social history above.
+- **STRANDED** — P4 has already proved the explicit resource floor.
+- **COMPROMISED** — rig and dwelling are both lost on the same current boundary.
+
+A rig loss or dwelling loss by itself is severe but recoverable. Rank never
+selects an ending. Historical Phase 6 compromise records are not retroactively
+terminalized when loaded under Phase 7.
+
 ## Exit plan
 
 Retirement is an operation, not a menu button.
