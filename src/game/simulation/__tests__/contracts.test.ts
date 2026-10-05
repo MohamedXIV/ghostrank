@@ -437,6 +437,51 @@ describe("contract projection", () => {
     });
   });
 
+  it("projects infrastructure-map requirements without hidden topology", () => {
+    const bus = new CommandBus(
+      worldWith(
+        contract({
+          objective: "infrastructure-map",
+          requiredServices: undefined,
+          requiredMachines: 2,
+        }),
+      ),
+    );
+
+    const visible = projectWorld(bus.snapshot()).underground.contracts[0];
+
+    expect(visible).toEqual({
+      id: "contract:1",
+      issuerHandle: "VESPER",
+      targetId: "nightshade",
+      targetHandle: "NIGHTSHADE",
+      objective: "infrastructure-map",
+      requiredServices: undefined,
+      requiredMachines: 2,
+      status: "offered",
+      expiresWorldMinute: DAY,
+    });
+    expect(JSON.stringify(visible)).not.toContain("machines");
+    expect(JSON.stringify(visible)).not.toContain("services");
+
+    const runtime = createGameRuntime(
+      worldWith(
+        contract({
+          objective: "infrastructure-map",
+          requiredServices: undefined,
+          requiredMachines: 2,
+        }),
+      ),
+    );
+    expect(
+      runtime.projection.getCell(
+        "contracts",
+        "contract:1",
+        "requiredMachines",
+      ),
+    ).toBe(2);
+  });
+
   it("syncs to TinyBase and updates as the contract advances", () => {
     const runtime = createGameRuntime(worldWith(contract()));
 
