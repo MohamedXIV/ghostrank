@@ -75,6 +75,7 @@ import {
   machineCapabilityOf,
   machineResaleValue,
 } from "@/content/machine-catalog";
+import { machineMarketVisible } from "@/game/simulation/systems/exotic-capability";
 import {
   MODEL_CATALOG,
   findModelItem,
@@ -603,6 +604,7 @@ export interface VisibleMachineListing {
   cost: number;
   ownedCount: number;
   capability: HardwareCapability;
+  exotic: boolean;
 }
 
 /**
@@ -1189,15 +1191,16 @@ function projectEconomy(
     }),
   );
 
-  const machineListings: VisibleMachineListing[] = MACHINE_CATALOG.map(
-    (item) => ({
+  const machineListings: VisibleMachineListing[] = MACHINE_CATALOG
+    .filter((item) => machineMarketVisible(state, item.id))
+    .map((item) => ({
       id: item.id,
       label: item.label,
       cost: item.cost,
       ownedCount: ownedMachineCounts.get(item.id) ?? 0,
       capability: { ...item.capability },
-    }),
-  );
+      exotic: item.exotic === true,
+    }));
 
   // Models list every catalog entry with its two-state tag. The catalog factor
   // is what the model advertises; the *delivered* factor is what this rig
