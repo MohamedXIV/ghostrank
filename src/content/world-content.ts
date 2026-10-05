@@ -46,11 +46,12 @@ export interface WorldContentRoster {
 }
 
 /**
- * The Phase 2–7 canonical roster, moved verbatim out of slice-world.ts.
+ * Phase 8 authored world roster.
  *
- * P0 intentionally adds no breadth yet. Keeping this roster byte-equivalent is
- * the compatibility floor; later Phase 8 slices can add authored entries here
- * without teaching runtime code about specific handles.
+ * P0 moved the Phase 2–7 canonical five peers / NIGHTSHADE target here without
+ * changing runtime behavior. P2 broadens this same data surface with fictional
+ * scam/extortion/market/corporate/rival target-owner archetypes. The simulation
+ * still sees only ordinary actors, targets, machines and services.
  */
 export const CORE_WORLD_CONTENT: WorldContentRoster = {
   id: "alpha-core",
@@ -123,6 +124,78 @@ export const CORE_WORLD_CONTENT: WorldContentRoster = {
         activity: 35,
       },
     },
+    {
+      archetype: "scam-operator",
+      actor: {
+        id: "velvetwire",
+        handle: "VELVETWIRE",
+        rank: 8_600,
+        network: "black",
+        skill: 58,
+        defense: 44,
+        discretion: 78,
+        activity: 26,
+        targetId: "velvetwire",
+      },
+    },
+    {
+      archetype: "extortion-operator",
+      actor: {
+        id: "ironveil",
+        handle: "IRONVEIL",
+        rank: 1_750,
+        network: "black",
+        skill: 74,
+        defense: 67,
+        discretion: 50,
+        activity: 24,
+        modelId: "model-local-workhorse",
+        targetId: "ironveil",
+      },
+    },
+    {
+      archetype: "market-predator",
+      actor: {
+        id: "tallyman",
+        handle: "TALLYMAN",
+        rank: 6_200,
+        network: "black",
+        skill: 56,
+        defense: 72,
+        discretion: 64,
+        activity: 22,
+        targetId: "tallyman",
+      },
+    },
+    {
+      archetype: "corporate-operator",
+      actor: {
+        id: "daystar",
+        handle: "DAYSTAR",
+        rank: 14_800,
+        network: "white",
+        skill: 50,
+        defense: 82,
+        discretion: 84,
+        activity: 15,
+        modelId: "model-local-tuned",
+        targetId: "daystar",
+      },
+    },
+    {
+      archetype: "rival-operator",
+      actor: {
+        id: "rookery",
+        handle: "ROOKERY",
+        rank: 39_000,
+        network: "white",
+        skill: 66,
+        defense: 59,
+        discretion: 46,
+        activity: 31,
+        targetId: "rookery",
+      },
+    },
   ],
   targets: [
     {
@@ -164,6 +237,230 @@ export const CORE_WORLD_CONTENT: WorldContentRoster = {
           sponsorId: "black-index",
           note: "Authoritative operation truth; infrastructure stays hidden until supported by evidence.",
         },
+      },
+    },
+    {
+      archetype: "scam-network",
+      target: {
+        id: "velvetwire",
+        handle: "VELVETWIRE",
+        rank: 8_600,
+        machines: [
+          {
+            id: "vw-front",
+            label: "Mirror Front",
+            role: "front",
+            services: [
+              {
+                id: "vw-board",
+                label: "Offer Board",
+                kind: "marketplace",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "vw-ledger",
+            label: "Settlement Ledger",
+            role: "ledger",
+            services: [
+              {
+                id: "vw-clearing",
+                label: "Clearing Queue",
+                kind: "ledger",
+                state: "online",
+              },
+              {
+                id: "vw-contact",
+                label: "Contact Index",
+                kind: "contacts",
+                state: "online",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      archetype: "extortion-crew",
+      target: {
+        id: "ironveil",
+        handle: "IRONVEIL",
+        rank: 1_750,
+        machines: [
+          {
+            id: "iv-relay",
+            label: "Relay Cage",
+            role: "relay",
+            services: [
+              {
+                id: "iv-signal",
+                label: "Signal Queue",
+                kind: "signal",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "iv-locker",
+            label: "Pressure Locker",
+            role: "vault",
+            services: [
+              {
+                id: "iv-dossier",
+                label: "Dossier Index",
+                kind: "archive",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "iv-coordinator",
+            label: "Crew Coordinator",
+            role: "coordinator",
+            services: [
+              {
+                id: "iv-schedule",
+                label: "Dispatch Schedule",
+                kind: "dispatch",
+                state: "online",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      archetype: "predatory-market",
+      target: {
+        id: "tallyman",
+        handle: "TALLYMAN",
+        rank: 6_200,
+        machines: [
+          {
+            id: "tm-exchange",
+            label: "Exchange Node",
+            role: "exchange",
+            services: [
+              {
+                id: "tm-orders",
+                label: "Order Book",
+                kind: "market",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "tm-cache",
+            label: "Price Cache",
+            role: "vault",
+            services: [
+              {
+                id: "tm-pricing",
+                label: "Pricing Feed",
+                kind: "pricing",
+                state: "online",
+              },
+              {
+                id: "tm-history",
+                label: "Trade Archive",
+                kind: "archive",
+                state: "online",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      archetype: "corporate-infrastructure",
+      target: {
+        id: "daystar",
+        handle: "DAYSTAR",
+        rank: 14_800,
+        machines: [
+          {
+            id: "ds-edge",
+            label: "Partner Edge",
+            role: "gateway",
+            services: [
+              {
+                id: "ds-portal",
+                label: "Partner Portal",
+                kind: "portal",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "ds-ops",
+            label: "Operations Cluster",
+            role: "operations",
+            services: [
+              {
+                id: "ds-scheduler",
+                label: "Work Scheduler",
+                kind: "scheduler",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "ds-archive",
+            label: "Records Store",
+            role: "archive",
+            services: [
+              {
+                id: "ds-records",
+                label: "Records Index",
+                kind: "records",
+                state: "online",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      archetype: "rival-infrastructure",
+      target: {
+        id: "rookery",
+        handle: "ROOKERY",
+        rank: 39_000,
+        machines: [
+          {
+            id: "rk-observer",
+            label: "Observer Node",
+            role: "monitor",
+            services: [
+              {
+                id: "rk-telemetry",
+                label: "Telemetry Stream",
+                kind: "telemetry",
+                state: "online",
+              },
+            ],
+          },
+          {
+            id: "rk-workbench",
+            label: "Research Workbench",
+            role: "lab",
+            services: [
+              {
+                id: "rk-analysis",
+                label: "Analysis Queue",
+                kind: "analysis",
+                state: "online",
+              },
+              {
+                id: "rk-notes",
+                label: "Research Notes",
+                kind: "archive",
+                state: "online",
+              },
+            ],
+          },
+        ],
       },
     },
   ],
