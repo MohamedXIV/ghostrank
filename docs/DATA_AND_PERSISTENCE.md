@@ -32,6 +32,8 @@ Phase 7 P5 adds no persisted veteran-pressure field and requires no migration. `
 
 Phase 7 P6 adds no persisted exotic-capability field and requires no migration. Availability is derived from P5's existing veteran-pressure read plus existing `economy.ownedWorkflows` history. A successful Cryogenic Annealing Rack purchase is an ordinary `OwnedMachine` plus the ordinary append-only machine debit already stored in `economy.ledger`; that debit is also the one-shot claim provenance, so selling the machine does not erase eligibility history. Portable/browser save round-trips therefore preserve both ownership and prior-claim truth without an `exoticClaimed` flag, special archive table, or host-specific rule.
 
+Phase 8 P0 adds no persisted world-content metadata and requires no migration. `src/content/world-content.ts` is an authoring catalog used only to instantiate the initial actor/target/infrastructure records. Editorial archetype tags are stripped before `WorldState` exists. After startup, the same canonical simulation state remains authoritative and portable/browser saves continue to persist the instantiated facts, not a live dependency on catalog metadata.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:
