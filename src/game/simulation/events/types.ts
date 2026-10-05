@@ -1,6 +1,7 @@
 import type { ModelSource } from "@/content/model-catalog";
 import type { WorkflowOutcome } from "@/game/simulation/state/world-state";
 import type {
+  CompromiseKind,
   ContractObjectiveKind,
   ForumSubjectKind,
   InvestigationSignalKind,
@@ -355,6 +356,15 @@ export type SimulationEvent =
       actorId: string;
       modelId: string;
       causeThreatId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "CompromiseRecorded";
+      compromiseId: string;
+      kind: CompromiseKind;
+      sourceThreatId: string;
+      sourceProbeId: string;
+      sourceInvestigationIds: string[];
       worldMinute: number;
     }
   | {
