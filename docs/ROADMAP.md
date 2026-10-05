@@ -336,7 +336,7 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0–P1 delivered; P2 voluntary exit plan is next. Tracked by #25.**
+**Status: in progress — P0–P2 delivered; P3 retirement variants is next. Tracked by #25.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
@@ -353,7 +353,7 @@ Grounded slice order:
 
 **P1 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-forced-endings.md`, D038): forced endings consume only catastrophic conditions created on the **current** ecosystem boundary, so a Phase 6 save is not retroactively killed by new policy. `identity-exposed` branches by existing history: cited visibly-converged authority evidence yields **ARRESTED**; a prior social unmasking by the same physical actor yields **UNMASKED**; otherwise a physical reach to the person yields **MISSING**. `STRANDED` consumes P4's already-proven resource floor. Generic **COMPROMISED** requires both rig and dwelling loss on the same boundary, leaving either loss alone recoverable. No rank or fresh roll participates. Terminality is chronological: after P4/P1 the ecosystem stops immediately, authoritative `worldMinute` and `WorldTimeAdvanced.toMinute` clamp to the ending tick, and no later retaliation, offer, probe, exact-tick build completion, billing, investigation, or requested wait tail runs after `RunEnded`.
 
-**P2 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-voluntary-retirement.md`, D039): voluntary retirement now begins as intent, not terminality. PLAN leaves normal play live while the player resolves a fully visible checklist: no active operation, accepted contract, in-flight build, running model, active license, or lease. COMMIT refuses without spending time until that wind-down is true, then spends 60 world minutes through the ordinary danger chronology; a forced ending during that hour wins and cooling never begins. Success freezes a two-day cooling deadline. While cooling/ready, only waiting, reading messages, or cancelling is allowed; cancellation restores normal play. READY is derived from clock truth and P2 emits no `RunEnded`, leaving P3 to choose ordinary RETIRED versus the rare VANISHED/other retirement tone from actual history rather than rank or a morality checkbox.
+**P2 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-voluntary-retirement.md`, D039): voluntary retirement now begins as intent, not terminality. PLAN leaves normal play live while the player resolves a fully visible checklist: no active operation, accepted contract, in-flight build, running model, active license, or lease. COMMIT refuses without spending time until that wind-down is true, then spends 60 world minutes through the ordinary danger chronology; a forced ending during that hour wins and cooling never begins. The same visible checklist is revalidated at the arrival minute before cooling can start; if a future world system creates a new obligation during that hour, the hour remains spent and the plan stays in PLANNING. Success freezes a two-day cooling deadline. While cooling/ready, only waiting, reading messages, or cancelling is allowed; cancellation restores normal play. READY is derived from clock truth and P2 emits no `RunEnded`, leaving P3 to choose ordinary RETIRED versus the rare VANISHED/other retirement tone from actual history rather than rank or a morality checkbox.
 
 Deliverables:
 - voluntary exit plan,
