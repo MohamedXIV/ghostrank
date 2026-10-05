@@ -677,10 +677,11 @@ export class CommandBus {
     }
 
     commitRetirementPlan(this.world);
-    const readyWorldMinute = this.world.retirement?.coolingUntilWorldMinute;
-    if (readyWorldMinute === undefined) {
+    const committed = this.world.retirement;
+    if (!committed || committed.stage !== "cooling") {
       return this.failure("RETIREMENT_COMMIT_FAILED");
     }
+    const readyWorldMinute = committed.coolingUntilWorldMinute;
 
     return {
       ok: true,
