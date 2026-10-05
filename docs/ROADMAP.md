@@ -336,7 +336,7 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0–P3 delivered; P4 completed-run history is next. Tracked by #25.**
+**Status: in progress — P0–P4 delivered; P5 exceptional long-run pressure is next. Tracked by #25.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
@@ -345,7 +345,7 @@ Grounded slice order:
 - **P1 — forced ending eligibility** *(delivered; D038)*: current Phase 6 conditions/provenance deterministically produce ARRESTED / UNMASKED / MISSING / STRANDED / COMPROMISED, with rank absent and exact-tick terminal freeze.
 - **P2 — voluntary exit plan** *(delivered; D039)*: PLAN → visible wind-down checklist → 60-minute COMMIT → two-day live-world cooling → derived READY, with cancellation and no ending decision yet.
 - **P3 — retirement variants + rare White VANISHED** *(delivered; D040)*: READY closes only on explicit finish; VANISHED/RETIRED tone derives from completed-work/reputation/consequence history, never the starting board or rank.
-- **P4 — completed-run history**: archive summaries/postmortems behind the persistence boundary while keeping active-run creation separate. Closed #40 remains an implementation reference for browser archival only; its competing terminal schema is superseded by D037.
+- **P4 — completed-run history** *(delivered; D041)*: browser IndexedDB atomically moves the canonical final state from active to history; summaries/postmortems are derived on demand in a read-only GHOST/OS History app, while fresh active-run creation remains separate. Closed #40 supplied only the archive pattern; D037 remains the terminal model.
 - **P5 — exceptional long-run pressure**: veteran-run pressure from world history rather than rank grind.
 - **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
 
@@ -354,6 +354,8 @@ Grounded slice order:
 **P1 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-forced-endings.md`, D038): forced endings consume only catastrophic conditions created on the **current** ecosystem boundary, so a Phase 6 save is not retroactively killed by new policy. `identity-exposed` branches by existing history: cited visibly-converged authority evidence yields **ARRESTED**; a prior social unmasking by the same physical actor yields **UNMASKED**; otherwise a physical reach to the person yields **MISSING**. `STRANDED` consumes P4's already-proven resource floor. Generic **COMPROMISED** requires both rig and dwelling loss on the same boundary, leaving either loss alone recoverable. No rank or fresh roll participates. Terminality is chronological: after P4/P1 the ecosystem stops immediately, authoritative `worldMinute` and `WorldTimeAdvanced.toMinute` clamp to the ending tick, and no later retaliation, offer, probe, exact-tick build completion, billing, investigation, or requested wait tail runs after `RunEnded`.
 
 **P2 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-voluntary-retirement.md`, D039): voluntary retirement now begins as intent, not terminality. PLAN leaves normal play live while the player resolves a fully visible checklist: no active operation, accepted contract, in-flight build, running model, active license, or lease. COMMIT refuses without spending time until that wind-down is true, then spends 60 world minutes through the ordinary danger chronology; a forced ending during that hour wins and cooling never begins. The same visible checklist is revalidated at the arrival minute before cooling can start; if a future world system creates a new obligation during that hour, the hour remains spent and the plan stays in PLANNING. Success freezes a two-day cooling deadline. While cooling/ready, only waiting, reading messages, or cancelling is allowed; cancellation restores normal play. READY is derived from clock truth and P2 emits no `RunEnded`, leaving P3 to choose ordinary RETIRED versus the rare VANISHED/other retirement tone from actual history rather than rank or a morality checkbox.
+
+**P4 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-completed-run-history.md`, D041): browser persistence upgrades to IndexedDB v2 with a `run-history` store and moves a terminal portable `WorldState` out of the active slot in one transaction. A failed archive falls back to durably saving the terminal active snapshot, so reload can never revive gameplay; boot recovery retries the move, while the next boot after success creates a fresh run separately. The archive stores final truth once. `deriveCompletedRunSummary` reconstructs the browse model — ending/tone, final rank/credits, lifetime value moved, contracts, escalations, authored workflows, compromises, descriptors, and existing safe postmortems — without leaking hidden cause/probe/investigation/relationship truth. GHOST/OS exposes that read in a History window. Browser ships now; Tauri/SQLite completed-history parity remains deferred to #19.
 
 Deliverables:
 - voluntary exit plan,
