@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRow } from "tinybase/ui-react";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
+import { formatWorldTime } from "@/game/computer/format-world-time";
 import { RoomSurface } from "@/components/game/room-surface";
 import {
   createGameSession,
@@ -83,17 +85,53 @@ export function GameShell() {
   }
 
   return (
+    <LoadedGameShell
+      session={session}
+      activeSurface={activeSurface}
+      enterComputer={enterComputer}
+      enterRoom={enterRoom}
+    />
+  );
+}
+
+function LoadedGameShell({
+  session,
+  activeSurface,
+  enterComputer,
+  enterRoom,
+}: {
+  session: GameSession;
+  activeSurface: "room" | "computer";
+  enterComputer: () => void;
+  enterRoom: () => void;
+}) {
+  const run = useRow("run", "current", session.projection);
+
+  if (run.status === "ended") {
+    return (
+      <main className="game-shell">
+        <section className="boot-screen" aria-label="Run ended">
+          <div className="boot-mark">
+            {String(run.endingLabel ?? run.endingKind ?? "RUN ENDED")}
+          </div>
+          <div className="boot-line">
+            RUN ENDED{" // "}
+            {formatWorldTime(Number(run.endedWorldMinute ?? 0))}
+          </div>
+          <div className="boot-line">
+            final state archived locally // run history follows in Phase 7
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
     <main className="game-shell">
       {activeSurface === "room" ? (
-        <RoomSurface
-          runtime={session}
-          onUseDesk={enterComputer}
-        />
+        <RoomSurface runtime={session} onUseDesk={enterComputer} />
       ) : (
-        <ComputerDesktop
-          runtime={session}
-          onReturnToRoom={enterRoom}
-        />
+        <ComputerDesktop runtime={session} onReturnToRoom={enterRoom} />
       )}
     </main>
   );
