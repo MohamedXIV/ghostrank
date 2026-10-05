@@ -438,6 +438,7 @@ export interface VisibleContract {
   targetHandle: string;
   objective: ContractObjectiveKind;
   requiredServices?: number;
+  requiredMachines?: number;
   status: Exclude<ContractStatus, "declined">;
   expiresWorldMinute: number;
   dueWorldMinute?: number;
@@ -859,6 +860,7 @@ function projectUnderground(
         targetHandles.get(contract.targetId) ?? contract.targetId,
       objective: contract.objective,
       requiredServices: contract.requiredServices,
+      requiredMachines: contract.requiredMachines,
       status: contract.status,
       expiresWorldMinute: contract.expiresWorldMinute,
       ...(contract.dueWorldMinute === undefined
