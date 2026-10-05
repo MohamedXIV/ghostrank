@@ -533,6 +533,18 @@ export function syncWorldProjection(
   );
 
   store.transaction(() => {
+    store.setTable("run", {
+      current: {
+        status: projection.run.status,
+        ...(projection.run.ending
+          ? {
+              endingKind: projection.run.ending.kind,
+              endingLabel: projection.run.ending.label,
+              endedWorldMinute: projection.run.ending.worldMinute,
+            }
+          : {}),
+      },
+    });
     store.setTable("player", {
       current: {
         handle: projection.player.handle,
