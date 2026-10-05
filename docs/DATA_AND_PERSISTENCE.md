@@ -127,6 +127,8 @@ This permits a later flow such as:
 
 without moving gameplay rules into persistence code.
 
+Phase 7 P2 adds one more legacy-defaulted live-run field: `retirement: null | RetirementPlan`. A planning record stores only its start minute. A committed record stores the same start minute plus one commit minute and one frozen cooling deadline. READY is derived from `worldMinute`; it is not persisted as a second status transition. The canonical portable/browser save round-trips this plan exactly. P2 does not archive completed runs and does not change the active-run persistence interface.
+
 ## Migrations
 
 Every shipped save schema change must include migration strategy.
