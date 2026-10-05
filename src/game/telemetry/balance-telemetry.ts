@@ -408,13 +408,37 @@ function attemptRetirement(
   }
 }
 
-function primeRecklessRun(bus: CommandBus): void {
+function primeRecklessRun(
+  bus: CommandBus,
+  horizonMinute: number,
+): void {
   const targetId = bus.snapshot().targets[0]?.id;
   if (!targetId) return;
 
   for (let cycle = 0; cycle < 3 && isLive(bus); cycle += 1) {
+    // Prime only when the complete intrusion sequence fits inside the requested
+    // telemetry window. Dry-running from the authoritative snapshot keeps this
+    // independent of hardcoded command-duration assumptions.
+    const preview = new CommandBus(structuredClone(bus.snapshot()));
+    performIntrusion(preview, targetId);
+
+    if (preview.snapshot().worldMinute > horizonMinute) {
+      break;
+    }
+
     performIntrusion(bus, targetId);
   }
+}
+
+function normalizeHorizonMinute(horizonDays: number): number {
+  if (!Number.isFinite(horizonDays) || horizonDays < 0) {
+    throw new Error("Balance telemetry horizonDays must be a finite non-negative number");
+  }
+
+  // World time is integer minutes. Normalize the reporting window once at the
+  // boundary so fractional-day callers cannot feed non-integer waits into the
+  // simulation loop.
+  return Math.floor(horizonDays * DAY_MINUTES);
 }
 
 function runScenario(
@@ -426,10 +450,10 @@ function runScenario(
   initial.underground.seed = seed;
   const startingRank = initial.player.rank;
   const bus = new CommandBus(initial);
-  const horizonMinute = horizonDays * DAY_MINUTES;
+  const horizonMinute = normalizeHorizonMinute(horizonDays);
 
   if (scenario === "reckless") {
-    primeRecklessRun(bus);
+    primeRecklessRun(bus, horizonMinute);
   }
 
   while (isLive(bus) && bus.snapshot().worldMinute < horizonMinute) {
