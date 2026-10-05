@@ -27,6 +27,23 @@ const ANONYMITY_FLAVOR: Record<VisiblePresence["anonymity"], string> = {
   hidden: "nobody here knows the handle on the screen",
 };
 
+function physicalRoomCue(kind: string): string {
+  switch (kind) {
+    case "strange-vehicle":
+      return "same car outside again";
+    case "door-camera-motion":
+      return "motion at the door, nobody there";
+    case "outage":
+      return "power out, block still lit";
+    case "unusual-connectivity":
+      return "local link behaving wrong";
+    case "nearby-activity":
+      return "too much quiet movement nearby";
+    default:
+      return "something outside feels wrong";
+  }
+}
+
 interface RoomSurfaceProps {
   runtime: GameRuntime;
   onUseDesk: () => void;
@@ -60,6 +77,18 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
   // the room can offer nothing the lease commands do not already accept, and the
   // journey shown here is the journey the projection already priced.
   const destinations = useTable("housing", runtime.projection);
+  const physicalSignals = useTable("physicalSignals", runtime.projection);
+  const latestPhysicalSignal = useMemo(
+    () =>
+      Object.entries(physicalSignals)
+        .sort(
+          ([idA, a], [idB, b]) =>
+            Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+            idB.localeCompare(idA, undefined, { numeric: true }),
+        )
+        .at(0)?.[1],
+    [physicalSignals],
+  );
   const [destination, setDestination] = useState("");
   const relocationOptions = useMemo(() => {
     const rows: { id: string; label: string }[] = [];
@@ -244,6 +273,9 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
           {`fan hum // ${ANONYMITY_FLAVOR[presentation.anonymity]}`}
           {presentation.distant ? " // the trip here cost hours" : ""}
           {presentation.leased ? "" : " // no keys in this room"}
+          {latestPhysicalSignal
+            ? ` // OUTSIDE: ${physicalRoomCue(String(latestPhysicalSignal.kind ?? ""))}`
+            : ""}
         </span>
         <div className="room-relocation">
           <label className="panel-label">
