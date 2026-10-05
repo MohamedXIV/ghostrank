@@ -447,6 +447,7 @@ export function syncWorldProjection(
         vram: listing.capability.vram,
         storage: listing.capability.storage,
         network: listing.capability.network,
+        exotic: listing.exotic,
       },
     ]),
   );

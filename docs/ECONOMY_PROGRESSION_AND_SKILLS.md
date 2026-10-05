@@ -114,6 +114,17 @@ It may interact with fictional legacy cryptography and stored encrypted archives
 
 Post-quantum systems and migration create a moving landscape rather than Quantum = instant win.
 
+**Shipped Phase 7 P6 interpretation:** the first exotic resource is the fictional
+**Cryogenic Annealing Rack**, surfaced as one-shot off-market machine stock only
+for a P5 VETERAN run that has also produced a clean self-authored workflow. It
+does not implement real cryptographic breaking and has no special success rule:
+the box contributes only the existing capability vector
+(`compute 0 / memory 8 / vram 5 / storage 4 / network 0`). That means broader
+memory-driven work and more local-model/build headroom, while operation speed,
+target access, evidence rules and ordinary constraints remain unchanged. The
+one-shot claim is derived from the existing machine-purchase ledger, not a new
+progression flag.
+
 ## Proficiency model
 
 Visible skill should use descriptive bands rather than a gamey 0–100 score where possible:
@@ -187,16 +198,14 @@ They may:
 
 Tool authorship is simultaneously income, prestige, and exposure.
 
-## Implementation status (Phase 4 P0–P7 + Phase 5 P0–P4 + Phase 6 P0–P2)
+## Implementation status (Phase 4–7 complete through Phase 7 P6)
 
-The Phase 4 economy is live through P7, all of Phase 5 is live: the model
-substrate (P0), compute contention (P1), AI analysis (P2), the software forge
-(P3), and the marketplace-plus-NPC-AI slice (P4). Phase 6 has begun: P0 gave
-physical life its first shipped mechanics — relocation and safehouses — P1
-gave the run its first threat that runs on the world's clock, authority
-investigations, and P2 turned the ecosystem's automation on the player with
-rival probes. This section describes what the simulation actually does today;
-the sections above remain the design target for later slices.
+The Phase 4 economy is live through P7, all of Phase 5 is live, Phase 6's
+investigation/probe/physical-compromise/postmortem chain is complete, and Phase
+7 now includes terminal endings, retirement, completed-run history, veteran
+pressure, and the bounded exotic P6 machine. This section describes the
+simulation that is actually shipped today; later content phases can broaden the
+catalog without changing these capability-not-level rules.
 
 - **Wallet and ledger.** The player holds a single `credits` balance and an
   append-only value ledger. Every movement records its direction, amount,

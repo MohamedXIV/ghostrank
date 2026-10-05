@@ -30,6 +30,8 @@ Phase 7 P4 upgrades browser IndexedDB to version 2 with a `run-history` store. B
 
 Phase 7 P5 adds no persisted veteran-pressure field and requires no migration. `deriveLongRunPressure` rebuilds the pressure band from already-authoritative timestamped history (contracts, traces, surfaced investigation signals, retaliation, probes, physical threats, compromises). During a long command callers pass the exact ecosystem boundary being folded, so future records already present in the mutable draft cannot leak backward into an earlier pressure decision. Save/restore therefore preserves P5 behavior by preserving the causal records it already depended on.
 
+Phase 7 P6 adds no persisted exotic-capability field and requires no migration. Availability is derived from P5's existing veteran-pressure read plus existing `economy.ownedWorkflows` history. A successful Cryogenic Annealing Rack purchase is an ordinary `OwnedMachine` plus the ordinary append-only machine debit already stored in `economy.ledger`; that debit is also the one-shot claim provenance, so selling the machine does not erase eligibility history. Portable/browser save round-trips therefore preserve both ownership and prior-claim truth without an `exoticClaimed` flag, special archive table, or host-specific rule.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:

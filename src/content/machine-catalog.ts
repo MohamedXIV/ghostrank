@@ -24,6 +24,11 @@ export interface MachineListing {
   label: string;
   cost: number;
   capability: HardwareCapability;
+  /**
+   * Phase 7 P6 content tag. The simulation decides whether rare stock is
+   * currently available; the catalog remains pure data.
+   */
+  exotic?: boolean;
 }
 
 export const MACHINE_CATALOG: readonly MachineListing[] = [
@@ -50,6 +55,16 @@ export const MACHINE_CATALOG: readonly MachineListing[] = [
     label: "Silent Proxy Box",
     cost: 1_100,
     capability: { compute: 1, memory: 2, vram: 0, storage: 3, network: 4 },
+  },
+  {
+    id: "box-annealing-rack",
+    label: "Cryogenic Annealing Rack",
+    cost: 4_500,
+    // P6 deliberately avoids compute/network. It widens discovery and gives
+    // local AI/builds more memory/VRAM/storage headroom, but it cannot become a
+    // universal operation-speed or success button.
+    capability: { compute: 0, memory: 8, vram: 5, storage: 4, network: 0 },
+    exotic: true,
   },
 ];
 

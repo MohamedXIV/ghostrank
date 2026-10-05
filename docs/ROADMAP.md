@@ -336,7 +336,7 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0–P5 delivered; P6 bounded exotic/quantum capability is next. Tracked by #25.**
+**Status: complete — P0–P6 delivered. Tracked by #25. Phase 8 / #26 is next.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
@@ -347,7 +347,7 @@ Grounded slice order:
 - **P3 — retirement variants + rare White VANISHED** *(delivered; D040)*: READY closes only on explicit finish; VANISHED/RETIRED tone derives from completed-work/reputation/consequence history, never the starting board or rank.
 - **P4 — completed-run history** *(delivered; D041)*: browser IndexedDB atomically moves the canonical final state from active to history; summaries/postmortems are derived on demand in a read-only GHOST/OS History app, while fresh active-run creation remains separate. Closed #40 supplied only the archive pattern; D037 remains the terminal model.
 - **P5 — exceptional long-run pressure** *(delivered; D042 / #46)*: after a strict two-week no-op gate, accumulated causal history can increase existing contract/probe/physical pressure in bounded bands; age alone, rank, and starting board never create difficulty.
-- **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
+- **P6 — bounded exotic/quantum capability** *(delivered; D043 / #47)*: one one-shot off-market Cryogenic Annealing Rack appears only from veteran history + a clean authored workflow; it reuses the ordinary machine/capability path, adds only memory/VRAM/storage, and never grants an attack, success roll, target gate, or rank-based unlock.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-terminal-contract.md`, D037): Phase 7 now has one simulation-owned terminal contract instead of an ending screen convention. `WorldState.ending` is null while live and becomes one immutable `RunEndingRecord` when `endRun` succeeds; the first final status wins and later attempts cannot rewrite it. Every gameplay command is rejected with `RUN_ENDED` before dispatch once terminality exists, so time and state cannot move after a run ends. The canonical save schema persists the record with a legacy `null` default, while the player projection/TinyBase expose only final status/label/minute and keep the authoritative cause id private. GameShell renders the final state from that projection. No eligibility rule ships in P0: an ordinary live run still cannot end spontaneously.
 
@@ -369,9 +369,12 @@ Deliverables:
 Exit criteria:
 - surviving and leaving can be a meaningful goal independent of rank #1.
 
+
+**P6 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-bounded-exotic-capability.md`, D043): the late exotic layer is deliberately ordinary under the hood. The fictional **Cryogenic Annealing Rack** is a one-shot machine listing derived from a P5 **VETERAN** run plus at least one clean self-authored workflow; rank and starting network never participate. Before eligibility it is absent from the Market and direct catalog-id purchase is rejected. Once earned it reuses `buyMachine`, the existing machine/value events, ledger, ownership and capability fold. Its profile is `compute 0 / memory 8 / vram 5 / storage 4 / network 0`: discovery/local workload headroom grows, but operation action minutes, success math, evidence rules and target access do not. The append-only machine debit is the one-shot claim record, so resale and save/restore cannot respawn the offer. No new state field, migration, command/event family, RNG stream or capability axis is added.
+
 ## Phase 8 — Content Alpha
 
-**Status: planned / blocked by #25. Tracked by #26.**
+**Status: planned / next after completed Phase 7 / #25. Tracked by #26.**
 
 Deliverables:
 - broader NPC archetypes,
