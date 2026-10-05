@@ -523,6 +523,15 @@ the sections above remain the design target for later slices.
   failures (14/64 reckless by day 5); those are tuning observations, not locked
   odds. Projection exposes only the condition label/kind/minute, and the command
   bus remains usable — Phase 7 owns terminal endings.
+- **Postmortem as a derived read (Phase 6 P5).** P5 adds no economy state and no
+  new recorder. It reads the provenance P1–P4 already persisted and projects a
+  chronological, player-safe explanation beside each compromise. The chain can
+  cite the player's own actions and already-visible evidence, but it never leaks
+  hidden actor identity, probe correctness, investigation progress, physical
+  location, or seed. If a player-caused trace cannot be reached through the
+  stored provenance, the result is INCOMPLETE ATTRIBUTION rather than invented
+  blame. Because this is derivation, it cannot desync from credits, inventory,
+  housing, or the compromise record and it requires no migration.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -550,8 +559,10 @@ the sections above remain the design target for later slices.
   legacy-defaulted top-level array, `compromises: []`; each record persists
   source threat/probe/investigation ids and the struck location for P5/Phase 7,
   while the live projection strips all four and keeps only the named condition
-  and minute. Historical P3 threats do not synthesize P4 records on load. A
-  claim's
+  and minute. Historical P3 threats do not synthesize P4 records on load. Phase
+  6 P5 adds **nothing to persist**: postmortems are rebuilt from those existing
+  records after every load, the same derive-not-store discipline as the value
+  graph and reputation descriptors. A claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and
   do project, because they are the player's own ground truth.
