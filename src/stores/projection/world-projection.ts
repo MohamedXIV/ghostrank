@@ -130,6 +130,36 @@ export function syncWorldProjection(
     ]),
   );
 
+  // P5 — safe causal read only. The chain row carries attribution state and
+  // display text; steps carry no raw threat/probe/investigation/location ids.
+  const postmortemRows = Object.fromEntries(
+    projection.postmortems.map((postmortem) => [
+      postmortem.compromiseId,
+      {
+        compromiseKind: postmortem.compromiseKind,
+        compromiseLabel: postmortem.compromiseLabel,
+        worldMinute: postmortem.worldMinute,
+        attribution: postmortem.attribution,
+        note: postmortem.note,
+        stepCount: postmortem.steps.length,
+      },
+    ]),
+  );
+
+  const postmortemStepRows = Object.fromEntries(
+    projection.postmortems.flatMap((postmortem) =>
+      postmortem.steps.map((step) => [
+        step.id,
+        {
+          compromiseId: postmortem.compromiseId,
+          kind: step.kind,
+          worldMinute: step.worldMinute,
+          text: step.text,
+        },
+      ]),
+    ),
+  );
+
   const boardRows = Object.fromEntries(
     projection.underground.board.map((entry) => [
       entry.id,
@@ -518,6 +548,8 @@ export function syncWorldProjection(
     store.setTable("probes", probeRows);
     store.setTable("physicalSignals", physicalSignalRows);
     store.setTable("compromises", compromiseRows);
+    store.setTable("postmortems", postmortemRows);
+    store.setTable("postmortemSteps", postmortemStepRows);
     store.setTable("board", boardRows);
     store.setTable("feed", feedRows);
     store.setTable("stances", stanceRows);

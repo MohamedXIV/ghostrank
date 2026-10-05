@@ -881,6 +881,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const physicalSignalTable = useTable("physicalSignals", runtime.projection);
   // Phase 6 P4: named catastrophic conditions, still without causal internals.
   const compromiseTable = useTable("compromises", runtime.projection);
+  // Phase 6 P5: safe causal reads derived from the hidden provenance graph.
+  const postmortemTable = useTable("postmortems", runtime.projection);
+  const postmortemStepTable = useTable("postmortemSteps", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -952,6 +955,19 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
       idB.localeCompare(idA, undefined, { numeric: true }),
   );
+  const postmortems = Object.entries(postmortemTable).sort(
+    ([idA, a], [idB, b]) =>
+      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+      idB.localeCompare(idA, undefined, { numeric: true }),
+  );
+  const postmortemStepsFor = (compromiseId: string) =>
+    Object.entries(postmortemStepTable)
+      .filter(([, entry]) => entry.compromiseId === compromiseId)
+      .sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.worldMinute ?? 0) - Number(b.worldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      );
   const caseStage = (investigationId: string): string =>
     cases[investigationId] ?? "probing";
 
@@ -1065,6 +1081,29 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             This is a condition, not an ending. The system still answers; what
             you can recover from here belongs to the run, not this warning.
           </p>
+
+          {postmortems.map(([id, entry]) => (
+            <div key={`postmortem:${id}`}>
+              <span className="panel-label">
+                POSTMORTEM {"//"}{" "}
+                {String(entry.compromiseLabel ?? "COMPROMISE")} {"//"}{" "}
+                {entry.attribution === "complete"
+                  ? "COMPLETE"
+                  : "INCOMPLETE ATTRIBUTION"}
+              </span>
+              <ul className="underground-feed">
+                {postmortemStepsFor(id).map(([stepId, step]) => (
+                  <li key={stepId}>
+                    <span className="underground-time">
+                      {formatWorldTime(Number(step.worldMinute ?? 0))}
+                    </span>
+                    <span>{String(step.text ?? "")}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="analysis-caveat">{String(entry.note ?? "")}</p>
+            </div>
+          ))}
         </section>
       )}
 

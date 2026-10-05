@@ -54,6 +54,7 @@ Examples:
 
 ### Projection/UI tests
 - hidden facts do not leak into TinyBase player projection,
+- postmortems expose only player-knowable facts and report incomplete attribution instead of inventing missing causal legs,
 - uncertain evidence renders with provenance,
 - window and terminal state survive intended UI transitions,
 - large logs/tables remain usable.

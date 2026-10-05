@@ -323,6 +323,21 @@ P1–P3 already answer *why* danger exists: traces create investigation material
 
 Accepted 2026-10-05 as the Phase 6 P4 architectural contract. The exact frequency of these conditions is a balance question measured by the seeded Phase 6 harness, not a new rule; its observed distribution is recorded in the P4 slice document and may be tuned without changing the invariants above.
 
+
+## D036 — Postmortems derive a player-safe evidence timeline from hidden provenance (Phase 6 P5)
+
+Phase 6 already stores enough causal links to explain a catastrophic condition without recording a second history. P1 investigations cite their source traces/reactions; P3 physical threats cite the probe and investigation rows they consumed; P4 compromises cite the physical threat, probe, and investigations that led there. P5 therefore adds **zero authoritative state, zero commands, zero events, and zero save-schema fields**. `derivePostmortems` is a pure read over the same WorldState that already resumes the run.
+
+**Hidden provenance selects; it does not widen the player's knowledge.** The read is allowed to traverse hidden source ids internally so it can choose the facts that belong to this compromise, but the emitted timeline is restricted to things the player could already know: their own operation actions, a reaction whose `playerVisible` flag is true, authority evidence that actually surfaced for a target whose profile the player knows, the observable artifact derived from a rival probe, the observable physical signal, and the named compromise condition. It never emits the rival actor, probe subject, probe correctness, investigation progress, physical location id, destroyed instance ids, outage end, RNG seed, or any raw hidden source id. A target handle is emitted only when target-profile evidence exists; otherwise the player's own action is described against "a target" and hidden authority evidence is omitted.
+
+**The UI is a provenance-backed timeline, not a claim that every adjacent row is one hidden edge.** P3 can consume both a probe and ambient investigation pressure; those are causal branches that converge on a physical consequence. Flattening the read into time order is for comprehension. Membership in the timeline is provenance-backed, and deterministic tie ordering keeps the view stable, but the copy explicitly says adjacent lines are not asserted to be a single hidden edge. This preserves the distinction between "these facts belong to the chain" and inventing an unseen narrative between them.
+
+**Attribution can be incomplete, and that is a feature.** A compromise is marked `complete` only when its stored provenance still resolves a physical threat, that threat resolves the cited probe, and at least one player-caused operation trace is reachable through the cited investigation records. If any of those causal legs is missing, P5 still shows the player-visible facts it can prove and labels the result **INCOMPLETE ATTRIBUTION**. It never synthesizes a player mistake merely to make the postmortem feel satisfying. This is the hard-fairness rule from `GAME_DESIGN.md` made structural: the game teaches from evidence, not from omniscient fiction.
+
+**P5 remains inside Phase 6's boundary.** The postmortem can be read immediately after a P4 condition while the command bus still answers. It does not choose an ending, freeze a run, or emit `RunEnded`. Phase 7 / #25 may later reuse the same pure read in final run history, but ending eligibility and presentation remain separate.
+
+Accepted 2026-10-05 as the Phase 6 P5 architectural contract. This completes Phase 6's causal-learning layer; future content may add more provenance-bearing systems, but they must join the read without weakening the epistemic boundary above.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
