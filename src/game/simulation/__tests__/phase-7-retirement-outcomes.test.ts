@@ -85,9 +85,11 @@ function expectVariant(state: WorldState, variant: RetirementVariant) {
 describe("Phase 7 P3 — retirement outcomes", () => {
   it("cannot finish before the frozen cooling deadline", () => {
     const state = readyWorld();
-    state.worldMinute = state.retirement!.stage === "cooling"
-      ? state.retirement.coolingUntilWorldMinute - 1
-      : 0;
+    const plan = state.retirement;
+    if (!plan || plan.stage !== "cooling") {
+      throw new Error("ready fixture lost its cooling retirement plan");
+    }
+    state.worldMinute = plan.coolingUntilWorldMinute - 1;
     const bus = new CommandBus(state);
 
     expect(bus.execute({ type: "finishRetirement" })).toEqual({
