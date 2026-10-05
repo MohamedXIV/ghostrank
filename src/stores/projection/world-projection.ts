@@ -112,6 +112,7 @@ export function syncWorldProjection(
       {
         kind: signal.kind,
         worldMinute: signal.worldMinute,
+        atCurrentLocation: signal.atCurrentLocation,
       },
     ]),
   );
