@@ -187,6 +187,35 @@ Retirement now has an explicit world-time process:
 Rank and hidden danger are not exit-plan gates. The system models abstract
 fictional wind-down only; it contains no real identity/evasion procedure.
 
+
+### Shipped retirement outcomes (Phase 7 P3)
+
+READY becomes terminal only when the player explicitly closes the handle
+(`retire finish` / **CLOSE HANDLE**). The finish action costs no additional
+world time and uses the shared D037 terminal transition.
+
+The outcome is derived from completed run history, not the selected starting
+board and not rank:
+
+- **VANISHED** requires at least three completed White-network contracts, zero
+  completed Black-network contracts, no missed accepted obligation
+  (`Opportunist`), no repeated-escalation history (`Predator`), no
+  catastrophic compromise, and no social unmasking.
+- **RETIRED // white-quiet** covers White-leaning completed-work history that
+  does not satisfy the stricter VANISHED contract.
+- **RETIRED // black-prosperous** covers Black-dominant completed work with
+  money left and no pressure history.
+- **RETIRED // black-watchful** covers Black-dominant history that still carries
+  retaliation, physical-threat, or compromise history.
+- **RETIRED // black-quiet** covers the remaining Black-dominant exits.
+- **RETIRED // mixed-exit** covers histories without a clear completed-work
+  majority.
+
+A Black-starting run can therefore earn VANISHED through its actual history,
+and a White-starting run can end with a Black retirement tone. These labels
+summarize the fictional run; they are not a real-world disappearance/evasion
+procedure.
+
 ## Rare White happy ending
 
 A White-leaning run that stayed consistent with its code can earn a genuinely peaceful ending.
