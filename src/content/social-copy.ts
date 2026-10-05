@@ -143,7 +143,7 @@ export function describeIncidentCopy(
     outcome === "succeeded" ? "succeeded" : "repelled";
   const variants = INCIDENT_COPY[surface][normalizedOutcome];
   const template = pick(
-    `${surface}:${recordId}:${normalizedOutcome}`,
+    `${surface}:${recordId}:${normalizedOutcome}:${actorHandle}:${counterpartHandle}`,
     variants,
   );
 
@@ -154,14 +154,14 @@ export function describeForumContractCopy(
   postId: string,
   targetHandle: string,
 ): string {
-  return pick(`forum-contract:${postId}`, FORUM_CONTRACT_COPY)(targetHandle);
+  return pick(`forum-contract:${postId}:${targetHandle}`, FORUM_CONTRACT_COPY)(targetHandle);
 }
 
 export function describeForumUnmaskingCopy(
   postId: string,
   unmaskerHandle: string,
 ): string {
-  return pick(`forum-unmask:${postId}`, FORUM_UNMASKING_COPY)(unmaskerHandle);
+  return pick(`forum-unmask:${postId}:${unmaskerHandle}`, FORUM_UNMASKING_COPY)(unmaskerHandle);
 }
 
 export function describePhysicalSignalCopy(
