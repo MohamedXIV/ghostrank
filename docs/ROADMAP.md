@@ -336,18 +336,22 @@ Exit criteria:
 
 ## Phase 7 — Endings and Long-Run Systems
 
-**Status: in progress — P0 terminal contract delivered; P1 forced-ending eligibility is next. Tracked by #25.**
+**Status: in progress — P0–P1 delivered; P2 voluntary exit plan is next. Tracked by #25.**
+
+Canonical plan: `docs/superpowers/plans/2026-10-05-phase-7-plan.md`.
 
 Grounded slice order:
-- **P0 — terminal run contract + outcome projection** *(delivered; D037)*: one durable `WorldState.ending` record, shared `endRun` transition, `RunEnded` event, terminal command guard, legacy-save default, safe final projection and in-world final screen. P0 triggers no ending by itself.
-- **P1 — forced ending eligibility**: deterministically consume existing Phase 6 conditions/provenance for arrested / unmasked / missing / compromised / stranded endings, never rank-as-power.
+- **P0 — terminal run contract + outcome projection** *(delivered; D037 / #41)*: one durable `WorldState.ending` record, shared `endRun` transition, `RunEnded` event, terminal command guard, legacy-save default, safe final projection and in-world final screen. P0 triggers no ending by itself.
+- **P1 — forced ending eligibility** *(delivered; D038)*: current Phase 6 conditions/provenance deterministically produce ARRESTED / UNMASKED / MISSING / STRANDED / COMPROMISED, with rank absent and exact-tick terminal freeze.
 - **P2 — voluntary exit plan**: retirement as a world-time operation, not a menu button.
 - **P3 — retirement variants + rare White VANISHED**: ending identity derives from actual run history/context rather than starting package alone.
-- **P4 — completed-run history**: archive summaries/postmortems behind the persistence boundary while keeping active-run creation separate.
+- **P4 — completed-run history**: archive summaries/postmortems behind the persistence boundary while keeping active-run creation separate. Closed #40 remains an implementation reference for browser archival only; its competing terminal schema is superseded by D037.
 - **P5 — exceptional long-run pressure**: veteran-run pressure from world history rather than rank grind.
 - **P6 — bounded exotic/quantum capability**: late, rare capability content that reuses established rules and never becomes a universal success button.
 
-**P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-terminal-contract.md`, D037): Phase 7 now has one simulation-owned terminal contract instead of an ending screen convention. `WorldState.ending` is null while live and becomes one immutable `RunEndingRecord` when `endRun` succeeds; the first final status wins and later attempts cannot rewrite it. Every gameplay command is rejected with `RUN_ENDED` before dispatch once terminality exists, so time and state cannot move after a run ends. The canonical save schema persists the record with a legacy `null` default, while the player projection/TinyBase expose only final status/label/minute and keep the authoritative cause id private. GameShell renders the final state from that projection. No eligibility rule ships in P0: an ordinary live run still cannot end spontaneously, leaving P1 to decide which concrete Phase 6 histories actually cross the terminal boundary.
+**P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-terminal-contract.md`, D037): Phase 7 now has one simulation-owned terminal contract instead of an ending screen convention. `WorldState.ending` is null while live and becomes one immutable `RunEndingRecord` when `endRun` succeeds; the first final status wins and later attempts cannot rewrite it. Every gameplay command is rejected with `RUN_ENDED` before dispatch once terminality exists, so time and state cannot move after a run ends. The canonical save schema persists the record with a legacy `null` default, while the player projection/TinyBase expose only final status/label/minute and keep the authoritative cause id private. GameShell renders the final state from that projection. No eligibility rule ships in P0: an ordinary live run still cannot end spontaneously.
+
+**P1 delivered** (`docs/superpowers/plans/2026-10-05-phase-7-forced-endings.md`, D038): forced endings consume only catastrophic conditions created on the **current** ecosystem boundary, so a Phase 6 save is not retroactively killed by new policy. `identity-exposed` branches by existing history: cited visibly-converged authority evidence yields **ARRESTED**; a prior social unmasking by the same physical actor yields **UNMASKED**; otherwise a physical reach to the person yields **MISSING**. `STRANDED` consumes P4's already-proven resource floor. Generic **COMPROMISED** requires both rig and dwelling loss on the same boundary, leaving either loss alone recoverable. No rank or fresh roll participates. Terminality is chronological: after P4/P1 the ecosystem stops immediately, authoritative `worldMinute` and `WorldTimeAdvanced.toMinute` clamp to the ending tick, and no later retaliation, offer, probe, exact-tick build completion, billing, investigation, or requested wait tail runs after `RunEnded`.
 
 Deliverables:
 - voluntary exit plan,
