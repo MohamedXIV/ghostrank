@@ -83,6 +83,7 @@ import {
 import {
   PLAYER_ACTOR_ID,
   type AnalysisConfidence,
+  type CompromiseKind,
   type EvidenceKind,
   type ContractObjectiveKind,
   type ContractStatus,
@@ -300,6 +301,17 @@ export interface VisiblePhysicalSignal {
    * safehouse's history as if it were happening outside the new one.
    */
   atCurrentLocation: boolean;
+}
+
+/**
+ * P4's visible catastrophic condition. Cause ids remain hidden until P5's
+ * postmortem; during the run the player gets only the named loss and its minute.
+ */
+export interface VisibleCompromise {
+  id: string;
+  kind: CompromiseKind;
+  label: string;
+  worldMinute: number;
 }
 
 export interface VisibleHandle {
@@ -643,6 +655,8 @@ export interface WorldProjection {
   probes: VisibleProbe[];
   /** Phase 6 P3: ambiguous physical evidence, newest first. */
   physicalSignals: VisiblePhysicalSignal[];
+  /** Phase 6 P4: durable named compromise conditions, newest first. */
+  compromises: VisibleCompromise[];
   descriptors: ReputationDescriptor[];
   underground: UndergroundProjection;
   economy: EconomyProjection;
@@ -1347,6 +1361,22 @@ function projectPhysicalSignals(state: WorldState): VisiblePhysicalSignal[] {
   }));
 }
 
+const COMPROMISE_LABELS: Record<CompromiseKind, string> = {
+  "rig-lost": "RIG LOST",
+  "dwelling-lost": "DWELLING LOST",
+  "identity-exposed": "IDENTITY EXPOSED",
+  stranded: "STRANDED",
+};
+
+function projectCompromises(state: WorldState): VisibleCompromise[] {
+  return [...state.compromises].reverse().map((record) => ({
+    id: record.id,
+    kind: record.kind,
+    label: COMPROMISE_LABELS[record.kind],
+    worldMinute: record.worldMinute,
+  }));
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1440,6 +1470,7 @@ export function projectWorld(state: WorldState): WorldProjection {
     investigations: projectInvestigations(state, knownTargets),
     probes: projectProbes(state),
     physicalSignals: projectPhysicalSignals(state),
+    compromises: projectCompromises(state),
     descriptors: deriveReputationDescriptors(state),
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),

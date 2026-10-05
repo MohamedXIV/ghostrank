@@ -32,6 +32,11 @@ export const MAX_CATCHUP_TICKS = 28;
 export interface UndergroundAdvanceHooks {
   /** Advance deadline systems to this tick before NPC actions at the same minute. */
   beforeTick?: (worldMinute: number) => void;
+  /**
+   * P4 extension seam: consume all physical consequences from this boundary
+   * after P3 actors have acted, but before social retaliation/probing continues.
+   */
+  afterPhysicalTick?: (worldMinute: number) => SimulationEvent[];
   /** Fold exact-boundary completions after NPC actions at this minute. */
   afterTick?: (worldMinute: number) => void;
 }
@@ -1046,6 +1051,9 @@ export function advanceUnderground(
     // retaliation spends grudge; this tick's new probe is created below and
     // cannot turn into a room hit in the same breath.
     events.push(...physicalRetaliationTick(world, tickIndex, worldMinute));
+    // Consumers such as P4 may fold the completed physical boundary without
+    // becoming a dependency of the ecosystem module itself.
+    events.push(...(hooks?.afterPhysicalTick?.(worldMinute) ?? []));
     events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge

@@ -507,6 +507,22 @@ the sections above remain the design target for later slices.
   and the room receive only the ambiguous signal and past minute — never a cause,
   correctness flag, destroyed id or outage countdown. No `RunEnded`: Phase 7
   still owns endings.
+- **Catastrophic compromise as condition (Phase 6 P4).** P4 turns only severe
+  P3 consequences into append-only causal history; it adds no roll, rank input
+  or danger meter. `rig-lost` requires the final destructive hit to leave no
+  component and no complete owned machine; `dwelling-lost` is D021's scripted
+  lease loss at the location actually hit; `identity-exposed` requires a
+  correct current dwelling read plus cited converging authority material; and
+  `stranded` requires the explicit resource floor — zero credits, no lease,
+  components or complete machine, and no authored player tool left to sell.
+  Existing economy fields stay authoritative, so a compromise record cannot
+  desync ownership. Exact-boundary chronology is economic too: upkeep charges
+  the lease first, then P3/P4 may burn it, and later boundaries cannot charge it
+  again. A 64-seed real-chain harness leaves 41/64 reckless and 48/64 measured
+  runs without a catastrophic condition at day 10, while still producing early
+  failures (14/64 reckless by day 5); those are tuning observations, not locked
+  odds. Projection exposes only the condition label/kind/minute, and the command
+  bus remains usable — Phase 7 owns terminal endings.
 - **Persistence.** `economy` is optional in the save schema and loads as an empty
   wallet on legacy snapshots, so older saves resume cleanly. Durations, scope,
   license and tool effects derive at action time, so there is nothing to migrate;
@@ -530,7 +546,11 @@ the sections above remain the design target for later slices.
   legacy shape stays untouched. Phase 6 P3 adds `physicalThreats`, legacy-defaulted
   to `[]`, and only optional pause fields on in-flight builds, so untouched jobs
   retain their pre-P3 shape. Hidden outage ends, source probes/citations and impact
-  ids survive a save; projection strips them. A
+  ids survive a save; projection strips them. Phase 6 P4 adds one more
+  legacy-defaulted top-level array, `compromises: []`; each record persists
+  source threat/probe/investigation ids and the struck location for P5/Phase 7,
+  while the live projection strips all four and keeps only the named condition
+  and minute. Historical P3 threats do not synthesize P4 records on load. A
   claim's
   subject id and accuracy, and an in-flight build's frozen outcome, are saved
   but never projected; a *completed* workflow's outcome and report are saved and

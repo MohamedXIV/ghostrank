@@ -307,6 +307,28 @@ export interface PhysicalThreat {
 }
 
 /**
+ * Phase 6 P4 — a catastrophic loss condition, not an ending. These records are
+ * append-only causal history: the current lease/hardware remain their own source
+ * of truth, while Phase 7 can later decide whether a condition ends the run.
+ */
+export type CompromiseKind =
+  | "rig-lost"
+  | "dwelling-lost"
+  | "identity-exposed"
+  | "stranded";
+
+export interface CompromiseRecord {
+  id: string;
+  kind: CompromiseKind;
+  sourceThreatId: string;
+  sourceProbeId: string;
+  sourceInvestigationIds: string[];
+  /** Where the triggering physical consequence landed. */
+  locationId: string;
+  worldMinute: number;
+}
+
+/**
  * The player-visible band of a case file. Names, three of them, derived from
  * how many signals have surfaced — the `FootprintLevel`/`relationshipStance`
  * discipline, so there is no number anywhere to turn into a bar.
@@ -595,6 +617,8 @@ export interface WorldState {
   probes: RivalProbe[];
   /** Phase 6 P3 physical escalation records; empty is the untouched baseline. */
   physicalThreats: PhysicalThreat[];
+  /** Phase 6 P4 catastrophic conditions; empty is the pre-compromise baseline. */
+  compromises: CompromiseRecord[];
 }
 
 export interface InitialTargetState
@@ -618,6 +642,7 @@ export interface InitialWorldState {
   investigations?: Investigation[];
   probes?: RivalProbe[];
   physicalThreats?: PhysicalThreat[];
+  compromises?: CompromiseRecord[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -751,6 +776,9 @@ export function createInitialWorldState(
     probes: initial.probes ? structuredClone(initial.probes) : [],
     physicalThreats: initial.physicalThreats
       ? structuredClone(initial.physicalThreats)
+      : [],
+    compromises: initial.compromises
+      ? structuredClone(initial.compromises)
       : [],
   };
 }

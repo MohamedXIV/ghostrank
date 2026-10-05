@@ -9,6 +9,7 @@ import { effectiveCapability } from "@/game/simulation/systems/housing";
 import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
+import { compromiseTick } from "@/game/simulation/systems/compromise";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
@@ -1484,6 +1485,8 @@ export class CommandBus {
         );
         cursor = tickMinute;
       },
+      afterPhysicalTick: (tickMinute) =>
+        compromiseTick(this.world, tickMinute),
       afterTick: (tickMinute) => {
         buildEvents.push(...advanceBuilds(this.world, tickMinute));
       },
