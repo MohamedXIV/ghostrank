@@ -153,6 +153,11 @@ Critical invariants include:
 - every premium software license added in P5 has exactly one Forge replacement with an equal SoftwareEffect,
 - the Phase 7 exotic machine remains the only exotic listing and P5 ordinary machines cannot bypass its derived availability rule,
 - P5 raises authored catalog counts to hardware 8 / machines 7 / models 7 / tools 5 / software 5 / workflows 5; telemetry policies that never touch the market must otherwise remain outcome-identical to P4,
+- Phase 8 P6 social-copy variation is presentation-only: the same visible record id must render deterministically and must never mutate simulation/projection truth,
+- P6 social copy preserves visible causal handles/categories, provides a safe fallback for unknown presentation kinds, and never hardcodes the player handle,
+- P6 telemetry may observe public incidents, forum posts, rumors and messages but the harness must never write those arrays directly,
+- adding P6 social counters preserves deterministic equality for repeated seed/policy/horizon reports,
+- final P6 calibration requires measured before/after telemetry and may tune only existing authored/causal parameters; it may not weaken threat prerequisites, add rank gates, or manufacture a preferred ending distribution,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
