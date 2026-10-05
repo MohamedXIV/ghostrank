@@ -119,6 +119,9 @@ describe("Phase 8 P3 — contract breadth", () => {
     expect(
       bus.execute({ type: "surveyTarget", targetId: "nightshade" }).ok,
     ).toBe(true);
+    expect(bus.execute({ type: "inspectMachine", machineId: "ns-relay" }).ok).toBe(
+      true,
+    );
     expect(bus.execute({ type: "escalateOperation" }).ok).toBe(true);
     expect(bus.execute({ type: "disengageOperation" }).ok).toBe(true);
     expect(deliver(bus).error).toBe("OBJECTIVE_NOT_MET");
