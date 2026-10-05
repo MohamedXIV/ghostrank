@@ -265,6 +265,7 @@ const inFlightBuildSchema = z.object({
   startedWorldMinute: z.number().int().nonnegative(),
   dueWorldMinute: z.number().int().nonnegative(),
   pausedAtWorldMinute: z.number().int().nonnegative().optional(),
+  pausedByThreatId: z.string().min(1).optional(),
   accumulatedPausedMinutes: z.number().int().nonnegative().optional(),
   outcome: z.enum(["clean", "warnings", "defective"]),
 });
@@ -286,6 +287,7 @@ const rivalProbeSchema = z.object({
   // Hidden truth that must survive a restore: a rival that was fooled stays
   // fooled, so `correct` persists even though it never projects.
   correct: z.boolean(),
+  locationId: z.string().min(1).optional(),
   worldMinute: z.number().int().nonnegative(),
 });
 
@@ -306,6 +308,7 @@ const physicalThreatSchema = z.object({
   ]),
   sourceProbeId: z.string().min(1),
   sourceInvestigationIds: z.array(z.string().min(1)).default([]),
+  locationId: z.string().min(1),
   worldMinute: z.number().int().nonnegative(),
   endsWorldMinute: z.number().int().nonnegative().optional(),
   affectedBuildIds: z.array(z.string().min(1)).default([]),
