@@ -36,6 +36,8 @@ Phase 8 P0 adds no persisted world-content metadata and requires no migration. `
 
 Phase 8 P2 adds no new persistence shape or migration. The five additional target-owner pairs are authored catalog rows that instantiate into the same existing actor/target/machine/service arrays as NIGHTSHADE. Their archetype labels are still stripped before authoritative state exists. Saves therefore persist the concrete instantiated world and its later mutations exactly as before; they do not persist or re-resolve editorial archetype metadata on load.
 
+Phase 8 P3 extends the existing contract record rather than adding a new persisted subsystem. The objective enum gains `infrastructure-map` and `quiet-recon`, and contracts may carry optional `requiredMachines` just as recon reports already carry optional `requiredServices`. Existing recon-report/intrusion saves remain valid, the new field is optional, and completion continues to derive from evidence/traces already present in the save. No migration flag, mission-progress object, or duplicated completion state is introduced.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:
