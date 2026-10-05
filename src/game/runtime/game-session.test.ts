@@ -313,4 +313,145 @@ describe("GameSession", () => {
       triggeredWorldMinute: 28,
     });
   });
+  it("archives an ended session, derives safe history, and starts fresh on the next boot", async () => {
+    const ready = createSliceWorldState();
+    ready.worldMinute = 2_940;
+    ready.retirement = {
+      stage: "cooling",
+      startedWorldMinute: 0,
+      committedWorldMinute: 60,
+      coolingUntilWorldMinute: 2_940,
+    };
+
+    let active: typeof ready | null = structuredClone(ready);
+    const completed: typeof ready[] = [];
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        active ? structuredClone(active) : null,
+      saveActiveState: async (state) => {
+        active = structuredClone(state) as typeof ready;
+      },
+      completeRun: async (state) => {
+        if (!state.ending) {
+          throw new Error("cannot archive live run");
+        }
+        completed.unshift(structuredClone(state) as typeof ready);
+        active = null;
+      },
+      loadCompletedStates: async () => structuredClone(completed),
+    };
+
+    const first = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(first.execute({ type: "finishRetirement" }).ok).toBe(true);
+    await first.flush();
+
+    expect(active).toBeNull();
+    expect(first.snapshot().ending?.status).toBe("retired");
+    expect(await first.history()).toEqual([
+      expect.objectContaining({
+        handle: "CobaltXZ",
+        endingStatus: "retired",
+        endingLabel: "RETIRED",
+        endingWorldMinute: 2_940,
+        retirementVariant: "mixed-exit",
+      }),
+    ]);
+
+    const second = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(second.snapshot().ending).toBeNull();
+    expect(second.snapshot().worldMinute).toBe(0);
+    expect(active?.ending).toBeNull();
+    expect(await second.history()).toHaveLength(1);
+  });
+
+  it("recovers a terminal active snapshot into history on boot without reviving it", async () => {
+    const ended = createSliceWorldState();
+    ended.worldMinute = 720;
+    ended.ending = {
+      status: "compromised",
+      causeKind: "compromise",
+      causeId: "compromise:1",
+      worldMinute: 720,
+    };
+
+    let active: typeof ended | null = structuredClone(ended);
+    const completed: typeof ended[] = [];
+
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        active ? structuredClone(active) : null,
+      saveActiveState: async (state) => {
+        active = structuredClone(state) as typeof ended;
+      },
+      completeRun: async (state) => {
+        completed.unshift(structuredClone(state) as typeof ended);
+        active = null;
+      },
+      loadCompletedStates: async () => structuredClone(completed),
+    };
+
+    const session = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(session.snapshot().ending).toEqual(ended.ending);
+    expect(active).toBeNull();
+    expect(await session.history()).toEqual([
+      expect.objectContaining({
+        endingStatus: "compromised",
+        endingWorldMinute: 720,
+      }),
+    ]);
+    expect(session.execute({ type: "advanceTime", minutes: 1 })).toEqual({
+      ok: false,
+      events: [],
+      error: "RUN_ENDED",
+    });
+  });
+
+  it("falls back to a terminal active snapshot if completed-run archival fails", async () => {
+    const ready = createSliceWorldState();
+    ready.worldMinute = 2_940;
+    ready.retirement = {
+      stage: "cooling",
+      startedWorldMinute: 0,
+      committedWorldMinute: 60,
+      coolingUntilWorldMinute: 2_940,
+    };
+
+    let active: typeof ready | null = structuredClone(ready);
+    const persistence: RunPersistence = {
+      loadActiveState: async () =>
+        active ? structuredClone(active) : null,
+      saveActiveState: async (state) => {
+        active = structuredClone(state) as typeof ready;
+      },
+      completeRun: async () => {
+        throw new Error("archive unavailable");
+      },
+      loadCompletedStates: async () => [],
+    };
+
+    const session = await createGameSession({
+      initialState: createSliceWorldState(),
+      persistence,
+    });
+
+    expect(session.execute({ type: "finishRetirement" }).ok).toBe(true);
+    await expect(session.flush()).rejects.toThrow("archive unavailable");
+
+    expect(active?.ending?.status).toBe("retired");
+    expect(active?.worldMinute).toBe(2_940);
+  });
+
 });
