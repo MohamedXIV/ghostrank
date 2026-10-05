@@ -57,6 +57,18 @@ export const MACHINE_CATALOG: readonly MachineListing[] = [
     capability: { compute: 1, memory: 2, vram: 0, storage: 3, network: 4 },
   },
   {
+    id: "box-archive-node",
+    label: "Archive Node",
+    cost: 1_300,
+    capability: { compute: 1, memory: 2, vram: 0, storage: 5, network: 1 },
+  },
+  {
+    id: "box-model-host",
+    label: "Model Host",
+    cost: 2_000,
+    capability: { compute: 2, memory: 4, vram: 4, storage: 2, network: 1 },
+  },
+  {
     id: "box-annealing-rack",
     label: "Cryogenic Annealing Rack",
     cost: 4_500,
