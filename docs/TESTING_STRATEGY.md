@@ -51,6 +51,10 @@ Examples:
 - schema migrations,
 - corrupted save handling,
 - portable save payload compatibility.
+- terminal browser state moves atomically from active storage into completed history,
+- repeated successful completion is idempotent and live states cannot enter history,
+- archive failure/reload recovery preserves terminality rather than reviving gameplay,
+- completed-history summaries derive from final authoritative state and preserve the player-safe postmortem boundary.
 
 ### Projection/UI tests
 - hidden facts do not leak into TinyBase player projection,
@@ -102,6 +106,8 @@ Critical invariants include:
 - forced danger can interrupt retirement commitment/cooling through the same world-time chronology,
 - retirement finish is terminal only at READY; RETIRED/VANISHED and retirement tone derive deterministically from run history, never starting board or rank,
 - retirement variant/detail survive save/restore as derived presentation without leaking hidden relationship/probe/investigation truth,
+- completed history archives final authoritative state once; browse summaries are derived, read-only, and cannot expose hidden ending/probe/investigation/relationship truth,
+- a failed archive may delay the active→history move but must never make a terminal run playable again,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
