@@ -22,6 +22,10 @@ Phase 3 adds `WorldState.underground` (actors, relationships, incidents, ecosyst
 
 Phase 4 adds `WorldState.economy` (a `credits` balance, an append-only value ledger and the list of owned hardware) to the same validated contract. `economy` is optional in the schema; saves written before Phase 4 load with an empty wallet (zero credits, no ledger, no hardware). Credits are validated non-negative integers, so a corrupted negative balance is rejected rather than repaired. Ledger entries carry direction, amount, resulting balance, cause and counterparty. Rig capability is derived from owned hardware at projection time and is never stored, matching the derived-not-stored rule used for reputation descriptors.
 
+Phases 5–6 extend the same authoritative state with models/builds, investigations, rival probes, physical threats and compromise provenance. P5 postmortems remain derived and add no persistence fields.
+
+Phase 7 P0 adds `WorldState.run`, legacy-defaulted to `{ status: "active" }`. An ended state carries one immutable terminal cause. Browser IndexedDB schema v2 adds a separate `run-history` object store: completion writes the full validated final portable state to history and deletes the active slot in **one transaction**. The archive intentionally stores final truth rather than a duplicated summary; history UI derives summaries and P5 postmortems from it. A terminal active snapshot found after a crash/fallback is archived on the next boot. Completed-history methods are optional on the host-agnostic persistence boundary until deferred SQLite/Tauri reconciliation in #19; desktop may keep the terminal active snapshot meanwhile, but gameplay ending decisions never depend on the backend.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:
@@ -170,17 +174,19 @@ Do not persist or execute unrestricted generated source as gameplay authority.
 
 Completed runs should remain browsable.
 
-Store summary data such as:
+Phase 7 P0 stores the **full validated final WorldState** in browser history rather than persisting a second mutable summary. Later Phase 7 UI derives truthful summary data from that archive, including where available:
 - start/end,
 - days survived,
-- peak rank,
+- rank history facts the simulation can actually prove,
 - final status,
 - major operations,
-- authored tools,
+- authored tools/workflows,
 - reputation descriptors,
-- important causal chain.
+- compromises and the player-safe P5 causal chain.
 
-This supports player learning and storytelling.
+If a desired statistic (for example historical peak rank) is not reconstructible from final authoritative state, a later slice must add a narrowly-scoped irrecoverable accumulator; it must not guess from the final value.
+
+This supports player learning and storytelling while keeping one source of truth.
 
 ## Deferred desktop persistence
 
