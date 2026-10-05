@@ -100,6 +100,8 @@ Critical invariants include:
 - forced-ending eligibility is deterministic from causal history and never player rank,
 - voluntary retirement blockers are player-visible, blocked commit spends no time, and READY derives from the frozen cooling deadline,
 - forced danger can interrupt retirement commitment/cooling through the same world-time chronology,
+- retirement finish is terminal only at READY; RETIRED/VANISHED and retirement tone derive deterministically from run history, never starting board or rank,
+- retirement variant/detail survive save/restore as derived presentation without leaking hidden relationship/probe/investigation truth,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
