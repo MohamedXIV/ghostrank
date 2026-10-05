@@ -608,6 +608,33 @@ export class CommandBus {
     };
   }
 
+  /**
+   * Hardware can now be destroyed by P3. Length-based ids would reuse a
+   * destroyed suffix and can collide with a surviving row (or with provenance).
+   * Scan both owned and destroyed instance ids so identity stays monotonic for
+   * the whole run, just like sold tools/machines.
+   */
+  private nextHardwareId(): string {
+    let max = 0;
+    const consider = (id: string) => {
+      const suffix = Number(id.slice(id.lastIndexOf(":") + 1));
+      if (Number.isInteger(suffix) && suffix > max) {
+        max = suffix;
+      }
+    };
+
+    for (const owned of this.world.economy.hardware) {
+      consider(owned.id);
+    }
+    for (const threat of this.world.physicalThreats) {
+      for (const destroyedId of threat.destroyedHardwareIds) {
+        consider(destroyedId);
+      }
+    }
+
+    return `hw:${max + 1}`;
+  }
+
   private buyHardware(catalogId: string): CommandResult {
     const item = findCatalogItem(catalogId);
 
@@ -635,7 +662,7 @@ export class CommandBus {
     }
 
     const owned: OwnedHardware = {
-      id: `hw:${this.world.economy.hardware.length + 1}`,
+      id: this.nextHardwareId(),
       catalogId: item.id,
       acquiredWorldMinute: minute,
     };
