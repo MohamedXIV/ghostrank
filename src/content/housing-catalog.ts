@@ -85,6 +85,46 @@ export const HOUSING_CATALOG: readonly HousingCatalogItem[] = [
     anonymity: "quiet",
     kind: "safehouse",
   },
+
+  // Phase 8 P4 — breadth only. These four locations deliberately occupy
+  // different price/capability/anonymity/travel corners while reusing the same
+  // lease/presence/retaliation rules. None introduces a location-specific rule.
+  {
+    id: "housing-night-shift-office",
+    label: "Night-Shift Office (Print District)",
+    dailyCost: 45,
+    capability: { compute: 0, memory: 0, vram: 0, storage: 1, network: 1 },
+    travelMinutes: 30,
+    anonymity: "quiet",
+    kind: "workspace",
+  },
+  {
+    id: "housing-sublet-studio",
+    label: "Sublet Studio (Old Blocks)",
+    dailyCost: 35,
+    capability: { compute: 1, memory: 1, vram: 0, storage: 0, network: 0 },
+    travelMinutes: 45,
+    anonymity: "quiet",
+    kind: "residential",
+  },
+  {
+    id: "housing-archive-lockup",
+    label: "Archive Lockup (Freight Belt)",
+    dailyCost: 80,
+    capability: { compute: 1, memory: 1, vram: 0, storage: 3, network: 0 },
+    travelMinutes: 120,
+    anonymity: "hidden",
+    kind: "workspace",
+  },
+  {
+    id: "housing-cellar-studio",
+    label: "Cellar Studio (Outer Ring)",
+    dailyCost: 55,
+    capability: { compute: 0, memory: 1, vram: 0, storage: 0, network: 1 },
+    travelMinutes: 150,
+    anonymity: "hidden",
+    kind: "residential",
+  },
 ];
 
 export const LANDLORD_COUNTERPARTY = "landlord";
