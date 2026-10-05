@@ -74,6 +74,20 @@ export const HARDWARE_CATALOG: readonly HardwareCatalogItem[] = [
     cost: 350,
     capability: { compute: 0, memory: 0, vram: 0, storage: 0, network: 3 },
   },
+  {
+    id: "cpu-balanced",
+    label: "Balanced Compute Module",
+    category: "cpu",
+    cost: 550,
+    capability: { compute: 2, memory: 1, vram: 0, storage: 0, network: 0 },
+  },
+  {
+    id: "gpu-memory",
+    label: "Memory Accelerator",
+    category: "gpu",
+    cost: 1_200,
+    capability: { compute: 0, memory: 1, vram: 3, storage: 0, network: 0 },
+  },
 ];
 
 export const STARTER_RIG_ID = "rig-starter";
