@@ -160,7 +160,10 @@ export function syncWorldProjection(
     ),
   );
 
-  const retirementRows = projection.retirement
+  const retirementRows: Record<
+    string,
+    Record<string, string | number | boolean>
+  > = projection.retirement
     ? {
         current: {
           status: projection.retirement.status,
