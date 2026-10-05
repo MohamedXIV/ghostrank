@@ -58,6 +58,26 @@ export const PLAYER_TOOL_CATALOG: readonly PlayerToolListing[] = [
       discount: { kind: "action-duration", factor: 0.9 },
     },
   },
+  {
+    id: "tool-map-stitcher",
+    label: "Map Stitcher",
+    author: "vesper",
+    cost: 700,
+    effect: {
+      kind: "capability",
+      capability: { compute: 0, memory: 1, vram: 0, storage: 1, network: 1 },
+    },
+  },
+  {
+    id: "tool-trace-comparator",
+    label: "Trace Comparator",
+    author: "lattice",
+    cost: 1_000,
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.92 },
+    },
+  },
 ];
 
 /** Fraction of the purchase price recovered when a tool is resold. */
