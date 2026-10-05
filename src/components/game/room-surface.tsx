@@ -30,17 +30,17 @@ const ANONYMITY_FLAVOR: Record<VisiblePresence["anonymity"], string> = {
 function physicalRoomCue(kind: string): string {
   switch (kind) {
     case "strange-vehicle":
-      return "same car outside again";
+      return "the same unfamiliar car was outside";
     case "door-camera-motion":
-      return "motion at the door, nobody there";
+      return "the door camera caught motion, then nobody";
     case "outage":
-      return "power out, block still lit";
+      return "power dropped while the block stayed lit";
     case "unusual-connectivity":
-      return "local link behaving wrong";
+      return "the local link behaved wrong for a while";
     case "nearby-activity":
-      return "too much quiet movement nearby";
+      return "there was too much quiet movement nearby";
     default:
-      return "something outside feels wrong";
+      return "something outside did not fit";
   }
 }
 
@@ -81,6 +81,9 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
   const latestPhysicalSignal = useMemo(
     () =>
       Object.entries(physicalSignals)
+        // A signal from a room the player already left remains in ATTENTION
+        // history, but it must not masquerade as this room's atmosphere.
+        .filter(([, entry]) => entry.atCurrentLocation === true)
         .sort(
           ([idA, a], [idB, b]) =>
             Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
@@ -274,7 +277,7 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
           {presentation.distant ? " // the trip here cost hours" : ""}
           {presentation.leased ? "" : " // no keys in this room"}
           {latestPhysicalSignal
-            ? ` // OUTSIDE: ${physicalRoomCue(String(latestPhysicalSignal.kind ?? ""))}`
+            ? ` // OUTSIDE @ ${formatWorldTime(Number(latestPhysicalSignal.worldMinute ?? 0))}: ${physicalRoomCue(String(latestPhysicalSignal.kind ?? ""))}`
             : ""}
         </span>
         <div className="room-relocation">
