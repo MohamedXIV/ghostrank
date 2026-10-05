@@ -2159,7 +2159,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                   <span className="market-time">
                     started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} ·{" "}
                     {entry.paused === true
-                      ? `PAUSED // frozen due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`
+                      ? "PAUSED // work clock stopped"
                       : `due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`}
                   </span>
                 </div>
