@@ -1,5 +1,39 @@
 import { z } from "zod";
 
+const runEndingSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum([
+    "arrested",
+    "unmasked",
+    "captured",
+    "killed",
+    "missing",
+    "compromised",
+    "stranded",
+    "forced-disappearance",
+    "retired",
+    "vanished",
+  ]),
+  causeKind: z.enum([
+    "compromise",
+    "investigation",
+    "physical-threat",
+    "retirement",
+  ]),
+  causeId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+});
+
+const runLifecycleSchema = z.discriminatedUnion("status", [
+  z.object({
+    status: z.literal("active"),
+  }),
+  z.object({
+    status: z.literal("ended"),
+    ending: runEndingSchema,
+  }),
+]);
+
 const evidenceSchema = z.object({
   id: z.string().min(1),
   kind: z.enum([
@@ -342,6 +376,8 @@ const investigationSchema = z.object({
 
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
+  // Phase 7 P0: legacy saves are live runs until an ending is actually written.
+  run: runLifecycleSchema.default({ status: "active" }),
   player: z.object({
     handle: z.string().min(1),
     rank: z.number().int().positive(),
