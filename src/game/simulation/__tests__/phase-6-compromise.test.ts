@@ -188,6 +188,39 @@ describe("Phase 6 P4 — catastrophic compromise", () => {
     });
   });
 
+  it("bills the lease at a day boundary before a same-tick physical eviction", () => {
+    const state = armedIntegratedWorld();
+    state.worldMinute = 3 * 360;
+    state.underground.lastTickMinute = 3 * 360;
+    state.probes[0]!.worldMinute = 2 * 360;
+    state.economy.credits = 100;
+
+    const bus = new CommandBus(state);
+    const result = bus.execute({ type: "advanceTime", minutes: 360 });
+    const after = bus.snapshot();
+
+    expect(after.worldMinute).toBe(24 * 60);
+    expect(after.economy.housing).toBeNull();
+    expect(after.economy.credits).toBe(40);
+    expect(
+      after.economy.ledger.filter(
+        (entry) => entry.cause.kind === "upkeep" && entry.cause.id === LAB,
+      ),
+    ).toHaveLength(1);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "HousingChanged",
+        housingId: null,
+        worldMinute: 24 * 60,
+      }),
+    );
+
+    // Once the physical event burned the lease, the next full day cannot bill
+    // the old room again.
+    bus.execute({ type: "advanceTime", minutes: 24 * 60 });
+    expect(bus.snapshot().economy.credits).toBe(40);
+  });
+
   it("never evicts a new safehouse because an old location was hit", () => {
     const state = p4World();
     const oldThreat = propertyThreat(state, { locationId: LAB });
