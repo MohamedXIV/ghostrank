@@ -94,4 +94,5 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       );
       expect(summary.economy.ledgerValueMoved.min).toBeGreaterThanOrEqual(0);
     }
-  }, 60_000);});
+  }, 60_000);
+});
