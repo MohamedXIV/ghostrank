@@ -471,3 +471,18 @@ Phase 7's final slice ships one fictional quantum-adjacent artifact, the **Cryog
 **No new subsystem is introduced.** P6 adds no authoritative WorldState field, migration, RNG stream, command family, event family, capability axis, or host-specific persistence rule. Terminal and GUI both reuse the existing machine purchase command. Player-facing projection exposes only the stock once it is legitimately available plus the ordinary capability numbers and an EXOTIC/one-shot label.
 
 Accepted 2026-10-05 as the Phase 7 P6 bounded-exotic-capability contract. With P0–P6 delivered, Phase 7's planned slices and exit criteria are complete; Phase 8 / #26 becomes the next gameplay phase.
+
+
+## D044 — Content archetypes are authoring metadata; simulation authority stays mechanic-only (Phase 8 P0)
+
+Phase 8 needs substantially more peers, targets and infrastructure, but the runtime fixture is the wrong place to author that breadth. P0 therefore creates a dedicated typed world-content roster and moves the existing Phase 2–7 peer/target definitions into it **without changing the default world**.
+
+**Content metadata is not gameplay state.** Actor and target archetype tags describe editorial intent — apex operator, broker, automation specialist, reckless tinkerer, street operator, elite underground operator — and help later slices build a varied roster. They are stripped when content is instantiated and never enter `WorldState`, persistence, projection, rank math, threat math, or command eligibility. An archetype is not a class or difficulty tier.
+
+**Authored data is validated before simulation owns it.** The content boundary rejects duplicate actor/target/machine/service ids, invalid 0–100 actor inputs, invalid ranks, unknown assistant models, empty target infrastructure, dangling actor-owned targets, and owner/target public-identity drift. This is structural validation, not a balance score: P2 can still author weak, strong, deceptive or unusual characters as long as their data is coherent.
+
+**Simulation gets clones, never the catalog objects.** Instantiation deep-clones actors and targets before `createInitialWorldState` receives them. A run can mutate actor ranks, assistant adoption, service state or infrastructure without rewriting the authored catalog used by another run/test.
+
+**P0's compatibility bar is byte identity.** The `alpha-core` roster is the prior NIGHTSHADE / VESPER / LATTICE / HALFMOON / KESTREL content moved verbatim. No peer, target, model, seed, starting relationship, capability, evidence or mechanic is added. Existing deterministic Phase 2–7 tests therefore remain the strongest regression proof; later Phase 8 breadth slices may intentionally change the canonical roster only with new explicit evidence.
+
+Accepted 2026-10-05 as the Phase 8 P0 content-boundary contract. P1 should measure the unchanged baseline before P2 broadens target/NPC content.
