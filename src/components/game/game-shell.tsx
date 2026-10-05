@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useCell } from "tinybase/ui-react";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
+import { formatWorldTime } from "@/game/computer/format-world-time";
 import { RoomSurface } from "@/components/game/room-surface";
 import {
   createGameSession,
@@ -79,6 +81,52 @@ export function GameShell() {
         <div className="boot-mark">GHOST/OS</div>
         <div className="boot-line">{bootNote}</div>
       </section>
+    );
+  }
+
+  return (
+    <ActiveGameShell
+      session={session}
+      activeSurface={activeSurface}
+      enterComputer={enterComputer}
+      enterRoom={enterRoom}
+    />
+  );
+}
+
+function ActiveGameShell({
+  session,
+  activeSurface,
+  enterComputer,
+  enterRoom,
+}: {
+  session: GameSession;
+  activeSurface: "room" | "computer";
+  enterComputer: () => void;
+  enterRoom: () => void;
+}) {
+  const ended =
+    useCell("meta", "run", "ended", session.projection) === true;
+  const endingLabel = String(
+    useCell("meta", "run", "label", session.projection) ?? "",
+  );
+  const endingMinute = Number(
+    useCell("meta", "run", "worldMinute", session.projection) ?? 0,
+  );
+
+  if (ended) {
+    return (
+      <main className="game-shell">
+        <section className="boot-screen" aria-label="Run ended" aria-live="polite">
+          <div className="boot-mark">{endingLabel || "RUN ENDED"}</div>
+          <div className="boot-line">
+            final // {formatWorldTime(endingMinute)}
+          </div>
+          <div className="boot-line">
+            this run is closed // history and new-run flow arrive later in Phase 7
+          </div>
+        </section>
+      </main>
     );
   }
 
