@@ -1180,8 +1180,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             )}
             {exitStatus === "ready" && (
               <p className="analysis-caveat">
-                Cooling is complete. The plan is ready for its final retirement
-                outcome; Phase 7 chooses that outcome from the run history.
+                Cooling is complete. The handle is ready to close; its final
+                disposition will reflect the history that brought you here.
               </p>
             )}
             <button
