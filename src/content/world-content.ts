@@ -14,9 +14,20 @@ export type WorldActorArchetype =
   | "broker"
   | "automation-specialist"
   | "reckless-tinkerer"
-  | "street-operator";
+  | "street-operator"
+  | "scam-operator"
+  | "extortion-operator"
+  | "market-predator"
+  | "corporate-operator"
+  | "rival-operator";
 
-export type WorldTargetArchetype = "elite-underground-operator";
+export type WorldTargetArchetype =
+  | "elite-underground-operator"
+  | "scam-network"
+  | "extortion-crew"
+  | "predatory-market"
+  | "corporate-infrastructure"
+  | "rival-infrastructure";
 
 export interface WorldActorContent {
   archetype: WorldActorArchetype;
