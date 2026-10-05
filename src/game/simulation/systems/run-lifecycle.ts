@@ -12,6 +12,23 @@ export interface EndRunInput {
   worldMinute: number;
 }
 
+const RUN_ENDING_LABELS: Record<RunEndingKind, string> = {
+  arrested: "ARRESTED",
+  unmasked: "UNMASKED",
+  captured: "CAPTURED",
+  killed: "KILLED",
+  missing: "MISSING",
+  compromised: "COMPROMISED",
+  stranded: "STRANDED",
+  "forced-disappearance": "FORCED DISAPPEARANCE",
+  retired: "RETIRED",
+  vanished: "VANISHED",
+};
+
+export function runEndingLabel(kind: RunEndingKind): string {
+  return RUN_ENDING_LABELS[kind];
+}
+
 /**
  * Phase 7 P0 terminal boundary.
  *
