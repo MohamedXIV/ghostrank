@@ -295,6 +295,11 @@ export interface VisiblePhysicalSignal {
   id: string;
   kind: PhysicalSignalKind;
   worldMinute: number;
+  /**
+   * Derived against current presence so the room can avoid presenting an old
+   * safehouse's history as if it were happening outside the new one.
+   */
+  atCurrentLocation: boolean;
 }
 
 export interface VisibleHandle {
@@ -1332,10 +1337,13 @@ function projectProbes(state: WorldState): VisibleProbe[] {
 }
 
 function projectPhysicalSignals(state: WorldState): VisiblePhysicalSignal[] {
+  const currentLocationId = derivePresence(state.economy.housing).locationId;
+
   return [...state.physicalThreats].reverse().map((threat) => ({
     id: threat.id,
     kind: threat.signalKind,
     worldMinute: threat.worldMinute,
+    atCurrentLocation: threat.locationId === currentLocationId,
   }));
 }
 
