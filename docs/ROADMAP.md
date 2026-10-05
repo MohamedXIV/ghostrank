@@ -374,13 +374,13 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: active — P0 data-driven world-content roster delivered; P1 local balance telemetry is next. Tracked by #26.**
+**Status: active — P0–P1 delivered; P2 target + NPC breadth is next. Tracked by #26.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
 
 Grounded slice order:
 - **P0 — data-driven world-content roster** *(delivered; D044 / #48)*: authored peers/targets/infrastructure move out of `slice-world.ts` into a typed, validated, clone-on-instantiation content roster while the default Phase 2–7 world remains behaviorally identical.
-- **P1 — local balance telemetry baseline**: deterministic local/multi-seed reporting before breadth tuning.
+- **P1 — local balance telemetry baseline** *(delivered; D045 / #49)*: 32 fixed seeds × four real-command policies over 30 world days report run length, endings, economy/rank movement, contract/threat activity and content exposure before breadth tuning.
 - **P2 — target + NPC breadth**: add fictional archetypes through the P0 roster, never target levels.
 - **P3 — contract breadth**: broaden opportunities through existing evidence/operation/value/relationship rules.
 - **P4 — location + physical-life breadth**: broaden existing capability/anonymity/travel/upkeep trade-offs.
@@ -388,6 +388,9 @@ Grounded slice order:
 - **P6 — social/event breadth + alpha calibration**: broaden authored situations, then tune with telemetry.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-world-content-roster.md`, D044): the live five-peer / one-target world is now authored in `src/content/world-content.ts`, not inside the runtime fixture. Actor/target archetype tags are editorial metadata only and are stripped before `WorldState`. The content boundary validates duplicate ids, actor ranges/ranks, assistant model references, empty infrastructure, dangling ownership and owner/target identity drift, then deep-clones definitions before simulation authority can mutate them. `slice-world.ts` now owns scenario facts only: player, seed, starting network/economy. P0 intentionally adds no breadth, so the full Phase 2–7 deterministic suite remains the compatibility proof; P2 can later add entries without teaching runtime code individual handles.
+
+**P1 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-balance-telemetry.md`, D045): developer-only balance telemetry now drives the real `CommandBus` across 32 fixed ecosystem seeds, four deterministic policies (idle / contractor / reckless / career-exit) and a 30-day horizon. It reports run length, ending status/cause, economy, rank movement, contract traffic, compromise/pressure/threat activity and actually exposed content, while also pinning the authored catalog breadth. The first baseline is intentionally descriptive: contractor ends ARRESTED in 28/32 seeds, career-exit RETIRES in 20/32, and idle stays mechanically quiet while the autonomous world continues producing/expiring offers. P1 changes no gameplay state, rules, RNG, persistence or UI; later breadth slices should rerun the report rather than silently retune around memory.
+
 
 Deliverables:
 - broader NPC archetypes,
