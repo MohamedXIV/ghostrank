@@ -37,6 +37,9 @@ import {
   findMachineItem,
   machineResaleValue,
 } from "@/content/machine-catalog";
+import {
+  exoticMachineAvailability,
+} from "@/game/simulation/systems/exotic-capability";
 import { findModelItem } from "@/content/model-catalog";
 import { runAnalysis } from "@/game/simulation/systems/analysis";
 import {
@@ -1138,6 +1141,18 @@ export class CommandBus {
 
     if (!item) {
       return this.failure("MACHINE_NOT_FOUND");
+    }
+
+    if (item.exotic) {
+      const availability = exoticMachineAvailability(this.world);
+
+      if (availability === "already-claimed") {
+        return this.failure("EXOTIC_ALREADY_CLAIMED");
+      }
+
+      if (availability !== "available") {
+        return this.failure("EXOTIC_NOT_AVAILABLE");
+      }
     }
 
     const minute = this.world.worldMinute;
