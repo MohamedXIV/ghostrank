@@ -86,6 +86,10 @@ export class CommandBus {
   }
 
   execute(command: SimulationCommand): CommandResult {
+    if (this.world.ending) {
+      return this.failure("RUN_ENDED");
+    }
+
     switch (command.type) {
       case "observeTarget":
         return this.observeTarget(command.targetId);
