@@ -374,7 +374,20 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: planned / next after completed Phase 7 / #25. Tracked by #26.**
+**Status: active — P0 data-driven world-content roster delivered; P1 local balance telemetry is next. Tracked by #26.**
+
+Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
+
+Grounded slice order:
+- **P0 — data-driven world-content roster** *(delivered; D044 / #48)*: authored peers/targets/infrastructure move out of `slice-world.ts` into a typed, validated, clone-on-instantiation content roster while the default Phase 2–7 world remains behaviorally identical.
+- **P1 — local balance telemetry baseline**: deterministic local/multi-seed reporting before breadth tuning.
+- **P2 — target + NPC breadth**: add fictional archetypes through the P0 roster, never target levels.
+- **P3 — contract breadth**: broaden opportunities through existing evidence/operation/value/relationship rules.
+- **P4 — location + physical-life breadth**: broaden existing capability/anonymity/travel/upkeep trade-offs.
+- **P5 — market breadth**: broaden tools/machines/models/software/workflows through existing rules.
+- **P6 — social/event breadth + alpha calibration**: broaden authored situations, then tune with telemetry.
+
+**P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-world-content-roster.md`, D044): the live five-peer / one-target world is now authored in `src/content/world-content.ts`, not inside the runtime fixture. Actor/target archetype tags are editorial metadata only and are stripped before `WorldState`. The content boundary validates duplicate ids, actor ranges/ranks, assistant model references, empty infrastructure, dangling ownership and owner/target identity drift, then deep-clones definitions before simulation authority can mutate them. `slice-world.ts` now owns scenario facts only: player, seed, starting network/economy. P0 intentionally adds no breadth, so the full Phase 2–7 deterministic suite remains the compatibility proof; P2 can later add entries without teaching runtime code individual handles.
 
 Deliverables:
 - broader NPC archetypes,

@@ -29,6 +29,7 @@ Pure rules:
 - time scheduling,
 - relationship reactions,
 - ending eligibility.
+- authored world-content structural validation.
 
 ### Deterministic scenario tests
 Run seeded scenarios across multiple systems.
@@ -121,6 +122,10 @@ Critical invariants include:
 - the exotic offer is one-shot from append-only machine-purchase ledger provenance, so resale and save/restore cannot respawn it,
 - P6 adds no authoritative save field, migration, new command/event family, RNG stream, capability axis, or target gate,
 - save/load preserves causal continuity,
+- world-content archetype metadata remains editorial and never enters authoritative WorldState or power/access math,
+- authored world content rejects duplicate/empty persisted ids and strings, dangling target ownership, non-integer/out-of-range actor percentages, unknown assistant models and empty infrastructure before simulation begins,
+- instantiated content is deep-cloned so one run cannot mutate the catalog used by another run,
+- Phase 8 P0 preserves the canonical Phase 2–7 default world; existing deterministic/golden tests remain the compatibility proof until a later breadth slice intentionally changes content,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing

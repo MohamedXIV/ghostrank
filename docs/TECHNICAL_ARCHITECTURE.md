@@ -235,6 +235,8 @@ Prefer schemas for:
 
 Systems interpret content; content should not contain unrestricted executable logic.
 
+Phase 8 P0 makes this boundary concrete for world population. `src/content/world-content.ts` owns authored peer/target/infrastructure definitions, editorial archetype tags, and structural validation. `slice-world.ts` deep-clones simulation-shaped content and owns only scenario setup such as the seed, player, starting network and starting economy. Archetype metadata never becomes simulation authority, persistence data, projection state, or a content-specific command branch.
+
 ## Suggested source layout
 
     src/

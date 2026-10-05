@@ -88,6 +88,23 @@ Targets may include:
 
 Physical violence is not the player's core verb, even though some organizations in the world may respond physically.
 
+## Phase 8 authoring boundary
+
+Phase 8 moves authored peer/target/infrastructure data into a dedicated content
+roster. Content entries may carry **editorial archetype tags** (for example
+broker, automation specialist, scam/extortion/predatory-market or corporate
+target families in later slices), but those tags are not simulation classes.
+
+The runtime receives only the existing mechanic-bearing actor/target data:
+network, skill, defense, discretion, activity, optional assistant, public
+identity, machines and fictional services. Archetype metadata must not become a
+rank substitute, target-level gate, hidden bonus, or persisted player-facing
+fact.
+
+Authored content is validated for coherent ids/references and cloned before a
+run can mutate it. This lets Phase 8 broaden fictionalized content without
+introducing special-case runtime branches for named characters.
+
 ## Research policy
 
 When drawing inspiration from real cybersecurity:
