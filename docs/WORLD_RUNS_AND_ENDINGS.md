@@ -101,6 +101,12 @@ Core physical animations can remain small:
 
 The goal is atmosphere and embodiment, not character-action gameplay.
 
+## Terminal contract
+
+Phase 7 uses one simulation-owned terminal transition for every ending. A live run has no ending record. Once an ending is recorded, the first final status is immutable and gameplay commands no longer advance or mutate that run. The UI reflects this state; it does not create it.
+
+P0 establishes the contract only. Which histories qualify for arrested, unmasked, missing, compromised, stranded, retirement, or VANISHED are implemented by later Phase 7 slices.
+
 ## Run endings
 
 Possible endings include:
