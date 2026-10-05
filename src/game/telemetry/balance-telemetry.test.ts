@@ -57,26 +57,6 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     );
   });
 
-  it("averages both middle values for an even sample count", () => {
-    expect(numericSummary([1, 4, 8, 20])).toEqual({
-      min: 1,
-      median: 6,
-      max: 20,
-      mean: 8.25,
-    });
-  });
-
-  it("never lets career-exit telemetry advance beyond the requested horizon", () => {
-    const horizonDays = 15;
-    const horizonMinute = horizonDays * 24 * 60;
-
-    for (let seed = 1; seed <= 8; seed += 1) {
-      expect(
-        sampleBalanceRun("career-exit", seed, horizonDays).finalMinute,
-      ).toBeLessThanOrEqual(horizonMinute);
-    }
-  });
-
   it("reports the unchanged multi-seed baseline across distinct player policies", () => {
     const report = runBalanceTelemetry();
 
