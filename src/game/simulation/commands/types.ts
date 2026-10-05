@@ -112,4 +112,7 @@ export type SimulationCommand =
     }
   | {
       type: "cancelRetirement";
+    }
+  | {
+      type: "finishRetirement";
     };

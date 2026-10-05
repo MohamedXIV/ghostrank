@@ -24,6 +24,8 @@ Phase 4 adds `WorldState.economy` (a `credits` balance, an append-only value led
 
 Phase 7 P0 adds one legacy-defaulted terminal field to the same authoritative save: `WorldState.ending`. It is `null` for a live run and one immutable status/cause/minute record after `RunEnded`. Browser/portable saves preserve it, but completed-run archival is intentionally not part of the active-run adapter yet; Phase 7 P4 will extend the persistence boundary once the history summary contract exists. Player-facing projections omit the hidden cause id.
 
+Phase 7 P2 adds the legacy-defaulted `WorldState.retirement` plan; READY remains derived from the stored cooling deadline. Phase 7 P3 adds no new authoritative save field: RETIRED/VANISHED still use the existing `ending` record, while retirement variant/detail are re-derived from the frozen run history for player-facing projection. This keeps P4 free to archive one authoritative final snapshot instead of reconciling a duplicated alignment/result counter.
+
 ## Persistence-adapter responsibilities
 
 A durable adapter stores:

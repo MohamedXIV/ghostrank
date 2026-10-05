@@ -1,6 +1,6 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 
-export type RetirementVerb = "plan" | "commit" | "cancel";
+export type RetirementVerb = "plan" | "commit" | "cancel" | "finish";
 
 export function retirementActionFromGui(
   verb: RetirementVerb,
@@ -12,5 +12,7 @@ export function retirementActionFromGui(
       return { type: "commitRetirement" };
     case "cancel":
       return { type: "cancelRetirement" };
+    case "finish":
+      return { type: "finishRetirement" };
   }
 }

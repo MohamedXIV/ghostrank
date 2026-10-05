@@ -10,14 +10,19 @@ import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { compromiseTick } from "@/game/simulation/systems/compromise";
-import { forcedEndingTick } from "@/game/simulation/systems/endings";
+import {
+  endRun,
+  forcedEndingTick,
+} from "@/game/simulation/systems/endings";
 import {
   RETIREMENT_COMMIT_MINUTES,
   beginRetirementPlan,
   cancelRetirementPlan,
   commandAllowedDuringRetirementCooling,
   commitRetirementPlan,
+  deriveRetirementOutcome,
   retirementBlockers,
+  retirementReady,
 } from "@/game/simulation/systems/retirement";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
@@ -194,6 +199,9 @@ export class CommandBus {
 
       case "cancelRetirement":
         return this.cancelRetirement();
+
+      case "finishRetirement":
+        return this.finishRetirement();
     }
   }
 
@@ -705,6 +713,31 @@ export class CommandBus {
           worldMinute: this.world.worldMinute,
         },
       ],
+    };
+  }
+
+  private finishRetirement(): CommandResult {
+    const plan = this.world.retirement;
+    if (!plan || plan.stage !== "cooling" || !retirementReady(this.world)) {
+      return this.failure("RETIREMENT_NOT_READY");
+    }
+
+    const outcome = deriveRetirementOutcome(this.world);
+    if (!outcome) {
+      return this.failure("RETIREMENT_NOT_READY");
+    }
+
+    const causeId =
+      `retirement:${plan.startedWorldMinute}:${plan.committedWorldMinute}`;
+
+    return {
+      ok: true,
+      events: endRun(this.world, {
+        status: outcome.status,
+        causeKind: "retirement",
+        causeId,
+        worldMinute: this.world.worldMinute,
+      }),
     };
   }
 

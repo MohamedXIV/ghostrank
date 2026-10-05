@@ -157,6 +157,8 @@ function parseRetirementCommand(args: string[]): TerminalParseResult {
       return { ok: true, command: { type: "commitRetirement" } };
     case "cancel":
       return { ok: true, command: { type: "cancelRetirement" } };
+    case "finish":
+      return { ok: true, command: { type: "finishRetirement" } };
     default:
       return { ok: false, error: "INVALID_ARGUMENT" };
   }

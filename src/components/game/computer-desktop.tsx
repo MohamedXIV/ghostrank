@@ -224,7 +224,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | retire plan|commit|cancel | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | retire plan|commit|finish|cancel | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -265,6 +265,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "build abort <build-id>  cancel an in-flight build (nothing is charged)",
         "retire plan          begin a voluntary exit plan",
         "retire commit        commit once obligations/infrastructure/location are wound down (costs 60m)",
+        "retire finish        close the handle once cooling is READY",
         "retire cancel        abandon the exit plan and resume normal play",
         "wait <minutes>       advance world time",
       ]);
@@ -377,6 +378,8 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "exit committed // cooling period started";
     case "cancelRetirement":
       return "exit plan cancelled // normal play resumed";
+    case "finishRetirement":
+      return "handle closed // final disposition recorded";
   }
 }
 
@@ -1179,10 +1182,20 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
               </p>
             )}
             {exitStatus === "ready" && (
-              <p className="analysis-caveat">
-                Cooling is complete. The handle is ready to close; its final
-                disposition will reflect the history that brought you here.
-              </p>
+              <>
+                <p className="analysis-caveat">
+                  Cooling is complete. The handle is ready to close; its final
+                  disposition will reflect the history that brought you here.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    runtime.execute(retirementActionFromGui("finish"))
+                  }
+                >
+                  CLOSE HANDLE
+                </button>
+              </>
             )}
             <button
               type="button"

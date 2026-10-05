@@ -44,10 +44,12 @@ import {
   relocationMinutes,
 } from "@/game/simulation/systems/location";
 import {
+  deriveRetirementOutcome,
   retirementBlockers,
   retirementStatus,
   type RetirementBlocker,
   type RetirementStatus,
+  type RetirementVariant,
 } from "@/game/simulation/systems/retirement";
 import {
   deriveValueGraph,
@@ -357,6 +359,8 @@ export interface VisibleRunEnding {
   status: RunEndingStatus;
   label: string;
   worldMinute: number;
+  variant?: RetirementVariant;
+  detail?: string;
 }
 
 export interface VisibleRetirement {
@@ -1444,10 +1448,21 @@ function projectEnding(state: WorldState): VisibleRunEnding | null {
     return null;
   }
 
+  const retirementOutcome =
+    state.ending.causeKind === "retirement"
+      ? deriveRetirementOutcome(state)
+      : null;
+
   return {
     status: state.ending.status,
     label: RUN_ENDING_LABELS[state.ending.status],
     worldMinute: state.ending.worldMinute,
+    ...(retirementOutcome
+      ? {
+          variant: retirementOutcome.variant,
+          detail: retirementOutcome.detail,
+        }
+      : {}),
   };
 }
 

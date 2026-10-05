@@ -8,6 +8,7 @@ describe("retirement command parity", () => {
     ["retire plan", "plan", { type: "startRetirement" }],
     ["retire commit", "commit", { type: "commitRetirement" }],
     ["retire cancel", "cancel", { type: "cancelRetirement" }],
+    ["retire finish", "finish", { type: "finishRetirement" }],
   ] as const)(
     "maps %s and the GUI %s action to the same simulation command",
     (input, verb, expected) => {
@@ -25,6 +26,7 @@ describe("retirement command parity", () => {
     "retire plan extra",
     "retire commit extra",
     "retire cancel extra",
+    "retire finish extra",
   ])("rejects malformed retirement command %s", (input) => {
     expect(parseTerminalCommand(input)).toEqual({
       ok: false,

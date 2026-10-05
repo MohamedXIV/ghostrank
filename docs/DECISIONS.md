@@ -405,3 +405,18 @@ These remain intentionally unresolved until implementation/playtesting provides 
 - exact commercial model names versus fictional AI ecosystem,
 - final art style and palette,
 - final commercial title.
+
+
+## D040 — Retirement identity is derived from completed history, not the starting package (Phase 7 P3)
+
+P2 deliberately stopped at READY. P3 closes that gap with one explicit terminal action, `finishRetirement`, shared by Terminal (`retire finish`) and the Underground **CLOSE HANDLE** control. The command is unavailable before READY, costs no additional world time, and calls the same D037 `endRun` primitive as every forced ending. Once it succeeds, the normal `RUN_ENDED` guard applies immediately.
+
+**The starting board is not an alignment flag.** P3 never reads `underground.playerNetwork` to choose the ending. It reads what the run actually did: completed contracts grouped by the issuer's network, plus the already-derived reputation history and consequence records. A Black-starting player can earn the peaceful path through White-scene history; a White-starting player can produce a Black retirement by doing Black-scene work. Player rank is also absent.
+
+**VANISHED is rare because the current simulation must be able to prove a coherent quiet history.** Eligibility requires at least three completed White-network contracts, no completed Black-network contracts, no `Opportunist` descriptor, no `Predator` descriptor, no catastrophic compromise, and no social unmasking. These are all existing authoritative facts. P3 adds no morality scalar, no new roll, and no hidden "good player" flag. The rule is intentionally limited to what the current simulation can establish; it does not pretend to model every ethical consequence behind a fictional contract.
+
+**Every other READY run may still retire.** P3 derives tone rather than denying the exit: `white-quiet`, `black-prosperous`, `black-watchful`, `black-quiet`, or `mixed-exit`. Black-dominant history means at least two completed Black-network contracts and more Black than White completions. A pressure history (retaliation, physical threat, or compromise) yields the watchful tone; otherwise 500+ remaining credits yields prosperous; otherwise Black retirement is quiet. These variants have no post-ending mechanical power.
+
+**The terminal record stays small.** D037's authoritative `ending` remains status/cause/minute. P3 does not persist a second alignment or variant field. For retirement endings the player-safe projection re-derives the structured variant and short closing line from the frozen run history, so save/restore is stable without duplicating mutable counters. The hidden cause id remains outside the UI projection.
+
+Accepted 2026-10-05 as the Phase 7 P3 retirement-outcome contract. P4 now owns completed-run archival/history; P3 does not reintroduce PR #40's superseded competing terminal schema.
