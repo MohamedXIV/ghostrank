@@ -377,7 +377,7 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: active — P0–P4 delivered; P5 market breadth is next. Tracked by #26.**
+**Status: active — P0–P5 delivered; P6 social/event breadth + alpha calibration is next. Tracked by #26.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
 
@@ -387,7 +387,7 @@ Grounded slice order:
 - **P2 — target + NPC breadth** *(delivered; D046 / #50)*: expand to 10 peers / 6 targets / 14 machines / 17 services through the P0 roster only; all targets reuse the same evidence/operation rules and no rank gate or target level is added.
 - **P3 — contract breadth** *(delivered; D047 / #51)*: expand from two to four objective predicates — service report, infrastructure map, quiet recon, intrusion — all verified from existing evidence/traces and resolved through the same contract/value/relationship path.
 - **P4 — location + physical-life breadth** *(delivered; D048)*: expand housing from 4 to 8 authored lease trade-offs through the existing capability/anonymity/travel/upkeep/presence rules only.
-- **P5 — market breadth**: broaden tools/machines/models/software/workflows through existing rules.
+- **P5 — market breadth** *(delivered; D049)*: expand hardware 6→8, machines 5→7, models 5→7, tools 3→5, software 3→5 and workflows 3→5 through the existing capability/economy/contention/Forge rules only.
 - **P6 — social/event breadth + alpha calibration**: broaden authored situations, then tune with telemetry.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-world-content-roster.md`, D044): the live five-peer / one-target world is now authored in `src/content/world-content.ts`, not inside the runtime fixture. Actor/target archetype tags are editorial metadata only and are stripped before `WorldState`. The content boundary validates duplicate ids, actor ranges/ranks, assistant model references, empty infrastructure, dangling ownership and owner/target identity drift, then deep-clones definitions before simulation authority can mutate them. `slice-world.ts` now owns scenario facts only: player, seed, starting network/economy. P0 intentionally adds no breadth, so the full Phase 2–7 deterministic suite remains the compatibility proof; P2 can later add entries without teaching runtime code individual handles.
@@ -399,6 +399,9 @@ Grounded slice order:
 
 
 **P3 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-contract-breadth.md`, D047): contracts remain predicates over the freeform simulation rather than scripted missions. `recon-report` still sells observed service evidence; `infrastructure-map` asks for observed machine coverage; `quiet-recon` requires known infrastructure plus a post-acceptance recon-stage disengagement; `intrusion` keeps the post-acceptance escalation requirement. All four reuse accept/decline/deliver, ordinary expiry, ledger payout, issuer trust, forum provenance and reputation movement. `requiredMachines` parallels `requiredServices` as visible persisted scope; no mission-progress flag, new gameplay verb, target level or rank gate is introduced. P1 telemetry is rerun through public commands so P6 can later calibrate the measured opportunity mix rather than P3 hiding its consequences.
+
+
+**P5 delivered** (`docs/superpowers/plans/2026-10-06-phase-8-market-breadth.md`, D049): market breadth remains catalog data, not a progression tree. New hardware/machines reuse the five-axis capability vector; tools/licenses reuse the existing effect language; models reuse cloud-rent/local-property economics and contention; every new premium license has a self-built Forge equivalent with the same effect. No command/event/state/RNG/capability axis/rank gate or persistence schema is added. P1 telemetry policies never consume this market content, so only authored catalog counts may change; all scenario outcomes must remain identical until P6 performs explicit calibration.
 
 
 Deliverables:
