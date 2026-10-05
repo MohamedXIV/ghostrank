@@ -76,8 +76,15 @@ export function compromiseLabel(kind: CompromiseKind): string {
   return COMPROMISE_LABELS[kind];
 }
 
+function canNameTarget(world: WorldState, targetId: string): boolean {
+  return world.evidence.some(
+    (record) =>
+      record.kind === "target-profile" && record.subjectId === targetId,
+  );
+}
+
 function targetHandle(world: WorldState, targetId: string): string {
-  if (!world.knownTargetIds.includes(targetId)) {
+  if (!canNameTarget(world, targetId)) {
     return "a target";
   }
 
@@ -226,7 +233,7 @@ export function derivePostmortem(
   }
 
   for (const investigation of investigations) {
-    if (!world.knownTargetIds.includes(investigation.targetId)) {
+    if (!canNameTarget(world, investigation.targetId)) {
       continue;
     }
 
@@ -306,7 +313,7 @@ export function derivePostmortem(
     worldMinute: compromise.worldMinute,
     attribution: complete ? "complete" : "incomplete",
     note: complete
-      ? "The links below are supported by stored provenance; hidden identities and hidden correctness remain withheld."
+      ? "These facts are selected by stored provenance and ordered by time; adjacent lines are not claimed as one hidden edge. Hidden identities and hidden correctness remain withheld."
       : "Incomplete attribution: the surviving record does not contain a citable player-caused trace for the whole chain, so no missing blame is invented.",
     steps: ordered.map((step, index) => ({
       id: `${compromise.id}:step:${index + 1}`,
