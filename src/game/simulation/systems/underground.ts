@@ -33,8 +33,9 @@ export interface UndergroundAdvanceHooks {
   /** Advance deadline systems to this tick before NPC actions at the same minute. */
   beforeTick?: (worldMinute: number) => void;
   /**
-   * P4 extension seam: consume all physical consequences from this boundary
-   * after P3 actors have acted, but before social retaliation/probing continues.
+   * P4/P7 extension seam: consume the completed physical boundary after P3
+   * actors have acted, before social retaliation/probing continues. If this
+   * hook records a terminal ending, the tick stops immediately.
    */
   afterPhysicalTick?: (worldMinute: number) => SimulationEvent[];
   /** Fold exact-boundary completions after NPC actions at this minute. */
@@ -1054,6 +1055,18 @@ export function advanceUnderground(
     // Consumers such as P4 may fold the completed physical boundary without
     // becoming a dependency of the ecosystem module itself.
     events.push(...(hooks?.afterPhysicalTick?.(worldMinute) ?? []));
+
+    // Phase 7 terminality is an exact chronology boundary. Once P1 decides the
+    // run ended from this physical/P4 boundary, no social retaliation, offers,
+    // probes, or exact-tick build completion may happen after that moment.
+    if (world.ending) {
+      underground.lastTickMinute = Math.max(
+        underground.lastTickMinute,
+        worldMinute,
+      );
+      break;
+    }
+
     events.push(...retaliate(world, tickIndex, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge
@@ -1072,7 +1085,10 @@ export function advanceUnderground(
     hooks?.afterTick?.(worldMinute);
   }
 
-  underground.lastTickMinute = Math.max(underground.lastTickMinute, toMinute);
+  underground.lastTickMinute = Math.max(
+    underground.lastTickMinute,
+    world.ending?.worldMinute ?? toMinute,
+  );
 
   return events;
 }
