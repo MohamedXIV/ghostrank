@@ -360,12 +360,18 @@ const runEndingSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
 });
 
-const retirementPlanSchema = z.object({
-  stage: z.enum(["planning", "cooling"]),
-  startedWorldMinute: z.number().int().nonnegative(),
-  committedWorldMinute: z.number().int().nonnegative().optional(),
-  coolingUntilWorldMinute: z.number().int().nonnegative().optional(),
-});
+const retirementPlanSchema = z.discriminatedUnion("stage", [
+  z.object({
+    stage: z.literal("planning"),
+    startedWorldMinute: z.number().int().nonnegative(),
+  }),
+  z.object({
+    stage: z.literal("cooling"),
+    startedWorldMinute: z.number().int().nonnegative(),
+    committedWorldMinute: z.number().int().nonnegative(),
+    coolingUntilWorldMinute: z.number().int().nonnegative(),
+  }),
+]);
 
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
