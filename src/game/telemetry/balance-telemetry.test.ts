@@ -117,6 +117,12 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
         reckless.threat.physicalThreats +
         reckless.threat.compromises,
     ).toBeGreaterThan(0);
+    expect(
+      reckless.social.publicIncidents +
+        reckless.social.forumPosts +
+        reckless.social.rumors +
+        reckless.social.messages,
+    ).toBeGreaterThan(0);
 
     const careerExit = report.scenarios["career-exit"];
     expect(careerExit.sampleCount).toBe(BALANCE_TELEMETRY_SEEDS);
@@ -130,6 +136,10 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
         summary.runMinutes.min,
       );
       expect(summary.economy.ledgerValueMoved.min).toBeGreaterThanOrEqual(0);
+      expect(summary.social.publicIncidents).toBeGreaterThanOrEqual(0);
+      expect(summary.social.forumPosts).toBeGreaterThanOrEqual(0);
+      expect(summary.social.rumors).toBeGreaterThanOrEqual(0);
+      expect(summary.social.messages).toBeGreaterThanOrEqual(0);
     }
   }, 120_000);
 });
