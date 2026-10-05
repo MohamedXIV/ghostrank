@@ -276,6 +276,9 @@ export class CommandBus {
     }
 
     const timeEvents = this.advanceWorldTime(this.rigActionMinutes("survey"));
+    if (this.world.ending) {
+      return { ok: true, events: timeEvents };
+    }
 
     const events: SimulationEvent[] = [...timeEvents];
 
@@ -334,6 +337,9 @@ export class CommandBus {
     }
 
     const timeEvents = this.advanceWorldTime(this.rigActionMinutes("inspect"));
+    if (this.world.ending) {
+      return { ok: true, events: timeEvents };
+    }
 
     const events: SimulationEvent[] = [...timeEvents];
 
@@ -385,6 +391,10 @@ export class CommandBus {
     const timeEvents = this.advanceWorldTime(
       this.rigActionMinutes("escalate"),
     );
+    if (this.world.ending) {
+      return { ok: true, events: timeEvents };
+    }
+
     operation.stage = "intrusive";
     operation.escalatedWorldMinute = this.world.worldMinute;
 
@@ -434,6 +444,10 @@ export class CommandBus {
     const timeEvents = this.advanceWorldTime(
       this.rigActionMinutes("disengage"),
     );
+    if (this.world.ending) {
+      return { ok: true, events: timeEvents };
+    }
+
     const stage = operation.stage;
     const event: SimulationEvent = {
       type: "OperationDisengaged",
@@ -721,6 +735,9 @@ export class CommandBus {
 
     if (travel > 0) {
       events.push(...this.advanceWorldTime(travel));
+      if (this.world.ending) {
+        return { ok: true, events };
+      }
     }
 
     this.world.economy.housing = item.id;
@@ -756,6 +773,9 @@ export class CommandBus {
 
     if (travel > 0) {
       events.push(...this.advanceWorldTime(travel));
+      if (this.world.ending) {
+        return { ok: true, events };
+      }
     }
 
     this.world.economy.housing = null;
