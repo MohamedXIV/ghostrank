@@ -345,11 +345,9 @@ describe("Phase 6 P3 — physical retaliation", () => {
 
     physicalRetaliationTick(state, 3, 1_080);
 
-    expect(state.builds[0]).toMatchObject({
-      pausedAtWorldMinute: undefined,
-      pausedByThreatId: undefined,
-      accumulatedPausedMinutes: 720,
-    });
+    expect(state.builds[0]!.pausedAtWorldMinute).toBeUndefined();
+    expect(state.builds[0]!.pausedByThreatId).toBeUndefined();
+    expect(state.builds[0]!.accumulatedPausedMinutes).toBe(720);
     expect(settledBuildDueMinute(state.builds[0]!)).toBe(2_720);
   });
 
