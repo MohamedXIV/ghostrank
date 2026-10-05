@@ -58,6 +58,7 @@ Examples:
 
 ### Projection/UI tests
 - hidden facts do not leak into TinyBase player projection,
+- unearned exotic stock does not appear in the Market/TinyBase listing, while earned stock exposes only ordinary catalog capability plus its exotic tag,
 - postmortems expose only player-knowable facts and report incomplete attribution instead of inventing missing causal legs,
 - uncertain evidence renders with provenance,
 - window and terminal state survive intended UI transitions,
@@ -114,6 +115,11 @@ Critical invariants include:
 - whole and split waits crossing the veteran-pressure activation boundary produce the same causal state,
 - player-facing long-run pressure exposes only a coarse band and broad reasons, never the numeric score/bonuses or hidden source truth,
 - P5 adds no authoritative save field; save/restore must derive the same pressure from existing history,
+- exotic stock stays absent and direct purchase is rejected until the same veteran-history + clean-authored-workflow conditions are true,
+- exotic eligibility never reads player rank or the starting network,
+- exotic capability reuses the existing machine vector only; the shipped rack's zero compute/network must leave operation action minutes unchanged,
+- the exotic offer is one-shot from append-only machine-purchase ledger provenance, so resale and save/restore cannot respawn it,
+- P6 adds no authoritative save field, migration, new command/event family, RNG stream, capability axis, or target gate,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 
