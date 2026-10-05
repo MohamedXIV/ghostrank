@@ -248,6 +248,9 @@ export function syncWorldProjection(
         ...(contract.requiredServices === undefined
           ? {}
           : { requiredServices: contract.requiredServices }),
+        ...(contract.requiredMachines === undefined
+          ? {}
+          : { requiredMachines: contract.requiredMachines }),
         ...(contract.dueWorldMinute === undefined
           ? {}
           : { dueWorldMinute: contract.dueWorldMinute }),
