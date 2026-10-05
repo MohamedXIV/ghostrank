@@ -9,6 +9,7 @@ import {
 
 function createMemoryStorage(): BrowserRunStorage {
   let value: string | null = null;
+  const history = new Map<string, string>();
 
   return {
     async readActiveRun() {
@@ -16,6 +17,13 @@ function createMemoryStorage(): BrowserRunStorage {
     },
     async writeActiveRun(next) {
       value = next;
+    },
+    async readCompletedRuns() {
+      return [...history.values()];
+    },
+    async completeRun(archiveId, serialized) {
+      history.set(archiveId, serialized);
+      value = null;
     },
   };
 }
@@ -73,10 +81,47 @@ describe("browser run persistence", () => {
         });
       },
       async writeActiveRun() {},
+      async readCompletedRuns() {
+        return [];
+      },
+      async completeRun() {},
     };
 
     const persistence = createBrowserRunPersistence(storage);
 
     await expect(persistence.loadActiveState()).rejects.toThrow();
   });
+  it("moves a terminal state out of the active slot into durable history", async () => {
+    const storage = createMemoryStorage();
+    const persistence = createBrowserRunPersistence(storage);
+    const state = createSliceWorldState();
+    state.run = {
+      status: "ended",
+      ending: {
+        id: "run-ending:1",
+        kind: "compromised",
+        causeKind: "compromise",
+        causeId: "compromise:1",
+        worldMinute: 720,
+      },
+    };
+
+    await persistence.saveActiveState(state, []);
+    expect(await persistence.loadActiveState()).not.toBeNull();
+
+    await persistence.completeRun!(state, []);
+
+    expect(await persistence.loadActiveState()).toBeNull();
+    expect(await persistence.loadCompletedStates!()).toEqual([state]);
+  });
+
+  it("rejects archiving an active state", async () => {
+    const persistence = createBrowserRunPersistence(createMemoryStorage());
+
+    await expect(
+      persistence.completeRun!(createSliceWorldState(), []),
+    ).rejects.toThrow("before it ends");
+    expect(await persistence.loadCompletedStates!()).toEqual([]);
+  });
+
 });
