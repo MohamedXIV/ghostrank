@@ -691,6 +691,30 @@ export function syncWorldProjection(
     });
 
     store.setCell("meta", "world", "worldMinute", projection.worldMinute);
+    store.setCell(
+      "meta",
+      "run",
+      "ended",
+      projection.ending !== null,
+    );
+    store.setCell(
+      "meta",
+      "run",
+      "status",
+      projection.ending?.status ?? "",
+    );
+    store.setCell(
+      "meta",
+      "run",
+      "label",
+      projection.ending?.label ?? "",
+    );
+    store.setCell(
+      "meta",
+      "run",
+      "worldMinute",
+      projection.ending?.worldMinute ?? 0,
+    );
 
     // Phase 6 P0 — physical presence. A dedicated cell because its consumer is
     // the room surface, which reads the store rather than the core state.
