@@ -143,6 +143,50 @@ export const WORKFLOW_SPEC_CATALOG: readonly WorkflowSpec[] = [
     ],
     replaces: "software-analysis-pipeline",
   },
+  {
+    id: "workflow-storage-index",
+    label: "Local Storage Index",
+    steps: [
+      "scan(artifacts) → enumerate records",
+      "index(records) → build local map",
+      "compact(map) → reduce duplicate entries",
+      "serve(map) → expose lookup hints",
+    ],
+    effect: {
+      kind: "capability",
+      capability: { compute: 0, memory: 1, vram: 0, storage: 3, network: 0 },
+    },
+    complexityMinutes: 240,
+    footprint: { vram: 1, storage: 2 },
+    tests: [
+      "index contains every scanned artifact",
+      "compaction preserves lookup results",
+      "empty store returns an empty map",
+    ],
+    replaces: "software-storage-index",
+  },
+  {
+    id: "workflow-batch-scheduler",
+    label: "Self-Built Batch Scheduler",
+    steps: [
+      "queue(actions) → group independent work",
+      "schedule(groups) → order batches",
+      "verify(order) → preserve dependencies",
+      "dispatch(order) → apply execution shortcut",
+    ],
+    effect: {
+      kind: "modifier",
+      discount: { kind: "action-duration", factor: 0.9 },
+    },
+    complexityMinutes: 420,
+    footprint: { vram: 2, storage: 2 },
+    tests: [
+      "dependent actions never cross batch boundaries",
+      "independent work keeps stable ordering",
+      "scheduler respects the one-minute floor",
+    ],
+    replaces: "software-batch-scheduler",
+  },
 ];
 
 /**
