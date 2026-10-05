@@ -316,6 +316,21 @@ const physicalThreatSchema = z.object({
   assistantAdoptedModelId: z.string().min(1).optional(),
 });
 
+const compromiseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum([
+    "rig-lost",
+    "dwelling-lost",
+    "identity-exposed",
+    "stranded",
+  ]),
+  sourceThreatId: z.string().min(1),
+  sourceProbeId: z.string().min(1),
+  sourceInvestigationIds: z.array(z.string().min(1)).default([]),
+  locationId: z.string().min(1),
+  worldMinute: z.number().int().nonnegative(),
+});
+
 const investigationSchema = z.object({
   id: z.string().min(1),
   targetId: z.string().min(1),
@@ -347,6 +362,8 @@ const storedWorldStateSchema = z.object({
   probes: z.array(rivalProbeSchema).default([]),
   // Phase 6 P3: and no physical escalation has happened yet.
   physicalThreats: z.array(physicalThreatSchema).default([]),
+  // Phase 6 P4: and no catastrophic condition has been recorded yet.
+  compromises: z.array(compromiseSchema).default([]),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
