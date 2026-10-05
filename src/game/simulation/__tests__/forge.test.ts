@@ -71,7 +71,7 @@ describe("the workflow spec catalog", () => {
     // licenses, and every `replaces` id a real catalog entry.
     const replaces = WORKFLOW_SPEC_CATALOG.map((spec) => spec.replaces);
 
-    expect(WORKFLOW_SPEC_CATALOG).toHaveLength(3);
+    expect(WORKFLOW_SPEC_CATALOG).toHaveLength(5);
     expect(new Set(replaces).size).toBe(3);
     for (const id of replaces) {
       expect(findSoftwareItem(id)).toBeDefined();
