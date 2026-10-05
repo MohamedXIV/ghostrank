@@ -734,6 +734,12 @@ export function syncWorldProjection(
     store.setCell(
       "meta",
       "run",
+      "variant",
+      projection.ending?.variant ?? "",
+    );
+    store.setCell(
+      "meta",
+      "run",
       "detail",
       projection.ending?.detail ?? "",
     );
