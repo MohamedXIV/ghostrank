@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import { createGameSession } from "@/game/runtime/game-session";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
+import { endRun } from "@/game/simulation/systems/endings";
 import {
   createBrowserRunPersistence,
   type BrowserRunStorage,
 } from "@/persistence/browser-run-persistence";
+import { serializePortableRunSave } from "@/persistence/portable-run-save";
 
 function createMemoryStorage(): BrowserRunStorage {
   let value: string | null = null;
+  const history = new Map<string, string>();
 
   return {
     async readActiveRun() {
@@ -16,6 +19,19 @@ function createMemoryStorage(): BrowserRunStorage {
     },
     async writeActiveRun(next) {
       value = next;
+    },
+    async readCompletedRuns() {
+      return [...history.values()].reverse();
+    },
+    async completeRun(archiveId, serialized) {
+      // Mirror the IndexedDB idempotency rule: only the holder of an active
+      // slot can perform the atomic move. A successful retry sees no active row.
+      if (value === null) {
+        return;
+      }
+
+      history.set(archiveId, serialized);
+      value = null;
     },
   };
 }
@@ -73,10 +89,81 @@ describe("browser run persistence", () => {
         });
       },
       async writeActiveRun() {},
+      async readCompletedRuns() {
+        return [];
+      },
+      async completeRun() {},
     };
 
     const persistence = createBrowserRunPersistence(storage);
 
     await expect(persistence.loadActiveState()).rejects.toThrow();
+  });
+
+  it("moves one terminal authoritative state from active into history", async () => {
+    const storage = createMemoryStorage();
+    const persistence = createBrowserRunPersistence(storage);
+    const state = createSliceWorldState();
+    state.worldMinute = 720;
+    endRun(state, {
+      status: "compromised",
+      causeKind: "compromise",
+      causeId: "compromise:1",
+      worldMinute: 720,
+    });
+
+    await persistence.saveActiveState(state, []);
+    expect(await persistence.loadActiveState()).toEqual(state);
+
+    await persistence.completeRun!(state, []);
+
+    expect(await persistence.loadActiveState()).toBeNull();
+    expect(await persistence.loadCompletedStates!()).toEqual([state]);
+  });
+
+  it("makes a repeated successful completion idempotent", async () => {
+    const storage = createMemoryStorage();
+    const persistence = createBrowserRunPersistence(storage);
+    const state = createSliceWorldState();
+    endRun(state, {
+      status: "retired",
+      causeKind: "retirement",
+      causeId: "retirement:0:60",
+      worldMinute: 2_940,
+    });
+
+    await persistence.saveActiveState(state, []);
+    await persistence.completeRun!(state, []);
+    await persistence.completeRun!(state, []);
+
+    expect(await persistence.loadCompletedStates!()).toHaveLength(1);
+  });
+
+  it("rejects archiving a live state", async () => {
+    const persistence = createBrowserRunPersistence(createMemoryStorage());
+
+    await expect(
+      persistence.completeRun!(createSliceWorldState(), []),
+    ).rejects.toThrow("before it ends");
+    expect(await persistence.loadCompletedStates!()).toEqual([]);
+  });
+
+  it("rejects a live/corrupt entry in completed history", async () => {
+    const live = serializePortableRunSave(createSliceWorldState());
+    const storage: BrowserRunStorage = {
+      async readActiveRun() {
+        return null;
+      },
+      async writeActiveRun() {},
+      async readCompletedRuns() {
+        return [live];
+      },
+      async completeRun() {},
+    };
+    const persistence = createBrowserRunPersistence(storage);
+
+    await expect(persistence.loadCompletedStates!()).rejects.toThrow(
+      "history contains a live run",
+    );
   });
 });
