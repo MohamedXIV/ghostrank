@@ -479,7 +479,7 @@ Phase 8 needs substantially more peers, targets and infrastructure, but the runt
 
 **Content metadata is not gameplay state.** Actor and target archetype tags describe editorial intent — apex operator, broker, automation specialist, reckless tinkerer, street operator, elite underground operator — and help later slices build a varied roster. They are stripped when content is instantiated and never enter `WorldState`, persistence, projection, rank math, threat math, or command eligibility. An archetype is not a class or difficulty tier.
 
-**Authored data is validated before simulation owns it.** The content boundary rejects duplicate actor/target/machine/service ids, invalid 0–100 actor inputs, invalid ranks, unknown assistant models, empty target infrastructure, dangling actor-owned targets, and owner/target public-identity drift. This is structural validation, not a balance score: P2 can still author weak, strong, deceptive or unusual characters as long as their data is coherent.
+**Authored data is validated before simulation owns it.** The content boundary rejects duplicate actor/target/machine/service ids, invalid integer 0–100 actor inputs, invalid ranks, unknown assistant models, empty target infrastructure, dangling actor-owned targets, and owner/target public-identity drift. This is structural validation, not a balance score: P2 can still author weak, strong, deceptive or unusual characters as long as their data is coherent.
 
 **Simulation gets clones, never the catalog objects.** Instantiation deep-clones actors and targets before `createInitialWorldState` receives them. A run can mutate actor ranks, assistant adoption, service state or infrastructure without rewriting the authored catalog used by another run/test.
 
