@@ -11,6 +11,7 @@ describe("world projection store", () => {
     const store = createWorldProjectionStore();
     const projection: WorldProjection = {
       worldMinute: 45,
+      run: { status: "active" },
       player: {
         handle: "CobaltXZ",
         rank: 100_256,
@@ -468,6 +469,12 @@ describe("world projection store", () => {
       distanceMinutes: 0,
     });
     expect(store.getCell("presence", "current", "anonymity")).toBe("public");
+
+    expect(store.getTable("run")).toEqual({
+      current: {
+        status: "active",
+      },
+    });
 
     expect(store.getTable("player")).toEqual({
       current: {
