@@ -175,10 +175,16 @@ export function syncWorldProjection(
       }
     : {};
 
+  // Manual/legacy projection fixtures that predate P5 are equivalent to the
+  // ordinary band. Real projectWorld output always supplies this read.
+  const longRunPressure = projection.longRunPressure ?? {
+    band: "ordinary",
+    reasons: [],
+  };
   const longRunPressureRows = {
     current: {
-      band: projection.longRunPressure.band,
-      reasons: projection.longRunPressure.reasons.join(","),
+      band: longRunPressure.band,
+      reasons: longRunPressure.reasons.join(","),
     },
   };
 
