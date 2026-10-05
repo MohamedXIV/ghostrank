@@ -233,6 +233,100 @@ describe("Phase 8 P0 — world content roster", () => {
     );
   });
 
+  it("rejects fractional percentages and empty persisted strings", () => {
+    const fractional = structuredClone(CORE_WORLD_CONTENT);
+    fractional.actors[0].actor.activity = 12.5;
+    expect(() => validateWorldContentRoster(fractional)).toThrow(
+      "invalid activity: 12.5",
+    );
+
+    const cases: {
+      label: string;
+      mutate: (roster: WorldContentRoster) => void;
+      error: string;
+    }[] = [
+      {
+        label: "actor id",
+        mutate: (roster) => {
+          roster.actors[0].actor.id = "";
+        },
+        error: "World actor id must not be empty",
+      },
+      {
+        label: "actor handle",
+        mutate: (roster) => {
+          roster.actors[0].actor.handle = "   ";
+        },
+        error: "World actor nightshade handle must not be empty",
+      },
+      {
+        label: "target id",
+        mutate: (roster) => {
+          roster.targets[0].target.id = "";
+        },
+        error: "World target id must not be empty",
+      },
+      {
+        label: "target handle",
+        mutate: (roster) => {
+          roster.targets[0].target.handle = "";
+        },
+        error: "World target nightshade handle must not be empty",
+      },
+      {
+        label: "machine id",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].id = "";
+        },
+        error: "World machine id must not be empty",
+      },
+      {
+        label: "machine label",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].label = "";
+        },
+        error: "World machine ns-relay label must not be empty",
+      },
+      {
+        label: "machine role",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].role = "";
+        },
+        error: "World machine ns-relay role must not be empty",
+      },
+      {
+        label: "service id",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].services[0].id = "";
+        },
+        error: "World service id must not be empty",
+      },
+      {
+        label: "service label",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].services[0].label = "";
+        },
+        error: "World service ns-signal label must not be empty",
+      },
+      {
+        label: "service kind",
+        mutate: (roster) => {
+          roster.targets[0].target.machines[0].services[0].kind = "";
+        },
+        error: "World service ns-signal kind must not be empty",
+      },
+    ];
+
+    for (const entry of cases) {
+      const roster = structuredClone(CORE_WORLD_CONTENT);
+      entry.mutate(roster);
+      expect(
+        () => validateWorldContentRoster(roster),
+        entry.label,
+      ).toThrow(entry.error);
+    }
+  });
+
   it("rejects dangling ownership, unknown assistants, and actor/target identity drift", () => {
     const danglingActor = structuredClone(CORE_WORLD_CONTENT.actors[1]);
     danglingActor.actor.targetId = "missing-target";
