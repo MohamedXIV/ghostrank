@@ -1086,7 +1086,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             <div key={`postmortem:${id}`}>
               <span className="panel-label">
                 POSTMORTEM // {String(entry.compromiseLabel ?? "COMPROMISE")} //{" "}
-                {String(entry.attribution ?? "incomplete").toUpperCase()}
+                {entry.attribution === "complete"
+                  ? "COMPLETE"
+                  : "INCOMPLETE ATTRIBUTION"}
               </span>
               <ul className="underground-feed">
                 {postmortemStepsFor(id).map(([stepId, step]) => (
