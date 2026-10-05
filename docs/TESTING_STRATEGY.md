@@ -129,6 +129,11 @@ Critical invariants include:
 - Phase 8 balance telemetry drives only public typed commands after choosing the initial deterministic ecosystem seed; it must not write evidence, contract outcomes, endings, economy or threat records directly,
 - repeated telemetry for the same seed/policy/horizon is identical,
 - telemetry is developer evidence, not authoritative gameplay state, player projection, persistence data or a hidden difficulty oracle,
+- Phase 8 P2 target breadth uses the same typed operation/evidence commands for every authored target and never introduces a player-rank access gate,
+- P2 preserves the original Phase 2–7 authored actors/NIGHTSHADE data verbatim while intentionally expanding the canonical roster around them,
+- historical byte-golden tests whose contract predates content breadth reconstruct that historical roster instead of blessing replacement hashes from the expanded world,
+- balance/probability unit tests isolate the causal input they claim to measure from unrelated newly authored contacts,
+- post-breadth telemetry must demonstrate actual non-NIGHTSHADE exposure; activity shifts are recorded for P6 calibration rather than hidden by P2 tuning,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
