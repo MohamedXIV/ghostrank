@@ -147,6 +147,58 @@ describe("Phase 6 P4 — catastrophic compromise", () => {
     );
   });
 
+  it("attributes rig loss only to the final destructive hit on a shared boundary", () => {
+    const state = p4World();
+    state.economy.hardware = [];
+    state.physicalThreats = [
+      propertyThreat(state, {
+        id: "physical:1",
+        actorId: "nightshade",
+        destroyedHardwareIds: ["hw:1"],
+      }),
+      propertyThreat(state, {
+        id: "physical:2",
+        actorId: ACTOR_ID,
+        destroyedHardwareIds: ["hw:2"],
+      }),
+    ];
+
+    compromiseTick(state, 360);
+
+    const rigLosses = state.compromises.filter(
+      (entry) => entry.kind === "rig-lost",
+    );
+    expect(rigLosses).toEqual([
+      expect.objectContaining({
+        sourceThreatId: "physical:2",
+      }),
+    ]);
+  });
+
+  it("does not call the rig lost while a complete owned machine survives", () => {
+    const state = p4World();
+    state.economy.hardware = [];
+    state.economy.ownedMachines = [
+      {
+        id: "machine:1",
+        catalogId: "box-burner",
+        label: "Burner Laptop",
+        paidCost: 600,
+        acquiredWorldMinute: 0,
+      },
+    ];
+    state.physicalThreats.push(propertyThreat(state));
+
+    compromiseTick(state, 360);
+
+    expect(state.compromises.some((entry) => entry.kind === "rig-lost")).toBe(
+      false,
+    );
+    expect(state.compromises.some((entry) => entry.kind === "stranded")).toBe(
+      false,
+    );
+  });
+
   it("does not call ordinary property damage catastrophic while hardware survives", () => {
     const state = p4World();
     state.economy.hardware.push({
@@ -327,6 +379,29 @@ describe("Phase 6 P4 — catastrophic compromise", () => {
         state.compromises.some((entry) => entry.kind === "stranded"),
       ).toBe(false);
     }
+  });
+
+  it("does not call the player stranded while a sellable authored tool remains", () => {
+    const state = p4World();
+    state.economy.credits = 0;
+    state.economy.hardware = [];
+    state.economy.playerTools = [
+      {
+        id: "tool:1",
+        catalogId: "tool-paranoid-scraper",
+        author: "nullbyte",
+        paidCost: 500,
+        acquiredWorldMinute: 0,
+      },
+    ];
+    state.physicalThreats.push(propertyThreat(state));
+
+    compromiseTick(state, 360);
+
+    expect(state.economy.housing).toBeNull();
+    expect(state.compromises.some((entry) => entry.kind === "stranded")).toBe(
+      false,
+    );
   });
 
   it("is rank-independent and deterministic", () => {
