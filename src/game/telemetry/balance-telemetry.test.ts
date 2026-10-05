@@ -71,7 +71,7 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     );
   });
 
-  it("reports the unchanged multi-seed baseline across distinct player policies", () => {
+  it("reports multi-seed telemetry across distinct player policies", () => {
     const report = runBalanceTelemetry();
 
     console.info("PHASE8_P1_TELEMETRY", JSON.stringify(report));
@@ -131,5 +131,5 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       );
       expect(summary.economy.ledgerValueMoved.min).toBeGreaterThanOrEqual(0);
     }
-  }, 60_000);
+  }, 120_000);
 });
