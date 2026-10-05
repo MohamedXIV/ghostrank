@@ -360,6 +360,13 @@ const runEndingSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
 });
 
+const retirementPlanSchema = z.object({
+  stage: z.enum(["planning", "cooling"]),
+  startedWorldMinute: z.number().int().nonnegative(),
+  committedWorldMinute: z.number().int().nonnegative().optional(),
+  coolingUntilWorldMinute: z.number().int().nonnegative().optional(),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
@@ -386,6 +393,8 @@ const storedWorldStateSchema = z.object({
   compromises: z.array(compromiseSchema).default([]),
   // Phase 7 P0: legacy runs are live until an ending is explicitly recorded.
   ending: runEndingSchema.nullable().default(null),
+  // Phase 7 P2: and have no voluntary exit plan in progress.
+  retirement: retirementPlanSchema.nullable().default(null),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {
