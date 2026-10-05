@@ -90,13 +90,16 @@ The P3 suite pins:
 - monotone anonymity counterplay;
 - investigation pressure as a hidden input;
 - wrong-probe non-destructive behavior;
+- relocation invalidating a once-correct dwelling address;
 - immutable frozen build truth through an outage;
 - exact-boundary outage-over-build ordering;
 - build commissioning during an outage;
+- sequential outages settling only the pause they own;
 - mid-outage save/restore;
 - whole-wait versus split-wait equality;
 - property loss without losing the baseline capability floor;
-- projection/store leak boundaries;
+- monotonic hardware instance ids after destruction;
+- projection/store leak boundaries plus current-room relevance;
 - deterministic NPC assistant adoption provenance;
 - legacy-save defaults;
 - absence of run-ending behavior.
