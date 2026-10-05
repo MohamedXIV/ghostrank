@@ -24,7 +24,11 @@ function stableVariantIndex(key: string, count: number): number {
 }
 
 function pick<T>(key: string, variants: readonly T[]): T {
-  return variants[stableVariantIndex(key, variants.length)] ?? variants[0];
+  if (variants.length === 0) {
+    throw new Error("Social copy variant set cannot be empty");
+  }
+
+  return variants[stableVariantIndex(key, variants.length)]!;
 }
 
 const INCIDENT_COPY: Record<
