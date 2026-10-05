@@ -734,12 +734,6 @@ export function syncWorldProjection(
     store.setCell(
       "meta",
       "run",
-      "retirementVariant",
-      projection.ending?.retirementVariant ?? "",
-    );
-    store.setCell(
-      "meta",
-      "run",
       "detail",
       projection.ending?.detail ?? "",
     );
