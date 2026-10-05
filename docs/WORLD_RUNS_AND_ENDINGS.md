@@ -167,6 +167,26 @@ It may involve:
 
 Exact mechanics remain fictionalized rather than representing real evasion procedures.
 
+### Shipped voluntary exit operation (Phase 7 P2)
+
+Retirement now has an explicit world-time process:
+
+1. **PLAN EXIT** records intent but leaves normal play live.
+2. The player winds down only visible obligations: active operation, accepted
+   contracts, in-flight builds, running model, active software licenses, and the
+   current lease.
+3. **COMMIT EXIT** is unavailable until that checklist is clear. A blocked
+   commit costs no time.
+4. A clean commit spends one world hour while the normal world keeps acting.
+   Forced endings can interrupt this hour.
+5. Success freezes a two-world-day cooling deadline. During cooling the player
+   may wait, read messages, or cancel the exit and return to normal play.
+6. Crossing the cooling deadline produces a derived **READY** state, not an
+   ending. Phase 7 P3 chooses the retirement outcome from actual history.
+
+Rank and hidden danger are not exit-plan gates. The system models abstract
+fictional wind-down only; it contains no real identity/evasion procedure.
+
 ## Rare White happy ending
 
 A White-leaning run that stayed consistent with its code can earn a genuinely peaceful ending.
