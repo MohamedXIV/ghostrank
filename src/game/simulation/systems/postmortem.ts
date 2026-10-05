@@ -93,7 +93,7 @@ function describeTrace(world: WorldState, trace: OperationTrace): string {
     case "operation-escalation":
       return `you escalated an operation against ${handle}`;
     case "operation-disengagement":
-      return `you disengaged from ${handle} after an intrusive operation`;
+      return `you disengaged from ${handle} after a ${trace.stage} operation`;
   }
 }
 
