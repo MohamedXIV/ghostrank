@@ -126,6 +126,9 @@ Critical invariants include:
 - authored world content rejects duplicate/empty persisted ids and strings, dangling target ownership, non-integer/out-of-range actor percentages, unknown assistant models and empty infrastructure before simulation begins,
 - instantiated content is deep-cloned so one run cannot mutate the catalog used by another run,
 - Phase 8 P0 preserves the canonical Phase 2–7 default world; existing deterministic/golden tests remain the compatibility proof until a later breadth slice intentionally changes content,
+- Phase 8 balance telemetry drives only public typed commands after choosing the initial deterministic ecosystem seed; it must not write evidence, contract outcomes, endings, economy or threat records directly,
+- repeated telemetry for the same seed/policy/horizon is identical,
+- telemetry is developer evidence, not authoritative gameplay state, player projection, persistence data or a hidden difficulty oracle,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing
@@ -140,6 +143,13 @@ Automated simulation can sample many seeds to measure:
 - tool-market concentration.
 
 Automated balance statistics guide tuning; they do not replace human playtests.
+
+Phase 8 P1 turns this into a checked local harness: `npm run telemetry:balance`
+runs 32 fixed seeds through IDLE / CONTRACTOR / RECKLESS / CAREER-EXIT policies
+for 30 world days using the real CommandBus. The harness reports distributions
+rather than treating the initial numbers as brittle acceptance thresholds.
+Later Phase 8 breadth/calibration slices should rerun the same report and explain
+material distribution changes.
 
 ## Playtest questions
 
