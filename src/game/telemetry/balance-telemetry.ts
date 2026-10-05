@@ -589,7 +589,7 @@ function sampleFromWorld(
   };
 }
 
-function numericSummary(values: readonly number[]): NumericSummary {
+export function numericSummary(values: readonly number[]): NumericSummary {
   const sorted = [...values].sort((a, b) => a - b);
   const total = sorted.reduce((sum, value) => sum + value, 0);
   const midpoint = Math.floor(sorted.length / 2);
