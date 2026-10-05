@@ -16,13 +16,13 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       targets: 6,
       targetMachines: 14,
       targetServices: 17,
-      hardwareListings: 6,
+      hardwareListings: 8,
       housingListings: 8,
-      machineListings: 5,
-      modelListings: 5,
-      playerToolListings: 3,
-      softwareListings: 3,
-      workflowSpecs: 3,
+      machineListings: 7,
+      modelListings: 7,
+      playerToolListings: 5,
+      softwareListings: 5,
+      workflowSpecs: 5,
     });
   });
 
