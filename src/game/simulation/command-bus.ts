@@ -10,6 +10,7 @@ import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { compromiseTick } from "@/game/simulation/systems/compromise";
+import { forcedEndingTick } from "@/game/simulation/systems/endings";
 import { relocationMinutes } from "@/game/simulation/systems/location";
 import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
@@ -1489,31 +1490,41 @@ export class CommandBus {
         );
         cursor = tickMinute;
       },
-      afterPhysicalTick: (tickMinute) =>
-        compromiseTick(this.world, tickMinute),
+      afterPhysicalTick: (tickMinute) => {
+        const compromiseEvents = compromiseTick(this.world, tickMinute);
+        const endingEvents = forcedEndingTick(this.world, tickMinute);
+        return [...compromiseEvents, ...endingEvents];
+      },
       afterTick: (tickMinute) => {
         buildEvents.push(...advanceBuilds(this.world, tickMinute));
       },
     });
 
-    // A final partial tick still pays bills, completes work, and advances
-    // derived case material even though no ecosystem action was scheduled.
-    if (cursor < toMinute) {
-      upkeepEvents.push(...advanceUpkeep(this.world, cursor, toMinute));
-      investigationEvents.push(...advanceInvestigations(this.world, toMinute));
-      buildEvents.push(...advanceBuilds(this.world, toMinute));
-    } else if (cursor === fromMinute) {
-      // No ecosystem boundary crossed.
-      upkeepEvents.push(...advanceUpkeep(this.world, fromMinute, toMinute));
-      investigationEvents.push(...advanceInvestigations(this.world, toMinute));
-      buildEvents.push(...advanceBuilds(this.world, toMinute));
+    const actualToMinute = this.world.ending?.worldMinute ?? toMinute;
+    this.world.worldMinute = actualToMinute;
+
+    // A terminal event inside an ecosystem boundary freezes the command at that
+    // exact minute. Nothing in the unelapsed tail may bill, finish, or advance.
+    if (!this.world.ending) {
+      // A final partial tick still pays bills, completes work, and advances
+      // derived case material even though no ecosystem action was scheduled.
+      if (cursor < toMinute) {
+        upkeepEvents.push(...advanceUpkeep(this.world, cursor, toMinute));
+        investigationEvents.push(...advanceInvestigations(this.world, toMinute));
+        buildEvents.push(...advanceBuilds(this.world, toMinute));
+      } else if (cursor === fromMinute) {
+        // No ecosystem boundary crossed.
+        upkeepEvents.push(...advanceUpkeep(this.world, fromMinute, toMinute));
+        investigationEvents.push(...advanceInvestigations(this.world, toMinute));
+        buildEvents.push(...advanceBuilds(this.world, toMinute));
+      }
     }
 
     return [
       {
         type: "WorldTimeAdvanced",
         fromMinute,
-        toMinute,
+        toMinute: actualToMinute,
       },
       // Preserve the established category order for callers; each event carries
       // its true world minute even though execution above is interleaved.
