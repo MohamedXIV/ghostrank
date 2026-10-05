@@ -404,6 +404,70 @@ describe("Phase 7 P1 — forced ending eligibility", () => {
     });
   });
 
+  it("does not finish a survey whose action time crosses the terminal boundary", () => {
+    const state = integratedForcedEndingWorld();
+    state.worldMinute = 350;
+    state.operation = {
+      targetId: "nightshade",
+      stage: "recon",
+      openedWorldMinute: 0,
+    };
+    state.knownTargetIds = ["nightshade"];
+    state.evidence = [
+      {
+        id: "target-profile:nightshade",
+        kind: "target-profile",
+        subjectId: "nightshade",
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: 0,
+      },
+    ];
+
+    const bus = new CommandBus(state);
+    const result = bus.execute({
+      type: "surveyTarget",
+      targetId: "nightshade",
+    });
+    const after = bus.snapshot();
+
+    expect(result.ok).toBe(true);
+    expect(after.ending?.worldMinute).toBe(MINUTE);
+    expect(after.worldMinute).toBe(MINUTE);
+    expect(
+      after.evidence.some((record) => record.kind === "machine-presence"),
+    ).toBe(false);
+    expect(
+      result.events.some((event) => event.type === "MachineObserved"),
+    ).toBe(false);
+  });
+
+  it("does not arrive at a relocation destination after ending during travel", () => {
+    const state = integratedForcedEndingWorld();
+    state.worldMinute = 300;
+
+    const bus = new CommandBus(state);
+    const result = bus.execute({
+      type: "rentHousing",
+      housingId: "housing-sleeper-unit",
+    });
+    const after = bus.snapshot();
+
+    expect(result.ok).toBe(true);
+    expect(after.ending?.worldMinute).toBe(MINUTE);
+    expect(after.worldMinute).toBe(MINUTE);
+    // P4 burned the struck lab. The interrupted travel must not overwrite that
+    // terminal truth by assigning the destination after endRun.
+    expect(after.economy.housing).toBeNull();
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === "HousingChanged" &&
+          event.housingId === "housing-sleeper-unit",
+      ),
+    ).toBe(false);
+  });
+
   it("keeps first-ending-wins if an evaluator is accidentally called twice", () => {
     const state = identityWorld(1);
     forcedEndingTick(state, MINUTE);
