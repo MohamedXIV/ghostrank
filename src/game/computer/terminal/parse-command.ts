@@ -107,6 +107,9 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "contract":
       return parseContractCommand(args);
 
+    case "retire":
+      return parseRetirementCommand(args);
+
     case "wait": {
       if (args.length !== 1) {
         return {
@@ -138,6 +141,24 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
         ok: false,
         error: "UNKNOWN_COMMAND",
       };
+  }
+}
+
+function parseRetirementCommand(args: string[]): TerminalParseResult {
+  const [subcommand, ...rest] = args;
+  if (rest.length !== 0) {
+    return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+
+  switch (subcommand?.toLowerCase()) {
+    case "plan":
+      return { ok: true, command: { type: "startRetirement" } };
+    case "commit":
+      return { ok: true, command: { type: "commitRetirement" } };
+    case "cancel":
+      return { ok: true, command: { type: "cancelRetirement" } };
+    default:
+      return { ok: false, error: "INVALID_ARGUMENT" };
   }
 }
 
