@@ -420,3 +420,20 @@ P2 deliberately stopped at READY. P3 closes that gap with one explicit terminal 
 **The terminal record stays small.** D037's authoritative `ending` remains status/cause/minute. P3 does not persist a second alignment or variant field. For retirement endings the player-safe projection re-derives the structured variant and short closing line from the frozen run history, so save/restore is stable without duplicating mutable counters. The hidden cause id remains outside the UI projection.
 
 Accepted 2026-10-05 as the Phase 7 P3 retirement-outcome contract. P4 now owns completed-run archival/history; P3 does not reintroduce PR #40's superseded competing terminal schema.
+
+
+## D041 — Completed runs archive final truth once; history is a derived read (Phase 7 P4)
+
+A completed run must remain inspectable without creating a second mutable lifecycle. P4 therefore archives the **final canonical `WorldState`**, including D037's immutable `ending`, and derives every summary/postmortem view later. It does not persist a copied scorecard, alignment value, peak rank, or competing terminal status.
+
+**Browser completion is an atomic move, not a copy-and-hope convention.** IndexedDB v2 adds a `run-history` store beside `active-run`. A successful completion writes the final portable state to history and deletes the active slot inside one transaction. The move is permitted only while an active slot exists, so retrying a completion that already succeeded is a no-op rather than a duplicate archive entry. Closed PR #40 supplied this storage pattern only; its superseded `run.status` schema is not restored.
+
+**Failure may delay archival but may never resurrect gameplay.** If the active→history transaction fails after a terminal command, GameSession durably writes the terminal snapshot back to the active slot before surfacing the persistence failure. A later boot sees canonical `state.ending`, retries archival, and keeps that boot on the ended session. Once archival has succeeded, the following boot finds no active slot and creates a fresh run separately.
+
+**History is player-safe by construction.** `deriveCompletedRunSummary` reads the archived state and exposes final status/label/time, retirement tone when relevant, final (not invented peak) rank, credits, ledger value moved, completed contracts, operation escalations, authored workflows, compromise count, existing reputation descriptors, and the existing P5 safe postmortems. Ending cause ids, relationship numbers, probe correctness, investigation progress/source ids, hidden actor/location truth, and other private simulation data do not cross the history read model.
+
+**Browsing has no command surface.** GHOST/OS gains a History window that loads completed states through the persistence boundary and renders those derived summaries newest-first. An archived run is read-only and cannot mutate itself or the current run.
+
+**P4 is web-first.** Completed-run methods remain optional on `RunPersistence`; browser IndexedDB implements them now, while the deferred Tauri/SQLite adapter keeps its terminal active snapshot until #19 / the desktop phase reconciles native history storage.
+
+Accepted 2026-10-05 as the Phase 7 P4 completed-run history contract. P5 now owns exceptional long-run pressure; archive/history itself does not make veteran runs harder.

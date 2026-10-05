@@ -263,3 +263,34 @@ A final report can include:
 - final cause/status.
 
 The summary supports storytelling; it is not a single numerical score.
+
+### Shipped completed-run history (Phase 7 P4)
+
+On the web, a completed run is now moved out of the active save slot into local
+IndexedDB history as the **same final authoritative WorldState**. The archive
+does not store a second scorecard or alternate ending model.
+
+The GHOST/OS **History** app derives a read-only summary from each archived run,
+newest-first. The shipped summary currently includes:
+
+- final ending status and time;
+- retirement variant/detail when relevant;
+- final rank (not an invented peak rank);
+- credits left and lifetime ledger value moved;
+- completed contracts;
+- intrusive operation escalations;
+- authored workflows;
+- compromise count;
+- derived reputation descriptors;
+- the existing player-safe compromise postmortems.
+
+Hidden ending cause ids, relationship numbers, probe correctness,
+investigation progress/source ids, and other private simulation truth do not
+enter the history read model. Browsing an archived run has no command surface
+and cannot mutate either the archive or the current run.
+
+A failed browser archive never revives play: the terminal snapshot remains
+durable for boot recovery. After a successful active→history move, a later boot
+creates a fresh active run separately. Native SQLite/Tauri completed-history
+parity remains deferred to #19.
+

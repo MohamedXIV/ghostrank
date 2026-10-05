@@ -5,13 +5,16 @@ import {
 } from "@/persistence/portable-run-save";
 
 const DATABASE_NAME = "ghostrank";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const ACTIVE_RUN_STORE = "active-run";
 const ACTIVE_RUN_KEY = "current";
+const RUN_HISTORY_STORE = "run-history";
 
 export interface BrowserRunStorage {
   readActiveRun: () => Promise<string | null>;
   writeActiveRun: (serialized: string) => Promise<void>;
+  readCompletedRuns: () => Promise<string[]>;
+  completeRun: (archiveId: string, serialized: string) => Promise<void>;
 }
 
 export function createBrowserRunPersistence(
@@ -30,6 +33,30 @@ export function createBrowserRunPersistence(
 
     async saveActiveState(state) {
       await storage.writeActiveRun(serializePortableRunSave(state));
+    },
+
+    async loadCompletedStates() {
+      const serializedRuns = await storage.readCompletedRuns();
+
+      return serializedRuns.map((serialized) => {
+        const state = parsePortableRunSave(serialized);
+
+        if (!state.ending) {
+          throw new Error("Ghostrank run history contains a live run");
+        }
+
+        return state;
+      });
+    },
+
+    async completeRun(state) {
+      if (!state.ending) {
+        throw new Error("Cannot archive a Ghostrank run before it ends");
+      }
+
+      const archiveId =
+        `completed:${new Date().toISOString()}:${crypto.randomUUID()}`;
+      await storage.completeRun(archiveId, serializePortableRunSave(state));
     },
   };
 }
@@ -84,6 +111,59 @@ export function createIndexedDbRunStorage(
         database.close();
       }
     },
+
+    async readCompletedRuns() {
+      const database = await openDatabase(factory);
+
+      try {
+        const transaction = database.transaction(
+          RUN_HISTORY_STORE,
+          "readonly",
+        );
+        const request = transaction.objectStore(RUN_HISTORY_STORE).getAll();
+        const results = await requestResult<unknown[]>(request);
+
+        if (!results.every((value) => typeof value === "string")) {
+          throw new Error("Ghostrank run history contains invalid data");
+        }
+
+        // Archive keys begin with an ISO timestamp, and IndexedDB getAll()
+        // follows key order. History is a newest-first player surface.
+        return (results as string[]).reverse();
+      } finally {
+        database.close();
+      }
+    },
+
+    async completeRun(archiveId, serialized) {
+      const database = await openDatabase(factory);
+
+      try {
+        // The final authoritative snapshot moves from the active slot into
+        // history in one transaction. The active-presence check also makes a
+        // repeated successful completion a no-op instead of duplicating history.
+        const transaction = database.transaction(
+          [ACTIVE_RUN_STORE, RUN_HISTORY_STORE],
+          "readwrite",
+        );
+        const completed = transactionComplete(transaction);
+        const activeStore = transaction.objectStore(ACTIVE_RUN_STORE);
+        const active = await requestResult<unknown>(
+          activeStore.get(ACTIVE_RUN_KEY),
+        );
+
+        if (active !== undefined) {
+          transaction
+            .objectStore(RUN_HISTORY_STORE)
+            .put(serialized, archiveId);
+          activeStore.delete(ACTIVE_RUN_KEY);
+        }
+
+        await completed;
+      } finally {
+        database.close();
+      }
+    },
   };
 }
 
@@ -104,6 +184,10 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
 
       if (!database.objectStoreNames.contains(ACTIVE_RUN_STORE)) {
         database.createObjectStore(ACTIVE_RUN_STORE);
+      }
+
+      if (!database.objectStoreNames.contains(RUN_HISTORY_STORE)) {
+        database.createObjectStore(RUN_HISTORY_STORE);
       }
     };
 
