@@ -141,6 +141,8 @@ describe("Phase 7 P0 — terminal run contract", () => {
       status: "retired",
       label: "RETIRED",
       worldMinute: 4320,
+      variant: "",
+      detail: "",
     });
     expect(JSON.stringify(store.getRow("meta", "run"))).not.toContain(
       "retirement:1",
@@ -153,6 +155,8 @@ describe("Phase 7 P0 — terminal run contract", () => {
       status: "",
       label: "",
       worldMinute: 0,
+      variant: "",
+      detail: "",
     });
   });
 
