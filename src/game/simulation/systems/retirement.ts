@@ -1,3 +1,4 @@
+import { deriveReputationDescriptors } from "@/game/simulation/systems/reputation";
 import type { WorldState } from "@/game/simulation/state/world-state";
 
 export const RETIREMENT_COMMIT_MINUTES = 60;
@@ -112,20 +113,6 @@ function completedContractsByNetwork(
   ).length;
 }
 
-function acceptedContractFailures(world: WorldState): number {
-  return world.underground.contracts.filter(
-    (contract) =>
-      contract.status === "expired" &&
-      contract.acceptedWorldMinute !== undefined,
-  ).length;
-}
-
-function escalationCount(world: WorldState): number {
-  return world.traces.filter(
-    (trace) => trace.cause === "operation-escalation",
-  ).length;
-}
-
 function visibleRetirementPressure(world: WorldState): boolean {
   return (
     world.underground.retaliations.length > 0 ||
@@ -153,8 +140,9 @@ export function deriveRetirementOutcome(
 
   const whiteCompleted = completedContractsByNetwork(world, "white");
   const blackCompleted = completedContractsByNetwork(world, "black");
-  const missedAccepted = acceptedContractFailures(world);
-  const escalations = escalationCount(world);
+  const descriptors = new Set(
+    deriveReputationDescriptors(world).map((descriptor) => descriptor.id),
+  );
   const unmasked = world.underground.retaliations.some(
     (retaliation) => retaliation.kind === "unmasking",
   );
@@ -162,8 +150,8 @@ export function deriveRetirementOutcome(
   if (
     whiteCompleted >= VANISHED_WHITE_COMPLETIONS &&
     blackCompleted === 0 &&
-    missedAccepted === 0 &&
-    escalations < 3 &&
+    !descriptors.has("opportunist") &&
+    !descriptors.has("predator") &&
     world.compromises.length === 0 &&
     !unmasked
   ) {
