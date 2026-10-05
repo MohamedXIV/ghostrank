@@ -98,6 +98,8 @@ Critical invariants include:
 - the first terminal ending is immutable and later gameplay commands cannot mutate or advance that run,
 - an ending inside a time command clamps authoritative time to that boundary and prevents all later same-tick/tail systems from running,
 - forced-ending eligibility is deterministic from causal history and never player rank,
+- voluntary retirement blockers are player-visible, blocked commit spends no time, and READY derives from the frozen cooling deadline,
+- forced danger can interrupt retirement commitment/cooling through the same world-time chronology,
 - save/load preserves causal continuity,
 - simulation behavior does not depend on a specific persistence backend or host.
 

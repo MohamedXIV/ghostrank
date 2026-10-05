@@ -35,6 +35,7 @@ import {
   stopModelFromGui,
 } from "@/game/computer/apps/economy-actions";
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
+import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { SimulationCommand } from "@/game/simulation/commands/types";
@@ -223,7 +224,7 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<string[]>([
     "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | build abort <build-id> | wait <minutes> | help",
+    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | retire plan|commit|cancel | wait <minutes> | help",
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -262,6 +263,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         "model stop         stop the running model",
         "build <spec-id>    commission the assistant to build a workflow (time, not credits)",
         "build abort <build-id>  cancel an in-flight build (nothing is charged)",
+        "retire plan          begin a voluntary exit plan",
+        "retire commit        commit once obligations/infrastructure/location are wound down (costs 60m)",
+        "retire cancel        abandon the exit plan and resume normal play",
         "wait <minutes>       advance world time",
       ]);
       return;
@@ -367,6 +371,12 @@ function describeCommandResult(type: SimulationCommand["type"]) {
       return "build aborted // rig freed, nothing charged";
     case "advanceTime":
       return "world clock advanced";
+    case "startRetirement":
+      return "exit plan opened // wind down the visible blockers";
+    case "commitRetirement":
+      return "exit committed // cooling period started";
+    case "cancelRetirement":
+      return "exit plan cancelled // normal play resumed";
   }
 }
 
@@ -884,6 +894,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   // Phase 6 P5: safe causal reads derived from the hidden provenance graph.
   const postmortemTable = useTable("postmortems", runtime.projection);
   const postmortemStepTable = useTable("postmortemSteps", runtime.projection);
+  const retirement = useRow("retirement", "current", runtime.projection);
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
@@ -970,6 +981,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       );
   const caseStage = (investigationId: string): string =>
     cases[investigationId] ?? "probing";
+  const exitStatus = String(retirement.status ?? "idle");
+  const exitBlockers = String(retirement.blockers ?? "")
+    .split(",")
+    .filter(Boolean);
 
   return (
     <div className="underground-app">
@@ -1106,6 +1121,78 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           ))}
         </section>
       )}
+
+      <section aria-label="Exit plan">
+        <span className="panel-label">EXIT PLAN</span>
+        {exitStatus === "idle" ? (
+          <>
+            <p className="underground-empty">
+              No exit is being prepared. Planning one does not end the run.
+            </p>
+            <button
+              type="button"
+              onClick={() => runtime.execute(retirementActionFromGui("plan"))}
+            >
+              PLAN EXIT
+            </button>
+          </>
+        ) : (
+          <>
+            <p>
+              Status: <strong>{exitStatus.toUpperCase()}</strong>
+              {retirement.readyWorldMinute
+                ? ` // ${formatWorldTime(Number(retirement.readyWorldMinute))}`
+                : ""}
+            </p>
+            {exitStatus === "planning" && (
+              <>
+                {exitBlockers.length === 0 ? (
+                  <p className="analysis-caveat">
+                    Obligations, active work, running software, and the lease are
+                    wound down. COMMIT spends one hour in-world, then the handle
+                    must stay quiet for two days while the world keeps moving.
+                  </p>
+                ) : (
+                  <ul className="underground-feed">
+                    {exitBlockers.map((blocker) => (
+                      <li key={blocker}>
+                        <span>{blocker.replaceAll("-", " ")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  disabled={exitBlockers.length > 0}
+                  onClick={() =>
+                    runtime.execute(retirementActionFromGui("commit"))
+                  }
+                >
+                  COMMIT EXIT
+                </button>
+              </>
+            )}
+            {exitStatus === "cooling" && (
+              <p className="analysis-caveat">
+                The exit is committed. Only waiting, reading messages, or
+                cancelling the plan is allowed while the handle cools.
+              </p>
+            )}
+            {exitStatus === "ready" && (
+              <p className="analysis-caveat">
+                Cooling is complete. The handle is ready to close; its final
+                disposition will reflect the history that brought you here.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => runtime.execute(retirementActionFromGui("cancel"))}
+            >
+              CANCEL EXIT
+            </button>
+          </>
+        )}
+      </section>
 
       <section aria-label="Contracts">
         <span className="panel-label">CONTRACTS</span>

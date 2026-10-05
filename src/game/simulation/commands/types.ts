@@ -103,4 +103,13 @@ export type SimulationCommand =
   | {
       type: "advanceTime";
       minutes: number;
+    }
+  | {
+      type: "startRetirement";
+    }
+  | {
+      type: "commitRetirement";
+    }
+  | {
+      type: "cancelRetirement";
     };

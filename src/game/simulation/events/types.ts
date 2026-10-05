@@ -377,6 +377,20 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "RetirementPlanned";
+      worldMinute: number;
+    }
+  | {
+      type: "RetirementCoolingStarted";
+      readyWorldMinute: number;
+      worldMinute: number;
+    }
+  | {
+      type: "RetirementCancelled";
+      stage: "planning" | "cooling";
+      worldMinute: number;
+    }
+  | {
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;

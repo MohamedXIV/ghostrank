@@ -30,6 +30,24 @@ export interface RunEndingRecord {
   worldMinute: number;
 }
 
+/**
+ * Phase 7 P2 — a voluntary exit plan. "ready" is deliberately derived rather
+ * than stored: cooling has one frozen deadline and reaching it is clock truth.
+ */
+export type RetirementStage = "planning" | "cooling";
+
+export type RetirementPlan =
+  | {
+      stage: "planning";
+      startedWorldMinute: number;
+    }
+  | {
+      stage: "cooling";
+      startedWorldMinute: number;
+      committedWorldMinute: number;
+      coolingUntilWorldMinute: number;
+    };
+
 export type EvidenceKind =
   | "target-profile"
   | "machine-presence"
@@ -651,6 +669,11 @@ export interface WorldState {
    * immutable: the command bus rejects further gameplay commands.
    */
   ending: RunEndingRecord | null;
+  /**
+   * Phase 7 P2 voluntary-exit process. Null means no plan is active; a cooling
+   * plan is still a live run and can be cancelled until P3 finalizes an ending.
+   */
+  retirement: RetirementPlan | null;
 }
 
 export interface InitialTargetState
@@ -676,6 +699,7 @@ export interface InitialWorldState {
   physicalThreats?: PhysicalThreat[];
   compromises?: CompromiseRecord[];
   ending?: RunEndingRecord | null;
+  retirement?: RetirementPlan | null;
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -817,5 +841,9 @@ export function createInitialWorldState(
       initial.ending === undefined
         ? null
         : structuredClone(initial.ending),
+    retirement:
+      initial.retirement === undefined
+        ? null
+        : structuredClone(initial.retirement),
   };
 }

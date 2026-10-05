@@ -372,6 +372,25 @@ Phase 6 deliberately recorded dangerous **conditions** rather than endings. Phas
 
 Accepted 2026-10-05 as the Phase 7 P1 forced-ending contract. Retirement remains P2 and uses the same D037 terminal primitive rather than a second lifecycle.
 
+
+## D039 — Retirement is a staged wind-down plus survivable cooling, not a menu exit (Phase 7 P2)
+
+A voluntary ending must be meaningfully different from simply pressing Quit. P2 therefore models **intent, cleanup, commitment, and waiting under live world pressure** while keeping every step fictionalized and player-legible.
+
+**PLAN is intent, not a gate.** `startRetirement` records a plan at the current world minute and changes nothing else. The player can begin planning while obligations are still open, then resolve those obligations through the normal simulation verbs. Starting a plan costs no money or time and never calls `endRun`.
+
+**COMMIT is allowed only when the visible life of the handle has actually been wound down.** The checklist is composed entirely from facts the player already owns: no active operation, no accepted contract, no in-flight software build, no running model, no active software license, and no active lease. Hidden grudge, investigation progress, probe correctness, rank, and other secret pressure are never retirement gates. If any blocker remains, COMMIT fails without moving the clock.
+
+**A clean commit spends one hour in the world, then freezes a two-day cooling deadline.** The 60-minute commit is a normal world-time action: upkeep, investigations, rivals, physical consequences, and forced endings can act while it is underway. If the run ends during those 60 minutes, the plan never reaches cooling. If the world is still live, the visible blocker checklist is evaluated again at the arrival minute before cooling starts; a newly-created obligation keeps the plan in PLANNING, while the hour and its world events remain spent. Otherwise the plan stores only `committedWorldMinute` and one `coolingUntilWorldMinute`. READY is derived from the current clock crossing that frozen deadline; it is not another stored state transition or scheduler cursor.
+
+**Cooling is a voluntary discipline with an escape hatch.** Once committed, the command bus permits only waiting, reading messages, or cancelling the plan. Operational/economic actions are rejected with `RETIREMENT_COOLING_ACTIVE` until the player cancels. This is intentionally a temporary gate created by the player's own explicit exit commitment, not a level gate or hidden punishment. Cancelling removes the plan immediately and normal play resumes. The world itself continues to act during every wait, so "lay low" remains survival rather than a skip button.
+
+**P2 stops at READY.** It emits no `RunEnded` and does not decide whether the finished exit becomes ordinary RETIRED, the rare White VANISHED ending, or another retirement tone. P3 owns that classification from actual run history/context and will call the same D037 `endRun` primitive. Keeping that boundary prevents P2's checklist from secretly becoming a morality meter.
+
+**The interface is shared and explicit.** Terminal commands are `retire plan`, `retire commit`, and `retire cancel`; the Underground EXIT PLAN panel emits the same typed commands and shows the same visible blockers/deadline. No real-world evasion procedure, identity-cleaning advice, or networking behavior is represented — the mechanics are abstract simulation state only.
+
+Accepted 2026-10-05 as the Phase 7 P2 voluntary-retirement contract.
+
 ## Open decisions
 
 These remain intentionally unresolved until implementation/playtesting provides evidence:
