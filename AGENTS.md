@@ -8,10 +8,11 @@ Before changing gameplay or architecture, read these documents in order:
 
 1. docs/VISION.md
 2. docs/GAME_DESIGN.md
-3. docs/HACKING_AND_TOOLS.md
-4. docs/TECHNICAL_ARCHITECTURE.md
-5. docs/DATA_AND_PERSISTENCE.md
-6. docs/ROADMAP.md
+3. docs/INTERFACE_AND_DISTROS.md
+4. docs/HACKING_AND_TOOLS.md
+5. docs/TECHNICAL_ARCHITECTURE.md
+6. docs/DATA_AND_PERSISTENCE.md
+7. docs/ROADMAP.md
 
 When code and documentation disagree, do not silently invent a third design. Update the canonical documentation in the same change or raise the conflict explicitly.
 

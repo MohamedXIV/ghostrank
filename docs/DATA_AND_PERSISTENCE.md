@@ -50,6 +50,22 @@ A durable adapter stores:
 
 The adapter may use IndexedDB in the browser or SQLite in the later Tauri host, but domain code must not depend on backend-specific query behavior.
 
+
+## Presentation settings
+
+Distro/theme selection, UI scale, reduced-motion preference, density, transparency preference and similar interface choices are application/player settings rather than authoritative run state.
+
+They may persist through the host settings layer and survive completed runs.
+
+Changing presentation settings must not:
+- alter deterministic simulation output,
+- mutate rank/economy/capability,
+- change target access,
+- alter evidence truth,
+- become required for save compatibility.
+
+An in-fiction distro installer may write these presentation settings, but it does not install gameplay power.
+
 ## Active run state
 
 On load:

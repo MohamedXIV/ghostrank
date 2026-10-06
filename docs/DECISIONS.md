@@ -604,3 +604,29 @@ P6 closes Content Alpha in three parts: broaden the authored social wording that
 **Merge gate.** GitHub Actions did not execute on this head. The two newest P6 commits are `[skip ci]`, so no run exists for `bbf75fd618aae41b78ef8e2f56e87acaaed68316`; the last Actions attempt in the P6 chain (run `37397578785`, job `112057110909`, head `41b6bab`) completed in 4 s with `steps: []`, `runner_id: 0`, empty `runner_name`/`runner_group_name` and no retrievable log — the repo-wide runner outage since `2026-10-05T23:04Z` that also reddens `main` (`37388207610`). `AGENTS.md` makes web tests, typecheck, lint and the production web build the authoritative per-feature gates and is silent on where they execute; those gates therefore ran locally on a clean tree at `bbf75fd618aae41b78ef8e2f56e87acaaed68316` (Node v24.20.0 / npm 11.19.0): `npm test` passed 71 files / 748 tests, `npm run typecheck` clean, `npm run lint` clean (one pre-existing `postcss.config.mjs` warning), `npm run build` exported `out/`, plus the browser persistence/reload pass recorded above. This bypasses the **host**, not the **checks**: no gate was skipped and no unexecuted code was blessed. Two local deviations are recorded rather than hidden: gates ran against the lockfile-matched `node_modules` (0 absent / 0 mismatched of 385 required packages) instead of a network `npm ci`, and `next build`/`next dev` reformat `tsconfig.json` as a side effect, which was reverted so the shipped tree is unchanged. The exact head is an ancestor of the merge commit, so the checked tree is the shipped tree; the only commit above it is this documentation-only change, and the report was regenerated identically at the final head.
 
 Accepted 2026-10-06 as the Phase 8 P6 social-breadth and Content Alpha calibration contract, and as the closure of #26. Phase 9 — Web Beta/Polish is now unblocked.
+
+
+## D051 — The computer is a visual operating environment, and distros are presentation-only
+
+Phase 9 treats the simulated computer as an inhabited operating environment rather than a terminal aesthetic stretched across every screen.
+
+**Recognition before reading** is the default information-design direction. When the underlying world contains topology, relationships, evidence confidence, deadlines, value movement or causal history, the UI should use meaningful visual structure — icons, spatial layout, graph/timeline relationships, shape, hierarchy and restrained motion — before adding more explanatory text. Text remains available for precision.
+
+Visuals obey the epistemic boundary. Confirmed, observed, inferred, rumored, stale and unknown information must remain distinguishable, and presentation may never expose hidden authoritative truth. Important meaning cannot rely on color alone.
+
+The terminal remains an important app but is not the design template for Market, Recon, Underground, Forge, History or the OS shell. Terminal output may itself be visually structured.
+
+Phase 9 standardizes the UI foundation on Tailwind + shadcn/ui, adds Motion for React state/layout transitions, and uses native CSS/Tailwind for simple micro-interactions. GSAP and React Spring are not baseline dependencies.
+
+The OS presentation is layered as **core -> distro -> theme -> accessibility/user overrides**. Initial distro identities are:
+- **Ghost/OS** — restrained dark default,
+- **Lattice** — dense technical/productivity,
+- **Velvet** — elegant dark,
+- **Daybreak** — bright editorial,
+- **Petal** — cute, colorful and playful, with light/dark variants allowed.
+
+Distros may change palette, typography, density, radii, elevation, chrome, launcher/panel treatment, icons, wallpaper, motion character and system sounds. They never change simulation rules, rank, capability, target access, evidence truth, RNG or economy outcomes.
+
+Distro/theme/accessibility selection is presentation settings outside authoritative `WorldState`, even when exposed through an in-fiction install/setup flow.
+
+Accepted 2026-10-06. Canonical detail: `docs/INTERFACE_AND_DISTROS.md`. Phase 9 execution: #27.

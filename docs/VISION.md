@@ -41,7 +41,8 @@ Technical familiarity should provide flavor and intuition but must not be a prer
 - simulation-driven,
 - run-based,
 - difficult,
-- primarily computer-interface gameplay,
+- primarily computer-interface gameplay inside an inhabited, customizable fictional OS,
+- visually legible systems that favor recognition before dense reading,
 - supported by a small physical-world slice,
 - modern in its treatment of AI, hardware, crypto-like economies, and software ecosystems,
 - designed for emergent stories instead of one fixed campaign.
@@ -50,6 +51,7 @@ Technical familiarity should provide flavor and intuition but must not be a prer
 
 - a real hacking tutorial,
 - a terminal-only game,
+- a wall of terminal-styled menus, buttons, and text,
 - a clicker with percentage-based hacking,
 - a level-gated RPG,
 - a morality-meter game,

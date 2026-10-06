@@ -421,22 +421,39 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: planned — unblocked by #26 (Content Alpha, D050). Tracked by #27.**
+**Status: planned / ready to execute — unblocked by #26. Tracked by #27.**
 
-Deliverables:
-- onboarding,
-- accessibility,
-- browser performance,
-- save migration hardening,
-- UI consistency without erasing app individuality,
-- audio/room atmosphere,
-- balance,
-- ending polish,
-- browser crash/recovery behavior,
-- web release hardening.
+Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
+
+Canonical interface direction: `docs/INTERFACE_AND_DISTROS.md` / D051.
+
+Grounded slice order:
+- **P0 — UI foundation + semantic visual language**: shadcn/ui foundation, semantic tokens, typography, icon/status vocabulary, truth-level treatments, Motion/CSS policy and accessibility-safe primitives.
+- **P1 — OS shell + distro/theme architecture**: presentation-only Ghost/OS, Lattice, Velvet, Daybreak and Petal profiles; persisted theme/settings; shell/chrome integration.
+- **P2 — visual-first app information**: Recon topology, relationship/rival signatures, evidence semantics, contract/deadline visuals, market comparisons, rich terminal output and History/postmortem timelines.
+- **P3 — onboarding + discoverability**: teach the fictional OS/capability model through contextual, dismissible in-world guidance.
+- **P4 — accessibility + interaction comfort**: keyboard/focus, contrast, non-color cues, reduced motion, UI/text scale, reduced transparency and dense-data readability.
+- **P5 — new-run, save, migration + recovery hardening**: remove the fixed-alpha-seed boot assumption, harden historical saves and browser recovery.
+- **P6 — beta balance + telemetry follow-ups**: add purchasing/affordability coverage, revisit unreachable pressure middle bands from measured evidence, and validate seed-varied runs.
+- **P7 — ending/history polish + room/audio atmosphere**: finish run presentation, causal history readability and restrained physical/UI atmosphere.
+- **P8 — browser performance + web release hardening**: profile/stress the finished web UI and close release-only browser gaps before Phase 10.
+
+Cross-cutting rules:
+- the game must not collapse into terminal-styled menus and text,
+- prefer recognition before reading without hiding precise values,
+- visualizations never reveal hidden authoritative truth,
+- distros/themes never affect gameplay power,
+- apps retain individual identity while sharing semantic/accessibility contracts,
+- terminal/GUI parity remains mandatory,
+- animation never owns simulation time.
 
 Exit criteria:
-- the web game is feature-complete and stable enough that remaining work is host/distribution integration rather than gameplay architecture.
+- the web game is feature-complete and stable,
+- core systems can be understood through a coherent visual language rather than text alone,
+- multiple distro identities work without forking gameplay/UI architecture,
+- browser persistence/migrations/recovery are robust,
+- performance/accessibility meet release expectations,
+- remaining planned work is Phase 10 host/distribution integration rather than gameplay or UI architecture.
 
 ## Phase 10 — Desktop Host / Packaging
 

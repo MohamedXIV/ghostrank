@@ -28,8 +28,12 @@ Runtime gameplay must not depend on Next.js server actions, server-only cookies,
 ### UI libraries
 - Tailwind CSS
 - shadcn/ui
+- Motion for React state/layout animation
+- native CSS/Tailwind transitions for simple micro-interactions
 - Zod
 - Zustand
+
+GSAP and React Spring are not baseline dependencies. Add one only for a demonstrated interaction Motion/CSS cannot express cleanly.
 
 ### Physical world
 **Phaser 4**
@@ -191,6 +195,34 @@ Use:
 - simulation commands for mutations.
 
 Never mirror the entire simulation into Zustand.
+
+
+## Presentation architecture
+
+Phase 9 separates presentation semantics from simulation authority.
+
+    player-safe projection
+            |
+            v
+    semantic UI view models
+            |
+            +-- app information design
+            |
+            +-- OS shell
+                    |
+                    +-- distro profile
+                    +-- theme variant
+                    +-- accessibility overrides
+
+Distro/theme selection changes CSS tokens, typography, density, chrome, motion character, icons and related presentation only. It never changes authoritative gameplay state or deterministic outcomes.
+
+Cross-app visual states such as hostile/rival, inferred, rumored, stale, running or urgent should be derived from player-safe projection facts. Do not add gameplay flags solely to style UI.
+
+Shadcn/ui supplies owned primitives rather than one mandatory aesthetic. Individual Ghostrank apps keep distinct information architecture while sharing accessibility and interaction contracts.
+
+Motion is presentation-only. Animation duration never consumes world time, schedules simulation work or changes command ordering.
+
+The canonical presentation contract is `docs/INTERFACE_AND_DISTROS.md`.
 
 ## Phaser bridge
 

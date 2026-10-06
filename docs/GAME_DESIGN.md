@@ -18,6 +18,26 @@ A typical operation is:
 
 The most important expert skill is often deciding not to continue.
 
+
+## Interface as part of the world
+
+The simulated computer is a place the player inhabits, not a neutral menu wrapper around the simulation.
+
+The player spends most of a run looking at applications, so the interface must be:
+- comfortable for long sessions,
+- visually informative,
+- expressive without becoming noisy,
+- understandable without professional technical knowledge,
+- consistent in semantics while allowing individual apps to retain identity.
+
+Prefer recognition before reading. Relationships, evidence confidence, operation state, deadlines, topology, value movement, and causal history should use meaningful visual language where it improves comprehension.
+
+The UI must not reveal hidden truth. A graph, icon, color, animation, or rival treatment may only express information that the player-facing projection already knows.
+
+Color is never the only carrier of important meaning.
+
+Canonical interface, visual-language, motion, and distro rules live in `docs/INTERFACE_AND_DISTROS.md`.
+
 ## No universal difficulty score
 
 Targets should not expose a five-star danger rating or recommended level.
