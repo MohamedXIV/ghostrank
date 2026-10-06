@@ -1763,7 +1763,6 @@ textarea:focus-visible,
   color: var(--foreground);
   padding: var(--space-4);
   text-align: left;
-  cursor: pointer;
   transition:
     border-color var(--motion-fast) ease,
     background-color var(--motion-fast) ease,
@@ -1772,7 +1771,6 @@ textarea:focus-visible,
 
 .distro-card:hover {
   border-color: var(--border-emphasis);
-  transform: translateY(-1px);
 }
 
 .distro-card[data-selected="true"] {
@@ -1822,6 +1820,123 @@ textarea:focus-visible,
   gap: var(--space-2);
 }
 
+.distro-actions {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.distro-current-note {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.appearance-sound {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+
+.appearance-sound > div {
+  display: grid;
+  gap: 3px;
+}
+
+.appearance-sound strong {
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+.distro-installer {
+  position: absolute;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--background) 74%, transparent),
+      color-mix(in srgb, var(--background) 88%, transparent)
+    );
+  backdrop-filter: blur(8px);
+}
+
+.distro-installer-panel {
+  width: min(520px, 100%);
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-panel);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-window-focused);
+  padding: clamp(20px, 4vw, 34px);
+}
+
+.distro-installer-brand {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--border-emphasis);
+  border-radius: calc(var(--radius-control) * 1.4);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+  font-size: 28px;
+}
+
+.distro-installer-panel h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 22px;
+}
+
+.distro-installer-stage {
+  min-height: 1.6em;
+  margin: 0;
+  color: var(--foreground-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+}
+
+.distro-progress {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.distro-progress > span {
+  display: block;
+  width: var(--distro-progress);
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent),
+      color-mix(in srgb, var(--accent) 72%, var(--truth-inferred))
+    );
+  transition: width 80ms linear;
+}
+
+.distro-installer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--foreground-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
 .appearance-accessibility-note {
   border-top: 1px solid var(--border);
   padding-top: var(--space-4);
@@ -1841,11 +1956,8 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .distro-card {
+  .distro-card,
+  .distro-progress > span {
     transition: none;
-  }
-
-  .distro-card:hover {
-    transform: none;
   }
 }
