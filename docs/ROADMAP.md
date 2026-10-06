@@ -380,7 +380,7 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: active — P0–P5 delivered; P6 social/event breadth + alpha calibration is next. Tracked by #26.**
+**Status: active — P0–P5 delivered; P6A/P6B are implemented on draft #54, while P6C alpha calibration + exact-head gates remain pending. Tracked by #26.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
 
@@ -391,7 +391,7 @@ Grounded slice order:
 - **P3 — contract breadth** *(delivered; D047 / #51)*: expand from two to four objective predicates — service report, infrastructure map, quiet recon, intrusion — all verified from existing evidence/traces and resolved through the same contract/value/relationship path.
 - **P4 — location + physical-life breadth** *(delivered; D048)*: expand housing from 4 to 8 authored lease trade-offs through the existing capability/anonymity/travel/upkeep/presence rules only.
 - **P5 — market breadth** *(delivered; D049)*: broaden hardware, machines, models, authored tools, software and Forge specs through the existing capability/economy/contention/value-provenance rules only.
-- **P6 — social/event breadth + alpha calibration**: broaden authored situations, then tune with telemetry.
+- **P6 — social/event breadth + alpha calibration** *(in progress; draft #54)*: deterministic authored social presentation and social-density telemetry are implemented; measured calibration remains gated on a valid full report and exact-head web checks.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-world-content-roster.md`, D044): the live five-peer / one-target world is now authored in `src/content/world-content.ts`, not inside the runtime fixture. Actor/target archetype tags are editorial metadata only and are stripped before `WorldState`. The content boundary validates duplicate ids, actor ranges/ranks, assistant model references, empty infrastructure, dangling ownership and owner/target identity drift, then deep-clones definitions before simulation authority can mutate them. `slice-world.ts` now owns scenario facts only: player, seed, starting network/economy. P0 intentionally adds no breadth, so the full Phase 2–7 deterministic suite remains the compatibility proof; P2 can later add entries without teaching runtime code individual handles.
 
