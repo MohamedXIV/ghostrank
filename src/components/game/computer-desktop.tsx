@@ -49,6 +49,8 @@ import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { Button } from "@/components/ui/button";
+import { TruthMark } from "@/components/ui/truth-mark";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -110,9 +112,9 @@ export function ComputerDesktop({
           <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
-        <button className="os-room-button" type="button" onClick={onReturnToRoom}>
+        <Button className="os-room-button" onClick={onReturnToRoom}>
           ROOM
-        </button>
+        </Button>
       </header>
 
       <div className="desktop-workspace">
@@ -236,9 +238,14 @@ function WindowFrame({
         <span>{title}</span>
         <div className="window-controls">
           <span>{focused ? "ACTIVE" : "IDLE"}</span>
-          <button type="button" onClick={onClose} aria-label={`Close ${title}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label={`Close ${title}`}
+          >
             ×
-          </button>
+          </Button>
         </div>
       </header>
       <div className="window-content">{children}</div>
@@ -627,7 +634,11 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           <span className="panel-label">UNRESOLVED LEAD</span>
           <strong>nightshade</strong>
         </div>
-        <span className="uncertain-badge">UNVERIFIED</span>
+        <TruthMark
+          level="unknown"
+          label="UNVERIFIED"
+          className="uncertain-badge"
+        />
       </div>
 
       <div className="recon-command">
@@ -636,9 +647,9 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           value={targetId}
           onChange={(event) => setTargetId(event.target.value)}
         />
-        <button type="button" onClick={observe}>
+        <Button size="sm" onClick={observe}>
           OBSERVE
-        </button>
+        </Button>
       </div>
 
       <div className="operation-panel">
@@ -786,8 +797,11 @@ function AnalysisClaimRow({
           : "host likely"}{" "}
         <strong>{String(claim.assertion ?? "")}</strong>
       </span>
-      <span className={`confidence-${String(claim.confidence ?? "low")}`}>
-        {String(claim.confidence ?? "low").toUpperCase()}
+      <span className="analysis-truth">
+        <TruthMark level="inferred" />
+        <span className={`confidence-${String(claim.confidence ?? "low")}`}>
+          {String(claim.confidence ?? "low").toUpperCase()}
+        </span>
       </span>
       <span className="analysis-meta">
         {String(claim.modelLabel ?? "")} @ {formatWorldTime(minute)}
