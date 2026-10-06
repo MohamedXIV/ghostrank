@@ -60,6 +60,7 @@ Requirements:
 - aliases,
 - saved workflows,
 - clear error output,
+- structured rich output where it improves comprehension (tables, hierarchy, glyphs, compact bars or sparklines),
 - no access to the host OS,
 - no real network operations.
 
@@ -80,6 +81,8 @@ GUI applications can expose:
 - AI analysis.
 
 A GUI is a view/controller over the same domain capabilities.
+
+GUI tools should visualize the structure they actually operate on instead of flattening everything into text and buttons. Topology, relationship, value, workflow, and causal views are encouraged when the underlying simulation provides those relationships. AI inference and rumor must remain visually distinct from confirmed/observed evidence.
 
 GUIs can be:
 - bundled,
