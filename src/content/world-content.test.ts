@@ -11,7 +11,10 @@ import {
   SLICE_WORLD_SEED,
 } from "@/game/runtime/slice-world";
 import { STARTER_RIG_ID } from "@/content/hardware-catalog";
-import { createInitialWorldState } from "@/game/simulation/state/world-state";
+import {
+  PLAYER_ACTOR_ID,
+  createInitialWorldState,
+} from "@/game/simulation/state/world-state";
 
 function legacyPreP0SliceWorld() {
   return createInitialWorldState({
@@ -267,6 +270,12 @@ describe("Phase 8 P0 — world content roster", () => {
       "Duplicate world actor id: nightshade",
     );
 
+    const reservedPlayer = structuredClone(CORE_WORLD_CONTENT);
+    reservedPlayer.actors[0].actor.id = PLAYER_ACTOR_ID;
+    expect(() => validateWorldContentRoster(reservedPlayer)).toThrow(
+      "World actor id player is reserved for the player",
+    );
+
     const duplicatedMachine = structuredClone(CORE_WORLD_CONTENT.targets[0]);
     duplicatedMachine.target.id = "second-target";
     duplicatedMachine.target.handle = "SECOND";
@@ -308,6 +317,13 @@ describe("Phase 8 P0 — world content roster", () => {
           roster.actors[0].actor.handle = "   ";
         },
         error: "World actor nightshade handle must not be empty",
+      },
+      {
+        label: "actor model id",
+        mutate: (roster) => {
+          roster.actors[2].actor.modelId = "";
+        },
+        error: "World actor lattice modelId must not be empty",
       },
       {
         label: "target id",
