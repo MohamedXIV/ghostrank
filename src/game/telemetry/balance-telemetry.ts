@@ -160,7 +160,7 @@ export interface BalanceTelemetryScenarioSummary {
 }
 
 export interface BalanceTelemetryReport {
-  version: 1;
+  version: 2;
   seedCount: number;
   horizonDays: number;
   authoredContent: AuthoredContentCounts;
@@ -928,7 +928,7 @@ export function runBalanceTelemetry(
   }
 
   return {
-    version: 1,
+    version: 2,
     seedCount: seeds.length,
     horizonDays,
     authoredContent: authoredContentCounts(),

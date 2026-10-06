@@ -76,7 +76,7 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
 
     console.info("PHASE8_P1_TELEMETRY", JSON.stringify(report));
 
-    expect(report.version).toBe(1);
+    expect(report.version).toBe(2);
     expect(report.seedCount).toBe(BALANCE_TELEMETRY_SEEDS);
     expect(report.horizonDays).toBe(BALANCE_TELEMETRY_HORIZON_DAYS);
 

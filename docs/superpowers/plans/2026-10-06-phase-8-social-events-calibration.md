@@ -53,7 +53,7 @@ that assumption and uses generic causal copy instead.
 
 ## P6B — social telemetry
 
-Balance telemetry now records four additional sample/summary counters:
+Balance telemetry report schema advances from **v1 to v2** because P6 adds a new top-level scenario-summary dimension. It now records four additional sample/summary counters:
 
 - public incidents;
 - forum posts;
