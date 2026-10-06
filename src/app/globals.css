@@ -1444,7 +1444,7 @@ textarea:focus-visible,
 /* Phase 9 P1 — distro/theme presentation profiles.
    These selectors sit entirely on the OS presentation surface. */
 
-.desktop-surface {
+:where(.desktop-surface, .boot-screen) {
   --bg: var(--background);
   --panel: var(--surface);
   --panel-2: var(--surface-raised);
