@@ -634,11 +634,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           <span className="panel-label">UNRESOLVED LEAD</span>
           <strong>nightshade</strong>
         </div>
-        <TruthMark
-          level="unknown"
-          label="UNVERIFIED"
-          className="uncertain-badge"
-        />
+        <TruthMark level="unknown" label="UNVERIFIED" />
       </div>
 
       <div className="recon-command">
