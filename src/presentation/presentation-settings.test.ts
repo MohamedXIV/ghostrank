@@ -43,4 +43,17 @@ describe("presentation settings persistence", () => {
       themeId: "ash",
     });
   });
+
+  it("never lets unavailable cosmetic storage interrupt play", () => {
+    expect(() =>
+      savePresentationSelection(
+        {
+          setItem: () => {
+            throw new Error("quota");
+          },
+        },
+        { distroId: "daybreak", themeId: "warm" },
+      ),
+    ).not.toThrow();
+  });
 });
