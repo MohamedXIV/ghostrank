@@ -630,3 +630,22 @@ Distros may change palette, typography, density, radii, elevation, chrome, launc
 Distro/theme/accessibility selection is presentation settings outside authoritative `WorldState`, even when exposed through an in-fiction install/setup flow.
 
 Accepted 2026-10-06. Canonical detail: `docs/INTERFACE_AND_DISTROS.md`. Phase 9 execution: #27.
+
+
+## D052 — Phase 9 UI semantics are tokens + owned primitives; Motion is presentation-only
+
+P0 implements D051 without redesigning every app at once.
+
+The existing hard-coded palette is now routed through semantic presentation tokens with compatibility aliases, so later distro profiles can override the shell without forcing a simultaneous rewrite of every legacy selector. Normal OS/application typography uses a readable system sans stack; Terminal and boot identity explicitly retain monospace.
+
+The first owned shared primitives are a CVA-backed `Button` and `TruthMark`. The truth vocabulary is closed to `confirmed | observed | inferred | rumored | stale | unknown`; every level has text plus a glyph and may add shape/border treatment, so color is never its only carrier. These are presentation labels over player-safe projection facts, not new authoritative gameplay flags.
+
+Recon is the proof surface: its unresolved lead is UNKNOWN/UNVERIFIED, while assistant analysis is INFERRED and still shows its separate confidence. This changes no evidence truth and exposes no hidden actor/probe state.
+
+Window enter/exit uses `motion@14.0.0` through `motion/react` with an 180 ms opacity/vertical transition. `useReducedMotion()` selects a zero-duration stationary path; an unavailable/unknown preference fails conservatively toward reduced motion. CSS micro-interactions also honor `prefers-reduced-motion`.
+
+No animation duration owns world time, and no P0 code changes simulation commands, saves, projections, RNG, rank, economy, or target access.
+
+Local verification at code head `f16dd17fecb42d1bfb832431ea4021264a2cc762`: 752 tests across 73 files, typecheck clean, lint clean except the pre-existing `postcss.config.mjs` warning, and production build clean. Hosted GitHub Actions were intentionally not used.
+
+Accepted 2026-10-06 as Phase 9 P0 / #57. P1 / #58 owns distro/theme architecture.
