@@ -1,7 +1,8 @@
 import { findModelItem } from "@/content/model-catalog";
-import type {
-  TargetState,
-  UndergroundActor,
+import {
+  PLAYER_ACTOR_ID,
+  type TargetState,
+  type UndergroundActor,
 } from "@/game/simulation/state/world-state";
 
 /**
@@ -508,6 +509,10 @@ export function validateWorldContentRoster(
       );
     }
 
+    if (actor.id === PLAYER_ACTOR_ID) {
+      throw new Error(`World actor id ${PLAYER_ACTOR_ID} is reserved for the player`);
+    }
+
     if (actorIds.has(actor.id)) {
       throw new Error(`Duplicate world actor id: ${actor.id}`);
     }
@@ -530,10 +535,17 @@ export function validateWorldContentRoster(
       throw new Error(`World actor ${actor.id} has invalid rank`);
     }
 
-    if (actor.modelId && !findModelItem(actor.modelId)) {
-      throw new Error(
-        `World actor ${actor.id} references unknown model ${actor.modelId}`,
+    if (actor.modelId !== undefined) {
+      requireContentString(
+        actor.modelId,
+        `World actor ${actor.id} modelId`,
       );
+
+      if (!findModelItem(actor.modelId)) {
+        throw new Error(
+          `World actor ${actor.id} references unknown model ${actor.modelId}`,
+        );
+      }
     }
   }
 
