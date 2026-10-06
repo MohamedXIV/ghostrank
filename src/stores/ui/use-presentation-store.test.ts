@@ -8,19 +8,46 @@ describe("usePresentationStore", () => {
     usePresentationStore.setState({
       distroId: "ghost-os",
       themeId: "ash",
+      installedDistroIds: ["ghost-os"],
+      soundEnabled: true,
       hydrated: false,
     });
   });
 
-  it("switches distro by resetting to that profile's default theme", () => {
-    usePresentationStore.getState().setDistro("petal");
+  it("refuses to activate a distro before its installer completes", () => {
+    usePresentationStore.getState().activateInstalledDistro("petal");
+
+    expect(usePresentationStore.getState().distroId).toBe("ghost-os");
+    expect(usePresentationStore.getState().installedDistroIds).toEqual([
+      "ghost-os",
+    ]);
+  });
+
+  it("installer completion persists ownership and activates the distro", () => {
+    usePresentationStore.getState().completeDistroInstall("petal");
 
     expect(usePresentationStore.getState().distroId).toBe("petal");
     expect(usePresentationStore.getState().themeId).toBe("light");
+    expect(usePresentationStore.getState().installedDistroIds).toContain(
+      "petal",
+    );
+  });
+
+  it("boots an already installed distro without reinstalling it", () => {
+    usePresentationStore.getState().completeDistroInstall("velvet");
+    usePresentationStore.getState().completeDistroInstall("petal");
+    usePresentationStore.getState().activateInstalledDistro("velvet");
+
+    expect(usePresentationStore.getState().distroId).toBe("velvet");
+    expect(usePresentationStore.getState().installedDistroIds).toEqual([
+      "ghost-os",
+      "velvet",
+      "petal",
+    ]);
   });
 
   it("accepts only themes belonging to the active distro", () => {
-    usePresentationStore.getState().setDistro("petal");
+    usePresentationStore.getState().completeDistroInstall("petal");
     usePresentationStore.getState().setTheme("night");
     expect(usePresentationStore.getState().themeId).toBe("night");
 
@@ -37,13 +64,14 @@ describe("usePresentationStore", () => {
     expect(state).not.toHaveProperty("targets");
   });
 
-  it("cannot mutate an authoritative run when presentation changes", () => {
+  it("cannot mutate an authoritative run during install, boot or theme changes", () => {
     const world = createSliceWorldState();
     const before = JSON.stringify(world);
 
-    usePresentationStore.getState().setDistro("velvet");
-    usePresentationStore.getState().setDistro("petal");
-    usePresentationStore.getState().setTheme("night");
+    usePresentationStore.getState().completeDistroInstall("velvet");
+    usePresentationStore.getState().completeDistroInstall("petal");
+    usePresentationStore.getState().activateInstalledDistro("velvet");
+    usePresentationStore.getState().setSoundEnabled(false);
 
     expect(JSON.stringify(world)).toBe(before);
   });
