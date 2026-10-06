@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
@@ -49,6 +50,9 @@ import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { Button } from "@/components/ui/button";
+import { TruthMark } from "@/components/ui/truth-mark";
+import { getWindowMotionProps } from "@/components/game/window-motion";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -110,9 +114,9 @@ export function ComputerDesktop({
           <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
-        <button className="os-room-button" type="button" onClick={onReturnToRoom}>
+        <Button className="os-room-button" onClick={onReturnToRoom}>
           ROOM
-        </button>
+        </Button>
       </header>
 
       <div className="desktop-workspace">
@@ -141,64 +145,71 @@ export function ComputerDesktop({
 
         <div className="desktop-grid" aria-hidden="true" />
 
-        {openWindows.includes("terminal") && (
-          <WindowFrame
-            id="terminal"
-            title={WINDOW_LABELS.terminal}
-            focused={focusedWindow === "terminal"}
-            onFocus={() => focusWindow("terminal")}
-            onClose={() => closeWindow("terminal")}
-          >
-            <TerminalApp runtime={runtime} />
-          </WindowFrame>
-        )}
+        <AnimatePresence initial={false}>
+          {openWindows.includes("terminal") && (
+            <WindowFrame
+              key="terminal"
+              id="terminal"
+              title={WINDOW_LABELS.terminal}
+              focused={focusedWindow === "terminal"}
+              onFocus={() => focusWindow("terminal")}
+              onClose={() => closeWindow("terminal")}
+            >
+              <TerminalApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("recon") && (
-          <WindowFrame
-            id="recon"
-            title={WINDOW_LABELS.recon}
-            focused={focusedWindow === "recon"}
-            onFocus={() => focusWindow("recon")}
-            onClose={() => closeWindow("recon")}
-          >
-            <ReconApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("recon") && (
+            <WindowFrame
+              key="recon"
+              id="recon"
+              title={WINDOW_LABELS.recon}
+              focused={focusedWindow === "recon"}
+              onFocus={() => focusWindow("recon")}
+              onClose={() => closeWindow("recon")}
+            >
+              <ReconApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("underground") && (
-          <WindowFrame
-            id="underground"
-            title={WINDOW_LABELS.underground}
-            focused={focusedWindow === "underground"}
-            onFocus={() => focusWindow("underground")}
-            onClose={() => closeWindow("underground")}
-          >
-            <UndergroundApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("underground") && (
+            <WindowFrame
+              key="underground"
+              id="underground"
+              title={WINDOW_LABELS.underground}
+              focused={focusedWindow === "underground"}
+              onFocus={() => focusWindow("underground")}
+              onClose={() => closeWindow("underground")}
+            >
+              <UndergroundApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("market") && (
-          <WindowFrame
-            id="market"
-            title={WINDOW_LABELS.market}
-            focused={focusedWindow === "market"}
-            onFocus={() => focusWindow("market")}
-            onClose={() => closeWindow("market")}
-          >
-            <MarketApp runtime={runtime} />
-          </WindowFrame>
-        )}
-        {openWindows.includes("history") && (
-          <WindowFrame
-            id="history"
-            title={WINDOW_LABELS.history}
-            focused={focusedWindow === "history"}
-            onFocus={() => focusWindow("history")}
-            onClose={() => closeWindow("history")}
-          >
-            <HistoryApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("market") && (
+            <WindowFrame
+              key="market"
+              id="market"
+              title={WINDOW_LABELS.market}
+              focused={focusedWindow === "market"}
+              onFocus={() => focusWindow("market")}
+              onClose={() => closeWindow("market")}
+            >
+              <MarketApp runtime={runtime} />
+            </WindowFrame>
+          )}
+          {openWindows.includes("history") && (
+            <WindowFrame
+              key="history"
+              id="history"
+              title={WINDOW_LABELS.history}
+              focused={focusedWindow === "history"}
+              onFocus={() => focusWindow("history")}
+              onClose={() => closeWindow("history")}
+            >
+              <HistoryApp runtime={runtime} />
+            </WindowFrame>
+          )}
+        </AnimatePresence>
       </div>
 
       <footer className="os-footer">
@@ -226,8 +237,11 @@ function WindowFrame({
   onClose,
   children,
 }: WindowFrameProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <section
+    <motion.section
+      {...getWindowMotionProps(prefersReducedMotion !== false)}
       className={`os-window os-window-${id} ${focused ? "is-focused" : ""}`}
       onMouseDown={onFocus}
       aria-label={title}
@@ -236,13 +250,18 @@ function WindowFrame({
         <span>{title}</span>
         <div className="window-controls">
           <span>{focused ? "ACTIVE" : "IDLE"}</span>
-          <button type="button" onClick={onClose} aria-label={`Close ${title}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label={`Close ${title}`}
+          >
             ×
-          </button>
+          </Button>
         </div>
       </header>
       <div className="window-content">{children}</div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -627,7 +646,7 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           <span className="panel-label">UNRESOLVED LEAD</span>
           <strong>nightshade</strong>
         </div>
-        <span className="uncertain-badge">UNVERIFIED</span>
+        <TruthMark level="unknown" label="UNVERIFIED" />
       </div>
 
       <div className="recon-command">
@@ -636,9 +655,9 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
           value={targetId}
           onChange={(event) => setTargetId(event.target.value)}
         />
-        <button type="button" onClick={observe}>
+        <Button size="sm" onClick={observe}>
           OBSERVE
-        </button>
+        </Button>
       </div>
 
       <div className="operation-panel">
@@ -786,8 +805,11 @@ function AnalysisClaimRow({
           : "host likely"}{" "}
         <strong>{String(claim.assertion ?? "")}</strong>
       </span>
-      <span className={`confidence-${String(claim.confidence ?? "low")}`}>
-        {String(claim.confidence ?? "low").toUpperCase()}
+      <span className="analysis-truth">
+        <TruthMark level="inferred" />
+        <span className={`confidence-${String(claim.confidence ?? "low")}`}>
+          {String(claim.confidence ?? "low").toUpperCase()}
+        </span>
       </span>
       <span className="analysis-meta">
         {String(claim.modelLabel ?? "")} @ {formatWorldTime(minute)}

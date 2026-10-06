@@ -2,16 +2,66 @@
 
 :root {
   color-scheme: dark;
-  --bg: #05080b;
-  --panel: #0c1115;
-  --panel-2: #10171c;
-  --line: #25333b;
-  --line-hot: #5f8f7a;
-  --text: #dce7e3;
-  --muted: #7f9097;
+
+  /* Phase 9 P0 semantic presentation tokens. Distro profiles may override
+     these in P1 without changing app markup or simulation state. */
+  --background: #05080b;
+  --surface: #0c1115;
+  --surface-raised: #10171c;
+  --surface-overlay: #121b20;
+  --border: #25333b;
+  --border-emphasis: #5f8f7a;
+  --foreground: #dce7e3;
+  --foreground-muted: #7f9097;
   --accent: #94d1b6;
+  --accent-foreground: #07110d;
+  --success: #8fc7ad;
   --warning: #d4a86c;
   --danger: #c76873;
+  --focus: #b7ead4;
+
+  --truth-confirmed: #8fc7ad;
+  --truth-observed: #8fb9ca;
+  --truth-inferred: #b9a5d8;
+  --truth-rumored: #d0a678;
+  --truth-stale: #8a969b;
+  --truth-unknown: #a5adb0;
+
+  --font-ui:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --leading-tight: 1.3;
+  --leading-body: 1.55;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --shadow-window: 0 28px 80px rgb(0 0 0 / 52%);
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+
+  /* Compatibility aliases while existing app CSS migrates toward semantic
+     names. They intentionally resolve through the tokens above. */
+  --bg: var(--background);
+  --panel: var(--surface);
+  --panel-2: var(--surface-raised);
+  --line: var(--border);
+  --line-hot: var(--border-emphasis);
+  --text: var(--foreground);
+  --muted: var(--foreground-muted);
 }
 
 * {
@@ -28,9 +78,9 @@ body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    monospace;
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
 }
 
 button,
@@ -40,6 +90,173 @@ input {
 
 button {
   color: inherit;
+}
+
+/* Phase 9 P0 — shared interaction and epistemic primitives. */
+
+button,
+input,
+select,
+textarea,
+[tabindex]:not([tabindex="-1"]) {
+  outline-offset: 3px;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.ui-button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.ui-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-button-default {
+  border-color: var(--border-emphasis);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--foreground);
+}
+
+.ui-button-default:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.ui-button-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--foreground-muted);
+}
+
+.ui-button-ghost:hover:not(:disabled) {
+  border-color: var(--border);
+  background: rgb(255 255 255 / 4%);
+  color: var(--foreground);
+}
+
+.ui-button-danger {
+  border-color: color-mix(in srgb, var(--danger) 60%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--foreground);
+}
+
+.ui-button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.ui-button-md {
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
+.ui-button-sm {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.ui-button-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.truth-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-control);
+  padding: 3px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.truth-mark-glyph {
+  display: inline-grid;
+  min-width: 1em;
+  place-items: center;
+  font-weight: 800;
+}
+
+.truth-mark[data-truth-level="confirmed"] {
+  color: var(--truth-confirmed);
+}
+
+.truth-mark[data-truth-level="observed"] {
+  color: var(--truth-observed);
+}
+
+.truth-mark[data-truth-level="inferred"] {
+  border-style: dotted;
+  color: var(--truth-inferred);
+}
+
+.truth-mark[data-truth-level="rumored"] {
+  border-style: dashed;
+  color: var(--truth-rumored);
+}
+
+.truth-mark[data-truth-level="stale"] {
+  color: var(--truth-stale);
+  opacity: 0.78;
+}
+
+.truth-mark[data-truth-level="unknown"] {
+  border-style: dashed;
+  color: var(--truth-unknown);
+}
+
+.analysis-truth {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ui-button:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .game-shell,
@@ -66,6 +283,7 @@ button {
 
 .boot-mark {
   color: var(--accent);
+  font-family: var(--font-mono);
   font-size: clamp(26px, 6vw, 58px);
   letter-spacing: 0.18em;
 }
@@ -309,6 +527,7 @@ button {
   display: grid;
   grid-template-rows: 1fr 38px;
   background: #070b0d;
+  font-family: var(--font-mono);
 }
 
 .terminal-output {
