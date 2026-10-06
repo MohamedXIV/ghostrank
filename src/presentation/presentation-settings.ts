@@ -1,39 +1,47 @@
 import {
-  normalizePresentationSelection,
-  type PresentationSelection,
+  DEFAULT_PRESENTATION_SETTINGS,
+  normalizePresentationSettings,
+  type PresentationSettings,
 } from "@/presentation/distros";
 
-export const PRESENTATION_STORAGE_KEY = "ghostrank:presentation:v1";
+export const PRESENTATION_STORAGE_KEY = "ghostrank:presentation:v2";
+export const LEGACY_PRESENTATION_STORAGE_KEY = "ghostrank:presentation:v1";
 
 export interface PresentationStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-export function loadPresentationSelection(
+export function loadPresentationSettings(
   storage: Pick<PresentationStorage, "getItem">,
-): PresentationSelection {
+): PresentationSettings {
   try {
-    const raw = storage.getItem(PRESENTATION_STORAGE_KEY);
+    const current = storage.getItem(PRESENTATION_STORAGE_KEY);
 
-    if (!raw) {
-      return normalizePresentationSelection(null);
+    if (current) {
+      return normalizePresentationSettings(JSON.parse(current));
     }
 
-    return normalizePresentationSelection(JSON.parse(raw));
+    const legacy = storage.getItem(LEGACY_PRESENTATION_STORAGE_KEY);
+
+    if (legacy) {
+      return normalizePresentationSettings(JSON.parse(legacy));
+    }
+
+    return { ...DEFAULT_PRESENTATION_SETTINGS };
   } catch {
-    return normalizePresentationSelection(null);
+    return { ...DEFAULT_PRESENTATION_SETTINGS };
   }
 }
 
-export function savePresentationSelection(
+export function savePresentationSettings(
   storage: Pick<PresentationStorage, "setItem">,
-  selection: PresentationSelection,
+  settings: PresentationSettings,
 ): void {
   try {
     storage.setItem(
       PRESENTATION_STORAGE_KEY,
-      JSON.stringify(normalizePresentationSelection(selection)),
+      JSON.stringify(normalizePresentationSettings(settings)),
     );
   } catch {
     // Presentation persistence is optional. A blocked/full storage backend must
