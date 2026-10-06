@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 
 describe("usePresentationStore", () => {
@@ -34,5 +35,16 @@ describe("usePresentationStore", () => {
     expect(state).not.toHaveProperty("rank");
     expect(state).not.toHaveProperty("credits");
     expect(state).not.toHaveProperty("targets");
+  });
+
+  it("cannot mutate an authoritative run when presentation changes", () => {
+    const world = createSliceWorldState();
+    const before = JSON.stringify(world);
+
+    usePresentationStore.getState().setDistro("velvet");
+    usePresentationStore.getState().setDistro("petal");
+    usePresentationStore.getState().setTheme("night");
+
+    expect(JSON.stringify(world)).toBe(before);
   });
 });
