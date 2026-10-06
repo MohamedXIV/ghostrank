@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
@@ -51,6 +52,7 @@ import type { CompletedRunSummary } from "@/game/simulation/systems/run-history"
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
+import { getWindowMotionProps } from "@/components/game/window-motion";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -143,64 +145,71 @@ export function ComputerDesktop({
 
         <div className="desktop-grid" aria-hidden="true" />
 
-        {openWindows.includes("terminal") && (
-          <WindowFrame
-            id="terminal"
-            title={WINDOW_LABELS.terminal}
-            focused={focusedWindow === "terminal"}
-            onFocus={() => focusWindow("terminal")}
-            onClose={() => closeWindow("terminal")}
-          >
-            <TerminalApp runtime={runtime} />
-          </WindowFrame>
-        )}
+        <AnimatePresence initial={false}>
+          {openWindows.includes("terminal") && (
+            <WindowFrame
+              key="terminal"
+              id="terminal"
+              title={WINDOW_LABELS.terminal}
+              focused={focusedWindow === "terminal"}
+              onFocus={() => focusWindow("terminal")}
+              onClose={() => closeWindow("terminal")}
+            >
+              <TerminalApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("recon") && (
-          <WindowFrame
-            id="recon"
-            title={WINDOW_LABELS.recon}
-            focused={focusedWindow === "recon"}
-            onFocus={() => focusWindow("recon")}
-            onClose={() => closeWindow("recon")}
-          >
-            <ReconApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("recon") && (
+            <WindowFrame
+              key="recon"
+              id="recon"
+              title={WINDOW_LABELS.recon}
+              focused={focusedWindow === "recon"}
+              onFocus={() => focusWindow("recon")}
+              onClose={() => closeWindow("recon")}
+            >
+              <ReconApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("underground") && (
-          <WindowFrame
-            id="underground"
-            title={WINDOW_LABELS.underground}
-            focused={focusedWindow === "underground"}
-            onFocus={() => focusWindow("underground")}
-            onClose={() => closeWindow("underground")}
-          >
-            <UndergroundApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("underground") && (
+            <WindowFrame
+              key="underground"
+              id="underground"
+              title={WINDOW_LABELS.underground}
+              focused={focusedWindow === "underground"}
+              onFocus={() => focusWindow("underground")}
+              onClose={() => closeWindow("underground")}
+            >
+              <UndergroundApp runtime={runtime} />
+            </WindowFrame>
+          )}
 
-        {openWindows.includes("market") && (
-          <WindowFrame
-            id="market"
-            title={WINDOW_LABELS.market}
-            focused={focusedWindow === "market"}
-            onFocus={() => focusWindow("market")}
-            onClose={() => closeWindow("market")}
-          >
-            <MarketApp runtime={runtime} />
-          </WindowFrame>
-        )}
-        {openWindows.includes("history") && (
-          <WindowFrame
-            id="history"
-            title={WINDOW_LABELS.history}
-            focused={focusedWindow === "history"}
-            onFocus={() => focusWindow("history")}
-            onClose={() => closeWindow("history")}
-          >
-            <HistoryApp runtime={runtime} />
-          </WindowFrame>
-        )}
+          {openWindows.includes("market") && (
+            <WindowFrame
+              key="market"
+              id="market"
+              title={WINDOW_LABELS.market}
+              focused={focusedWindow === "market"}
+              onFocus={() => focusWindow("market")}
+              onClose={() => closeWindow("market")}
+            >
+              <MarketApp runtime={runtime} />
+            </WindowFrame>
+          )}
+          {openWindows.includes("history") && (
+            <WindowFrame
+              key="history"
+              id="history"
+              title={WINDOW_LABELS.history}
+              focused={focusedWindow === "history"}
+              onFocus={() => focusWindow("history")}
+              onClose={() => closeWindow("history")}
+            >
+              <HistoryApp runtime={runtime} />
+            </WindowFrame>
+          )}
+        </AnimatePresence>
       </div>
 
       <footer className="os-footer">
@@ -228,8 +237,11 @@ function WindowFrame({
   onClose,
   children,
 }: WindowFrameProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <section
+    <motion.section
+      {...getWindowMotionProps(prefersReducedMotion !== false)}
       className={`os-window os-window-${id} ${focused ? "is-focused" : ""}`}
       onMouseDown={onFocus}
       aria-label={title}
@@ -249,7 +261,7 @@ function WindowFrame({
         </div>
       </header>
       <div className="window-content">{children}</div>
-    </section>
+    </motion.section>
   );
 }
 
