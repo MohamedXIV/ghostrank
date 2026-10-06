@@ -168,9 +168,20 @@ export interface PresentationSelection {
   themeId: string;
 }
 
+export interface PresentationSettings extends PresentationSelection {
+  installedDistroIds: DistroId[];
+  soundEnabled: boolean;
+}
+
 export const DEFAULT_PRESENTATION: PresentationSelection = {
   distroId: "ghost-os",
   themeId: DISTRO_PROFILES["ghost-os"].defaultTheme,
+};
+
+export const DEFAULT_PRESENTATION_SETTINGS: PresentationSettings = {
+  ...DEFAULT_PRESENTATION,
+  installedDistroIds: ["ghost-os"],
+  soundEnabled: true,
 };
 
 export function isDistroId(value: unknown): value is DistroId {
@@ -220,5 +231,45 @@ export function normalizePresentationSelection(
   return {
     distroId: candidate.distroId,
     themeId: candidate.themeId,
+  };
+}
+
+
+export function normalizeInstalledDistroIds(value: unknown): DistroId[] {
+  const installed = Array.isArray(value)
+    ? value.filter(isDistroId)
+    : [];
+
+  const unique = [...new Set<DistroId>(["ghost-os", ...installed])];
+  return DISTRO_IDS.filter((id) => unique.includes(id));
+}
+
+export function normalizePresentationSettings(
+  value: unknown,
+): PresentationSettings {
+  const selection = normalizePresentationSelection(value);
+  const candidate =
+    value && typeof value === "object"
+      ? (value as {
+          installedDistroIds?: unknown;
+          soundEnabled?: unknown;
+        })
+      : {};
+
+  const installedDistroIds = normalizeInstalledDistroIds(
+    candidate.installedDistroIds,
+  );
+
+  if (!installedDistroIds.includes(selection.distroId)) {
+    installedDistroIds.push(selection.distroId);
+  }
+
+  return {
+    ...selection,
+    installedDistroIds,
+    soundEnabled:
+      typeof candidate.soundEnabled === "boolean"
+        ? candidate.soundEnabled
+        : DEFAULT_PRESENTATION_SETTINGS.soundEnabled,
   };
 }
