@@ -1456,6 +1456,7 @@ textarea:focus-visible,
   --line-hot: var(--border-emphasis);
   --text: var(--foreground);
   --muted: var(--foreground-muted);
+  color: var(--text);
 }
 
 :where(.desktop-surface, .boot-screen)[data-distro="lattice"] {
