@@ -325,7 +325,7 @@ export function AppearanceApp() {
               <span>{Math.round(frame.progress).toString().padStart(3, "0")}%</span>
               <span>
                 {transition.kind === "install"
-                  ? "RUN CLOCK PAUSED // PRESENTATION ONLY"
+                  ? "RUN CLOCK UNCHANGED // PRESENTATION ONLY"
                   : "SESSION STATE PRESERVED"}
               </span>
             </div>
