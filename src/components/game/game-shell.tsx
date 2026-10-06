@@ -5,12 +5,14 @@ import { useCell } from "tinybase/ui-react";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
 import { formatWorldTime } from "@/game/computer/format-world-time";
+import { DISTRO_PROFILES } from "@/presentation/distros";
 import { RoomSurface } from "@/components/game/room-surface";
 import {
   createGameSession,
   type GameSession,
 } from "@/game/runtime/game-session";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
+import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 import { useUiStore } from "@/stores/ui/use-ui-store";
 
 export function GameShell() {
@@ -18,6 +20,14 @@ export function GameShell() {
   const [bootNote, setBootNote] = useState("mounting simulation");
   const activeSurface = useUiStore((state) => state.activeSurface);
   const setActiveSurface = useUiStore((state) => state.setActiveSurface);
+  const distroId = usePresentationStore((state) => state.distroId);
+  const themeId = usePresentationStore((state) => state.themeId);
+  const hydratePresentation = usePresentationStore((state) => state.hydrate);
+  const distro = DISTRO_PROFILES[distroId];
+
+  useEffect(() => {
+    hydratePresentation();
+  }, [hydratePresentation]);
 
   useEffect(() => {
     let disposed = false;
@@ -77,8 +87,13 @@ export function GameShell() {
 
   if (!session) {
     return (
-      <section className="boot-screen" aria-live="polite">
-        <div className="boot-mark">GHOST/OS</div>
+      <section
+        className="boot-screen"
+        data-distro={distroId}
+        data-theme={themeId}
+        aria-live="polite"
+      >
+        <div className="boot-mark">{distro.label}</div>
         <div className="boot-line">{bootNote}</div>
       </section>
     );
