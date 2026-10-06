@@ -30,8 +30,13 @@ export function savePresentationSelection(
   storage: Pick<PresentationStorage, "setItem">,
   selection: PresentationSelection,
 ): void {
-  storage.setItem(
-    PRESENTATION_STORAGE_KEY,
-    JSON.stringify(normalizePresentationSelection(selection)),
-  );
+  try {
+    storage.setItem(
+      PRESENTATION_STORAGE_KEY,
+      JSON.stringify(normalizePresentationSelection(selection)),
+    );
+  } catch {
+    // Presentation persistence is optional. A blocked/full storage backend must
+    // never stop the run or make a cosmetic choice authoritative.
+  }
 }
