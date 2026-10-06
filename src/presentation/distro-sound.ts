@@ -2,6 +2,8 @@ import type { DistroSoundIdentity } from "@/presentation/distros";
 
 export type DistroSoundCue = "install" | "stage" | "complete" | "boot";
 
+let sharedContext: AudioContext | null = null;
+
 export function cueNotes(
   identity: DistroSoundIdentity,
   cue: DistroSoundCue,
@@ -9,13 +11,13 @@ export function cueNotes(
   return identity[cue];
 }
 
-export function playDistroSound(
-  identity: DistroSoundIdentity,
-  cue: DistroSoundCue,
-  enabled: boolean,
-): void {
-  if (!enabled || typeof window === "undefined") {
-    return;
+function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (sharedContext && sharedContext.state !== "closed") {
+    return sharedContext;
   }
 
   const AudioContextCtor =
@@ -27,13 +29,39 @@ export function playDistroSound(
     ).webkitAudioContext;
 
   if (!AudioContextCtor) {
+    return null;
+  }
+
+  try {
+    sharedContext = new AudioContextCtor();
+    return sharedContext;
+  } catch {
+    return null;
+  }
+}
+
+export function playDistroSound(
+  identity: DistroSoundIdentity,
+  cue: DistroSoundCue,
+  enabled: boolean,
+): void {
+  if (!enabled) {
+    return;
+  }
+
+  const context = getAudioContext();
+
+  if (!context) {
     return;
   }
 
   try {
-    const context = new AudioContextCtor();
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
     const notes = cueNotes(identity, cue);
-    const now = context.currentTime;
+    const now = context.currentTime + 0.01;
 
     notes.forEach((frequency, index) => {
       const oscillator = context.createOscillator();
@@ -52,11 +80,6 @@ export function playDistroSound(
       oscillator.start(start);
       oscillator.stop(stop);
     });
-
-    const closeAfter = notes.length * 70 + 180;
-    window.setTimeout(() => {
-      void context.close();
-    }, closeAfter);
   } catch {
     // Audio is optional presentation. Browser policy/device failure is silent.
   }
