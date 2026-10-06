@@ -209,7 +209,19 @@ A distro must not change:
 
 Installing or switching a distro is player expression, not character power.
 
-The in-world UI may present distro installation/setup as an operating-system action, but presentation preferences live outside authoritative `WorldState`.
+A distro is **not** a one-click theme toggle. The in-world computer should treat distro changes as operating-system lifecycle events:
+
+- Ghost/OS is installed by default.
+- A distro not yet installed must go through an installer experience with package verification, unpack/configuration steps, visible progress, completion, and a reboot/handover moment.
+- Installed distros remain available in presentation settings and can be booted later without reinstalling them.
+- Booting/switching an installed distro still uses a short OS handover/reboot experience rather than instantly recoloring the current frame.
+- Installer/reboot time is UI presentation time only. It never advances world minutes, runs ecosystem ticks, changes deadlines, or alters deterministic outcomes.
+- Reduced-motion mode may shorten or remove decorative motion, but must preserve clear installation state/progress text.
+- The installation experience must remain cancel-safe before commit where practical and must never corrupt a run if presentation persistence is unavailable.
+
+Each distro may also define a **sound identity** for install, boot, completion, notifications, and other shell cues. P1 establishes the sound-profile contract and a restrained initial cue set; P7 may replace or enrich these with authored audio. Audio is never required information and must have a mute/disable path.
+
+Presentation preferences, installed-distro records, and sound preferences live outside authoritative `WorldState`.
 
 ## Initial distro family
 
