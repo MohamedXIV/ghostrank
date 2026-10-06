@@ -1,15 +1,151 @@
 "use client";
 
-import { DISTRO_IDS, DISTRO_PROFILES } from "@/presentation/distros";
-import { usePresentationStore } from "@/stores/ui/use-presentation-store";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useReducedMotion } from "motion/react";
+
 import { Button } from "@/components/ui/button";
+import {
+  transitionDurationMs,
+  transitionFrame,
+  type DistroTransitionKind,
+} from "@/presentation/distro-installation";
+import { playDistroSound } from "@/presentation/distro-sound";
+import {
+  DISTRO_IDS,
+  DISTRO_PROFILES,
+  type DistroId,
+} from "@/presentation/distros";
+import { usePresentationStore } from "@/stores/ui/use-presentation-store";
+
+interface ActiveTransition {
+  distroId: DistroId;
+  kind: DistroTransitionKind;
+  startedAt: number;
+  elapsedMs: number;
+}
 
 export function AppearanceApp() {
   const distroId = usePresentationStore((state) => state.distroId);
   const themeId = usePresentationStore((state) => state.themeId);
-  const setDistro = usePresentationStore((state) => state.setDistro);
+  const installedDistroIds = usePresentationStore(
+    (state) => state.installedDistroIds,
+  );
+  const soundEnabled = usePresentationStore((state) => state.soundEnabled);
+  const completeDistroInstall = usePresentationStore(
+    (state) => state.completeDistroInstall,
+  );
+  const activateInstalledDistro = usePresentationStore(
+    (state) => state.activateInstalledDistro,
+  );
   const setTheme = usePresentationStore((state) => state.setTheme);
+  const setSoundEnabled = usePresentationStore(
+    (state) => state.setSoundEnabled,
+  );
+  const reducedMotion = useReducedMotion() !== false;
+  const [transition, setTransition] = useState<ActiveTransition | null>(null);
+  const lastStageId = useRef<string | null>(null);
   const activeProfile = DISTRO_PROFILES[distroId];
+
+  const frame = useMemo(() => {
+    if (!transition) {
+      return null;
+    }
+
+    return transitionFrame(
+      transition.distroId,
+      transition.kind,
+      transition.elapsedMs,
+      reducedMotion,
+    );
+  }, [reducedMotion, transition]);
+
+  useEffect(() => {
+    if (!transition) {
+      lastStageId.current = null;
+      return;
+    }
+
+    const duration = transitionDurationMs(transition.kind, reducedMotion);
+    const timer = window.setInterval(() => {
+      const elapsedMs = Date.now() - transition.startedAt;
+
+      if (elapsedMs >= duration) {
+        const targetProfile = DISTRO_PROFILES[transition.distroId];
+
+        if (transition.kind === "install") {
+          completeDistroInstall(transition.distroId);
+        } else {
+          activateInstalledDistro(transition.distroId);
+        }
+
+        playDistroSound(targetProfile.sound, "complete", soundEnabled);
+        setTransition(null);
+        return;
+      }
+
+      setTransition((current) =>
+        current
+          ? {
+              ...current,
+              elapsedMs,
+            }
+          : current,
+      );
+    }, reducedMotion ? 90 : 50);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [
+    activateInstalledDistro,
+    completeDistroInstall,
+    reducedMotion,
+    soundEnabled,
+    transition?.distroId,
+    transition?.kind,
+    transition?.startedAt,
+  ]);
+
+  useEffect(() => {
+    if (!transition || !frame || frame.stage.id === lastStageId.current) {
+      return;
+    }
+
+    if (lastStageId.current !== null) {
+      playDistroSound(
+        DISTRO_PROFILES[transition.distroId].sound,
+        "stage",
+        soundEnabled,
+      );
+    }
+
+    lastStageId.current = frame.stage.id;
+  }, [frame, soundEnabled, transition]);
+
+  const beginTransition = (
+    targetDistroId: DistroId,
+    kind: DistroTransitionKind,
+  ) => {
+    if (transition) {
+      return;
+    }
+
+    const targetProfile = DISTRO_PROFILES[targetDistroId];
+    lastStageId.current = null;
+    playDistroSound(targetProfile.sound, kind, soundEnabled);
+    setTransition({
+      distroId: targetDistroId,
+      kind,
+      startedAt: Date.now(),
+      elapsedMs: 0,
+    });
+  };
 
   return (
     <div className="appearance-app">
@@ -17,7 +153,7 @@ export function AppearanceApp() {
         <div className="appearance-heading">
           <div>
             <span className="panel-label">OPERATING ENVIRONMENT</span>
-            <h2 id="appearance-distro-heading">Choose a distro</h2>
+            <h2 id="appearance-distro-heading">System distributions</h2>
           </div>
           <span className="appearance-current">
             {activeProfile.glyph} {activeProfile.label}
@@ -25,31 +161,33 @@ export function AppearanceApp() {
         </div>
 
         <p className="appearance-copy">
-          Distros change presentation only. Your run, rank, tools, evidence,
-          economy and command results stay exactly the same.
+          A distro is an installed operating environment, not a color switch.
+          Installing or booting one changes presentation only: your run, rank,
+          tools, evidence, economy, deadlines and command results are untouched.
         </p>
 
         <div className="distro-grid">
           {DISTRO_IDS.map((id) => {
             const profile = DISTRO_PROFILES[id];
-            const selected = id === distroId;
+            const active = id === distroId;
+            const installed = installedDistroIds.includes(id);
+            const busy = transition !== null;
 
             return (
-              <button
-                type="button"
+              <article
                 key={id}
                 className="distro-card"
-                data-selected={selected ? "true" : "false"}
-                aria-pressed={selected}
-                onClick={() => setDistro(id)}
+                data-selected={active ? "true" : "false"}
               >
-                <span className="distro-card-topline">
+                <div className="distro-card-topline">
                   <span className="distro-glyph" aria-hidden="true">
                     {profile.glyph}
                   </span>
                   <strong>{profile.shortLabel}</strong>
-                  {selected && <span className="distro-installed">ACTIVE</span>}
-                </span>
+                  <span className="distro-installed">
+                    {active ? "RUNNING" : installed ? "INSTALLED" : "AVAILABLE"}
+                  </span>
+                </div>
 
                 <span className="distro-description">{profile.description}</span>
 
@@ -58,14 +196,36 @@ export function AppearanceApp() {
                     <span key={swatch} style={{ backgroundColor: swatch }} />
                   ))}
                 </span>
-              </button>
+
+                <div className="distro-actions">
+                  {active ? (
+                    <span className="distro-current-note">CURRENT SESSION</span>
+                  ) : installed ? (
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => beginTransition(id, "boot")}
+                    >
+                      BOOT
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => beginTransition(id, "install")}
+                    >
+                      INSTALL
+                    </Button>
+                  )}
+                </div>
+              </article>
             );
           })}
         </div>
       </section>
 
       <section aria-labelledby="appearance-theme-heading">
-        <span className="panel-label">THEME VARIANT</span>
+        <span className="panel-label">THEME VARIANT // ACTIVE DISTRO</span>
         <h2 id="appearance-theme-heading">{activeProfile.label}</h2>
         <div className="theme-picker">
           {activeProfile.themes.map((theme) => {
@@ -76,6 +236,7 @@ export function AppearanceApp() {
                 key={theme.id}
                 variant={selected ? "default" : "ghost"}
                 aria-pressed={selected}
+                disabled={transition !== null}
                 onClick={() => setTheme(theme.id)}
               >
                 {theme.label}
@@ -89,14 +250,90 @@ export function AppearanceApp() {
         </p>
       </section>
 
+      <section className="appearance-sound" aria-label="System sounds">
+        <div>
+          <span className="panel-label">DISTRO SOUND IDENTITY</span>
+          <strong>{soundEnabled ? "UI SOUNDS ENABLED" : "UI SOUNDS MUTED"}</strong>
+        </div>
+        <Button
+          variant={soundEnabled ? "default" : "ghost"}
+          disabled={transition !== null}
+          aria-pressed={soundEnabled}
+          onClick={() => setSoundEnabled(!soundEnabled)}
+        >
+          {soundEnabled ? "MUTE" : "ENABLE"}
+        </Button>
+      </section>
+
       <section className="appearance-accessibility-note" aria-label="Accessibility">
         <span className="panel-label">ACCESSIBILITY LAYER</span>
         <p>
-          System reduced-motion is already honored above every distro. Phase 9
-          P4 adds the explicit scale, contrast, transparency and interaction
-          overrides on top of this same profile layer.
+          Reduced motion shortens the installer and removes decorative motion,
+          but keeps the same textual stages. Sound is optional and never carries
+          required information. Phase 9 P4 adds the remaining scale, contrast,
+          transparency and interaction overrides above this profile layer.
         </p>
       </section>
+
+      {transition && frame && (
+        <div
+          className="distro-installer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="distro-installer-title"
+        >
+          <div className="distro-installer-panel">
+            <div className="distro-installer-brand" aria-hidden="true">
+              {DISTRO_PROFILES[transition.distroId].glyph}
+            </div>
+            <span className="panel-label">
+              {transition.kind === "install"
+                ? "SYSTEM INSTALLER"
+                : "SYSTEM HANDOVER"}
+            </span>
+            <h2 id="distro-installer-title">
+              {transition.kind === "install" ? "Installing " : "Booting "}
+              {DISTRO_PROFILES[transition.distroId].label}
+            </h2>
+            <p className="distro-installer-stage">{frame.stage.label}</p>
+
+            <div
+              className="distro-progress"
+              role="progressbar"
+              aria-label={frame.stage.label}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(frame.progress)}
+            >
+              <span
+                style={
+                  {
+                    "--distro-progress": `${frame.progress}%`,
+                  } as CSSProperties
+                }
+              />
+            </div>
+
+            <div className="distro-installer-meta">
+              <span>{Math.round(frame.progress).toString().padStart(3, "0")}%</span>
+              <span>
+                {transition.kind === "install"
+                  ? "RUN CLOCK PAUSED // PRESENTATION ONLY"
+                  : "SESSION STATE PRESERVED"}
+              </span>
+            </div>
+
+            {transition.kind === "install" && frame.progress < 90 && (
+              <Button
+                variant="ghost"
+                onClick={() => setTransition(null)}
+              >
+                CANCEL INSTALL
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
