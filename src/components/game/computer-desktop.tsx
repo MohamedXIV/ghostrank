@@ -8,7 +8,9 @@ import {
   describeForumContractCopy,
   describeForumUnmaskingCopy,
   describeIncidentCopy,
+  describeInvestigationSignalCopy,
   describePhysicalSignalCopy,
+  describeProbeTellCopy,
 } from "@/content/social-copy";
 import {
   analyzeTargetFromGui,
@@ -953,45 +955,6 @@ function ReactionCard({
   );
 }
 
-/**
- * Phase 6 P1 — one piece of surfaced evidence, in the player's own words. The
- * kinds are the docs' signal list; nothing here says how close anyone is,
- * because the design refuses a countdown where ambiguity does the work.
- */
-function describeSignal(kind: string, targetHandle: string): string {
-  switch (kind) {
-    case "unusual-login":
-      return `an unfamiliar login touched ${targetHandle} — not yours, not any relay you recognise`;
-    case "marketplace-behavior":
-      return `the market answered you differently about ${targetHandle}: shorter quotes, no haggling, one vendor gone`;
-    case "suspicious-message":
-      return `a message with no sender asked about your work on ${targetHandle} and nothing else`;
-    default:
-      return `something about ${targetHandle} landed in your logs`;
-  }
-}
-
-/**
- * Phase 6 P2 — the tell a rival probe leaves behind. One line per artifact kind,
- * in the player's own words, and deliberately nothing more: which seat of your
- * standing was aimed at, who aimed it, and whether they learned anything true
- * are all invisible from here. That inference — ping → your rig, a call → your
- * dwelling, a contact gone quiet → your habits — is the player's work, and it is
- * exactly what the counterplay (lay low, move, change relays) is for.
- */
-function describeProbeTell(artifactKind: string): string {
-  switch (artifactKind) {
-    case "probe-ping":
-      return "a probe touched a port you were not listening on";
-    case "caller-question":
-      return "an unknown number asked for you by name";
-    case "missing-contact":
-      return "a contact went quiet mid-sentence, right after someone leaned on them";
-    default:
-      return "something poked at your corner of the network";
-  }
-}
-
 function describeContract(
   objective: string,
   targetHandle: string,
@@ -1237,7 +1200,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   {` // ${caseStage(String(entry.investigationId ?? ""))}`}
                 </span>
                 <span>
-                  {describeSignal(
+                  {describeInvestigationSignalCopy(
+                    id,
                     String(entry.kind ?? ""),
                     String(entry.targetHandle ?? "unknown"),
                   )}
@@ -1249,7 +1213,12 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
-                <span>{describeProbeTell(String(entry.artifactKind ?? ""))}</span>
+                <span>
+                  {describeProbeTellCopy(
+                    id,
+                    String(entry.artifactKind ?? ""),
+                  )}
+                </span>
               </li>
             ))}
             {physicalSignals.map(([id, entry]) => (

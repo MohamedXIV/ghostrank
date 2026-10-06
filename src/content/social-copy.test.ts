@@ -4,7 +4,9 @@ import {
   describeForumContractCopy,
   describeForumUnmaskingCopy,
   describeIncidentCopy,
+  describeInvestigationSignalCopy,
   describePhysicalSignalCopy,
+  describeProbeTellCopy,
 } from "@/content/social-copy";
 
 describe("Phase 8 P6 — authored social copy", () => {
@@ -56,6 +58,46 @@ describe("Phase 8 P6 — authored social copy", () => {
       expect(text).toContain("LATTICE");
       expect(text).toContain("IRONVEIL");
     }
+  });
+
+  it("broadens investigation evidence while preserving the visible target", () => {
+    const variants = new Set(
+      Array.from({ length: 24 }, (_, index) =>
+        describeInvestigationSignalCopy(
+          `signal:${index + 1}`,
+          "unusual-login",
+          "NIGHTSHADE",
+        ),
+      ),
+    );
+
+    expect(variants.size).toBeGreaterThan(1);
+    for (const text of variants) {
+      expect(text).toContain("NIGHTSHADE");
+    }
+    expect(
+      describeInvestigationSignalCopy(
+        "signal:missing",
+        "new-kind",
+        "NIGHTSHADE",
+      ),
+    ).toContain("NIGHTSHADE");
+  });
+
+  it("broadens rival probe tells without exposing hidden probe truth", () => {
+    const variants = new Set(
+      Array.from({ length: 24 }, (_, index) =>
+        describeProbeTellCopy(`probe:${index + 1}`, "probe-ping"),
+      ),
+    );
+
+    expect(variants.size).toBeGreaterThan(1);
+    for (const text of variants) {
+      expect(text.length).toBeGreaterThan(20);
+    }
+    expect(describeProbeTellCopy("probe:missing", "new-kind")).toBe(
+      "something poked at your corner of the network",
+    );
   });
 
   it("varies physical signal wording without changing its meaning category", () => {

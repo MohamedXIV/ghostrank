@@ -46,6 +46,8 @@ Surfaces broadened:
 - forum incident commentary;
 - forum contract-vouch phrasing;
 - forum unmasking-taboo phrasing;
+- authority-investigation signal wording;
+- rival-probe tell wording;
 - physical-signal wording.
 
 The old forum copy also hardcoded the working handle `CobaltXZ`; P6 removes
@@ -151,6 +153,8 @@ P6A tests pin:
 - the same record id always renders the same copy;
 - different ids actually produce more than one authored variant;
 - actor/counterpart handles remain present in incident copy;
+- investigation-signal variants preserve the visible target and keep a safe fallback;
+- rival-probe variants preserve ambiguity and never expose hidden actor/correctness truth;
 - physical-signal variants remain category-appropriate with a safe fallback;
 - contract forum copy contains the target but never hardcodes the player handle.
 

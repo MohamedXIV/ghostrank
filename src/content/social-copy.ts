@@ -1,5 +1,7 @@
 import type {
+  InvestigationSignalKind,
   PhysicalSignalKind,
+  RivalProbeArtifactKind,
   UndergroundIncidentOutcome,
 } from "@/game/simulation/state/world-state";
 
@@ -93,6 +95,45 @@ const FORUM_UNMASKING_COPY = [
   (unmasker: string) => `${unmasker} dragged a handle into daylight; bad precedent`,
 ] as const;
 
+const INVESTIGATION_COPY: Record<
+  InvestigationSignalKind,
+  readonly ((target: string) => string)[]
+> = {
+  "unusual-login": [
+    (target) =>
+      `an unfamiliar login touched ${target} — not yours, not any relay you recognise`,
+    (target) =>
+      `${target} logged a session that does not match any route you remember using`,
+  ],
+  "marketplace-behavior": [
+    (target) =>
+      `the market answered you differently about ${target}: shorter quotes, no haggling, one vendor gone`,
+    (target) =>
+      `${target}'s name changed the room: one seller stopped replying and the others shortened their answers`,
+  ],
+  "suspicious-message": [
+    (target) =>
+      `a message with no sender asked about your work on ${target} and nothing else`,
+    (target) =>
+      `an unsigned note mentioned ${target} and asked a question only someone watching the work would ask`,
+  ],
+};
+
+const PROBE_COPY: Record<RivalProbeArtifactKind, readonly string[]> = {
+  "probe-ping": [
+    "a probe touched a port you were not listening on",
+    "something swept past an unused port and disappeared before the next sample",
+  ],
+  "caller-question": [
+    "an unknown number asked for you by name",
+    "a caller you do not know used your name, then hung up when you answered",
+  ],
+  "missing-contact": [
+    "a contact went quiet mid-sentence, right after someone leaned on them",
+    "a contact stopped replying immediately after hinting that somebody had questions",
+  ],
+};
+
 const PHYSICAL_COPY: Record<PhysicalSignalKind, readonly string[]> = {
   "strange-vehicle": [
     "the same unfamiliar vehicle has been sitting where it can see the entrance",
@@ -162,6 +203,36 @@ export function describeForumUnmaskingCopy(
   unmaskerHandle: string,
 ): string {
   return pick(`forum-unmask:${postId}:${unmaskerHandle}`, FORUM_UNMASKING_COPY)(unmaskerHandle);
+}
+
+export function describeInvestigationSignalCopy(
+  signalId: string,
+  kind: string,
+  targetHandle: string,
+): string {
+  const variants = INVESTIGATION_COPY[kind as InvestigationSignalKind];
+
+  if (!variants) {
+    return `something about ${targetHandle} landed in your logs`;
+  }
+
+  return pick(
+    `investigation:${signalId}:${kind}:${targetHandle}`,
+    variants,
+  )(targetHandle);
+}
+
+export function describeProbeTellCopy(
+  probeId: string,
+  artifactKind: string,
+): string {
+  const variants = PROBE_COPY[artifactKind as RivalProbeArtifactKind];
+
+  if (!variants) {
+    return "something poked at your corner of the network";
+  }
+
+  return pick(`probe:${probeId}:${artifactKind}`, variants);
 }
 
 export function describePhysicalSignalCopy(
