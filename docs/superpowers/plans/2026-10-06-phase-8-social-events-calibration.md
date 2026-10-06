@@ -107,6 +107,43 @@ P2 had already shown that the larger autonomous cast materially increased probe
 traffic. P6 therefore treats ecosystem/social density as something to measure,
 not something to silently normalize away.
 
+## Calibration hypotheses — evidence queue, not tuning decisions
+
+The last valid report already narrows what P6C needs to test, but it does not
+justify changing a constant yet.
+
+1. **Opportunity throughput may be a repetition problem before it is a danger
+   problem.** Across the 32-seed P3 report, contractor completed 1,452 contracts
+   (~45.38/run), reckless completed 1,267 (~39.59/run), and career-exit
+   completed 682 (~21.31/run). The v2 report should be read alongside social
+   density before offer cadence or pressure bonuses are changed.
+
+2. **Probe volume may be denser than the player-facing counterplay can
+   comfortably explain.** Contractor produced 1,981 probes (~61.91/run),
+   reckless 1,790 (~55.94/run), and career-exit 733 (~22.91/run). Raw hidden
+   probe count is not itself a defect: calibration must compare it with surfaced
+   tells, physical signals, messages, postmortems and distinct actors before
+   reducing or increasing rival activity.
+
+3. **Scripted-policy run length is not a novice-run acceptance threshold.**
+   Contractor's median is 31,860 minutes (~22.13 days), reckless 27,720
+   (~19.25 days), and career-exit 23,344.5 (~16.21 days). GAME_DESIGN targets
+   first runs around days 3–5 and treats 7–10 days as an early achievement, but
+   these telemetry policies are tireless deterministic workers, not first-time
+   humans. Human playtests remain the authority for that pacing target.
+
+4. **The current policies cannot calibrate market affordability.** They do not
+   buy P5 market content. Contractor median final credits (8,527.5) and rank
+   improvement (28,730.5) describe contract throughput, not whether the expanded
+   hardware/model/tool market is correctly priced.
+
+When a valid v2 report is available, calibration should prefer the narrowest
+lever supported by evidence: presentation-only forum/leak cadence first if the
+problem is feed density; contract opportunity cadence if repeated obligations
+dominate; authored actor activity only if autonomous-world crowding is the
+measured issue; threat probabilities last, because Phase 6/7 causal fairness is
+not a tuning shortcut.
+
 ## Verification
 
 P6A tests pin:
