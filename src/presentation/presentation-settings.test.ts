@@ -1,18 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  loadPresentationSelection,
+  LEGACY_PRESENTATION_STORAGE_KEY,
+  loadPresentationSettings,
   PRESENTATION_STORAGE_KEY,
-  savePresentationSelection,
+  savePresentationSettings,
   type PresentationStorage,
 } from "@/presentation/presentation-settings";
 
-function memoryStorage(initial?: string): PresentationStorage {
-  const values = new Map<string, string>();
-
-  if (initial !== undefined) {
-    values.set(PRESENTATION_STORAGE_KEY, initial);
-  }
+function memoryStorage(
+  initial?: Partial<Record<string, string>>,
+): PresentationStorage {
+  const values = new Map<string, string>(Object.entries(initial ?? {}));
 
   return {
     getItem: (key) => values.get(key) ?? null,
@@ -23,36 +22,67 @@ function memoryStorage(initial?: string): PresentationStorage {
 }
 
 describe("presentation settings persistence", () => {
-  it("round-trips distro and theme outside the run save", () => {
+  it("round-trips installed distros, active theme and sound preference", () => {
     const storage = memoryStorage();
 
-    savePresentationSelection(storage, {
+    savePresentationSettings(storage, {
       distroId: "petal",
       themeId: "night",
+      installedDistroIds: ["ghost-os", "petal"],
+      soundEnabled: false,
     });
 
-    expect(loadPresentationSelection(storage)).toEqual({
+    expect(loadPresentationSettings(storage)).toEqual({
       distroId: "petal",
       themeId: "night",
+      installedDistroIds: ["ghost-os", "petal"],
+      soundEnabled: false,
     });
   });
 
-  it("fails toward the default profile for corrupt JSON", () => {
-    expect(loadPresentationSelection(memoryStorage("{nope"))).toEqual({
+  it("migrates the P1 preview v1 selection and treats it as installed", () => {
+    const storage = memoryStorage({
+      [LEGACY_PRESENTATION_STORAGE_KEY]: JSON.stringify({
+        distroId: "velvet",
+        themeId: "plum",
+      }),
+    });
+
+    expect(loadPresentationSettings(storage)).toEqual({
+      distroId: "velvet",
+      themeId: "plum",
+      installedDistroIds: ["ghost-os", "velvet"],
+      soundEnabled: true,
+    });
+  });
+
+  it("fails toward Ghost/OS for corrupt JSON", () => {
+    expect(
+      loadPresentationSettings(
+        memoryStorage({ [PRESENTATION_STORAGE_KEY]: "{nope" }),
+      ),
+    ).toEqual({
       distroId: "ghost-os",
       themeId: "ash",
+      installedDistroIds: ["ghost-os"],
+      soundEnabled: true,
     });
   });
 
   it("never lets unavailable cosmetic storage interrupt play", () => {
     expect(() =>
-      savePresentationSelection(
+      savePresentationSettings(
         {
           setItem: () => {
             throw new Error("quota");
           },
         },
-        { distroId: "daybreak", themeId: "warm" },
+        {
+          distroId: "daybreak",
+          themeId: "warm",
+          installedDistroIds: ["ghost-os", "daybreak"],
+          soundEnabled: true,
+        },
       ),
     ).not.toThrow();
   });
