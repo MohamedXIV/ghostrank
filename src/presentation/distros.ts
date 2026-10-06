@@ -14,6 +14,15 @@ export interface DistroTheme {
   description: string;
 }
 
+export interface DistroSoundIdentity {
+  waveform: OscillatorType;
+  gain: number;
+  install: readonly number[];
+  stage: readonly number[];
+  complete: readonly number[];
+  boot: readonly number[];
+}
+
 export interface DistroProfile {
   id: DistroId;
   label: string;
@@ -23,6 +32,7 @@ export interface DistroProfile {
   defaultTheme: string;
   themes: readonly DistroTheme[];
   swatches: readonly [string, string, string];
+  sound: DistroSoundIdentity;
 }
 
 export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
@@ -41,6 +51,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       },
     ],
     swatches: ["#05080b", "#10171c", "#94d1b6"],
+    sound: {
+      waveform: "square",
+      gain: 0.026,
+      install: [220, 330],
+      stage: [330],
+      complete: [330, 440, 660],
+      boot: [196, 294, 392],
+    },
   },
   lattice: {
     id: "lattice",
@@ -57,6 +75,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       },
     ],
     swatches: ["#071019", "#10232f", "#79c9ec"],
+    sound: {
+      waveform: "triangle",
+      gain: 0.024,
+      install: [262, 392],
+      stage: [523],
+      complete: [392, 523, 784],
+      boot: [294, 440, 587],
+    },
   },
   velvet: {
     id: "velvet",
@@ -73,6 +99,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       },
     ],
     swatches: ["#100a12", "#211624", "#d59ac7"],
+    sound: {
+      waveform: "sine",
+      gain: 0.03,
+      install: [196, 247],
+      stage: [294],
+      complete: [247, 330, 494],
+      boot: [220, 277, 415],
+    },
   },
   daybreak: {
     id: "daybreak",
@@ -89,6 +123,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       },
     ],
     swatches: ["#f3efe6", "#fffaf0", "#2f7c74"],
+    sound: {
+      waveform: "sine",
+      gain: 0.028,
+      install: [330, 440],
+      stage: [494],
+      complete: [440, 554, 659],
+      boot: [349, 523, 698],
+    },
   },
   petal: {
     id: "petal",
@@ -110,6 +152,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       },
     ],
     swatches: ["#fff5fa", "#f1d9ef", "#c8689f"],
+    sound: {
+      waveform: "triangle",
+      gain: 0.026,
+      install: [392, 523],
+      stage: [659],
+      complete: [523, 659, 784],
+      boot: [440, 587, 880],
+    },
   },
 };
 
