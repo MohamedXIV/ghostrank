@@ -22,12 +22,26 @@ interface PresentationState {
   setTheme: (themeId: string) => void;
 }
 
-function persistSelection(distroId: DistroId, themeId: string) {
+function browserStorage() {
   if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function persistSelection(distroId: DistroId, themeId: string) {
+  const storage = browserStorage();
+
+  if (!storage) {
     return;
   }
 
-  savePresentationSelection(window.localStorage, { distroId, themeId });
+  savePresentationSelection(storage, { distroId, themeId });
 }
 
 export const usePresentationStore = create<PresentationState>((set, get) => ({
@@ -35,12 +49,11 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   hydrated: false,
 
   hydrate: () => {
-    if (typeof window === "undefined") {
-      set({ hydrated: true });
-      return;
-    }
+    const storage = browserStorage();
+    const selection = storage
+      ? loadPresentationSelection(storage)
+      : { ...DEFAULT_PRESENTATION };
 
-    const selection = loadPresentationSelection(window.localStorage);
     set({ ...selection, hydrated: true });
   },
 
