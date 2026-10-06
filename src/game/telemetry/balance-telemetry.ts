@@ -88,6 +88,12 @@ export interface BalanceTelemetrySample {
   physicalThreats: number;
   investigationSignals: number;
   retaliations: number;
+  social: {
+    publicIncidents: number;
+    forumPosts: number;
+    rumors: number;
+    messages: number;
+  };
   pressureBand: LongRunPressureBand;
   exposure: {
     actorIds: string[];
@@ -138,6 +144,12 @@ export interface BalanceTelemetryScenarioSummary {
     investigationSignals: number;
     retaliations: number;
   };
+  social: {
+    publicIncidents: number;
+    forumPosts: number;
+    rumors: number;
+    messages: number;
+  };
   exposure: {
     actorIds: string[];
     targetIds: string[];
@@ -148,7 +160,7 @@ export interface BalanceTelemetryScenarioSummary {
 }
 
 export interface BalanceTelemetryReport {
-  version: 1;
+  version: 2;
   seedCount: number;
   horizonDays: number;
   authoredContent: AuthoredContentCounts;
@@ -667,6 +679,14 @@ function sampleFromWorld(
     physicalThreats: world.physicalThreats.length,
     investigationSignals,
     retaliations: world.underground.retaliations.length,
+    social: {
+      publicIncidents: world.underground.incidents.filter(
+        (incident) => incident.public,
+      ).length,
+      forumPosts: world.underground.forumPosts.length,
+      rumors: world.underground.rumors.length,
+      messages: world.underground.messages.length,
+    },
     pressureBand: deriveLongRunPressure(world).band,
     exposure: {
       actorIds: [...actorIds].sort(),
@@ -769,6 +789,12 @@ function summarizeScenario(
     investigationSignals: 0,
     retaliations: 0,
   };
+  const social = {
+    publicIncidents: 0,
+    forumPosts: 0,
+    rumors: 0,
+    messages: 0,
+  };
 
   for (const sample of samples) {
     endings[sample.endingStatus ?? "active"] += 1;
@@ -787,6 +813,10 @@ function summarizeScenario(
     threat.physicalThreats += sample.physicalThreats;
     threat.investigationSignals += sample.investigationSignals;
     threat.retaliations += sample.retaliations;
+    social.publicIncidents += sample.social.publicIncidents;
+    social.forumPosts += sample.social.forumPosts;
+    social.rumors += sample.social.rumors;
+    social.messages += sample.social.messages;
 
     for (const kind of Object.keys(compromiseKinds) as CompromiseKind[]) {
       compromiseKinds[kind] += sample.compromiseKinds[kind];
@@ -824,6 +854,7 @@ function summarizeScenario(
     contracts: contractTotals,
     pressureBands,
     threat,
+    social,
     exposure: {
       actorIds: [...actorIds].sort(),
       targetIds: [...targetIds].sort(),
@@ -897,7 +928,7 @@ export function runBalanceTelemetry(
   }
 
   return {
-    version: 1,
+    version: 2,
     seedCount: seeds.length,
     horizonDays,
     authoredContent: authoredContentCounts(),

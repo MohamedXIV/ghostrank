@@ -5,6 +5,14 @@ import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
+  describeForumContractCopy,
+  describeForumUnmaskingCopy,
+  describeIncidentCopy,
+  describeInvestigationSignalCopy,
+  describePhysicalSignalCopy,
+  describeProbeTellCopy,
+} from "@/content/social-copy";
+import {
   analyzeTargetFromGui,
   disengageOperationFromGui,
   escalateOperationFromGui,
@@ -947,80 +955,6 @@ function ReactionCard({
   );
 }
 
-/**
- * Phase 6 P1 — one piece of surfaced evidence, in the player's own words. The
- * kinds are the docs' signal list; nothing here says how close anyone is,
- * because the design refuses a countdown where ambiguity does the work.
- */
-function describeSignal(kind: string, targetHandle: string): string {
-  switch (kind) {
-    case "unusual-login":
-      return `an unfamiliar login touched ${targetHandle} — not yours, not any relay you recognise`;
-    case "marketplace-behavior":
-      return `the market answered you differently about ${targetHandle}: shorter quotes, no haggling, one vendor gone`;
-    case "suspicious-message":
-      return `a message with no sender asked about your work on ${targetHandle} and nothing else`;
-    default:
-      return `something about ${targetHandle} landed in your logs`;
-  }
-}
-
-/**
- * Phase 6 P2 — the tell a rival probe leaves behind. One line per artifact kind,
- * in the player's own words, and deliberately nothing more: which seat of your
- * standing was aimed at, who aimed it, and whether they learned anything true
- * are all invisible from here. That inference — ping → your rig, a call → your
- * dwelling, a contact gone quiet → your habits — is the player's work, and it is
- * exactly what the counterplay (lay low, move, change relays) is for.
- */
-function describeProbeTell(artifactKind: string): string {
-  switch (artifactKind) {
-    case "probe-ping":
-      return "a probe touched a port you were not listening on";
-    case "caller-question":
-      return "an unknown number asked for you by name";
-    case "missing-contact":
-      return "a contact went quiet mid-sentence, right after someone leaned on them";
-    default:
-      return "something poked at your corner of the network";
-  }
-}
-
-function describePhysicalSignal(kind: string): string {
-  switch (kind) {
-    case "strange-vehicle":
-      return "the same unfamiliar vehicle has been sitting where it can see the entrance";
-    case "footsteps":
-      return "footsteps stopped outside long enough to listen";
-    case "knock":
-      return "someone knocked once and left before you reached the door";
-    case "unknown-call":
-      return "an unknown caller rang and said nothing";
-    case "door-camera-motion":
-      return "the door camera caught movement that never reached the door";
-    case "outage":
-      return "power dropped without the rest of the block going dark";
-    case "unusual-connectivity":
-      return "your local connection changed shape for a few minutes";
-    case "unexpected-delivery":
-      return "a delivery appeared that nobody here ordered";
-    case "nearby-activity":
-      return "there is too much quiet activity close to the room";
-    default:
-      return "something outside the network does not fit";
-  }
-}
-
-function describeIncident(
-  actorHandle: string,
-  counterpartHandle: string,
-  outcome: string,
-): string {
-  return outcome === "succeeded"
-    ? `${actorHandle} got through ${counterpartHandle}'s defenses`
-    : `${counterpartHandle} turned ${actorHandle} away`;
-}
-
 function describeContract(
   objective: string,
   targetHandle: string,
@@ -1266,7 +1200,8 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   {` // ${caseStage(String(entry.investigationId ?? ""))}`}
                 </span>
                 <span>
-                  {describeSignal(
+                  {describeInvestigationSignalCopy(
+                    id,
                     String(entry.kind ?? ""),
                     String(entry.targetHandle ?? "unknown"),
                   )}
@@ -1278,7 +1213,12 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
-                <span>{describeProbeTell(String(entry.artifactKind ?? ""))}</span>
+                <span>
+                  {describeProbeTellCopy(
+                    id,
+                    String(entry.artifactKind ?? ""),
+                  )}
+                </span>
               </li>
             ))}
             {physicalSignals.map(([id, entry]) => (
@@ -1286,7 +1226,12 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))} {"// OUTSIDE"}
                 </span>
-                <span>{describePhysicalSignal(String(entry.kind ?? ""))}</span>
+                <span>
+                  {describePhysicalSignalCopy(
+                    id,
+                    String(entry.kind ?? ""),
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -1510,8 +1455,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                     {String(entry.fromHandle ?? "unknown")} · {id}
                   </span>
                   <span>
-                    heard that{" "}
-                    {describeIncident(
+                    {describeIncidentCopy(
+                      "message",
+                      id,
                       String(entry.claimActorHandle ?? "unknown"),
                       String(entry.claimCounterpartHandle ?? "unknown"),
                       String(entry.claimOutcome ?? ""),
@@ -1547,10 +1493,18 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
                 <span>
                   {entry.subjectKind === "unmasking"
-                    ? `unmasking is a line nobody crosses — ${String(entry.unmaskerHandle ?? "someone")} did`
+                    ? describeForumUnmaskingCopy(
+                        id,
+                        String(entry.unmaskerHandle ?? "someone"),
+                      )
                     : entry.subjectKind === "contract"
-                      ? `vouching for CobaltXZ on the ${String(entry.targetHandle ?? "")} job`
-                      : describeIncident(
+                      ? describeForumContractCopy(
+                          id,
+                          String(entry.targetHandle ?? "unknown"),
+                        )
+                      : describeIncidentCopy(
+                          "forum",
+                          id,
                           String(entry.actorHandle ?? "unknown"),
                           String(entry.counterpartHandle ?? "unknown"),
                           String(entry.outcome ?? ""),
@@ -1589,7 +1543,9 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
                 </span>
                 <span>
-                  {describeIncident(
+                  {describeIncidentCopy(
+                    "feed",
+                    id,
                     String(entry.actorHandle ?? "unknown"),
                     String(entry.counterpartHandle ?? "unknown"),
                     String(entry.outcome ?? ""),
