@@ -51,6 +51,9 @@ export function AppearanceApp() {
   const [transition, setTransition] = useState<ActiveTransition | null>(null);
   const lastStageId = useRef<string | null>(null);
   const activeProfile = DISTRO_PROFILES[distroId];
+  const transitionDistroId = transition?.distroId ?? null;
+  const transitionKind = transition?.kind ?? null;
+  const transitionStartedAt = transition?.startedAt ?? null;
 
   const frame = useMemo(() => {
     if (!transition) {
@@ -66,22 +69,26 @@ export function AppearanceApp() {
   }, [reducedMotion, transition]);
 
   useEffect(() => {
-    if (!transition) {
+    if (
+      transitionDistroId === null ||
+      transitionKind === null ||
+      transitionStartedAt === null
+    ) {
       lastStageId.current = null;
       return;
     }
 
-    const duration = transitionDurationMs(transition.kind, reducedMotion);
+    const duration = transitionDurationMs(transitionKind, reducedMotion);
     const timer = window.setInterval(() => {
-      const elapsedMs = Date.now() - transition.startedAt;
+      const elapsedMs = Date.now() - transitionStartedAt;
 
       if (elapsedMs >= duration) {
-        const targetProfile = DISTRO_PROFILES[transition.distroId];
+        const targetProfile = DISTRO_PROFILES[transitionDistroId];
 
-        if (transition.kind === "install") {
-          completeDistroInstall(transition.distroId);
+        if (transitionKind === "install") {
+          completeDistroInstall(transitionDistroId);
         } else {
-          activateInstalledDistro(transition.distroId);
+          activateInstalledDistro(transitionDistroId);
         }
 
         playDistroSound(targetProfile.sound, "complete", soundEnabled);
@@ -107,9 +114,9 @@ export function AppearanceApp() {
     completeDistroInstall,
     reducedMotion,
     soundEnabled,
-    transition?.distroId,
-    transition?.kind,
-    transition?.startedAt,
+    transitionDistroId,
+    transitionKind,
+    transitionStartedAt,
   ]);
 
   useEffect(() => {
