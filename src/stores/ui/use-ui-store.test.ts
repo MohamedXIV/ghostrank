@@ -4,7 +4,11 @@ import { useUiStore } from "@/stores/ui/use-ui-store";
 
 describe("useUiStore", () => {
   beforeEach(() => {
-    useUiStore.setState({ activeSurface: "computer" });
+    useUiStore.setState({
+      activeSurface: "computer",
+      openWindows: ["terminal", "recon"],
+      focusedWindow: "terminal",
+    });
   });
 
   it("tracks presentation state without carrying world simulation data", () => {
