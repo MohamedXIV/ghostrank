@@ -97,13 +97,18 @@ the same report afterward.
 
 ## Current measurement context
 
-The last valid pre-P6 report (P3; P4/P5 are designed to be mechanically neutral)
-recorded, across 32 seeds:
+The P3 baseline below is **not** prose memory: it was regenerated locally at the
+P3 merge (`563bd6a`) with a toolchain configuration byte-identical to this head,
+and stored as a machine-readable v1 report so P6 could diff fields instead of
+re-reading numbers. Across 32 seeds it recorded:
 
 - idle: 32/32 active and no player-driven threat;
 - contractor: 27 ARRESTED / 5 active;
 - reckless: 30 ARRESTED / 1 STRANDED / 1 active;
 - career-exit: 25 RETIRED / 2 VANISHED / 5 ARRESTED.
+
+Every one of those figures reproduces exactly in the P6 v2 report, which is the
+P4/P5 neutrality proof D048 and D049 asked for but had never been given.
 
 P2 had already shown that the larger autonomous cast materially increased probe
 traffic. P6 therefore treats ecosystem/social density as something to measure,
@@ -146,6 +151,40 @@ dominate; authored actor activity only if autonomous-world crowding is the
 measured issue; threat probabilities last, because Phase 6/7 causal fairness is
 not a tuning shortcut.
 
+## P6C outcome — measured, no calibration justified
+
+The v2 report ran twice on the final head and hashed identically
+(`sha256 2a641a0de5a5d08f87a6f8e9c0dce00478368c5177775f77173e89090e4e2c67`).
+Against each hypothesis:
+
+1. **Opportunity throughput — no defect.** Expired-over-created is 0.07%
+   (contractor) and 0.08% (reckless); open offers average 0.63–2.0 per run
+   against a 3–5 concurrent cap and a 20-row projection, so the board is never
+   jammed. Idle legitimately expires 95.19% because it never accepts.
+2. **Probe density — unreachable as written.** `projectProbes` maps every probe
+   to a tell with no cap, so "probe with no surfaced signal" cannot occur.
+   Contractor emits ~61.9 probes/run (2.81/day) and the residual question is UI
+   readability, which the browser pass answered; `probes.ts` is not a calibration
+   target.
+3. **Run length vs novice pacing — answered by the playtest, not the report.** A
+   scripted 16-day desktop session reached SEVERE footprint from ordinary play
+   and read as a scene rather than a firehose; the visible windows measured in
+   the live UI (feed 50 rows over 8.5 days, forum 30 over 8.5, inbox 30 over
+   5.25) match the telemetry-derived windows.
+4. **Market affordability — unmeasurable by design.** No policy buys content, so
+   no price moves. Follow-up: a purchasing policy for the harness.
+
+Social legibility, the genuinely new measurement: feed window 8.61–8.80 days,
+inbox 5.76–6.07, forum 3.27–4.30, contract offers 156–706. Nothing crosses the
+"consequential posts scroll off unread" line.
+
+Two findings are recorded rather than tuned: **`known` and `entangled` pressure
+bands never occur** (0 of 128 runs; the ladder is effectively binary because
+active policies complete 21–45 contracts), and the alpha slice boots a **single
+fixed seed** with no new-run control, so browser run-to-run variety comes from
+player policy rather than seed selection. Both need their own decisions; neither
+is a P6 lever.
+
 ## Verification
 
 P6A tests pin:
@@ -160,17 +199,25 @@ P6A tests pin:
 
 P6B tests pin:
 
-- social counters are non-negative and included in deterministic reports;
-- multi-seed reckless telemetry observes non-zero social activity;
+- social counters are present on every sample and summary and stay non-negative;
+- the reckless multi-seed **sum** of each social counter is greater than zero
+  (the other three policies are asserted non-negative, not non-zero);
 - repeated seed/policy/horizon reports remain deep-equal.
 
-P6C is not considered delivered until:
+P6C is delivered:
 
-- P5 is merged;
-- a valid full telemetry run exists for the final P6 head;
-- any calibration changes are documented with before/after evidence;
-- full web tests/typecheck/lint/build are green on the exact merge head;
-- review findings are reconciled.
+- [x] P5 is merged (`1b36234`, #53 / D049);
+- [x] a valid full 32-seed telemetry report exists for the final P6 head, and a
+      second independent capture hashes identically;
+- [x] the P3 v1 report was regenerated on the same toolchain and the v2 report is
+      field-identical after allowlisting `version`, `authoredContent` and
+      `scenarios.*.social` (0 differing fields) — so P4/P5 neutrality is measured,
+      and no before/after calibration evidence is needed because no constant moved;
+- [x] full web tests (71 files / 748 tests), typecheck, lint and the production
+      build are green on the exact head, plus a browser persistence/reload pass;
+- [x] review findings reconciled (#54 carried no reviews or comments; the two
+      defects found by actually running the gates — a stale P5 model-listing count
+      and runner-sized wall-clock budgets — each got its own commit).
 
 ## Actions outage note
 
@@ -178,3 +225,12 @@ During P4/P5 work GitHub-hosted jobs intermittently failed before **any** job
 step began. Those infrastructure failures are not treated as passing gates and
 are not bypassed by blessing unexecuted code. Dependency-ready stacked work may
 continue, but merge gates remain exact-head green checks.
+
+The outage persisted through P6 and is now repo-wide and continuous since
+`2026-10-05T23:04Z`: job `112057110909` shows `steps: []`, `runner_id: 0`, empty
+`runner_name`/`runner_group_name` and no retrievable log, and `main`'s own push
+(`37388207610`) is red the same way. The last two P6 commits are `[skip ci]`, so
+no Actions run has ever existed for the verified head. The authoritative gates
+therefore ran locally on a clean tree at that head; this bypasses the host, not
+the checks. The earlier claim that run `37397578785` covered this head was wrong
+— it ran `41b6bab`.

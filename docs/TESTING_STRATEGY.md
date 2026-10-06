@@ -159,6 +159,7 @@ Critical invariants include:
 - P6 telemetry may observe public incidents, forum posts, rumors and messages but the harness must never write those arrays directly,
 - adding P6 social counters preserves deterministic equality for repeated seed/policy/horizon reports,
 - final P6 calibration requires measured before/after telemetry and may tune only existing authored/causal parameters; it may not weaken threat prerequisites, add rank gates, or manufacture a preferred ending distribution,
+- the P6 v2 report stays field-identical to the P3 v1 report regenerated on the same toolchain, except for `version`, `authoredContent` and the new `scenarios.*.social` counters; any other delta is a P4/P5 neutrality regression rather than calibration,
 - simulation behavior does not depend on a specific persistence backend or host.
 
 ## Balance testing

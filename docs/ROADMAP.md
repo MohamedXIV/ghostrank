@@ -319,12 +319,6 @@ Slice map and grounding in the current repo: `docs/superpowers/plans/2026-10-04-
 
 **P5 delivered** (`docs/superpowers/plans/2026-10-05-phase-6-postmortem.md`, D036): every P4 compromise now gets a **pure derived postmortem** with zero new authoritative state, commands, events, or save fields. Hidden source ids are allowed to select the correct records internally, but the player-facing timeline contains only facts the player could already know: their own operation actions, player-visible defensive reactions, surfaced authority evidence for known targets, the P2 probe tell, the P3 physical signal, and the P4 condition. Hidden actor identity, probe subject/correctness, investigation progress/source ids, struck location, impact ids, outage end, and seed never project. The timeline is chronological for comprehension rather than a claim that every adjacent row is one hidden edge; parallel causal branches may converge on the same physical consequence. Attribution is **COMPLETE** only when the compromise resolves its physical threat, the threat resolves its probe, and at least one player-caused operation trace is reachable through the cited investigation provenance. Missing legs produce **INCOMPLETE ATTRIBUTION** and whatever visible facts remain — never fabricated blame. TinyBase receives only safe postmortem headers/steps, the Underground COMPROMISE section renders them while the run remains interactive, and a seeded P1→P5 scenario proves an actual player-action → probe → physical → compromise chain. No `RunEnded`; Phase 7 / #25 remains the sole owner of endings.
 
-**P4 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-location-breadth.md`, D048): the housing catalog grows from four to eight entries without adding a location subsystem. Four new quiet/hidden workspace/residential trade-offs reuse the existing lease id, derived presence, symmetric relocation time, daily upkeep, capability fold and anonymity-based physical counterplay. Existing listings remain unchanged, safehouses remain capability-zero, and rank never affects leasing. No save migration, new command/event family or RNG is introduced; P1 telemetry is expected to remain outcome-identical because its policies never rent housing, with only the authored housing count moving from 4 to 8.
-
-
-**P5 delivered** (`docs/superpowers/plans/2026-10-06-phase-8-market-breadth.md`, D049): the ordinary market broadens to 8 hardware components, 7 complete machines, 7 models, 5 authored tools, 5 premium software licenses and 5 self-built workflow specs. New entries reuse the existing five-axis capability vector, cloud-rent/local-property model economics, named-author ledger provenance, tool resale, software upkeep and Forge quality/contention paths. Every added premium license has a self-built spec with the exact same effect. The Annealing Rack remains the only exotic machine. No new effect kind, command/event/state field, rank gate or migration is introduced, and P1 telemetry is required to remain outcome-identical apart from authored catalog counts.
-
-
 Deliverables:
 - authority investigations,
 - rival probes,
@@ -380,7 +374,7 @@ Exit criteria:
 
 ## Phase 8 — Content Alpha
 
-**Status: active — P0–P5 delivered; P6A/P6B are implemented on draft #54, while P6C alpha calibration + exact-head gates remain pending. Tracked by #26.**
+**Status: complete (2026-10-06). P0–P6 delivered. Tracked by #26. Phase 9 / #27 is next.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-05-phase-8-plan.md`.
 
@@ -389,9 +383,9 @@ Grounded slice order:
 - **P1 — local balance telemetry baseline** *(delivered; D045 / #49)*: 32 fixed seeds × four real-command policies over 30 world days report run length, endings, economy/rank movement, contract/threat activity and content exposure before breadth tuning.
 - **P2 — target + NPC breadth** *(delivered; D046 / #50)*: expand to 10 peers / 6 targets / 14 machines / 17 services through the P0 roster only; all targets reuse the same evidence/operation rules and no rank gate or target level is added.
 - **P3 — contract breadth** *(delivered; D047 / #51)*: expand from two to four objective predicates — service report, infrastructure map, quiet recon, intrusion — all verified from existing evidence/traces and resolved through the same contract/value/relationship path.
-- **P4 — location + physical-life breadth** *(delivered; D048)*: expand housing from 4 to 8 authored lease trade-offs through the existing capability/anonymity/travel/upkeep/presence rules only.
-- **P5 — market breadth** *(delivered; D049)*: broaden hardware, machines, models, authored tools, software and Forge specs through the existing capability/economy/contention/value-provenance rules only.
-- **P6 — social/event breadth + alpha calibration** *(in progress; draft #54)*: deterministic authored social presentation and social-density telemetry are implemented; measured calibration remains gated on a valid full report and exact-head web checks.
+- **P4 — location + physical-life breadth** *(delivered; D048 / #52)*: expand housing from 4 to 8 authored lease trade-offs through the existing capability/anonymity/travel/upkeep/presence rules only.
+- **P5 — market breadth** *(delivered; D049 / #53)*: broaden hardware, machines, models, authored tools, software and Forge specs through the existing capability/economy/contention/value-provenance rules only.
+- **P6 — social/event breadth + alpha calibration** *(delivered; D050 / #54)*: deterministic authored social presentation, social-density telemetry, and a calibration decision taken from the measured report.
 
 **P0 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-world-content-roster.md`, D044): the live five-peer / one-target world is now authored in `src/content/world-content.ts`, not inside the runtime fixture. Actor/target archetype tags are editorial metadata only and are stripped before `WorldState`. The content boundary validates duplicate ids, actor ranges/ranks, assistant model references, empty infrastructure, dangling ownership and owner/target identity drift, then deep-clones definitions before simulation authority can mutate them. `slice-world.ts` now owns scenario facts only: player, seed, starting network/economy. P0 intentionally adds no breadth, so the full Phase 2–7 deterministic suite remains the compatibility proof; P2 can later add entries without teaching runtime code individual handles.
 
@@ -402,6 +396,15 @@ Grounded slice order:
 
 
 **P3 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-contract-breadth.md`, D047): contracts remain predicates over the freeform simulation rather than scripted missions. `recon-report` still sells observed service evidence; `infrastructure-map` asks for observed machine coverage; `quiet-recon` requires known infrastructure plus a post-acceptance recon-stage disengagement; `intrusion` keeps the post-acceptance escalation requirement. All four reuse accept/decline/deliver, ordinary expiry, ledger payout, issuer trust, forum provenance and reputation movement. `requiredMachines` parallels `requiredServices` as visible persisted scope; no mission-progress flag, new gameplay verb, target level or rank gate is introduced. P1 telemetry is rerun through public commands so P6 can later calibrate the measured opportunity mix rather than P3 hiding its consequences.
+
+
+**P4 delivered** (`docs/superpowers/plans/2026-10-05-phase-8-location-breadth.md`, D048): the housing catalog grows from four to eight entries without adding a location subsystem. Four new quiet/hidden workspace/residential trade-offs reuse the existing lease id, derived presence, symmetric relocation time, daily upkeep, capability fold and anonymity-based physical counterplay. Existing listings remain unchanged, safehouses remain capability-zero, and rank never affects leasing. No save migration, new command/event family or RNG is introduced; P1 telemetry is expected to remain outcome-identical because its policies never rent housing, with only the authored housing count moving from 4 to 8.
+
+
+**P5 delivered** (`docs/superpowers/plans/2026-10-06-phase-8-market-breadth.md`, D049): the ordinary market broadens to 8 hardware components, 7 complete machines, 7 models, 5 authored tools, 5 premium software licenses and 5 self-built workflow specs. New entries reuse the existing five-axis capability vector, cloud-rent/local-property model economics, named-author ledger provenance, tool resale, software upkeep and Forge quality/contention paths. Every added premium license has a self-built spec with the exact same effect. The Annealing Rack remains the only exotic machine. No new effect kind, command/event/state field, rank gate or migration is introduced, and P1 telemetry is required to remain outcome-identical apart from authored catalog counts.
+
+
+**P6 delivered** (`docs/superpowers/plans/2026-10-06-phase-8-social-events-calibration.md`, D050): social presentation and alpha calibration close Content Alpha. Authored incident/forum/rumor/message/contract wording now resolves from variant tables keyed on the record's persisted authoritative id, so presentation varies deterministically while no simulation input changes. Telemetry `version: 2` adds a per-scenario `social` block, and the 32-seed report was regenerated both at the P3 merge and at this head: after allowlisting `version`, `authoredContent` and `scenarios.*.social`, **zero fields differ**, which proves the P4 and P5 neutrality promises that were previously only asserted. The measured alpha distribution justifies no calibration: feed/inbox/forum visible windows stay at 8.6–8.8 / 5.8–6.1 / 3.3–4.3 days, expired-over-created contract traffic is 0.07–0.08% for the working policies, and a 16-day browser run confirms varied, ambiguous, reload-stable social copy. Market affordability remains unmeasurable by this harness because no policy purchases content, and the `known`/`entangled` pressure bands never occur in 128 runs; both are recorded as follow-ups rather than tuned inside a calibration slice, since the levers involved are pinned by deliberate test contracts or sit in Phase 7 threat territory.
 
 
 Deliverables:
@@ -418,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: planned / blocked by #26. Tracked by #27.**
+**Status: planned — unblocked by #26 (Content Alpha, D050). Tracked by #27.**
 
 Deliverables:
 - onboarding,
