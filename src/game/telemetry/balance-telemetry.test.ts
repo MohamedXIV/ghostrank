@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BALANCE_TELEMETRY_HORIZON_DAYS,
   BALANCE_TELEMETRY_SEEDS,
+  CANONICAL_BETA_VARIED_SEEDS,
   authoredContentCounts,
   numericSummary,
   runBalanceTelemetry,
@@ -78,6 +79,8 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
 
     expect(report.version).toBe(3);
     expect(report.seedCount).toBe(BALANCE_TELEMETRY_SEEDS);
+    expect(report.seeds).toEqual(CANONICAL_BETA_VARIED_SEEDS);
+    expect(new Set(report.seeds).size).toBe(BALANCE_TELEMETRY_SEEDS);
     expect(report.horizonDays).toBe(BALANCE_TELEMETRY_HORIZON_DAYS);
 
     const idle = report.scenarios.idle;
