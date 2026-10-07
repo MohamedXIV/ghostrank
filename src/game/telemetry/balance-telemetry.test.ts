@@ -76,7 +76,7 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
 
     console.info("PHASE8_P1_TELEMETRY", JSON.stringify(report));
 
-    expect(report.version).toBe(2);
+    expect(report.version).toBe(3);
     expect(report.seedCount).toBe(BALANCE_TELEMETRY_SEEDS);
     expect(report.horizonDays).toBe(BALANCE_TELEMETRY_HORIZON_DAYS);
 
@@ -98,6 +98,20 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     expect(idle.contracts.completed).toBe(0);
     expect(idle.threat.escalations).toBe(0);
     expect(idle.pressureBands.ordinary).toBe(BALANCE_TELEMETRY_SEEDS);
+    expect(idle.economy.purchasing.totalSpent.max).toBe(0);
+
+    const cautiousNovice = report.scenarios["cautious-novice"];
+    expect(cautiousNovice.sampleCount).toBe(BALANCE_TELEMETRY_SEEDS);
+    expect(cautiousNovice.contracts.completed).toBeGreaterThan(0);
+    // Cautious novice paces work and achieves middle pressure bands
+    expect(
+      cautiousNovice.everReachedPressureBands.known +
+        cautiousNovice.pressureBands.known,
+    ).toBeGreaterThan(0);
+    expect(
+      cautiousNovice.everReachedPressureBands.entangled +
+        cautiousNovice.pressureBands.entangled,
+    ).toBeGreaterThan(0);
 
     const contractor = report.scenarios.contractor;
     expect(contractor.sampleCount).toBe(BALANCE_TELEMETRY_SEEDS);
@@ -124,6 +138,21 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
         reckless.social.messages,
     ).toBeGreaterThan(0);
 
+    const rigBuilder = report.scenarios["rig-builder"];
+    expect(rigBuilder.sampleCount).toBe(BALANCE_TELEMETRY_SEEDS);
+    expect(rigBuilder.economy.purchasing.hardwareCount.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.hardwareCredits.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.housingUpkeep.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.softwareUpkeep.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.modelAcquisition.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.toolCount.max).toBeGreaterThan(0);
+    expect(rigBuilder.economy.purchasing.totalSpent.max).toBeGreaterThan(0);
+    expect(rigBuilder.purchasedCoverage.hardwareIds.length).toBeGreaterThan(0);
+    expect(rigBuilder.purchasedCoverage.housingIds.length).toBeGreaterThan(0);
+    expect(rigBuilder.purchasedCoverage.softwareIds.length).toBeGreaterThan(0);
+    expect(rigBuilder.purchasedCoverage.modelIds.length).toBeGreaterThan(0);
+    expect(rigBuilder.purchasedCoverage.toolIds.length).toBeGreaterThan(0);
+
     const careerExit = report.scenarios["career-exit"];
     expect(careerExit.sampleCount).toBe(BALANCE_TELEMETRY_SEEDS);
     expect(
@@ -142,4 +171,30 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
       expect(summary.social.messages).toBeGreaterThanOrEqual(0);
     }
   }, 600_000);
+
+  it("measures purchasing telemetry and timing under rig-builder policy across varied run seeds", () => {
+    const sample = sampleBalanceRun("rig-builder", 104729, 30);
+
+    expect(sample.purchases.hardwareCount).toBeGreaterThan(0);
+    expect(sample.purchases.totalSpent).toBeGreaterThan(0);
+    expect(sample.purchases.catalogCoverage.hardwareIds.length).toBeGreaterThan(0);
+    expect(sample.purchases.firstPurchaseMinutes.hardware).not.toBeNull();
+  });
+
+  it("measures reachability of known and entangled pressure bands under cautious novice", () => {
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+    const samples = seeds.map((s) => sampleBalanceRun("cautious-novice", s, 30));
+
+    const reachedKnown = samples.some(
+      (s) => s.everReachedPressureBands.known || s.pressureBand === "known",
+    );
+    const reachedEntangled = samples.some(
+      (s) =>
+        s.everReachedPressureBands.entangled ||
+        s.pressureBand === "entangled",
+    );
+
+    expect(reachedKnown).toBe(true);
+    expect(reachedEntangled).toBe(true);
+  });
 });
