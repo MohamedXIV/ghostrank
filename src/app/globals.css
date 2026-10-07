@@ -270,16 +270,18 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not(.desktop-surface[data-motion-mode="standard"] *),
+  *:not(.desktop-surface[data-motion-mode="standard"] *)::before,
+  *:not(.desktop-surface[data-motion-mode="standard"] *)::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 
-  .ui-button:active:not(:disabled) {
+  .ui-button:active:not(:disabled):not(
+      .desktop-surface[data-motion-mode="standard"] *
+    ) {
     transform: none;
   }
 }
@@ -1956,8 +1958,8 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .distro-card,
-  .distro-progress > span {
+  .desktop-surface:not([data-motion-mode="standard"]) .distro-card,
+  .desktop-surface:not([data-motion-mode="standard"]) .distro-progress > span {
     transition: none;
   }
 }
@@ -2991,9 +2993,9 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .req-progress-fill,
-  .capability-bar-current,
-  .capability-bar-delta {
+  .desktop-surface:not([data-motion-mode="standard"]) .req-progress-fill,
+  .desktop-surface:not([data-motion-mode="standard"]) .capability-bar-current,
+  .desktop-surface:not([data-motion-mode="standard"]) .capability-bar-delta {
     transition: none !important;
   }
 }
