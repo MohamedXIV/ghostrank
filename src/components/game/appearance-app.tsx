@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useEffectiveReducedMotion } from "@/components/game/window-motion";
 import {
   transitionDurationMs,
@@ -71,7 +72,12 @@ export function AppearanceApp() {
   const openOrientationModal = useOnboardingStore((state) => state.openOrientationModal);
   const openLegendModal = useOnboardingStore((state) => state.openLegendModal);
   const reducedMotion = useEffectiveReducedMotion();
+  const ignoreInstallerEscape = useCallback(() => {}, []);
   const [transition, setTransition] = useState<ActiveTransition | null>(null);
+  const installerPanelRef = useModalFocus<HTMLDivElement>({
+    isOpen: transition !== null,
+    onClose: ignoreInstallerEscape,
+  });
   const lastStageId = useRef<string | null>(null);
   const activeProfile = DISTRO_PROFILES[distroId];
   const transitionDistroId = transition?.distroId ?? null;
@@ -515,7 +521,31 @@ export function AppearanceApp() {
           aria-modal="true"
           aria-labelledby="distro-installer-title"
         >
-          <div className="distro-installer-panel">
+          <div
+            ref={installerPanelRef}
+            className="distro-installer-panel"
+            tabIndex={-1}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (
+                  transition.kind === "install" &&
+                  frame.progress < 90
+                ) {
+                  setTransition(null);
+                }
+                return;
+              }
+
+              // Do not let OS-level shortcuts act behind an aria-modal installer.
+              if (event.key === "F1" || event.altKey) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+          >
             <div className="distro-installer-brand" aria-hidden="true">
               {DISTRO_PROFILES[transition.distroId].glyph}
             </div>
