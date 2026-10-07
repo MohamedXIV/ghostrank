@@ -315,6 +315,206 @@ textarea:focus-visible,
   letter-spacing: 0.18em;
 }
 
+.ending-presentation {
+  display: block;
+  overflow: auto;
+  padding: clamp(18px, 5vh, 48px) clamp(14px, 5vw, 52px);
+  text-align: left;
+}
+
+.ending-presentation[data-ending="arrested"] { --ending-mark: var(--danger); }
+.ending-presentation[data-ending="unmasked"] { --ending-mark: var(--truth-inferred); }
+.ending-presentation[data-ending="missing"] { --ending-mark: var(--truth-observed); }
+.ending-presentation[data-ending="compromised"] { --ending-mark: var(--danger); }
+.ending-presentation[data-ending="stranded"] { --ending-mark: var(--warning); }
+.ending-presentation[data-ending="retired"] { --ending-mark: var(--success); }
+.ending-presentation[data-ending="vanished"] { --ending-mark: var(--foreground-muted); }
+
+.ending-monument {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 30px);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--ending-mark, var(--accent));
+  border-radius: var(--radius-panel);
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--ending-mark) 11%, transparent), transparent 24rem),
+    color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: var(--shadow-window);
+}
+
+.ending-monument-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  padding: 4px 0 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ending-monument-glyph {
+  color: var(--ending-mark, var(--accent));
+  font-family: var(--font-mono);
+  font-size: clamp(38px, 7vw, 68px);
+  line-height: 1;
+  text-shadow: 0 0 32px color-mix(in srgb, var(--ending-mark) 34%, transparent);
+}
+
+.ending-kicker,
+.ending-final-time strong,
+.ending-run-summary strong {
+  font-family: var(--font-mono);
+}
+
+.ending-kicker {
+  color: var(--ending-mark, var(--accent));
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.ending-monument h1 {
+  margin: 5px 0 0;
+  color: var(--foreground);
+  font-size: clamp(22px, 4vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.ending-epitaph {
+  margin: 7px 0 0;
+  color: var(--foreground-muted);
+  font-size: var(--text-sm);
+}
+
+.ending-final-time {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+.ending-final-time strong {
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+.ending-record {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--ending-mark, var(--accent));
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.ending-record p {
+  margin: 5px 0 0;
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+.ending-variant {
+  display: inline-block;
+  margin-top: 7px;
+  color: var(--ending-mark, var(--accent));
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.ending-run-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ending-run-summary > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.ending-run-summary .panel-label {
+  min-height: 1.8em;
+  font-size: 8px;
+}
+
+.ending-run-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+.ending-evidence {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.ending-evidence-heading,
+.ending-evidence ol,
+.ending-evidence li {
+  display: flex;
+}
+
+.ending-evidence-heading {
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--foreground-muted);
+  font-size: 9px;
+}
+
+.ending-evidence ol {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.ending-evidence li {
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: var(--text-xs);
+}
+
+.ending-evidence-kind {
+  flex: 0 0 130px;
+  color: var(--ending-mark, var(--accent));
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.ending-evidence-text {
+  flex: 1;
+  color: var(--foreground);
+}
+
+.ending-evidence time {
+  color: var(--foreground-muted);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.ending-no-evidence,
+.history-empty-note {
+  margin: 8px 0 0;
+  color: var(--foreground-muted);
+  font-size: var(--text-xs);
+}
+
+.ending-actions {
+  margin-top: 20px;
+}
+
 .boot-line {
   color: var(--muted);
   font-size: 11px;
@@ -903,12 +1103,34 @@ textarea:focus-visible,
   display: grid;
   grid-template-rows: 58px 1fr 54px;
   background:
-    radial-gradient(circle at 70% 26%, rgb(115 39 52 / 10%), transparent 22rem),
+    radial-gradient(circle at 22% 78%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 25rem),
+    radial-gradient(circle at 70% 26%, rgb(115 39 52 / 8%), transparent 22rem),
     #04070a;
+  isolation: isolate;
+}
+
+.room-surface::before {
+  position: absolute;
+  z-index: 1;
+  inset: 58px 0 54px;
+  pointer-events: none;
+  content: "";
+  opacity: 0;
+  background: radial-gradient(ellipse at 73% 38%, rgb(175 96 72 / 14%), transparent 35rem);
+  transition: opacity 700ms ease;
+}
+
+.room-surface[data-room-tension="known-signal"]::before {
+  opacity: 1;
+}
+
+.room-surface[data-motion-reduced="true"]::before {
+  transition: none;
 }
 
 .room-hud,
 .room-caption {
+  position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -941,6 +1163,20 @@ textarea:focus-visible,
   font-size: 10px;
 }
 
+.room-caption > span:first-child {
+  max-width: min(70%, 780px);
+  line-height: 1.5;
+}
+
+.room-warning {
+  flex: 0 0 auto;
+  margin-left: 10px;
+  color: var(--warning);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
 /* Phase 6 P0 — the room's own relocation controls. They render the projected
    presence and issue physical intents only; the cost of a move stays in the
    simulation. */
@@ -967,6 +1203,8 @@ textarea:focus-visible,
 }
 
 .phaser-room {
+  position: relative;
+  z-index: 0;
   min-height: 0;
   width: 100%;
   height: 100%;
@@ -2745,6 +2983,106 @@ textarea:focus-visible,
   color: var(--foreground-muted);
 }
 
+.history-ending-line {
+  margin: 4px 0 0;
+  color: var(--foreground-muted);
+  font-size: var(--text-xs);
+}
+
+.history-run-card[data-ending="arrested"] { --history-ending-mark: var(--danger); }
+.history-run-card[data-ending="unmasked"] { --history-ending-mark: var(--truth-inferred); }
+.history-run-card[data-ending="missing"] { --history-ending-mark: var(--truth-observed); }
+.history-run-card[data-ending="compromised"] { --history-ending-mark: var(--danger); }
+.history-run-card[data-ending="stranded"] { --history-ending-mark: var(--warning); }
+.history-run-card[data-ending="retired"] { --history-ending-mark: var(--success); }
+.history-run-card[data-ending="vanished"] { --history-ending-mark: var(--foreground-muted); }
+
+.history-run-card .ending-hero-banner {
+  border-left: 2px solid var(--history-ending-mark, var(--accent));
+}
+
+.history-run-card .ending-glyph,
+.history-run-card .ending-badge {
+  color: var(--history-ending-mark, var(--accent));
+}
+
+.run-timeline-section {
+  padding-top: var(--space-2);
+}
+
+.run-timeline-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.run-timeline-heading p,
+.postmortem-sequence-note {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 9px;
+}
+
+.run-event-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.run-event {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.run-event-glyph {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.run-event-escalation .run-event-glyph,
+.run-event-retaliation .run-event-glyph,
+.run-event-physical-threat .run-event-glyph {
+  color: var(--warning);
+}
+
+.run-event-investigation .run-event-glyph,
+.run-event-ending .run-event-glyph {
+  color: var(--history-ending-mark, var(--accent));
+}
+
+.run-event-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.run-event-meta time {
+  color: var(--foreground-muted);
+}
+
+.run-event-copy p {
+  margin: 2px 0 0;
+  color: var(--foreground);
+  font-size: var(--text-xs);
+}
+
 .career-metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -2854,10 +3192,14 @@ textarea:focus-visible,
   color: var(--warning);
 }
 
-.causal-stepper {
+.sequence-stepper {
   display: flex;
   flex-direction: column;
   margin-top: 4px;
+}
+
+.postmortem-sequence-note {
+  padding-top: 2px;
 }
 
 .stepper-node {
@@ -4067,5 +4409,3 @@ textarea:focus-visible,
 .lifecycle-actions-center {
   justify-content: center;
 }
-
-

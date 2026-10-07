@@ -4,10 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCell, useRow, useTable } from "tinybase/ui-react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
+import { useEffectiveReducedMotion } from "@/components/game/window-motion";
 import { physicalIntentToCommand, presentRoom } from "@/game/phaser/bridge";
 import type { VisiblePresence } from "@/game/simulation/projection/project-world";
 import { derivePresence } from "@/game/simulation/systems/location";
+import type { PhysicalSignalKind } from "@/game/simulation/state/world-state";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
+import { DISTRO_PROFILES } from "@/presentation/distros";
+import { playDistroSound } from "@/presentation/distro-sound";
+import {
+  describePhysicalRoomSignal,
+  latestKnownRoomSignal,
+} from "@/presentation/room-atmosphere";
+import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 
 /**
  * The un-leased room, taken from the catalog's own baseline through the same
@@ -27,23 +36,6 @@ const ANONYMITY_FLAVOR: Record<VisiblePresence["anonymity"], string> = {
   hidden: "nobody here knows the handle on the screen",
 };
 
-function physicalRoomCue(kind: string): string {
-  switch (kind) {
-    case "strange-vehicle":
-      return "the same unfamiliar car was outside";
-    case "door-camera-motion":
-      return "the door camera caught motion, then nobody";
-    case "outage":
-      return "power dropped while the block stayed lit";
-    case "unusual-connectivity":
-      return "the local link behaved wrong for a while";
-    case "nearby-activity":
-      return "there was too much quiet movement nearby";
-    default:
-      return "something outside did not fit";
-  }
-}
-
 interface RoomSurfaceProps {
   runtime: GameRuntime;
   onUseDesk: () => void;
@@ -51,6 +43,9 @@ interface RoomSurfaceProps {
 
 export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useEffectiveReducedMotion();
+  const distroId = usePresentationStore((state) => state.distroId);
+  const soundEnabled = usePresentationStore((state) => state.soundEnabled);
   const worldMinute = Number(
     useCell("meta", "world", "worldMinute", runtime.projection) ?? 0,
   );
@@ -78,20 +73,41 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
   // journey shown here is the journey the projection already priced.
   const destinations = useTable("housing", runtime.projection);
   const physicalSignals = useTable("physicalSignals", runtime.projection);
-  const latestPhysicalSignal = useMemo(
+  const projectedRoomSignals = useMemo(
     () =>
-      Object.entries(physicalSignals)
-        // A signal from a room the player already left remains in ATTENTION
-        // history, but it must not masquerade as this room's atmosphere.
-        .filter(([, entry]) => entry.atCurrentLocation === true)
-        .sort(
-          ([idA, a], [idB, b]) =>
-            Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-            idB.localeCompare(idA, undefined, { numeric: true }),
-        )
-        .at(0)?.[1],
+      Object.entries(physicalSignals).map(([id, entry]) => ({
+        id,
+        kind: String(entry.kind) as PhysicalSignalKind,
+        worldMinute: Number(entry.worldMinute ?? 0),
+        atCurrentLocation: entry.atCurrentLocation === true,
+      })),
     [physicalSignals],
   );
+  const latestPhysicalSignal = useMemo(
+    () => latestKnownRoomSignal(projectedRoomSignals),
+    [projectedRoomSignals],
+  );
+  const latestPhysicalSignalId = latestPhysicalSignal?.id ?? null;
+  const roomCueRef = useRef<{ mounted: boolean; id: string | null }>({
+    mounted: false,
+    id: null,
+  });
+
+  useEffect(() => {
+    const currentId = latestPhysicalSignalId;
+    if (!roomCueRef.current.mounted) {
+      roomCueRef.current = { mounted: true, id: currentId };
+      return;
+    }
+    if (currentId && currentId !== roomCueRef.current.id) {
+      playDistroSound(
+        DISTRO_PROFILES[distroId].sound,
+        "warning",
+        soundEnabled,
+      );
+    }
+    roomCueRef.current.id = currentId;
+  }, [latestPhysicalSignalId, distroId, soundEnabled]);
   const [destination, setDestination] = useState("");
   const relocationOptions = useMemo(() => {
     const rows: { id: string; label: string }[] = [];
@@ -175,14 +191,18 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
             .rectangle(635, 180, 88, 78, 0x6d2331, 0.08)
             .setStrokeStyle(2, 0x3f5965, 0.7);
 
-          this.tweens.add({
-            targets: windowGlow,
-            alpha: { from: 0.08, to: 0.34 },
-            duration: 2_400,
-            yoyo: true,
-            repeat: -1,
-            repeatDelay: 1_900,
-          });
+          if (reducedMotion) {
+            windowGlow.setAlpha(0.16);
+          } else {
+            this.tweens.add({
+              targets: windowGlow,
+              alpha: { from: 0.08, to: 0.34 },
+              duration: 2_400,
+              yoyo: true,
+              repeat: -1,
+              repeatDelay: 1_900,
+            });
+          }
 
           this.add
             .rectangle(480, 220, 190, 60, 0x1a2025, 1)
@@ -254,10 +274,15 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
       disposed = true;
       game?.destroy(true);
     };
-  }, [onUseDesk]);
+  }, [onUseDesk, reducedMotion]);
 
   return (
-    <section className="room-surface" aria-label="Physical room">
+    <section
+      className="room-surface"
+      aria-label="Physical room"
+      data-room-tension={latestPhysicalSignal ? "known-signal" : "quiet"}
+      data-motion-reduced={reducedMotion ? "true" : "false"}
+    >
       <div className="room-hud">
         <div>
           <span className="panel-label">LOCATION</span>
@@ -277,9 +302,14 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
           {presentation.distant ? " // the trip here cost hours" : ""}
           {presentation.leased ? "" : " // no keys in this room"}
           {latestPhysicalSignal
-            ? ` // OUTSIDE @ ${formatWorldTime(Number(latestPhysicalSignal.worldMinute ?? 0))}: ${physicalRoomCue(String(latestPhysicalSignal.kind ?? ""))}`
+            ? ` // OUTSIDE @ ${formatWorldTime(latestPhysicalSignal.worldMinute)}: ${describePhysicalRoomSignal(latestPhysicalSignal.kind)}`
             : ""}
         </span>
+        {latestPhysicalSignal ? (
+          <span className="room-warning" role="status">
+            KNOWN PHYSICAL SIGNAL
+          </span>
+        ) : null}
         <div className="room-relocation">
           <label className="panel-label">
             RELOCATE

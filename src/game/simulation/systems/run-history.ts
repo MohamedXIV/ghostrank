@@ -1,5 +1,9 @@
 import { derivePostmortems, type PostmortemRead } from "@/game/simulation/systems/postmortem";
 import {
+  deriveRunTimeline,
+  type RunTimelineBeat,
+} from "@/game/simulation/systems/run-timeline";
+import {
   deriveReputationDescriptors,
   type ReputationDescriptor,
 } from "@/game/simulation/systems/reputation";
@@ -38,6 +42,7 @@ export interface CompletedRunSummary {
   compromiseCount: number;
   descriptors: ReputationDescriptor[];
   postmortems: PostmortemRead[];
+  timeline: RunTimelineBeat[];
 }
 
 /**
@@ -87,5 +92,6 @@ export function deriveCompletedRunSummary(
     compromiseCount: world.compromises.length,
     descriptors: deriveReputationDescriptors(world),
     postmortems: derivePostmortems(world),
+    timeline: deriveRunTimeline(world),
   };
 }

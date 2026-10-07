@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
-import { formatWorldTime } from "@/game/computer/format-world-time";
 import { DISTRO_PROFILES } from "@/presentation/distros";
 import { RoomSurface } from "@/components/game/room-surface";
+import { EndingScreen } from "@/components/game/ending/ending-screen";
 import {
   createGameSession,
   type GameSession,
@@ -455,40 +455,12 @@ function ActiveGameShell({
 }) {
   const ended =
     useCell("meta", "run", "ended", session.projection) === true;
-  const endingLabel = String(
-    useCell("meta", "run", "label", session.projection) ?? "",
-  );
-  const endingMinute = Number(
-    useCell("meta", "run", "worldMinute", session.projection) ?? 0,
-  );
-  const endingDetail = String(
-    useCell("meta", "run", "detail", session.projection) ?? "",
-  );
-
   if (ended) {
     return (
-      <main className="game-shell">
-        <section className="boot-screen" aria-label="Run ended" aria-live="polite">
-          <div className="boot-mark">{endingLabel || "RUN ENDED"}</div>
-          <div className="boot-line">
-            final // {formatWorldTime(endingMinute)}
-          </div>
-          <div className="boot-line">
-            {endingDetail ||
-              "the handle is closed // this run accepts no further commands"}
-          </div>
-          <div className="lifecycle-actions lifecycle-actions-center" style={{ marginTop: 24 }}>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onStartNewRun}
-              title="Initialize a fresh simulation run with a new random seed"
-            >
-              + START NEW OPERATION
-            </Button>
-          </div>
-        </section>
-      </main>
+      <EndingScreen
+        projection={session.projection}
+        onStartNewRun={onStartNewRun}
+      />
     );
   }
 
@@ -509,4 +481,3 @@ function ActiveGameShell({
     </main>
   );
 }
-
