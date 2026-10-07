@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SeededRng } from "@/game/simulation/rng/seeded-rng";
+import { SeededRng, generateRunSeed } from "@/game/simulation/rng/seeded-rng";
 
 describe("SeededRng", () => {
   it("produces the same sequence for the same seed", () => {
@@ -23,4 +23,18 @@ describe("SeededRng", () => {
       expect(value).toBeLessThan(1);
     }
   });
+
+  it("generates varying positive 32-bit unsigned integers", () => {
+    const seeds = new Set<number>();
+    for (let i = 0; i < 50; i += 1) {
+      const seed = generateRunSeed();
+      expect(seed).toBeGreaterThan(0);
+      expect(Number.isInteger(seed)).toBe(true);
+      expect(seed).toBeLessThanOrEqual(0xffffffff);
+      seeds.add(seed);
+    }
+    // Across 50 generations, there should be multiple distinct seeds
+    expect(seeds.size).toBeGreaterThan(1);
+  });
 });
+
