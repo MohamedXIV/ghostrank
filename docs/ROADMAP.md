@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: active — P0 delivered; P1 is next. Tracked by #27.**
+**Status: active — P0 and P1 delivered; P2 is next. Tracked by #27.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 
@@ -429,7 +429,7 @@ Canonical interface direction: `docs/INTERFACE_AND_DISTROS.md` / D051.
 
 Grounded slice order:
 - **P0 — UI foundation + semantic visual language** *(delivered; #57 / PR #66)*: semantic tokens, owned shared primitives, UI/terminal typography separation, non-color epistemic markers, focus/reduced-motion baseline, and restrained Motion window transitions.
-- **P1 — OS shell + distro/theme architecture**: presentation-only Ghost/OS, Lattice, Velvet, Daybreak and Petal profiles; persisted theme/settings; shell/chrome integration.
+- **P1 — OS shell + distro/theme architecture** *(delivered; #58 / PR #67)*: five cosmetic distro profiles, Petal Light/Night, installed-distro inventory and versioned presentation settings, in-world staged installer/reboot, short boot for installed distros, distinct optional sounds with mute, and distro-aware shell/chrome without gameplay changes.
 - **P2 — visual-first app information**: Recon topology, relationship/rival signatures, evidence semantics, contract/deadline visuals, market comparisons, rich terminal output and History/postmortem timelines.
 - **P3 — onboarding + discoverability**: teach the fictional OS/capability model through contextual, dismissible in-world guidance.
 - **P4 — accessibility + interaction comfort**: keyboard/focus, contrast, non-color cues, reduced motion, UI/text scale, reduced transparency and dense-data readability.
