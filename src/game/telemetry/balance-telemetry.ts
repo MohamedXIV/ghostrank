@@ -91,6 +91,11 @@ export interface PurchasingTelemetry {
   toolCredits: number;
   totalSpent: number;
   upkeepLapses: number;
+  /**
+   * First wallet-cost minute by domain. For housing/software this is the first
+   * recurring upkeep/license debit, because activating those services is free.
+   * For hardware/models/tools it is the one-time acquisition debit.
+   */
   firstPurchaseMinutes: {
     hardware: number | null;
     housing: number | null;
