@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
@@ -35,6 +35,23 @@ export type ShellLifecyclePhase =
     }
   | { type: "prompt_new_run"; activeSession: GameSession };
 
+export async function prepareFreshRunState(
+  previousSession: GameSession | null,
+  persistence: RunPersistence | null,
+) {
+  if (previousSession) {
+    await previousSession.flush();
+  }
+
+  const freshState = createNewRunWorldState();
+
+  if (persistence) {
+    await persistence.saveActiveState(freshState, []);
+  }
+
+  return freshState;
+}
+
 export function GameShell() {
   const [lifecycle, setLifecycle] = useState<ShellLifecyclePhase>({
     type: "booting",
@@ -42,6 +59,7 @@ export function GameShell() {
   });
   const [persistenceInstance, setPersistenceInstance] =
     useState<RunPersistence | null>(null);
+  const activeSessionRef = useRef<GameSession | null>(null);
 
   const activeSurface = useUiStore((state) => state.activeSurface);
   const setActiveSurface = useUiStore((state) => state.setActiveSurface);
@@ -60,6 +78,15 @@ export function GameShell() {
   useEffect(() => {
     hydratePresentation();
   }, [hydratePresentation]);
+
+  useEffect(() => {
+    activeSessionRef.current =
+      lifecycle.type === "active"
+        ? lifecycle.session
+        : lifecycle.type === "prompt_new_run"
+          ? lifecycle.activeSession
+          : null;
+  }, [lifecycle]);
 
   const bootSimulation = useCallback(async (forcedSeed?: number) => {
     setLifecycle({ type: "booting", note: "opening local persistence" });
@@ -139,12 +166,12 @@ export function GameShell() {
 
     return () => {
       disposed = true;
-      if (lifecycle.type === "active") {
-        void lifecycle.session.flush();
+      const activeSession = activeSessionRef.current;
+      if (activeSession) {
+        void activeSession.flush();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bootSimulation]);
 
 
   const enterComputer = useCallback(() => {
@@ -187,16 +214,11 @@ export function GameShell() {
       // Do not let a delayed autosave from the previous session race with and
       // overwrite the fresh run. Ended sessions also need their archive move
       // fully settled before the next active slot is created.
-      if (previousSession) {
-        await previousSession.flush();
-      }
-
       setLifecycle({ type: "booting", note: "initializing new simulation run" });
-      const freshState = createNewRunWorldState();
-
-      if (persistenceInstance) {
-        await persistenceInstance.saveActiveState(freshState, []);
-      }
+      const freshState = await prepareFreshRunState(
+        previousSession,
+        persistenceInstance,
+      );
 
       const nextSession = await createGameSession({
         initialState: freshState,
