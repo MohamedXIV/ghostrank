@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatDetailedHelp,
   formatRichCommandResult,
   formatRichError,
+  TERMINAL_GUIDE_TABLE,
   TERMINAL_HELP_TABLE,
+  TERMINAL_LEGEND_TABLE,
 } from "@/components/game/terminal/rich-terminal";
 
 describe("Rich Terminal formatting presentation contracts", () => {
@@ -41,5 +44,32 @@ describe("Rich Terminal formatting presentation contracts", () => {
     expect(TERMINAL_HELP_TABLE).toContain("RECONNAISSANCE");
     expect(TERMINAL_HELP_TABLE).toContain("RIG & INFRASTRUCTURE");
     expect(TERMINAL_HELP_TABLE).toContain("UNDERGROUND & CAREER");
+    expect(TERMINAL_HELP_TABLE).toContain("SYSTEM DISCOVERY");
+  });
+
+  it("provides detailed syntax help for specific commands", () => {
+    const observeHelp = formatDetailedHelp("observe");
+    expect(observeHelp).not.toBeNull();
+    expect(observeHelp).toContain("observe <target>");
+    expect(observeHelp).toContain("Reconnaissance");
+
+    const surveyHelp = formatDetailedHelp("SURVEY");
+    expect(surveyHelp).not.toBeNull();
+    expect(surveyHelp).toContain("survey <target>");
+
+    expect(formatDetailedHelp("nonexistent_command")).toBeNull();
+  });
+
+  it("formats epistemic truth vocabulary and field guide tables cleanly", () => {
+    expect(TERMINAL_LEGEND_TABLE).toContain("EPISTEMIC TRUTH VOCABULARY");
+    expect(TERMINAL_LEGEND_TABLE).toContain("CONFIRMED (●)");
+    expect(TERMINAL_LEGEND_TABLE).toContain("OBSERVED  (○)");
+    expect(TERMINAL_LEGEND_TABLE).toContain("INFERRED  (◇)");
+    expect(TERMINAL_LEGEND_TABLE).toContain("AI CONFIDENCE PIPS");
+
+    expect(TERMINAL_GUIDE_TABLE).toContain("OPERATIONAL FIELD GUIDE");
+    expect(TERMINAL_GUIDE_TABLE).toContain("observe <target>");
+    expect(TERMINAL_GUIDE_TABLE).toContain("survey <target>");
+    expect(TERMINAL_GUIDE_TABLE).toContain("inspect <machine>");
   });
 });

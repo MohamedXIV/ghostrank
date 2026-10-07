@@ -56,14 +56,23 @@ import { ContractCard } from "@/components/game/contracts/contract-card";
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
 import { RunTimeline } from "@/components/game/history/run-timeline";
 import {
+  formatDetailedHelp,
   formatRichCommandResult,
   formatRichError,
+  TERMINAL_GUIDE_TABLE,
   TERMINAL_HELP_TABLE,
+  TERMINAL_LEGEND_TABLE,
   TERMINAL_WELCOME_HEADER,
 } from "@/components/game/terminal/rich-terminal";
+import { ContextualHint } from "@/components/ui/contextual-hint";
+import { OrientationModal } from "@/components/game/onboarding/orientation-modal";
+import { SystemLegendModal } from "@/components/game/onboarding/system-legend-modal";
+import { FieldDirectives } from "@/components/game/onboarding/field-directives";
+import { CommandDiscovery } from "@/components/game/terminal/command-discovery";
 import { getWindowMotionProps } from "@/components/game/window-motion";
 import { DISTRO_PROFILES } from "@/presentation/distros";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
+import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -116,6 +125,16 @@ export function ComputerDesktop({
   const themeId = usePresentationStore((state) => state.themeId);
   const distro = DISTRO_PROFILES[distroId];
 
+  const hydrateOnboarding = useOnboardingStore((state) => state.hydrate);
+  const openOrientationModal = useOnboardingStore(
+    (state) => state.openOrientationModal,
+  );
+  const openLegendModal = useOnboardingStore((state) => state.openLegendModal);
+
+  useEffect(() => {
+    hydrateOnboarding();
+  }, [hydrateOnboarding]);
+
   return (
     <section
       className="desktop-surface"
@@ -133,6 +152,28 @@ export function ComputerDesktop({
           <span>RANK #{rank.toLocaleString("en-US")}</span>
           <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
+        </div>
+        <div className="os-guidance-actions">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="os-help-button"
+            onClick={openLegendModal}
+            title="Open system symbols & truth vocabulary glossary"
+            aria-label="Open system glossary"
+          >
+            ? GLOSSARY
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="os-help-button"
+            onClick={openOrientationModal}
+            title="Open operational orientation briefing"
+            aria-label="Open operational orientation briefing"
+          >
+            DIRECTIVES
+          </Button>
         </div>
         <Button className="os-room-button" onClick={onReturnToRoom}>
           ROOM
@@ -165,9 +206,21 @@ export function ComputerDesktop({
             <span className="launcher-glyph">✦</span>
             Appearance
           </button>
+          <button
+            type="button"
+            onClick={openLegendModal}
+            title="System symbols & truth vocabulary glossary"
+          >
+            <span className="launcher-glyph">?</span>
+            Glossary
+          </button>
         </nav>
 
         <div className="desktop-grid" aria-hidden="true" />
+
+        <FieldDirectives runtime={runtime} />
+        <OrientationModal />
+        <SystemLegendModal />
 
         <AnimatePresence initial={false}>
           {openWindows.includes("terminal") && (
@@ -379,15 +432,12 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
     },
   ]);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const raw = input.trim();
+  const submitCommand = (rawCommand: string) => {
+    const raw = rawCommand.trim();
     if (!raw) {
       return;
     }
 
-    setInput("");
     const promptId = `prompt-${Date.now()}`;
 
     if (raw.toLowerCase() === "help") {
@@ -395,6 +445,41 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         ...current,
         { id: promptId, type: "prompt", text: raw },
         { id: `help-${Date.now()}`, type: "table", text: TERMINAL_HELP_TABLE },
+      ]);
+      return;
+    }
+
+    if (raw.toLowerCase().startsWith("help ")) {
+      const topic = raw.slice(5).trim();
+      const detailed = formatDetailedHelp(topic);
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `help-${Date.now()}`,
+          type: "table",
+          text:
+            detailed ??
+            `Unknown command '${topic}'. Type 'help' to review the command directory.`,
+        },
+      ]);
+      return;
+    }
+
+    if (raw.toLowerCase() === "legend") {
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        { id: `legend-${Date.now()}`, type: "table", text: TERMINAL_LEGEND_TABLE },
+      ]);
+      return;
+    }
+
+    if (raw.toLowerCase() === "guide") {
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        { id: `guide-${Date.now()}`, type: "table", text: TERMINAL_GUIDE_TABLE },
       ]);
       return;
     }
@@ -448,8 +533,24 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
     }
   };
 
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const raw = input.trim();
+    if (!raw) {
+      return;
+    }
+    setInput("");
+    submitCommand(raw);
+  };
+
   return (
     <div className="terminal-app">
+      <ContextualHint
+        id="hint:terminal-commands"
+        title="COMMAND DISCOVERY"
+        description="Type 'help' for directory, 'help <cmd>' for syntax, or click any command chip below to discover terminal capabilities."
+      />
+
       <div className="terminal-output" aria-live="polite">
         {items.map((item) => (
           <div key={item.id} className={`terminal-entry terminal-entry-${item.type}`}>
@@ -479,6 +580,9 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
           </div>
         ))}
       </div>
+
+      <CommandDiscovery onSelectCommand={(cmd) => setInput(cmd)} />
+
       <form className="terminal-input-row" onSubmit={submit}>
         <span>cobaltxz@local:~$</span>
         <input
@@ -567,6 +671,19 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
 
   return (
     <div className="recon-app">
+      <ContextualHint
+        id="hint:recon-lead"
+        title="PASSIVE RECONNAISSANCE"
+        description="Leads start as unverified profiles. Click OBSERVE or enter 'observe <target>' to resolve the network profile before mounting operations."
+        commandSuggestion="observe nightshade"
+        onRunCommand={(cmd) => {
+          const parts = cmd.split(" ");
+          if (parts[1]) {
+            runtime.execute(observeTargetFromGui(parts[1]));
+          }
+        }}
+      />
+
       <div className="recon-lead">
         <div>
           <span className="panel-label">UNRESOLVED LEAD</span>
@@ -588,6 +705,11 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
 
       <div className="operation-panel">
         <span className="panel-label">OPERATION SESSION</span>
+        <ContextualHint
+          id="hint:recon-operation"
+          title="SAFE OPERATION STAGING"
+          description="The Recon stage gathers intelligence safely without triggering alarms. Survey host machines and inspect services before deciding whether to escalate to intrusive mode."
+        />
         {operationTargetId ? (
           <div className="operation-session">
             <div>
@@ -1117,6 +1239,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
 
       <section aria-label="Attention">
         <span className="panel-label">ATTENTION</span>
+        <ContextualHint
+          id="hint:underground-intel"
+          title="COUNTER-INTELLIGENCE & HEAT"
+          description="Rivals and corporate targets actively notice intrusions. Watch for investigation signals, probe tells, and physical heat in this log."
+        />
         {signals.length === 0 &&
         tells.length === 0 &&
         physicalSignals.length === 0 ? (
@@ -1306,6 +1433,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
 
       <section aria-label="Contracts">
         <span className="panel-label">CONTRACTS</span>
+        <ContextualHint
+          id="hint:contracts-delivery"
+          title="CONTRACT COMMISSIONS"
+          description="Contracts require verified host machines or services before delivery. Gather intelligence in Recon topology to fulfill requirements before deadlines expire."
+        />
         {contracts.length === 0 ? (
           <p className="underground-empty">No work on offer.</p>
         ) : (
@@ -1718,6 +1850,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
 
   return (
     <div className="market-app">
+      <ContextualHint
+        id="hint:market-capacity"
+        title="RIG CAPACITY & UPKEEP"
+        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
+      />
       <section aria-label="Wallet">
         <span className="panel-label">WALLET</span>
         <div className="market-wallet">
