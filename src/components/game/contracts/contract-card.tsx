@@ -79,15 +79,6 @@ export function ContractCard({
         ? ["deliver"]
         : [];
 
-  // Calculate visual progress percentage if accepted
-  const totalWindowMinutes = status === "accepted"
-    ? 24 * 60 * 2 // Default window heuristic for display
-    : 24 * 60;
-  const timeProgressPercent = Math.min(
-    100,
-    Math.max(0, 100 - (minutesRemaining / totalWindowMinutes) * 100),
-  );
-
   // Requirements progress
   const hasMachineReq = contract.requiredMachines !== undefined && contract.requiredMachines > 0;
   const hasServiceReq = contract.requiredServices !== undefined && contract.requiredServices > 0;
@@ -191,17 +182,28 @@ export function ContractCard({
             </span>
           </div>
           <div
-            className="deadline-progress-bar"
-            role="progressbar"
-            aria-valuenow={Math.round(timeProgressPercent)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Time elapsed toward deadline"
+            className="deadline-urgency-track"
+            data-urgency={urgency}
+            aria-label={`Deadline urgency: ${deadlineMeta.label}`}
           >
-            <div
-              className={`deadline-progress-fill urgency-${urgency}`}
-              style={{ width: `${timeProgressPercent}%` }}
-            />
+            {(["calm", "closing", "urgent"] as const).map((band) => (
+              <span
+                key={band}
+                className={`deadline-band deadline-band-${band}`}
+                data-active={urgency === band ? "true" : "false"}
+              >
+                {band === "calm"
+                  ? "ON SCHEDULE"
+                  : band === "closing"
+                    ? "CLOSING"
+                    : "EXPIRING"}
+              </span>
+            ))}
+            {urgency === "expired" && (
+              <span className="deadline-band deadline-band-expired" data-active="true">
+                EXPIRED
+              </span>
+            )}
           </div>
         </div>
       )}
