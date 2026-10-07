@@ -22,7 +22,7 @@ function memoryStorage(
 }
 
 describe("presentation settings persistence", () => {
-  it("round-trips installed distros, active theme and sound preference", () => {
+  it("round-trips installed distros, active theme, sound preference, and accessibility overrides", () => {
     const storage = memoryStorage();
 
     savePresentationSettings(storage, {
@@ -30,6 +30,11 @@ describe("presentation settings persistence", () => {
       themeId: "night",
       installedDistroIds: ["ghost-os", "petal"],
       soundEnabled: false,
+      textScale: "large",
+      motionMode: "reduce",
+      transparencyMode: "opaque",
+      densityMode: "comfortable",
+      contrastMode: "high",
     });
 
     expect(loadPresentationSettings(storage)).toEqual({
@@ -37,10 +42,15 @@ describe("presentation settings persistence", () => {
       themeId: "night",
       installedDistroIds: ["ghost-os", "petal"],
       soundEnabled: false,
+      textScale: "large",
+      motionMode: "reduce",
+      transparencyMode: "opaque",
+      densityMode: "comfortable",
+      contrastMode: "high",
     });
   });
 
-  it("migrates the P1 preview v1 selection and treats it as installed", () => {
+  it("migrates legacy selections and populates default accessibility overrides", () => {
     const storage = memoryStorage({
       [LEGACY_PRESENTATION_STORAGE_KEY]: JSON.stringify({
         distroId: "velvet",
@@ -53,10 +63,15 @@ describe("presentation settings persistence", () => {
       themeId: "plum",
       installedDistroIds: ["ghost-os", "velvet"],
       soundEnabled: true,
+      textScale: "normal",
+      motionMode: "system",
+      transparencyMode: "default",
+      densityMode: "compact",
+      contrastMode: "normal",
     });
   });
 
-  it("fails toward Ghost/OS for corrupt JSON", () => {
+  it("fails toward Ghost/OS and default accessibility overrides for corrupt JSON", () => {
     expect(
       loadPresentationSettings(
         memoryStorage({ [PRESENTATION_STORAGE_KEY]: "{nope" }),
@@ -66,6 +81,11 @@ describe("presentation settings persistence", () => {
       themeId: "ash",
       installedDistroIds: ["ghost-os"],
       soundEnabled: true,
+      textScale: "normal",
+      motionMode: "system",
+      transparencyMode: "default",
+      densityMode: "compact",
+      contrastMode: "normal",
     });
   });
 
@@ -82,6 +102,11 @@ describe("presentation settings persistence", () => {
           themeId: "warm",
           installedDistroIds: ["ghost-os", "daybreak"],
           soundEnabled: true,
+          textScale: "normal",
+          motionMode: "system",
+          transparencyMode: "default",
+          densityMode: "compact",
+          contrastMode: "normal",
         },
       ),
     ).not.toThrow();

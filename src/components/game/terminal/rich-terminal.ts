@@ -38,6 +38,7 @@ export const TERMINAL_HELP_TABLE: string = [
   "│ retire plan|commit|finish|cancel     │ orchestrate exit from the scene  │",
   "│ wait <minutes>     │ advance world clock                                │",
   "├── SYSTEM DISCOVERY ──────────────────────────────────────────────────────┤",
+  "│ settings [subcmd]  │ inspect or adjust display and accessibility        │",
   "│ help <command>     │ view detailed syntax and semantics for a command   │",
   "│ legend             │ display truth vocabulary and symbol glossary       │",
   "│ guide              │ display progressive operational directives         │",
@@ -150,6 +151,25 @@ export const DETAILED_COMMAND_HELP: Record<string, string> = {
     "COMMAND: guide",
     "CATEGORY: Operational Guidance",
     "PURPOSE: Displays progressive operational steps and beginner quickstart cues.",
+  ].join("\n"),
+  settings: [
+    "COMMAND: settings [scale|motion|transparency|density|contrast|sound] [value]",
+    "CATEGORY: Presentation & Accessibility",
+    "PURPOSE: Inspects or modifies client-side presentation overrides.",
+    "SUBCOMMANDS:",
+    "  settings                     - print active presentation configuration",
+    "  settings scale <normal|large|extra-large>",
+    "  settings motion <system|reduce|standard>",
+    "  settings transparency <default|opaque>",
+    "  settings density <compact|comfortable>",
+    "  settings contrast <normal|high>",
+    "  settings sound <on|off>",
+    "EXAMPLE: settings contrast high",
+  ].join("\n"),
+  accessibility: [
+    "COMMAND: accessibility",
+    "CATEGORY: Presentation & Accessibility",
+    "PURPOSE: Alias for 'settings'. Inspects display and accessibility options.",
   ].join("\n"),
 };
 

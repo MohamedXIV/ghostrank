@@ -25,4 +25,23 @@ describe("useUiStore", () => {
     expect(useUiStore.getState().openWindows).toContain("settings");
     expect(useUiStore.getState().focusedWindow).toBe("settings");
   });
+
+  it("cycles focused window forward and backward across open windows", () => {
+    useUiStore.setState({
+      openWindows: ["terminal", "recon", "market"],
+      focusedWindow: "terminal",
+    });
+
+    useUiStore.getState().cycleFocusedWindow("forward");
+    expect(useUiStore.getState().focusedWindow).toBe("recon");
+
+    useUiStore.getState().cycleFocusedWindow("forward");
+    expect(useUiStore.getState().focusedWindow).toBe("market");
+
+    useUiStore.getState().cycleFocusedWindow("forward");
+    expect(useUiStore.getState().focusedWindow).toBe("terminal");
+
+    useUiStore.getState().cycleFocusedWindow("backward");
+    expect(useUiStore.getState().focusedWindow).toBe("market");
+  });
 });

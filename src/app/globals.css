@@ -270,16 +270,18 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not(.desktop-surface[data-motion-mode="standard"] *),
+  *:not(.desktop-surface[data-motion-mode="standard"] *)::before,
+  *:not(.desktop-surface[data-motion-mode="standard"] *)::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 
-  .ui-button:active:not(:disabled) {
+  .ui-button:active:not(:disabled):not(
+      .desktop-surface[data-motion-mode="standard"] *
+    ) {
     transform: none;
   }
 }
@@ -1956,8 +1958,8 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .distro-card,
-  .distro-progress > span {
+  .desktop-surface:not([data-motion-mode="standard"]) .distro-card,
+  .desktop-surface:not([data-motion-mode="standard"]) .distro-progress > span {
     transition: none;
   }
 }
@@ -2991,9 +2993,9 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .req-progress-fill,
-  .capability-bar-current,
-  .capability-bar-delta {
+  .desktop-surface:not([data-motion-mode="standard"]) .req-progress-fill,
+  .desktop-surface:not([data-motion-mode="standard"]) .capability-bar-current,
+  .desktop-surface:not([data-motion-mode="standard"]) .capability-bar-delta {
     transition: none !important;
   }
 }
@@ -3699,5 +3701,271 @@ textarea:focus-visible,
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
+}
+
+/* ==========================================================================
+   Phase 9 P4 — Accessibility & Interaction Overrides
+   ========================================================================== */
+
+/* Universal visible focus */
+:focus-visible {
+  outline: 2px solid var(--focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* --- Text Scale Overrides --- */
+:where(.desktop-surface, .boot-screen)[data-text-scale="large"] {
+  --text-xs: 11.5px;
+  --text-sm: 13.8px;
+  --text-md: 16px;
+  font-size: 16px;
+}
+
+:where(.desktop-surface, .boot-screen)[data-text-scale="large"] .terminal-output {
+  font-size: 13.8px;
+  line-height: 1.75;
+}
+
+:where(.desktop-surface, .boot-screen)[data-text-scale="extra-large"] {
+  --text-xs: 13px;
+  --text-sm: 15.6px;
+  --text-md: 18px;
+  font-size: 18px;
+}
+
+:where(.desktop-surface, .boot-screen)[data-text-scale="extra-large"] .terminal-output {
+  font-size: 15.6px;
+  line-height: 1.8;
+}
+
+/* --- Motion Mode Overrides --- */
+:where(.desktop-surface, .boot-screen)[data-motion-mode="reduce"] *,
+:where(.desktop-surface, .boot-screen)[data-motion-mode="reduce"] *::before,
+:where(.desktop-surface, .boot-screen)[data-motion-mode="reduce"] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+:where(.desktop-surface, .boot-screen)[data-motion-mode="reduce"] .ui-button:active:not(:disabled) {
+  transform: none !important;
+}
+
+/* --- Transparency & Blur Overrides (Opaque Mode) --- */
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] .os-bar,
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] .os-footer,
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] .system-modal-backdrop,
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] .distro-installer {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] {
+  --chrome-background: var(--surface-raised);
+  --window-background: var(--surface);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="ghost-os"][data-transparency="opaque"] {
+  --chrome-background: #0c1115;
+  --window-background: #080c0f;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="lattice"][data-transparency="opaque"] {
+  --chrome-background: #0b1720;
+  --window-background: #071019;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="velvet"][data-transparency="opaque"] {
+  --chrome-background: #17101a;
+  --window-background: #100a12;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="daybreak"][data-transparency="opaque"] {
+  --chrome-background: #fffaf0;
+  --window-background: #f3efe6;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"][data-transparency="opaque"] {
+  --chrome-background: #fffafe;
+  --window-background: #fff5fa;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"][data-theme="night"][data-transparency="opaque"] {
+  --chrome-background: #221426;
+  --window-background: #190f1d;
+}
+
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"] .system-modal-backdrop {
+  background: rgb(0 0 0 / 85%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="daybreak"][data-transparency="opaque"] .system-modal-backdrop {
+  background: rgb(40 35 30 / 75%);
+}
+
+/* --- Information Density Overrides (Comfortable Mode) --- */
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] {
+  --os-bar-height: 48px;
+  --os-footer-height: 34px;
+  --window-title-height: 40px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 26px;
+  --space-6: 32px;
+}
+
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .target-card,
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .recon-lead,
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .operation-session,
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .service-row,
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .market-item-row,
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .contract-card-header {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .terminal-output {
+  padding: 18px;
+  line-height: 1.85;
+}
+
+:where(.desktop-surface, .boot-screen)[data-density="comfortable"] .os-window {
+  min-width: 360px;
+}
+
+/* --- Contrast Level Overrides (High Contrast Mode) --- */
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] {
+  --border: #4d6877;
+  --border-emphasis: #a1e2c8;
+  --foreground: #ffffff;
+  --foreground-muted: #b9cdd4;
+  --focus: #ffffff;
+  --shadow-window: 0 0 0 2px var(--border), 0 30px 90px rgb(0 0 0 / 80%);
+  --shadow-window-focused: 0 0 0 2px var(--border-emphasis), 0 32px 100px rgb(0 0 0 / 90%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] button:focus-visible,
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] input:focus-visible,
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] [tabindex]:focus-visible {
+  outline: 3px solid var(--focus) !important;
+  outline-offset: 3px !important;
+}
+
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] .os-window {
+  border-width: 2px;
+}
+
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] .truth-mark {
+  border-width: 2px;
+  font-weight: 800;
+}
+
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] .truth-mark[data-truth-level="confirmed"] {
+  color: #a4f0cd;
+  border-color: #a4f0cd;
+}
+
+:where(.desktop-surface, .boot-screen)[data-contrast="high"] .truth-mark[data-truth-level="observed"] {
+  color: #a0dcfa;
+  border-color: #a0dcfa;
+}
+
+/* Distro-specific High Contrast tuning */
+:where(.desktop-surface, .boot-screen)[data-distro="ghost-os"][data-contrast="high"] {
+  --border: #4e6b5d;
+  --border-emphasis: #b2ebd4;
+  --foreground: #ffffff;
+  --foreground-muted: #c2d6ce;
+  --accent: #b2ebd4;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="lattice"][data-contrast="high"] {
+  --border: #4a758c;
+  --border-emphasis: #9fe2ff;
+  --foreground: #ffffff;
+  --foreground-muted: #c2e0ee;
+  --accent: #9fe2ff;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="velvet"][data-contrast="high"] {
+  --border: #80587a;
+  --border-emphasis: #f3bde6;
+  --foreground: #ffffff;
+  --foreground-muted: #dfc8da;
+  --accent: #f3bde6;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="daybreak"][data-contrast="high"] {
+  --border: #746c5e;
+  --border-emphasis: #1b534d;
+  --foreground: #000000;
+  --foreground-muted: #333d3a;
+  --accent: #174f48;
+  --focus: #000000;
+  --background: #ebe5d8;
+  --surface: #ffffff;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"][data-contrast="high"] {
+  --border: #995d85;
+  --border-emphasis: #962568;
+  --foreground: #000000;
+  --foreground-muted: #3c2438;
+  --accent: #962568;
+  --focus: #000000;
+  --background: #fdf0f7;
+  --surface: #ffffff;
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"][data-theme="night"][data-contrast="high"] {
+  --border: #8e5889;
+  --border-emphasis: #ffbfe4;
+  --foreground: #ffffff;
+  --foreground-muted: #f2d1e7;
+  --accent: #ffbfe4;
+  --focus: #ffffff;
+}
+
+/* Accessibility Settings UI */
+.appearance-accessibility {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a11y-settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.a11y-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.a11y-setting-row strong {
+  display: block;
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+.a11y-button-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 

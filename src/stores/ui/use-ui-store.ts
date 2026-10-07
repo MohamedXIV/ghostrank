@@ -9,6 +9,8 @@ export type ComputerWindowId =
   | "history"
   | "settings";
 
+export type CycleDirection = "forward" | "backward";
+
 interface UiState {
   activeSurface: ActiveSurface;
   openWindows: ComputerWindowId[];
@@ -17,6 +19,7 @@ interface UiState {
   openWindow: (windowId: ComputerWindowId) => void;
   closeWindow: (windowId: ComputerWindowId) => void;
   focusWindow: (windowId: ComputerWindowId) => void;
+  cycleFocusedWindow: (direction?: CycleDirection) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -50,4 +53,27 @@ export const useUiStore = create<UiState>((set) => ({
     }),
 
   focusWindow: (focusedWindow) => set({ focusedWindow }),
+
+  cycleFocusedWindow: (direction = "forward") =>
+    set((state) => {
+      if (state.openWindows.length === 0) {
+        return { focusedWindow: null };
+      }
+
+      const currentIndex = state.focusedWindow
+        ? state.openWindows.indexOf(state.focusedWindow)
+        : -1;
+
+      const nextIndex =
+        direction === "forward"
+          ? currentIndex === -1
+            ? 0
+            : (currentIndex + 1) % state.openWindows.length
+          : currentIndex === -1
+            ? state.openWindows.length - 1
+            : (currentIndex - 1 + state.openWindows.length) %
+              state.openWindows.length;
+
+      return { focusedWindow: state.openWindows[nextIndex] };
+    }),
 }));

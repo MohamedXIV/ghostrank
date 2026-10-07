@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
 
 export interface OrientationModalProps {
@@ -32,16 +33,24 @@ export function OrientationModal({
   const activeExpert = onExpertMode ?? storeExpert;
   const activeClose = onClose ?? storeClose;
 
+  const modalRef = useModalFocus<HTMLDivElement>({
+    isOpen: activeIsOpen,
+    onClose: activeClose,
+    autoFocusSelector: ".orientation-start-btn",
+  });
+
   if (!activeIsOpen) {
     return null;
   }
 
   return (
     <div
+      ref={modalRef}
       className="system-modal-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="orientation-modal-title"
+      tabIndex={-1}
     >
       <div className="orientation-panel">
         <header className="orientation-header">

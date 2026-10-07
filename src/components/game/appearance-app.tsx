@@ -8,9 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
+import { useEffectiveReducedMotion } from "@/components/game/window-motion";
 import {
   transitionDurationMs,
   transitionFrame,
@@ -35,6 +36,14 @@ export function AppearanceApp() {
     (state) => state.installedDistroIds,
   );
   const soundEnabled = usePresentationStore((state) => state.soundEnabled);
+  const textScale = usePresentationStore((state) => state.textScale);
+  const motionMode = usePresentationStore((state) => state.motionMode);
+  const transparencyMode = usePresentationStore(
+    (state) => state.transparencyMode,
+  );
+  const densityMode = usePresentationStore((state) => state.densityMode);
+  const contrastMode = usePresentationStore((state) => state.contrastMode);
+
   const completeDistroInstall = usePresentationStore(
     (state) => state.completeDistroInstall,
   );
@@ -45,6 +54,16 @@ export function AppearanceApp() {
   const setSoundEnabled = usePresentationStore(
     (state) => state.setSoundEnabled,
   );
+  const setTextScale = usePresentationStore((state) => state.setTextScale);
+  const setMotionMode = usePresentationStore((state) => state.setMotionMode);
+  const setTransparencyMode = usePresentationStore(
+    (state) => state.setTransparencyMode,
+  );
+  const setDensityMode = usePresentationStore((state) => state.setDensityMode);
+  const setContrastMode = usePresentationStore(
+    (state) => state.setContrastMode,
+  );
+
   const hintsEnabled = useOnboardingStore((state) => state.hintsEnabled);
   const directivesEnabled = useOnboardingStore((state) => state.directivesEnabled);
   const setHintsEnabled = useOnboardingStore((state) => state.setHintsEnabled);
@@ -52,8 +71,13 @@ export function AppearanceApp() {
   const resetAllHints = useOnboardingStore((state) => state.resetAllHints);
   const openOrientationModal = useOnboardingStore((state) => state.openOrientationModal);
   const openLegendModal = useOnboardingStore((state) => state.openLegendModal);
-  const reducedMotion = useReducedMotion() !== false;
+  const reducedMotion = useEffectiveReducedMotion();
+  const ignoreInstallerEscape = useCallback(() => {}, []);
   const [transition, setTransition] = useState<ActiveTransition | null>(null);
+  const installerPanelRef = useModalFocus<HTMLDivElement>({
+    isOpen: transition !== null,
+    onClose: ignoreInstallerEscape,
+  });
   const lastStageId = useRef<string | null>(null);
   const activeProfile = DISTRO_PROFILES[distroId];
   const transitionDistroId = transition?.distroId ?? null;
@@ -329,14 +353,165 @@ export function AppearanceApp() {
         </div>
       </section>
 
-      <section className="appearance-accessibility-note" aria-label="Accessibility">
-        <span className="panel-label">ACCESSIBILITY LAYER</span>
-        <p>
-          Reduced motion shortens the installer and removes decorative motion,
-          but keeps the same textual stages. Sound is optional and never carries
-          required information. Phase 9 P4 adds the remaining scale, contrast,
-          transparency and interaction overrides above this profile layer.
+      <section className="appearance-accessibility" aria-labelledby="appearance-a11y-heading">
+        <div className="appearance-heading">
+          <div>
+            <span className="panel-label">ACCESSIBILITY &amp; COMFORT</span>
+            <h2 id="appearance-a11y-heading">Interaction overrides</h2>
+          </div>
+        </div>
+        <p className="appearance-copy">
+          Presentation overrides are strictly client-side presentation preferences.
+          They never alter simulation mechanics, deadlines, economy, target access, or truth certainty.
         </p>
+
+        <div className="a11y-settings-grid">
+          {/* Text & Interface Scale */}
+          <div className="a11y-setting-row">
+            <div>
+              <strong>Interface &amp; Text Scale</strong>
+              <span className="setting-subtext">Scales typography, terminal lines, and panel layouts.</span>
+            </div>
+            <div className="a11y-button-group" role="group" aria-label="Text scale options">
+              <Button
+                variant={textScale === "normal" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={textScale === "normal"}
+                onClick={() => setTextScale("normal")}
+              >
+                100% (NORMAL)
+              </Button>
+              <Button
+                variant={textScale === "large" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={textScale === "large"}
+                onClick={() => setTextScale("large")}
+              >
+                115% (LARGE)
+              </Button>
+              <Button
+                variant={textScale === "extra-large" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={textScale === "extra-large"}
+                onClick={() => setTextScale("extra-large")}
+              >
+                130% (EXTRA LARGE)
+              </Button>
+            </div>
+          </div>
+
+          {/* Motion Mode */}
+          <div className="a11y-setting-row">
+            <div>
+              <strong>Motion &amp; Animations</strong>
+              <span className="setting-subtext">Override system motion preference for window transitions.</span>
+            </div>
+            <div className="a11y-button-group" role="group" aria-label="Motion options">
+              <Button
+                variant={motionMode === "system" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={motionMode === "system"}
+                onClick={() => setMotionMode("system")}
+              >
+                SYSTEM
+              </Button>
+              <Button
+                variant={motionMode === "reduce" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={motionMode === "reduce"}
+                onClick={() => setMotionMode("reduce")}
+              >
+                REDUCED
+              </Button>
+              <Button
+                variant={motionMode === "standard" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={motionMode === "standard"}
+                onClick={() => setMotionMode("standard")}
+              >
+                STANDARD
+              </Button>
+            </div>
+          </div>
+
+          {/* Transparency & Blur */}
+          <div className="a11y-setting-row">
+            <div>
+              <strong>Surface Transparency &amp; Blur</strong>
+              <span className="setting-subtext">Remove frosted blurs in favor of solid high-legibility backgrounds.</span>
+            </div>
+            <div className="a11y-button-group" role="group" aria-label="Transparency options">
+              <Button
+                variant={transparencyMode === "default" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={transparencyMode === "default"}
+                onClick={() => setTransparencyMode("default")}
+              >
+                TRANSLUCENT
+              </Button>
+              <Button
+                variant={transparencyMode === "opaque" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={transparencyMode === "opaque"}
+                onClick={() => setTransparencyMode("opaque")}
+              >
+                OPAQUE (SOLID)
+              </Button>
+            </div>
+          </div>
+
+          {/* Information Density */}
+          <div className="a11y-setting-row">
+            <div>
+              <strong>Information Density</strong>
+              <span className="setting-subtext">Toggle between dense compact data and relaxed comfortable spacing.</span>
+            </div>
+            <div className="a11y-button-group" role="group" aria-label="Information density options">
+              <Button
+                variant={densityMode === "compact" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={densityMode === "compact"}
+                onClick={() => setDensityMode("compact")}
+              >
+                COMPACT
+              </Button>
+              <Button
+                variant={densityMode === "comfortable" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={densityMode === "comfortable"}
+                onClick={() => setDensityMode("comfortable")}
+              >
+                COMFORTABLE
+              </Button>
+            </div>
+          </div>
+
+          {/* Contrast Mode */}
+          <div className="a11y-setting-row">
+            <div>
+              <strong>Contrast Level</strong>
+              <span className="setting-subtext">Enhance element boundaries, text luminance, and focus indicators.</span>
+            </div>
+            <div className="a11y-button-group" role="group" aria-label="Contrast options">
+              <Button
+                variant={contrastMode === "normal" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={contrastMode === "normal"}
+                onClick={() => setContrastMode("normal")}
+              >
+                BALANCED
+              </Button>
+              <Button
+                variant={contrastMode === "high" ? "default" : "ghost"}
+                size="sm"
+                aria-pressed={contrastMode === "high"}
+                onClick={() => setContrastMode("high")}
+              >
+                HIGH CONTRAST
+              </Button>
+            </div>
+          </div>
+        </div>
       </section>
 
       {transition && frame && (
@@ -346,7 +521,31 @@ export function AppearanceApp() {
           aria-modal="true"
           aria-labelledby="distro-installer-title"
         >
-          <div className="distro-installer-panel">
+          <div
+            ref={installerPanelRef}
+            className="distro-installer-panel"
+            tabIndex={-1}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (
+                  transition.kind === "install" &&
+                  frame.progress < 90
+                ) {
+                  setTransition(null);
+                }
+                return;
+              }
+
+              // Do not let OS-level shortcuts act behind an aria-modal installer.
+              if (event.key === "F1" || event.altKey) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+          >
             <div className="distro-installer-brand" aria-hidden="true">
               {DISTRO_PROFILES[transition.distroId].glyph}
             </div>

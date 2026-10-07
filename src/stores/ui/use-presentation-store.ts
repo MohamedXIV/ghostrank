@@ -6,8 +6,13 @@ import {
   normalizePresentationSettings,
   selectionForDistro,
   themeBelongsToDistro,
+  type ContrastMode,
+  type DensityMode,
   type DistroId,
+  type MotionMode,
   type PresentationSettings,
+  type TextScale,
+  type TransparencyMode,
 } from "@/presentation/distros";
 import {
   loadPresentationSettings,
@@ -21,6 +26,11 @@ interface PresentationState extends PresentationSettings {
   activateInstalledDistro: (distroId: DistroId) => void;
   setTheme: (themeId: string) => void;
   setSoundEnabled: (enabled: boolean) => void;
+  setTextScale: (scale: TextScale) => void;
+  setMotionMode: (mode: MotionMode) => void;
+  setTransparencyMode: (mode: TransparencyMode) => void;
+  setDensityMode: (mode: DensityMode) => void;
+  setContrastMode: (mode: ContrastMode) => void;
 }
 
 function browserStorage() {
@@ -51,11 +61,19 @@ function settingsFromState(state: PresentationState): PresentationSettings {
     themeId: state.themeId,
     installedDistroIds: state.installedDistroIds,
     soundEnabled: state.soundEnabled,
+    textScale: state.textScale,
+    motionMode: state.motionMode,
+    transparencyMode: state.transparencyMode,
+    densityMode: state.densityMode,
+    contrastMode: state.contrastMode,
   });
 }
 
-export const usePresentationStore = create<PresentationState>((set, get) => ({
-  ...DEFAULT_PRESENTATION_SETTINGS,
+export const usePresentationStore = create<PresentationState>((set, get, api) => {
+  api.getInitialState = () => get();
+
+  return {
+    ...DEFAULT_PRESENTATION_SETTINGS,
   hydrated: false,
 
   hydrate: () => {
@@ -75,9 +93,9 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
       : [...state.installedDistroIds, distroId];
 
     const next = normalizePresentationSettings({
+      ...settingsFromState(state),
       ...selection,
       installedDistroIds,
-      soundEnabled: state.soundEnabled,
     });
 
     persist(next);
@@ -93,9 +111,9 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
 
     const selection = selectionForDistro(distroId);
     const next = normalizePresentationSettings({
+      ...settingsFromState(state),
       ...selection,
       installedDistroIds: state.installedDistroIds,
-      soundEnabled: state.soundEnabled,
     });
 
     persist(next);
@@ -128,7 +146,63 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
     persist(next);
     set(next);
   },
-}));
+
+  setTextScale: (textScale) => {
+    const state = get();
+    const next = normalizePresentationSettings({
+      ...settingsFromState(state),
+      textScale,
+    });
+
+    persist(next);
+    set(next);
+  },
+
+  setMotionMode: (motionMode) => {
+    const state = get();
+    const next = normalizePresentationSettings({
+      ...settingsFromState(state),
+      motionMode,
+    });
+
+    persist(next);
+    set(next);
+  },
+
+  setTransparencyMode: (transparencyMode) => {
+    const state = get();
+    const next = normalizePresentationSettings({
+      ...settingsFromState(state),
+      transparencyMode,
+    });
+
+    persist(next);
+    set(next);
+  },
+
+  setDensityMode: (densityMode) => {
+    const state = get();
+    const next = normalizePresentationSettings({
+      ...settingsFromState(state),
+      densityMode,
+    });
+
+    persist(next);
+    set(next);
+  },
+
+  setContrastMode: (contrastMode) => {
+    const state = get();
+    const next = normalizePresentationSettings({
+      ...settingsFromState(state),
+      contrastMode,
+    });
+
+    persist(next);
+    set(next);
+  },
+};
+});
 
 export function currentDistroProfile() {
   return DISTRO_PROFILES[usePresentationStore.getState().distroId];

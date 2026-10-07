@@ -5,6 +5,7 @@ import {
   DISTRO_IDS,
   DISTRO_PROFILES,
   normalizePresentationSelection,
+  normalizePresentationSettings,
   selectionForDistro,
 } from "@/presentation/distros";
 
@@ -52,5 +53,43 @@ describe("Phase 9 P1 distro profiles", () => {
         themeId: "missing",
       }),
     ).toEqual(selectionForDistro("petal"));
+  });
+
+  it("normalizes accessibility overrides and falls back to safe defaults", () => {
+    expect(
+      normalizePresentationSettings({
+        distroId: "lattice",
+        themeId: "grid",
+        textScale: "extra-large",
+        motionMode: "reduce",
+        transparencyMode: "opaque",
+        densityMode: "comfortable",
+        contrastMode: "high",
+      }),
+    ).toMatchObject({
+      distroId: "lattice",
+      themeId: "grid",
+      textScale: "extra-large",
+      motionMode: "reduce",
+      transparencyMode: "opaque",
+      densityMode: "comfortable",
+      contrastMode: "high",
+    });
+
+    expect(
+      normalizePresentationSettings({
+        textScale: "invalid-scale",
+        motionMode: "invalid-motion",
+        transparencyMode: "invalid-transparency",
+        densityMode: "invalid-density",
+        contrastMode: "invalid-contrast",
+      }),
+    ).toMatchObject({
+      textScale: "normal",
+      motionMode: "system",
+      transparencyMode: "default",
+      densityMode: "compact",
+      contrastMode: "normal",
+    });
   });
 });
