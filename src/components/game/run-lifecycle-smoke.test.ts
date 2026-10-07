@@ -6,7 +6,6 @@ import { GameShell } from "@/components/game/game-shell";
 import { createBrowserRunPersistence } from "@/persistence/browser-run-persistence";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { endRun } from "@/game/simulation/systems/endings";
-import { serializePortableRunSave } from "@/persistence/portable-run-save";
 
 describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
   it("renders boot screen during initial load with proper accessibility attributes", () => {
@@ -30,13 +29,18 @@ describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
         return [...completedList];
       },
       async completeRun(archiveId: string, str: string) {
+        expect(archiveId).toBeDefined();
         completedList.unshift(str);
         activeData = null;
       },
       async archiveCorruptActiveRun(archiveId: string, str: string) {
+        expect(archiveId).toBeDefined();
+        expect(str).toBeDefined();
         activeData = null;
       },
     };
+
+
 
     const persistence = createBrowserRunPersistence(storage);
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   safeParsePortableRunSave,
-  parsePortableRunSave,
   serializePortableRunSave,
 } from "@/persistence/portable-run-save";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
