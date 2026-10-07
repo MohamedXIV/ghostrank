@@ -9,7 +9,7 @@ import {
 } from "@/presentation/presentation-settings";
 
 function memoryStorage(
-  initial?: Partial<Record<string, string>>,
+  initial?: Record<string, string>,
 ): PresentationStorage {
   const values = new Map<string, string>(Object.entries(initial ?? {}));
 
