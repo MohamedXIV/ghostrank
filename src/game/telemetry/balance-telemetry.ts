@@ -1,9 +1,12 @@
 import { CORE_WORLD_CONTENT } from "@/content/world-content";
-import { HARDWARE_CATALOG } from "@/content/hardware-catalog";
+import { HARDWARE_CATALOG, findCatalogItem } from "@/content/hardware-catalog";
 import { HOUSING_CATALOG } from "@/content/housing-catalog";
 import { MACHINE_CATALOG } from "@/content/machine-catalog";
-import { MODEL_CATALOG } from "@/content/model-catalog";
-import { PLAYER_TOOL_CATALOG } from "@/content/player-tool-catalog";
+import { MODEL_CATALOG, findModelItem } from "@/content/model-catalog";
+import {
+  PLAYER_TOOL_CATALOG,
+  findPlayerToolItem,
+} from "@/content/player-tool-catalog";
 import { SOFTWARE_CATALOG } from "@/content/software-catalog";
 import { WORKFLOW_SPEC_CATALOG } from "@/content/workflow-spec-catalog";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
@@ -29,21 +32,37 @@ import type {
 export const BALANCE_TELEMETRY_SEEDS = 32;
 export const BALANCE_TELEMETRY_HORIZON_DAYS = 30;
 
+/**
+ * Standard varied 32-bit seeds drawn from diverse seeds to test real seed variation
+ * from Phase 9 P5 while preserving reproducibility.
+ */
+export const CANONICAL_BETA_VARIED_SEEDS: readonly number[] = [
+  104729, 224737, 357941, 499979, 638903, 783169, 929569, 107897,
+  1241311, 1400057, 1561009, 1723469, 1888069, 2054231, 2221669, 2390141,
+  2560067, 2731001, 2903261, 3076891, 3251419, 3427181, 3604099, 3782143,
+  3961291, 4141609, 4323059, 4505629, 4689257, 4874009, 5059901, 5246897,
+];
+
 const DAY_MINUTES = 24 * 60;
 const TICK_MINUTES = 360;
 const EXIT_EARLIEST_MINUTE = 14 * DAY_MINUTES;
 const POLICY_ACTION_GUARD_MINUTES = 60;
+const CAUTIOUS_COOLDOWN_MINUTES = 36 * 60;
 
 export type BalanceTelemetryScenario =
   | "idle"
+  | "cautious-novice"
   | "contractor"
   | "reckless"
+  | "rig-builder"
   | "career-exit";
 
 export const BALANCE_TELEMETRY_SCENARIOS: readonly BalanceTelemetryScenario[] = [
   "idle",
+  "cautious-novice",
   "contractor",
   "reckless",
+  "rig-builder",
   "career-exit",
 ];
 
@@ -59,6 +78,38 @@ export interface AuthoredContentCounts {
   playerToolListings: number;
   softwareListings: number;
   workflowSpecs: number;
+}
+
+export interface PurchasingTelemetry {
+  hardwareCount: number;
+  hardwareCredits: number;
+  housingUpkeep: number;
+  softwareUpkeep: number;
+  modelAcquisition: number;
+  modelSubscription: number;
+  toolCount: number;
+  toolCredits: number;
+  totalSpent: number;
+  upkeepLapses: number;
+  /**
+   * First wallet-cost minute by domain. For housing/software this is the first
+   * recurring upkeep/license debit, because activating those services is free.
+   * For hardware/models/tools it is the one-time acquisition debit.
+   */
+  firstPurchaseMinutes: {
+    hardware: number | null;
+    housing: number | null;
+    software: number | null;
+    model: number | null;
+    tool: number | null;
+  };
+  catalogCoverage: {
+    hardwareIds: string[];
+    housingIds: string[];
+    softwareIds: string[];
+    modelIds: string[];
+    toolIds: string[];
+  };
 }
 
 export interface BalanceTelemetrySample {
@@ -95,6 +146,9 @@ export interface BalanceTelemetrySample {
     messages: number;
   };
   pressureBand: LongRunPressureBand;
+  peakPressureBand: LongRunPressureBand;
+  everReachedPressureBands: Record<LongRunPressureBand, boolean>;
+  purchases: PurchasingTelemetry;
   exposure: {
     actorIds: string[];
     targetIds: string[];
@@ -111,6 +165,19 @@ export interface NumericSummary {
   mean: number;
 }
 
+export interface PurchasingTelemetrySummary {
+  hardwareCount: NumericSummary;
+  hardwareCredits: NumericSummary;
+  housingUpkeep: NumericSummary;
+  softwareUpkeep: NumericSummary;
+  modelAcquisition: NumericSummary;
+  modelSubscription: NumericSummary;
+  toolCount: NumericSummary;
+  toolCredits: NumericSummary;
+  totalSpent: NumericSummary;
+  upkeepLapses: NumericSummary;
+}
+
 export interface BalanceTelemetryScenarioSummary {
   sampleCount: number;
   runMinutes: NumericSummary;
@@ -120,6 +187,7 @@ export interface BalanceTelemetryScenarioSummary {
     finalCredits: NumericSummary;
     ledgerValueMoved: NumericSummary;
     contractCredits: NumericSummary;
+    purchasing: PurchasingTelemetrySummary;
   };
   ranking: {
     finalRank: NumericSummary;
@@ -135,6 +203,8 @@ export interface BalanceTelemetryScenarioSummary {
     openAccepted: number;
   };
   pressureBands: Record<LongRunPressureBand, number>;
+  peakPressureBands: Record<LongRunPressureBand, number>;
+  everReachedPressureBands: Record<LongRunPressureBand, number>;
   threat: {
     escalations: number;
     compromises: number;
@@ -157,11 +227,19 @@ export interface BalanceTelemetryScenarioSummary {
     serviceIds: string[];
     contractIssuerIds: string[];
   };
+  purchasedCoverage: {
+    hardwareIds: string[];
+    housingIds: string[];
+    softwareIds: string[];
+    modelIds: string[];
+    toolIds: string[];
+  };
 }
 
 export interface BalanceTelemetryReport {
-  version: 2;
+  version: 3;
   seedCount: number;
+  seeds: readonly number[];
   horizonDays: number;
   authoredContent: AuthoredContentCounts;
   scenarios: Record<BalanceTelemetryScenario, BalanceTelemetryScenarioSummary>;
@@ -518,6 +596,177 @@ function normalizeHorizonMinute(horizonDays: number): number {
   return Math.floor(horizonDays * DAY_MINUTES);
 }
 
+function selectCautiousContract(bus: CommandBus): UndergroundContract | undefined {
+  const state = bus.snapshot();
+  const offered = state.underground.contracts.filter(
+    (candidate) => candidate.status === "offered",
+  );
+  if (offered.length === 0) return undefined;
+
+  const hasActiveTraces = state.traces.length > 0;
+
+  const scoreObjective = (candidate: UndergroundContract): number => {
+    switch (candidate.objective) {
+      case "recon-report":
+        return 1;
+      case "infrastructure-map":
+        return 2;
+      case "quiet-recon":
+        return 3;
+      case "intrusion":
+        return hasActiveTraces ? 99 : 10;
+      default:
+        return 20;
+    }
+  };
+
+  const eligible = offered.filter(
+    (candidate) => !(hasActiveTraces && candidate.objective === "intrusion"),
+  );
+  if (eligible.length === 0) return undefined;
+
+  eligible.sort((a, b) => {
+    const scoreDiff = scoreObjective(a) - scoreObjective(b);
+    if (scoreDiff !== 0) return scoreDiff;
+    return (
+      a.offeredWorldMinute - b.offeredWorldMinute ||
+      a.id.localeCompare(b.id)
+    );
+  });
+
+  return eligible[0];
+}
+
+function evaluatePurchasingDecisions(bus: CommandBus): void {
+  let state = bus.snapshot();
+  const credits = state.economy.credits;
+
+  // 1. Hardware components (order of progression)
+  const hardwareProgression = [
+    "storage-array", // 250 cr
+    "ram-bank",      // 300 cr
+    "net-card",      // 350 cr
+    "cpu-overclock", // 400 cr
+    "cpu-balanced",  // 550 cr
+    "gpu-entry",     // 900 cr
+    "gpu-memory",    // 1200 cr
+  ];
+
+  const ownedHwCatalogIds = new Set(
+    state.economy.hardware.map((h) => h.catalogId),
+  );
+  for (const catalogId of hardwareProgression) {
+    if (!ownedHwCatalogIds.has(catalogId)) {
+      const item = findCatalogItem(catalogId);
+      if (item && credits >= item.cost + 200) {
+        execute(bus, { type: "buyHardware", catalogId: item.id });
+        state = bus.snapshot();
+        break;
+      }
+    }
+  }
+
+  // 2. Housing leases
+  if (state.economy.housing === null) {
+    if (state.economy.credits >= 350) {
+      execute(bus, { type: "rentHousing", housingId: "housing-basement-cot" }); // 15 cr/day
+      state = bus.snapshot();
+    }
+  } else if (
+    state.economy.housing === "housing-basement-cot" &&
+    state.economy.credits >= 800
+  ) {
+    execute(bus, { type: "rentHousing", housingId: "housing-cowork-loft" }); // 30 cr/day
+    state = bus.snapshot();
+  } else if (
+    state.economy.housing === "housing-cowork-loft" &&
+    state.economy.credits >= 1500
+  ) {
+    execute(bus, { type: "rentHousing", housingId: "housing-rented-lab" }); // 60 cr/day
+    state = bus.snapshot();
+  } else if (state.economy.credits < 60 && state.economy.housing !== null) {
+    execute(bus, { type: "breakLease" });
+    state = bus.snapshot();
+  }
+
+  // 3. Software licenses
+  if (
+    state.economy.credits >= 600 &&
+    !state.economy.software.includes("software-net-monitor")
+  ) {
+    execute(bus, {
+      type: "enableSoftware",
+      softwareId: "software-net-monitor",
+    }); // 40 cr/day
+    state = bus.snapshot();
+  }
+  if (
+    state.economy.credits >= 1000 &&
+    !state.economy.software.includes("software-auto-recon")
+  ) {
+    execute(bus, {
+      type: "enableSoftware",
+      softwareId: "software-auto-recon",
+    }); // 70 cr/day
+    state = bus.snapshot();
+  }
+  if (state.economy.credits < 150 && state.economy.software.length > 0) {
+    execute(bus, {
+      type: "disableSoftware",
+      softwareId: state.economy.software[0]!,
+    });
+    state = bus.snapshot();
+  }
+
+  // 4. Local AI models
+  const localModelProgression = [
+    "model-local-salvage",
+    "model-local-reliable",
+    "model-local-workhorse",
+  ];
+  for (const modelId of localModelProgression) {
+    if (!state.economy.ownedModels.includes(modelId)) {
+      const item = findModelItem(modelId);
+      if (item && state.economy.credits >= item.cost + 300) {
+        execute(bus, { type: "acquireModel", modelId });
+        state = bus.snapshot();
+        break;
+      }
+    }
+  }
+  if (state.economy.ownedModels.length > 0 && state.economy.activeModel === null) {
+    execute(bus, { type: "runModel", modelId: state.economy.ownedModels[0]! });
+    state = bus.snapshot();
+  }
+
+  // 5. Player tools
+  const toolProgression = [
+    "tool-paranoid-scraper",
+    "tool-map-stitcher",
+    "tool-silent-dedup",
+  ];
+  const ownedToolCatalogIds = new Set(
+    state.economy.playerTools.map((t) => t.catalogId),
+  );
+  for (const toolId of toolProgression) {
+    if (!ownedToolCatalogIds.has(toolId)) {
+      const item = findPlayerToolItem(toolId);
+      if (item && state.economy.credits >= item.cost + 300) {
+        execute(bus, { type: "buyPlayerTool", toolId });
+        state = bus.snapshot();
+        break;
+      }
+    }
+  }
+}
+
+function processRigBuilder(bus: CommandBus): void {
+  if (!isLive(bus)) return;
+  evaluatePurchasingDecisions(bus);
+  if (!isLive(bus)) return;
+  processOneContract(bus);
+}
+
 function runScenario(
   scenario: BalanceTelemetryScenario,
   seed: number,
@@ -529,8 +778,35 @@ function runScenario(
   const bus = new CommandBus(initial);
   const horizonMinute = normalizeHorizonMinute(horizonDays);
 
+  const bandRanks: Record<LongRunPressureBand, number> = {
+    ordinary: 0,
+    known: 1,
+    entangled: 2,
+    veteran: 3,
+  };
+  let peakPressureBand: LongRunPressureBand = "ordinary";
+  const everReachedPressureBands: Record<LongRunPressureBand, boolean> = {
+    ordinary: true,
+    known: false,
+    entangled: false,
+    veteran: false,
+  };
+  let upkeepLapses = 0;
+  let lastCautiousDeliveredMinute = -Infinity;
+
+  const recordPressure = () => {
+    const current = deriveLongRunPressure(bus.snapshot()).band;
+    everReachedPressureBands[current] = true;
+    if (bandRanks[current] > bandRanks[peakPressureBand]) {
+      peakPressureBand = current;
+    }
+  };
+
+  recordPressure();
+
   if (scenario === "reckless") {
     primeRecklessRun(bus, horizonMinute);
+    recordPressure();
   }
 
   while (isLive(bus) && bus.snapshot().worldMinute < horizonMinute) {
@@ -540,6 +816,45 @@ function runScenario(
     if (remaining > POLICY_ACTION_GUARD_MINUTES) {
       if (scenario === "contractor" || scenario === "reckless") {
         processOneContract(bus);
+      } else if (scenario === "cautious-novice") {
+        const accepted = state.underground.contracts.find(
+          (c) => c.status === "accepted",
+        );
+        if (accepted) {
+          fulfillAcceptedContract(bus, accepted);
+          const after = bus
+            .snapshot()
+            .underground.contracts.find((c) => c.id === accepted.id);
+          if (after && after.status !== "accepted") {
+            lastCautiousDeliveredMinute = bus.snapshot().worldMinute;
+          }
+        } else if (
+          state.worldMinute - lastCautiousDeliveredMinute >=
+          CAUTIOUS_COOLDOWN_MINUTES
+        ) {
+          const offered = selectCautiousContract(bus);
+          if (offered) {
+            if (
+              execute(bus, { type: "acceptContract", contractId: offered.id })
+            ) {
+              const freshState = bus.snapshot();
+              const contract = freshState.underground.contracts.find(
+                (c) => c.id === offered.id,
+              );
+              if (contract && contract.status === "accepted") {
+                fulfillAcceptedContract(bus, contract);
+                const after = bus
+                  .snapshot()
+                  .underground.contracts.find((c) => c.id === contract.id);
+                if (after && after.status !== "accepted") {
+                  lastCautiousDeliveredMinute = bus.snapshot().worldMinute;
+                }
+              }
+            }
+          }
+        }
+      } else if (scenario === "rig-builder") {
+        processRigBuilder(bus);
       } else if (scenario === "career-exit") {
         if (
           state.worldMinute >= EXIT_EARLIEST_MINUTE &&
@@ -553,6 +868,7 @@ function runScenario(
           processOneContract(bus);
         }
       }
+      recordPressure();
     }
 
     if (!isLive(bus)) break;
@@ -560,13 +876,44 @@ function runScenario(
     const now = bus.snapshot().worldMinute;
     if (now >= horizonMinute) break;
 
-    execute(bus, {
+    const delta = Math.min(TICK_MINUTES, horizonMinute - now);
+    const advanceResult = bus.execute({
       type: "advanceTime",
-      minutes: Math.min(TICK_MINUTES, horizonMinute - now),
+      minutes: delta,
     });
+    for (const ev of advanceResult.events) {
+      if (
+        ev.type === "HousingChanged" &&
+        ev.housingId === null &&
+        ev.worldMinute % DAY_MINUTES === 0
+      ) {
+        upkeepLapses += 1;
+      } else if (
+        ev.type === "SoftwareChanged" &&
+        !ev.active &&
+        ev.worldMinute % DAY_MINUTES === 0
+      ) {
+        upkeepLapses += 1;
+      } else if (
+        ev.type === "ModelChanged" &&
+        !ev.active &&
+        ev.worldMinute % DAY_MINUTES === 0
+      ) {
+        upkeepLapses += 1;
+      }
+    }
+    recordPressure();
   }
 
-  return sampleFromWorld(scenario, seed, startingRank, bus.snapshot());
+  return sampleFromWorld(
+    scenario,
+    seed,
+    startingRank,
+    bus.snapshot(),
+    peakPressureBand,
+    everReachedPressureBands,
+    upkeepLapses,
+  );
 }
 
 function sampleFromWorld(
@@ -574,6 +921,9 @@ function sampleFromWorld(
   seed: number,
   startingRank: number,
   world: WorldState,
+  peakPressureBand: LongRunPressureBand,
+  everReachedPressureBands: Record<LongRunPressureBand, boolean>,
+  upkeepLapses: number,
 ): BalanceTelemetrySample {
   const contractCounts = {
     created: world.underground.contracts.length,
@@ -658,6 +1008,97 @@ function sampleFromWorld(
     0,
   );
 
+  const hardwareDebits = world.economy.ledger.filter(
+    (e) => e.direction === "debit" && e.cause.kind === "hardware",
+  );
+  const housingDebits = world.economy.ledger.filter(
+    (e) => e.direction === "debit" && e.cause.kind === "upkeep",
+  );
+  const softwareDebits = world.economy.ledger.filter(
+    (e) => e.direction === "debit" && e.cause.kind === "license",
+  );
+  const toolDebits = world.economy.ledger.filter(
+    (e) => e.direction === "debit" && e.cause.kind === "tool",
+  );
+  const modelDebits = world.economy.ledger.filter(
+    (e) => e.direction === "debit" && e.cause.kind === "model",
+  );
+
+  const hardwareCredits = hardwareDebits.reduce((sum, e) => sum + e.amount, 0);
+  const housingUpkeep = housingDebits.reduce((sum, e) => sum + e.amount, 0);
+  const softwareUpkeep = softwareDebits.reduce((sum, e) => sum + e.amount, 0);
+  const toolCredits = toolDebits.reduce((sum, e) => sum + e.amount, 0);
+
+  let modelAcquisition = 0;
+  let modelSubscription = 0;
+  for (const debit of modelDebits) {
+    const item = findModelItem(debit.cause.id);
+    if (item?.source === "local") {
+      modelAcquisition += debit.amount;
+    } else {
+      modelSubscription += debit.amount;
+    }
+  }
+
+  const totalSpent =
+    hardwareCredits +
+    housingUpkeep +
+    softwareUpkeep +
+    toolCredits +
+    modelAcquisition +
+    modelSubscription;
+
+  const firstPurchaseMinutes = {
+    hardware: hardwareDebits[0]?.worldMinute ?? null,
+    housing: housingDebits[0]?.worldMinute ?? null,
+    software: softwareDebits[0]?.worldMinute ?? null,
+    model: modelDebits[0]?.worldMinute ?? null,
+    tool: toolDebits[0]?.worldMinute ?? null,
+  };
+
+  const hardwareCatalogIds = [
+    ...new Set(
+      world.economy.hardware
+        .map((h) => h.catalogId)
+        .filter((id) => id !== "rig-starter"),
+    ),
+  ].sort();
+  const housingCatalogIds = [
+    ...new Set(housingDebits.map((e) => e.cause.id)),
+  ].sort();
+  const softwareCatalogIds = [
+    ...new Set(softwareDebits.map((e) => e.cause.id)),
+  ].sort();
+  const modelCatalogIds = [
+    ...new Set(modelDebits.map((e) => e.cause.id)),
+  ].sort();
+  const toolCatalogIds = [
+    ...new Set(world.economy.playerTools.map((t) => t.catalogId)),
+  ].sort();
+
+  const purchases: PurchasingTelemetry = {
+    hardwareCount: world.economy.hardware.filter(
+      (h) => h.catalogId !== "rig-starter",
+    ).length,
+    hardwareCredits,
+    housingUpkeep,
+    softwareUpkeep,
+    modelAcquisition,
+    modelSubscription,
+    toolCount: world.economy.playerTools.length,
+    toolCredits,
+    totalSpent,
+    upkeepLapses,
+    firstPurchaseMinutes,
+    catalogCoverage: {
+      hardwareIds: hardwareCatalogIds,
+      housingIds: housingCatalogIds,
+      softwareIds: softwareCatalogIds,
+      modelIds: modelCatalogIds,
+      toolIds: toolCatalogIds,
+    },
+  };
+
   return {
     scenario,
     seed,
@@ -688,6 +1129,9 @@ function sampleFromWorld(
       messages: world.underground.messages.length,
     },
     pressureBand: deriveLongRunPressure(world).band,
+    peakPressureBand,
+    everReachedPressureBands,
+    purchases,
     exposure: {
       actorIds: [...actorIds].sort(),
       targetIds: [...targetIds].sort(),
@@ -764,12 +1208,20 @@ function summarizeScenario(
   const endings = emptyEndingCounts();
   const endingCauses = emptyEndingCauseCounts();
   const pressureBands = emptyPressureBands();
+  const peakPressureBands = emptyPressureBands();
+  const everReachedPressureBands = emptyPressureBands();
   const compromiseKinds = emptyCompromiseKinds();
   const actorIds = new Set<string>();
   const targetIds = new Set<string>();
   const machineIds = new Set<string>();
   const serviceIds = new Set<string>();
   const contractIssuerIds = new Set<string>();
+
+  const purchasedHardwareIds = new Set<string>();
+  const purchasedHousingIds = new Set<string>();
+  const purchasedSoftwareIds = new Set<string>();
+  const purchasedModelIds = new Set<string>();
+  const purchasedToolIds = new Set<string>();
 
   const contractTotals = {
     created: 0,
@@ -800,6 +1252,30 @@ function summarizeScenario(
     endings[sample.endingStatus ?? "active"] += 1;
     endingCauses[sample.endingCauseKind ?? "none"] += 1;
     pressureBands[sample.pressureBand] += 1;
+    peakPressureBands[sample.peakPressureBand] += 1;
+    for (const [band, reached] of Object.entries(
+      sample.everReachedPressureBands,
+    )) {
+      if (reached) {
+        everReachedPressureBands[band as LongRunPressureBand] += 1;
+      }
+    }
+
+    for (const id of sample.purchases.catalogCoverage.hardwareIds) {
+      purchasedHardwareIds.add(id);
+    }
+    for (const id of sample.purchases.catalogCoverage.housingIds) {
+      purchasedHousingIds.add(id);
+    }
+    for (const id of sample.purchases.catalogCoverage.softwareIds) {
+      purchasedSoftwareIds.add(id);
+    }
+    for (const id of sample.purchases.catalogCoverage.modelIds) {
+      purchasedModelIds.add(id);
+    }
+    for (const id of sample.purchases.catalogCoverage.toolIds) {
+      purchasedToolIds.add(id);
+    }
 
     for (const status of Object.keys(contractTotals) as Array<
       keyof typeof contractTotals
@@ -844,6 +1320,34 @@ function summarizeScenario(
       contractCredits: numericSummary(
         samples.map((sample) => sample.contractCredits),
       ),
+      purchasing: {
+        hardwareCount: numericSummary(
+          samples.map((s) => s.purchases.hardwareCount),
+        ),
+        hardwareCredits: numericSummary(
+          samples.map((s) => s.purchases.hardwareCredits),
+        ),
+        housingUpkeep: numericSummary(
+          samples.map((s) => s.purchases.housingUpkeep),
+        ),
+        softwareUpkeep: numericSummary(
+          samples.map((s) => s.purchases.softwareUpkeep),
+        ),
+        modelAcquisition: numericSummary(
+          samples.map((s) => s.purchases.modelAcquisition),
+        ),
+        modelSubscription: numericSummary(
+          samples.map((s) => s.purchases.modelSubscription),
+        ),
+        toolCount: numericSummary(samples.map((s) => s.purchases.toolCount)),
+        toolCredits: numericSummary(
+          samples.map((s) => s.purchases.toolCredits),
+        ),
+        totalSpent: numericSummary(samples.map((s) => s.purchases.totalSpent)),
+        upkeepLapses: numericSummary(
+          samples.map((s) => s.purchases.upkeepLapses),
+        ),
+      },
     },
     ranking: {
       finalRank: numericSummary(samples.map((sample) => sample.rank)),
@@ -853,6 +1357,8 @@ function summarizeScenario(
     },
     contracts: contractTotals,
     pressureBands,
+    peakPressureBands,
+    everReachedPressureBands,
     threat,
     social,
     exposure: {
@@ -861,6 +1367,13 @@ function summarizeScenario(
       machineIds: [...machineIds].sort(),
       serviceIds: [...serviceIds].sort(),
       contractIssuerIds: [...contractIssuerIds].sort(),
+    },
+    purchasedCoverage: {
+      hardwareIds: [...purchasedHardwareIds].sort(),
+      housingIds: [...purchasedHousingIds].sort(),
+      softwareIds: [...purchasedSoftwareIds].sort(),
+      modelIds: [...purchasedModelIds].sort(),
+      toolIds: [...purchasedToolIds].sort(),
     },
   };
 }
@@ -907,9 +1420,7 @@ export function runBalanceTelemetry(
     scenarios?: readonly BalanceTelemetryScenario[];
   } = {},
 ): BalanceTelemetryReport {
-  const seeds =
-    input.seeds ??
-    Array.from({ length: BALANCE_TELEMETRY_SEEDS }, (_, index) => index + 1);
+  const seeds = input.seeds ?? CANONICAL_BETA_VARIED_SEEDS;
   const horizonDays =
     input.horizonDays ?? BALANCE_TELEMETRY_HORIZON_DAYS;
   const scenarios = input.scenarios ?? BALANCE_TELEMETRY_SCENARIOS;
@@ -928,8 +1439,9 @@ export function runBalanceTelemetry(
   }
 
   return {
-    version: 2,
+    version: 3,
     seedCount: seeds.length,
+    seeds,
     horizonDays,
     authoredContent: authoredContentCounts(),
     scenarios: summaries,
