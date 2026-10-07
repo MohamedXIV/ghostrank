@@ -23,10 +23,7 @@ import {
   openOperationFromGui,
   surveyTargetFromGui,
 } from "@/game/computer/apps/target-actions";
-import {
-  contractActionFromGui,
-  type ContractVerb,
-} from "@/game/computer/apps/contract-actions";
+import { contractActionFromGui } from "@/game/computer/apps/contract-actions";
 import {
   acquireModelFromGui,
   abortBuildFromGui,
@@ -50,9 +47,20 @@ import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
-import type { SimulationCommand } from "@/game/simulation/commands/types";
 import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
+import { ConfidenceMeter } from "@/components/ui/confidence-meter";
+import { ReconTopology } from "@/components/game/recon/recon-topology";
+import { RelationshipBadge } from "@/components/game/social/relationship-badge";
+import { ContractCard } from "@/components/game/contracts/contract-card";
+import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
+import { RunTimeline } from "@/components/game/history/run-timeline";
+import {
+  formatRichCommandResult,
+  formatRichError,
+  TERMINAL_HELP_TABLE,
+  TERMINAL_WELCOME_HEADER,
+} from "@/components/game/terminal/rich-terminal";
 import { getWindowMotionProps } from "@/components/game/window-motion";
 import { DISTRO_PROFILES } from "@/presentation/distros";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
@@ -336,96 +344,10 @@ function HistoryApp({ runtime }: { runtime: GameSession }) {
         ) : (
           <div className="history-runs">
             {runs.map((run, index) => (
-              <article
-                className="history-run"
+              <RunTimeline
                 key={`${run.endingStatus}:${run.endingWorldMinute}:${index}`}
-              >
-                <div className="history-run-heading">
-                  <div>
-                    <span className="panel-label">
-                      {run.endingLabel}
-                      {run.retirementVariant
-                        ? ` // ${run.retirementVariant
-                            .replaceAll("-", " ")
-                            .toUpperCase()}`
-                        : ""}
-                    </span>
-                    <strong>{run.handle}</strong>
-                  </div>
-                  <span className="underground-time">
-                    {formatWorldTime(run.endingWorldMinute)}
-                  </span>
-                </div>
-
-                {run.endingDetail && (
-                  <p className="analysis-caveat">{run.endingDetail}</p>
-                )}
-
-                <ul className="underground-feed">
-                  <li>
-                    <span>final rank</span>
-                    <span>#{run.finalRank.toLocaleString("en-US")}</span>
-                  </li>
-                  <li>
-                    <span>credits left</span>
-                    <span>{run.finalCredits.toLocaleString("en-US")} cr</span>
-                  </li>
-                  <li>
-                    <span>value moved</span>
-                    <span>{run.valueMoved.toLocaleString("en-US")} cr</span>
-                  </li>
-                  <li>
-                    <span>completed contracts</span>
-                    <span>{run.completedContracts}</span>
-                  </li>
-                  <li>
-                    <span>intrusive escalations</span>
-                    <span>{run.operationEscalations}</span>
-                  </li>
-                  <li>
-                    <span>authored workflows</span>
-                    <span>{run.authoredWorkflows}</span>
-                  </li>
-                  <li>
-                    <span>compromises</span>
-                    <span>{run.compromiseCount}</span>
-                  </li>
-                </ul>
-
-                {run.descriptors.length > 0 && (
-                  <p className="underground-note">
-                    {"reputation // "}
-                    {run.descriptors.map((entry) => entry.label).join(" · ")}
-                  </p>
-                )}
-
-                {run.postmortems.map((postmortem) => (
-                  <div
-                    className="history-postmortem"
-                    key={postmortem.compromiseId}
-                  >
-                    <span className="panel-label">
-                      {"POSTMORTEM // "}
-                      {postmortem.compromiseLabel}
-                      {" // "}
-                      {postmortem.attribution === "complete"
-                        ? "COMPLETE"
-                        : "INCOMPLETE ATTRIBUTION"}
-                    </span>
-                    <ul className="underground-feed">
-                      {postmortem.steps.map((step) => (
-                        <li key={step.id}>
-                          <span className="underground-time">
-                            {formatWorldTime(step.worldMinute)}
-                          </span>
-                          <span>{step.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="underground-note">{postmortem.note}</p>
-                  </div>
-                ))}
-              </article>
+                run={run}
+              />
             ))}
           </div>
         )}
@@ -434,11 +356,27 @@ function HistoryApp({ runtime }: { runtime: GameSession }) {
   );
 }
 
+interface TerminalItem {
+  id: string;
+  type: "system" | "prompt" | "result" | "error" | "table";
+  text: string;
+  badge?: string;
+  glyph?: string;
+}
+
 function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   const [input, setInput] = useState("");
-  const [lines, setLines] = useState<string[]>([
-    "ghostsh 0.1 // virtual capability shell",
-    "commands: observe <target-id> | op open <target-id> | survey <target-id> | inspect <machine-id> | analyze <target-id> | op escalate | op exit | buy <catalog-id> | build <spec-id> | retire plan|commit|finish|cancel | wait <minutes> | help",
+  const [items, setItems] = useState<TerminalItem[]>([
+    {
+      id: "init-0",
+      type: "system",
+      text: TERMINAL_WELCOME_HEADER[0],
+    },
+    {
+      id: "init-1",
+      type: "system",
+      text: TERMINAL_WELCOME_HEADER[1],
+    },
   ]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -450,38 +388,13 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
     }
 
     setInput("");
+    const promptId = `prompt-${Date.now()}`;
 
     if (raw.toLowerCase() === "help") {
-      setLines((current) => [
+      setItems((current) => [
         ...current,
-        `> ${raw}`,
-        "observe <target-id>  resolve a target profile",
-        "op open <target-id>  start a recon-stage operation",
-        "survey <target-id>   discover machines in the active operation (rig scale + speed)",
-        "inspect <machine-id> inspect known machines in the active operation (rig scale + speed)",
-        "analyze <target-id>  the running assistant's read of what recon has not seen (no time, fallible)",
-        "op escalate          cross the fictional recon boundary (rig speed)",
-        "op exit              disengage from the active operation (3m)",
-        "buy <catalog-id>     acquire hardware from the market (rig upgrades)",
-        "rent <housing-id>    sign a housing lease (recurring upkeep, capability lift)",
-        "lease break          move out and return to the free baseline",
-        "use <software-id>    run a premium tool (recurring license fee)",
-        "stop <software-id>   stop a tool (its fee stops with it)",
-        "buytool <tool-id>    buy an authored player tool (one-time, carries provenance)",
-        "selltool <tool-id>   resell an owned copy (recovers part of the price)",
-        "box buy <catalog-id> acquire a complete named machine (one-time)",
-        "box sell <box-id>    resell an owned machine through the fence",
-        "box name <box-id> <label>  rename an owned machine",
-        "model buy <model-id> acquire a local model (one-time, runs free)",
-        "model run <model-id> run a model (cloud rents daily; local must be owned)",
-        "model stop         stop the running model",
-        "build <spec-id>    commission the assistant to build a workflow (time, not credits)",
-        "build abort <build-id>  cancel an in-flight build (nothing is charged)",
-        "retire plan          begin a voluntary exit plan",
-        "retire commit        commit once obligations/infrastructure/location are wound down (costs 60m)",
-        "retire finish        close the handle once cooling is READY",
-        "retire cancel        abandon the exit plan and resume normal play",
-        "wait <minutes>       advance world time",
+        { id: promptId, type: "prompt", text: raw },
+        { id: `help-${Date.now()}`, type: "table", text: TERMINAL_HELP_TABLE },
       ]);
       return;
     }
@@ -489,30 +402,81 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
     const parsed = parseTerminalCommand(raw);
 
     if (!parsed.ok) {
-      setLines((current) => [
+      const err = formatRichError(parsed.error);
+      setItems((current) => [
         ...current,
-        `> ${raw}`,
-        `error: ${parsed.error.toLowerCase()}`,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `err-${Date.now()}`,
+          type: "error",
+          badge: err.badge,
+          glyph: err.glyph,
+          text: err.text,
+        },
       ]);
       return;
     }
 
     const result = runtime.execute(parsed.command);
 
-    setLines((current) => [
-      ...current,
-      `> ${raw}`,
-      result.ok
-        ? describeCommandResult(parsed.command.type)
-        : `error: ${result.error?.toLowerCase() ?? "command_failed"}`,
-    ]);
+    if (result.ok) {
+      const rich = formatRichCommandResult(parsed.command.type);
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `res-${Date.now()}`,
+          type: "result",
+          badge: rich.badge,
+          glyph: rich.glyph,
+          text: rich.text,
+        },
+      ]);
+    } else {
+      const err = formatRichError(result.error ?? "COMMAND_FAILED");
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `err-${Date.now()}`,
+          type: "error",
+          badge: err.badge,
+          glyph: err.glyph,
+          text: err.text,
+        },
+      ]);
+    }
   };
 
   return (
     <div className="terminal-app">
       <div className="terminal-output" aria-live="polite">
-        {lines.map((line, index) => (
-          <div key={`${index}-${line}`}>{line}</div>
+        {items.map((item) => (
+          <div key={item.id} className={`terminal-entry terminal-entry-${item.type}`}>
+            {item.type === "prompt" && (
+              <span className="terminal-entry-prompt">&gt; {item.text}</span>
+            )}
+            {item.type === "system" && <span>{item.text}</span>}
+            {item.type === "table" && (
+              <pre className="terminal-table-pre">{item.text}</pre>
+            )}
+            {item.type === "result" && (
+              <div className="terminal-entry-result">
+                <span className="terminal-badge badge-success">
+                  {item.glyph} {item.badge}
+                </span>
+                <span>{item.text}</span>
+              </div>
+            )}
+            {item.type === "error" && (
+              <div className="terminal-entry-error">
+                <span className="terminal-badge badge-error">
+                  {item.glyph} {item.badge}
+                </span>
+                <span>{item.text}</span>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       <form className="terminal-input-row" onSubmit={submit}>
@@ -530,72 +494,6 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
   );
 }
 
-function describeCommandResult(type: SimulationCommand["type"]) {
-  switch (type) {
-    case "observeTarget":
-      return "observation complete // target profile updated";
-    case "openOperation":
-      return "operation opened // stage recon";
-    case "surveyTarget":
-      return "survey complete // machine evidence updated";
-    case "inspectMachine":
-      return "inspection complete // service evidence updated";
-    case "escalateOperation":
-      return "operation escalated // stage intrusive";
-    case "disengageOperation":
-      return "operation disengaged";
-    case "readMessage":
-      return "message marked read";
-    case "acceptContract":
-      return "contract accepted // clock is running";
-    case "declineContract":
-      return "contract declined";
-    case "deliverContract":
-      return "contract delivered";
-    case "buyHardware":
-      return "hardware acquired // rig updated";
-    case "rentHousing":
-      return "lease signed // location capability active";
-    case "breakLease":
-      return "lease broken // back to the free baseline";
-    case "enableSoftware":
-      return "license activated // recurring fee starts at the next day";
-    case "disableSoftware":
-      return "license stopped // fee stops with it";
-    case "buyPlayerTool":
-      return "player tool acquired // author provenance recorded";
-    case "sellPlayerTool":
-      return "player tool sold // resale credits recovered";
-    case "buyMachine":
-      return "machine acquired // new box added to the rack";
-    case "sellMachine":
-      return "machine sold // resale credits recovered";
-    case "renameMachine":
-      return "machine renamed // label updated";
-    case "acquireModel":
-      return "local model acquired // owned outright, runs free";
-    case "runModel":
-      return "model running // analysis assist active";
-    case "stopModel":
-      return "model stopped // its shortcut ends";
-    case "analyzeTarget":
-      return "assistant read stored // predictions, not evidence";
-    case "startBuild":
-      return "build commissioned // assistant working, garage shows the queue";
-    case "abortBuild":
-      return "build aborted // rig freed, nothing charged";
-    case "advanceTime":
-      return "world clock advanced";
-    case "startRetirement":
-      return "exit plan opened // wind down the visible blockers";
-    case "commitRetirement":
-      return "exit committed // cooling period started";
-    case "cancelRetirement":
-      return "exit plan cancelled // normal play resumed";
-    case "finishRetirement":
-      return "handle closed // final disposition recorded";
-  }
-}
 
 /**
  * Inline rename for one owned machine: local draft text, applied through the
@@ -763,6 +661,11 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
         )}
       </div>
 
+      <ReconTopology
+        targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "nightshade")}
+        runtime={runtime}
+      />
+
       <div className="recon-results">
         <span className="panel-label">PLAYER-VISIBLE INDEX</span>
         {targetIds.length === 0 ? (
@@ -835,9 +738,7 @@ function AnalysisClaimRow({
       </span>
       <span className="analysis-truth">
         <TruthMark level="inferred" />
-        <span className={`confidence-${String(claim.confidence ?? "low")}`}>
-          {String(claim.confidence ?? "low").toUpperCase()}
-        </span>
+        <ConfidenceMeter confidence={String(claim.confidence ?? "low")} />
       </span>
       <span className="analysis-meta">
         {String(claim.modelLabel ?? "")} @ {formatWorldTime(minute)}
@@ -1005,30 +906,6 @@ function ReactionCard({
   );
 }
 
-function describeContract(
-  objective: string,
-  targetHandle: string,
-  requiredServices: number | undefined,
-  requiredMachines: number | undefined,
-): string {
-  switch (objective) {
-    case "recon-report": {
-      const count = requiredServices ?? 1;
-      return `report ${count} service${count === 1 ? "" : "s"} you have observed on ${targetHandle}`;
-    }
-    case "infrastructure-map": {
-      const count = requiredMachines ?? 1;
-      return `map ${count} host${count === 1 ? "" : "s"} on ${targetHandle}'s simulated infrastructure`;
-    }
-    case "quiet-recon":
-      return `verify ${targetHandle}'s infrastructure and leave the operation at recon stage`;
-    case "intrusion":
-      return `cross the intrusive boundary on ${targetHandle}`;
-    default:
-      return `work against ${targetHandle}`;
-  }
-}
-
 function describeLongRunPressureReason(reason: string): string {
   switch (reason) {
     case "completed-work":
@@ -1075,6 +952,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const unread = Number(
     useCell("meta", "inbox", "unread", runtime.projection) ?? 0,
   );
+  const currentWorldMinute = Number(
+    useCell("meta", "world", "worldMinute", runtime.projection) ?? 0,
+  );
+  const machinesTable = useTable("machines", runtime.projection);
+  const servicesTable = useTable("services", runtime.projection);
 
   const handles = Object.entries(board).sort(
     ([idA, a], [idB, b]) =>
@@ -1427,65 +1309,41 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
         {contracts.length === 0 ? (
           <p className="underground-empty">No work on offer.</p>
         ) : (
-          <ul className="underground-contracts">
+          <div className="underground-contracts-list">
             {contracts.map(([id, entry]) => {
-              const status = String(entry.status ?? "");
-              const verbs: ContractVerb[] =
-                status === "offered"
-                  ? ["accept", "decline"]
-                  : status === "accepted"
-                    ? ["deliver"]
-                    : [];
+              const targetId = String(entry.targetId ?? "");
+              const currentKnownMachines = Object.values(machinesTable).filter(
+                (m) => m.targetId === targetId,
+              ).length;
+              const currentKnownServices = Object.values(servicesTable).filter(
+                (s) => s.targetId === targetId,
+              ).length;
 
               return (
-                <li
+                <ContractCard
                   key={id}
-                  className={verbs.length > 0 ? "is-open" : undefined}
-                >
-                  <div>
-                    <span className="underground-time">
-                      {id} · {String(entry.issuerHandle ?? "unknown")} ·{" "}
-                      {status.toUpperCase()}
-                    </span>
-                    <span>
-                      {describeContract(
-                        String(entry.objective ?? ""),
-                        String(entry.targetHandle ?? "unknown"),
-                        entry.requiredServices === undefined
-                          ? undefined
-                          : Number(entry.requiredServices),
-                        entry.requiredMachines === undefined
-                          ? undefined
-                          : Number(entry.requiredMachines),
-                      )}
-                    </span>
-                    <span className="underground-time">
-                      {status === "accepted"
-                        ? `due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`
-                        : status === "offered"
-                          ? `offer open until ${formatWorldTime(Number(entry.expiresWorldMinute ?? 0))}`
-                          : ""}
-                    </span>
-                  </div>
-                  {verbs.length > 0 && (
-                    <div className="underground-contract-actions">
-                      {verbs.map((verb) => (
-                        <button
-                          key={verb}
-                          type="button"
-                          onClick={() =>
-                            runtime.execute(contractActionFromGui(verb, id))
-                          }
-                        >
-                          {verb.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </li>
+                  contract={{
+                    id,
+                    issuerHandle: String(entry.issuerHandle ?? "unknown"),
+                    targetId,
+                    targetHandle: String(entry.targetHandle ?? "unknown"),
+                    objective: String(entry.objective ?? ""),
+                    status: String(entry.status ?? ""),
+                    expiresWorldMinute: Number(entry.expiresWorldMinute ?? 0),
+                    dueWorldMinute: entry.dueWorldMinute ? Number(entry.dueWorldMinute) : undefined,
+                    requiredMachines: entry.requiredMachines ? Number(entry.requiredMachines) : undefined,
+                    requiredServices: entry.requiredServices ? Number(entry.requiredServices) : undefined,
+                    currentKnownMachines,
+                    currentKnownServices,
+                  }}
+                  currentWorldMinute={currentWorldMinute}
+                  onAction={(verb, contractId) =>
+                    runtime.execute(contractActionFromGui(verb, contractId))
+                  }
+                />
               );
             })}
-          </ul>
+          </div>
         )}
       </section>
 
@@ -1504,16 +1362,18 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                     {formatWorldTime(Number(entry.worldMinute ?? 0))} ·{" "}
                     {String(entry.fromHandle ?? "unknown")} · {id}
                   </span>
-                  <span>
-                    {describeIncidentCopy(
-                      "message",
-                      id,
-                      String(entry.claimActorHandle ?? "unknown"),
-                      String(entry.claimCounterpartHandle ?? "unknown"),
-                      String(entry.claimOutcome ?? ""),
-                    )}{" "}
-                    (unverified)
-                  </span>
+                  <div>
+                    <span>
+                      {describeIncidentCopy(
+                        "message",
+                        id,
+                        String(entry.claimActorHandle ?? "unknown"),
+                        String(entry.claimCounterpartHandle ?? "unknown"),
+                        String(entry.claimOutcome ?? ""),
+                      )}{" "}
+                    </span>
+                    <TruthMark level="rumored" label="UNVERIFIED" />
+                  </div>
                 </div>
                 {!entry.read && (
                   <button
@@ -1569,15 +1429,30 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       <section aria-label="Public index">
         <span className="panel-label">PUBLIC INDEX</span>
         <ol className="underground-board">
-          {handles.map(([id, entry]) => (
-            <li
-              key={id}
-              className={entry.isPlayer ? "is-player" : undefined}
-            >
-              <span>{String(entry.handle ?? id)}</span>
-              <span>#{Number(entry.rank ?? 0).toLocaleString("en-US")}</span>
-            </li>
-          ))}
+          {handles.map(([id, entry]) => {
+            const handle = String(entry.handle ?? id);
+            const stanceEntry = stanceEntries.find(([, s]) => String(s.handle ?? "") === handle);
+            const heatEntry = heat.find(([, h]) => String(h.actorHandle ?? "") === handle);
+
+            return (
+              <li
+                key={id}
+                className={entry.isPlayer ? "is-player" : undefined}
+              >
+                <div className="board-handle-col">
+                  <span>{handle}</span>
+                  <RelationshipBadge
+                    isPlayer={Boolean(entry.isPlayer)}
+                    stance={stanceEntry ? String(stanceEntry[1].stance ?? "") : null}
+                    hasHeat={Boolean(heatEntry)}
+                    heatKind={heatEntry ? String(heatEntry[1].kind ?? "") : null}
+                    showHeatDetail={false}
+                  />
+                </div>
+                <span>#{Number(entry.rank ?? 0).toLocaleString("en-US")}</span>
+              </li>
+            );
+          })}
         </ol>
       </section>
 
@@ -1612,16 +1487,23 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
         {stanceEntries.length === 0 ? (
           <p className="underground-empty">No one you have observed has formed a view.</p>
         ) : (
-          <ul className="underground-stances">
-            {stanceEntries.map(([id, entry]) => (
-              <li key={id}>
-                <span>{String(entry.handle ?? id)}</span>
-                <span className="underground-stance">
-                  {String(entry.stance ?? "neutral").toUpperCase()}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="underground-stances-grid">
+            {stanceEntries.map(([id, entry]) => {
+              const handle = String(entry.handle ?? id);
+              const heatEntry = heat.find(([, h]) => String(h.actorHandle ?? "") === handle);
+
+              return (
+                <div key={id} className="stance-card">
+                  <span className="stance-handle">{handle}</span>
+                  <RelationshipBadge
+                    stance={String(entry.stance ?? "neutral")}
+                    hasHeat={Boolean(heatEntry)}
+                    heatKind={heatEntry ? String(heatEntry[1].kind ?? "") : null}
+                  />
+                </div>
+              );
+            })}
+          </div>
         )}
       </section>
 
@@ -1851,14 +1733,21 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
 
       <section aria-label="Rig capability">
         <span className="panel-label">RIG CAPABILITY</span>
-        <ul className="market-capability">
-          {capability.map(([label, value]) => (
-            <li key={label}>
-              <span>{label.toUpperCase()}</span>
-              <strong>{Number(value ?? 0)}</strong>
-            </li>
-          ))}
-        </ul>
+        <div className="market-capability-grid">
+          {capability.map(([metric, value]) => {
+            const liftEntry = liftRows.find(([l]) => l === metric);
+            const liftVal = liftEntry ? Number(liftEntry[1]) : 0;
+            return (
+              <CapabilityBar
+                key={metric}
+                metric={metric as CapabilityMetric}
+                currentValue={Number(value ?? 0)}
+                deltaValue={liftVal > 0 ? liftVal : 0}
+                maxScale={24}
+              />
+            );
+          })}
+        </div>
         {liftRows.some(([, value]) => Number(value ?? 0) > 0) && (
           <p className="market-hint">
             Includes lease + software + tool + machine lift:{" "}
