@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { RelationshipBadge } from "@/components/game/social/relationship-badge";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
 
 export interface SystemLegendModalProps {
@@ -21,16 +22,24 @@ export function SystemLegendModal({
   const activeIsOpen = isOpen ?? storeIsOpen;
   const activeClose = onClose ?? storeClose;
 
+  const modalRef = useModalFocus<HTMLDivElement>({
+    isOpen: activeIsOpen,
+    onClose: activeClose,
+    autoFocusSelector: ".system-modal-close",
+  });
+
   if (!activeIsOpen) {
     return null;
   }
 
   return (
     <div
+      ref={modalRef}
       className="system-modal-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="system-legend-title"
+      tabIndex={-1}
     >
       <div className="system-legend-panel">
         <header className="system-legend-header">

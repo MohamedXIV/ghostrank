@@ -1,3 +1,20 @@
+import { useReducedMotion } from "motion/react";
+
+import { usePresentationStore } from "@/stores/ui/use-presentation-store";
+
+export function useEffectiveReducedMotion(): boolean {
+  const systemReducedMotion = useReducedMotion();
+  const motionMode = usePresentationStore((state) => state.motionMode);
+
+  if (motionMode === "reduce") {
+    return true;
+  }
+  if (motionMode === "standard") {
+    return false;
+  }
+  return systemReducedMotion !== false;
+}
+
 export function getWindowMotionProps(reducedMotion: boolean) {
   if (reducedMotion) {
     return {
