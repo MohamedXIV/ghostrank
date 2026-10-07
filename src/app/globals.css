@@ -2560,37 +2560,43 @@ textarea:focus-visible,
   color: var(--accent);
 }
 
-.deadline-progress-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--surface-overlay);
-  overflow: hidden;
+.deadline-urgency-track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.deadline-band {
   border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 5px;
+  color: var(--foreground-muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
 }
 
-.deadline-progress-fill {
-  height: 100%;
-  transition: width 120ms ease-out;
+.deadline-band[data-active="true"] {
+  color: var(--foreground);
+  border-color: currentColor;
 }
 
-.deadline-progress-fill.urgency-calm {
-  background: var(--success);
+.deadline-band-calm[data-active="true"] {
+  color: var(--success);
 }
 
-.deadline-progress-fill.urgency-closing {
-  background: var(--warning);
+.deadline-band-closing[data-active="true"] {
+  color: var(--warning);
 }
 
-.deadline-progress-fill.urgency-urgent {
-  background: var(--danger);
+.deadline-band-urgent[data-active="true"],
+.deadline-band-expired[data-active="true"] {
+  color: var(--danger);
 }
 
-.deadline-progress-fill.urgency-expired {
-  background: var(--danger);
-}
-
-.deadline-progress-fill.urgency-delivered {
-  background: var(--success);
+.deadline-band-expired {
+  grid-column: 1 / -1;
 }
 
 .contract-actions-footer {
@@ -2986,8 +2992,7 @@ textarea:focus-visible,
 
 @media (prefers-reduced-motion: reduce) {
   .req-progress-fill,
-  .deadline-progress-fill,
-  .capability-bar-current,
+    .capability-bar-current,
   .capability-bar-delta {
     transition: none !important;
   }
