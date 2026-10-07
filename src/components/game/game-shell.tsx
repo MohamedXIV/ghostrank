@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 export type ShellLifecyclePhase =
   | { type: "booting"; note: string }
   | { type: "active"; session: GameSession }
+  | { type: "no_run"; note: string }
   | {
       type: "corrupt_save";
       diagnostic: SaveDiagnosticError;
@@ -70,7 +71,9 @@ export function GameShell() {
       const persistence = await createPlatformRunPersistence();
       setPersistenceInstance(persistence);
 
-      // Inspect active run state non-destructively
+      // Inspect active run state non-destructively.
+      // An empty durable slot is not permission to create a run implicitly:
+      // P5 requires the player to deliberately initialize every fresh run.
       if (persistence.inspectActiveRun) {
         const inspection = await persistence.inspectActiveRun();
         if (inspection.status === "diagnostic_error") {
@@ -78,6 +81,13 @@ export function GameShell() {
             type: "corrupt_save",
             diagnostic: inspection.error,
             rawSnippet: inspection.rawContent,
+          });
+          return;
+        }
+        if (inspection.status === "empty") {
+          setLifecycle({
+            type: "no_run",
+            note: "no active operation is stored on this browser",
           });
           return;
         }
@@ -164,25 +174,64 @@ export function GameShell() {
   }, [lifecycle]);
 
   const confirmStartFreshRun = useCallback(async () => {
-    setLifecycle({ type: "booting", note: "initializing new simulation run" });
-    const freshState = createNewRunWorldState();
-    if (persistenceInstance) {
-      // Overwrite the active run slot with the new fresh run
-      await persistenceInstance.saveActiveState(freshState, []);
-    }
-    const nextSession = await createGameSession({
-      initialState: freshState,
-      persistence: persistenceInstance,
-    });
-    setLifecycle({ type: "active", session: nextSession });
-  }, [persistenceInstance]);
+    const previousSession =
+      lifecycle.type === "prompt_new_run"
+        ? lifecycle.activeSession
+        : lifecycle.type === "active"
+          ? lifecycle.session
+          : null;
 
-  const archiveCorruptAndStartFresh = useCallback(async () => {
-    if (lifecycle.type === "corrupt_save" && persistenceInstance) {
-      if (persistenceInstance.archiveCorruptActiveRun) {
-        await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
+    setLifecycle({ type: "booting", note: "finalizing previous run state" });
+
+    try {
+      // Do not let a delayed autosave from the previous session race with and
+      // overwrite the fresh run. Ended sessions also need their archive move
+      // fully settled before the next active slot is created.
+      if (previousSession) {
+        await previousSession.flush();
+      }
+
+      setLifecycle({ type: "booting", note: "initializing new simulation run" });
+      const freshState = createNewRunWorldState();
+
+      if (persistenceInstance) {
+        await persistenceInstance.saveActiveState(freshState, []);
+      }
+
+      const nextSession = await createGameSession({
+        initialState: freshState,
+        persistence: persistenceInstance,
+      });
+      setLifecycle({ type: "active", session: nextSession });
+    } catch (error) {
+      console.error("Ghostrank failed to start a fresh run safely", error);
+
+      // A persistence/flush failure must never destroy or replace the previous
+      // recoverable session. Return it to the foreground when one exists;
+      // otherwise return to the explicit no-run screen.
+      if (previousSession) {
+        setLifecycle({ type: "active", session: previousSession });
+      } else {
+        setLifecycle({
+          type: "no_run",
+          note: "new run could not be initialized safely // retry",
+        });
       }
     }
+  }, [lifecycle, persistenceInstance]);
+
+  const archiveCorruptAndStartFresh = useCallback(async () => {
+    if (lifecycle.type !== "corrupt_save" || !persistenceInstance) {
+      return;
+    }
+
+    if (!persistenceInstance.archiveCorruptActiveRun) {
+      // Never overwrite corrupt durable data if this persistence adapter cannot
+      // archive it non-destructively.
+      return;
+    }
+
+    await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
     await confirmStartFreshRun();
   }, [confirmStartFreshRun, lifecycle, persistenceInstance]);
 
@@ -202,6 +251,44 @@ export function GameShell() {
         <div className="boot-mark">{distro.label}</div>
         <div className="boot-line">{lifecycle.note}</div>
       </section>
+    );
+  }
+
+  if (lifecycle.type === "no_run") {
+    return (
+      <main
+        className="boot-screen"
+        data-distro={distroId}
+        data-theme={themeId}
+        data-text-scale={textScale}
+        data-motion-mode={motionMode}
+        data-transparency={transparencyMode}
+        data-density={densityMode}
+        data-contrast={contrastMode}
+      >
+        <div className="lifecycle-screen">
+          <div className="lifecycle-card">
+            <div className="lifecycle-header">
+              <span className="lifecycle-title">NO ACTIVE RUN</span>
+              <span className="lifecycle-badge">READY</span>
+            </div>
+            <p className="boot-line" style={{ textAlign: "left" }}>
+              {lifecycle.note}. A fresh operation is created only when you
+              explicitly start one; its world seed is chosen at initialization
+              and then remains deterministic for that run.
+            </p>
+            <div className="lifecycle-actions">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => void confirmStartFreshRun()}
+              >
+                + START NEW OPERATION
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
     );
   }
 
