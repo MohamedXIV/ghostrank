@@ -15,7 +15,10 @@ import {
   createNewRunWorldState,
   createSliceWorldState,
 } from "@/game/runtime/slice-world";
-import type { RunPersistence } from "@/persistence/run-persistence";
+import type {
+  ActiveRunInspectResult,
+  RunPersistence,
+} from "@/persistence/run-persistence";
 import {
   formatSaveDiagnostic,
   type SaveDiagnosticError,
@@ -34,6 +37,27 @@ export type ShellLifecyclePhase =
       rawSnippet?: string;
     }
   | { type: "prompt_new_run"; activeSession: GameSession };
+
+export function lifecycleFromActiveRunInspection(
+  inspection: ActiveRunInspectResult,
+): ShellLifecyclePhase | null {
+  if (inspection.status === "diagnostic_error") {
+    return {
+      type: "corrupt_save",
+      diagnostic: inspection.error,
+      rawSnippet: inspection.rawContent,
+    };
+  }
+
+  if (inspection.status === "empty") {
+    return {
+      type: "no_run",
+      note: "no active operation is stored on this browser",
+    };
+  }
+
+  return null;
+}
 
 export async function prepareFreshRunState(
   previousSession: GameSession | null,
@@ -103,19 +127,9 @@ export function GameShell() {
       // P5 requires the player to deliberately initialize every fresh run.
       if (persistence.inspectActiveRun) {
         const inspection = await persistence.inspectActiveRun();
-        if (inspection.status === "diagnostic_error") {
-          setLifecycle({
-            type: "corrupt_save",
-            diagnostic: inspection.error,
-            rawSnippet: inspection.rawContent,
-          });
-          return;
-        }
-        if (inspection.status === "empty") {
-          setLifecycle({
-            type: "no_run",
-            note: "no active operation is stored on this browser",
-          });
+        const inspectionLifecycle = lifecycleFromActiveRunInspection(inspection);
+        if (inspectionLifecycle) {
+          setLifecycle(inspectionLifecycle);
           return;
         }
       }
