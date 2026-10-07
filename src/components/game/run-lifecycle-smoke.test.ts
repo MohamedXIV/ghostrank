@@ -2,12 +2,51 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { GameShell } from "@/components/game/game-shell";
+import {
+  GameShell,
+  lifecycleFromActiveRunInspection,
+  prepareFreshRunState,
+} from "@/components/game/game-shell";
 import { createBrowserRunPersistence } from "@/persistence/browser-run-persistence";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { endRun } from "@/game/simulation/systems/endings";
 
 describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
+  it("treats an empty durable slot as an explicit no-run state", () => {
+    expect(lifecycleFromActiveRunInspection({ status: "empty" })).toEqual({
+      type: "no_run",
+      note: "no active operation is stored on this browser",
+    });
+
+    const restored = createSliceWorldState({ seed: 42 });
+    expect(
+      lifecycleFromActiveRunInspection({ status: "valid", state: restored }),
+    ).toBeNull();
+  });
+
+  it("flushes the previous session before writing a fresh active run", async () => {
+    const order: string[] = [];
+
+    const previousSession = {
+      flush: async () => {
+        order.push("flush");
+      },
+    } as unknown as import("@/game/runtime/game-session").GameSession;
+
+    const persistence = {
+      loadActiveState: async () => null,
+      saveActiveState: async () => {
+        order.push("save-fresh");
+      },
+    };
+
+    const fresh = await prepareFreshRunState(previousSession, persistence);
+
+    expect(order).toEqual(["flush", "save-fresh"]);
+    expect(fresh.ending).toBeNull();
+    expect(fresh.worldMinute).toBe(0);
+  });
+
   it("renders boot screen during initial load with proper accessibility attributes", () => {
     const html = renderToStaticMarkup(React.createElement(GameShell));
     expect(html).toContain("boot-screen");
