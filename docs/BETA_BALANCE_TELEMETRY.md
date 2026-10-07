@@ -97,7 +97,7 @@ The `rig-builder` policy was evaluated across 30 world days using the canonical 
 - **Wallet Pressure & Upkeep Burden**:
   - In contractor runs, credits steadily hoard to a median of 8,132.5 credits (up to 14,575 cr).
   - In rig-builder runs, credits remain active working capital, finishing with 195 to 3,250 credits (median: 947.5 credits, mean: 1,139 cr).
-  - Involuntary upkeep lapses occurred in 7 of 32 runs (21.9%), at at most 1 lapse per run (median: 0, mean: 0.22 lapses per run), when concurrent software and housing upkeep coincided with a gap between contract deliveries. Because Ghostrank lapses licenses and leases cleanly back to baseline without negative debt, the operator recovered safely in subsequent days.
+  - Involuntary upkeep lapses occurred in 7 of 32 runs (21.9%), at most 1 lapse per run (median: 0, mean: 0.22 lapses per run), when concurrent software and housing upkeep coincided with a gap between contract deliveries. Because Ghostrank lapses licenses and leases cleanly back to baseline without negative debt, the operator recovered safely in subsequent days.
 
 **Decision**: Catalog pricing and daily upkeep rates are well-calibrated. All five catalog categories (hardware, housing, software, models, tools) are practically reachable through ordinary gameplay without level or rank gates.
 
