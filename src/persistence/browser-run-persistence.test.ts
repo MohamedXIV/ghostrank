@@ -12,6 +12,7 @@ import { serializePortableRunSave } from "@/persistence/portable-run-save";
 function createMemoryStorage(): BrowserRunStorage {
   let value: string | null = null;
   const history = new Map<string, string>();
+  const corruptArchive = new Map<string, string>();
 
   return {
     async readActiveRun() {
@@ -33,8 +34,13 @@ function createMemoryStorage(): BrowserRunStorage {
       history.set(archiveId, serialized);
       value = null;
     },
+    async archiveCorruptActiveRun(archiveId, metadataJson) {
+      corruptArchive.set(archiveId, metadataJson);
+      value = null;
+    },
   };
 }
+
 
 describe("browser run persistence", () => {
   it("restores the complete active run across adapter/session recreation", async () => {
@@ -166,4 +172,26 @@ describe("browser run persistence", () => {
       "history contains a live run",
     );
   });
+
+  it("non-destructively inspects corrupt active run and can archive it safely", async () => {
+    const storage = createMemoryStorage();
+    await storage.writeActiveRun("broken-json-data");
+
+    const persistence = createBrowserRunPersistence(storage);
+    const inspectResult = await persistence.inspectActiveRun!();
+
+    expect(inspectResult.status).toBe("diagnostic_error");
+    if (inspectResult.status !== "diagnostic_error") return;
+
+    expect(inspectResult.error.kind).toBe("corrupt_json");
+    expect(inspectResult.rawContent).toBe("broken-json-data");
+
+    // The corrupt save has not been destroyed or overwritten yet
+    expect(await storage.readActiveRun()).toBe("broken-json-data");
+
+    // Archive corrupt save into backup and clear active slot
+    await persistence.archiveCorruptActiveRun!(inspectResult.error);
+    expect(await storage.readActiveRun()).toBeNull();
+  });
 });
+

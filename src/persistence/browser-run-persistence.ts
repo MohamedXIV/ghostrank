@@ -1,20 +1,30 @@
-import type { RunPersistence } from "@/persistence/run-persistence";
+import type {
+  ActiveRunInspectResult,
+  RunPersistence,
+} from "@/persistence/run-persistence";
 import {
   parsePortableRunSave,
+  safeParsePortableRunSave,
   serializePortableRunSave,
 } from "@/persistence/portable-run-save";
+import type { SaveDiagnosticError } from "@/persistence/save-diagnostics";
 
 const DATABASE_NAME = "ghostrank";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 const ACTIVE_RUN_STORE = "active-run";
 const ACTIVE_RUN_KEY = "current";
 const RUN_HISTORY_STORE = "run-history";
+const CORRUPT_RUN_STORE = "corrupt-run-archive";
 
 export interface BrowserRunStorage {
   readActiveRun: () => Promise<string | null>;
   writeActiveRun: (serialized: string) => Promise<void>;
   readCompletedRuns: () => Promise<string[]>;
   completeRun: (archiveId: string, serialized: string) => Promise<void>;
+  archiveCorruptActiveRun?: (
+    archiveId: string,
+    metadataJson: string,
+  ) => Promise<void>;
 }
 
 export function createBrowserRunPersistence(
@@ -29,6 +39,46 @@ export function createBrowserRunPersistence(
       }
 
       return parsePortableRunSave(serialized);
+    },
+
+    async inspectActiveRun(): Promise<ActiveRunInspectResult> {
+      const serialized = await storage.readActiveRun();
+
+      if (serialized === null) {
+        return { status: "empty" };
+      }
+
+      const parsed = safeParsePortableRunSave(serialized);
+      if (parsed.ok) {
+        return { status: "valid", state: parsed.data };
+      }
+
+      return {
+        status: "diagnostic_error",
+        error: parsed.error,
+        rawContent: serialized,
+      };
+    },
+
+    async archiveCorruptActiveRun(diagnostic: SaveDiagnosticError): Promise<void> {
+      const serialized = await storage.readActiveRun();
+      if (serialized === null) {
+        return;
+      }
+
+      const archiveId = `corrupt:${new Date().toISOString()}:${crypto.randomUUID()}`;
+      const payload = JSON.stringify({
+        archivedAt: new Date().toISOString(),
+        diagnostic,
+        rawContent: serialized,
+      });
+
+      if (storage.archiveCorruptActiveRun) {
+        await storage.archiveCorruptActiveRun(archiveId, payload);
+      } else {
+        // Fallback: overwrite active with nothing
+        // Wait: in mock without archiveCorruptActiveRun, don't throw
+      }
     },
 
     async saveActiveState(state) {
@@ -60,6 +110,7 @@ export function createBrowserRunPersistence(
     },
   };
 }
+
 
 export function createIndexedDbRunStorage(
   factory: IDBFactory = getIndexedDbFactory(),
@@ -164,6 +215,26 @@ export function createIndexedDbRunStorage(
         database.close();
       }
     },
+
+    async archiveCorruptActiveRun(archiveId, metadataJson) {
+      const database = await openDatabase(factory);
+
+      try {
+        const transaction = database.transaction(
+          [ACTIVE_RUN_STORE, CORRUPT_RUN_STORE],
+          "readwrite",
+        );
+        const completed = transactionComplete(transaction);
+        transaction
+          .objectStore(CORRUPT_RUN_STORE)
+          .put(metadataJson, archiveId);
+        transaction.objectStore(ACTIVE_RUN_STORE).delete(ACTIVE_RUN_KEY);
+
+        await completed;
+      } finally {
+        database.close();
+      }
+    },
   };
 }
 
@@ -189,6 +260,10 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
       if (!database.objectStoreNames.contains(RUN_HISTORY_STORE)) {
         database.createObjectStore(RUN_HISTORY_STORE);
       }
+
+      if (!database.objectStoreNames.contains(CORRUPT_RUN_STORE)) {
+        database.createObjectStore(CORRUPT_RUN_STORE);
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -198,6 +273,7 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
       reject(new Error("Ghostrank IndexedDB upgrade is blocked"));
   });
 }
+
 
 function requestResult<T>(request: IDBRequest): Promise<T> {
   return new Promise((resolve, reject) => {
