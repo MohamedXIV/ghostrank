@@ -153,6 +153,13 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
   },
   {
     category: "system",
+    syntax: "settings",
+    label: "settings",
+    description: "Display or modify presentation and accessibility overrides",
+    example: "settings",
+  },
+  {
+    category: "system",
     syntax: "guide",
     label: "guide",
     description: "Display operational field directives and orientation",

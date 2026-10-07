@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
 import { AppearanceApp } from "@/components/game/appearance-app";
@@ -69,7 +69,10 @@ import { OrientationModal } from "@/components/game/onboarding/orientation-modal
 import { SystemLegendModal } from "@/components/game/onboarding/system-legend-modal";
 import { FieldDirectives } from "@/components/game/onboarding/field-directives";
 import { CommandDiscovery } from "@/components/game/terminal/command-discovery";
-import { getWindowMotionProps } from "@/components/game/window-motion";
+import {
+  getWindowMotionProps,
+  useEffectiveReducedMotion,
+} from "@/components/game/window-motion";
 import { DISTRO_PROFILES } from "@/presentation/distros";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
@@ -121,10 +124,26 @@ export function ComputerDesktop({
   const openWindow = useUiStore((state) => state.openWindow);
   const closeWindow = useUiStore((state) => state.closeWindow);
   const focusWindow = useUiStore((state) => state.focusWindow);
+  const cycleFocusedWindow = useUiStore((state) => state.cycleFocusedWindow);
   const distroId = usePresentationStore((state) => state.distroId);
   const themeId = usePresentationStore((state) => state.themeId);
+  const textScale = usePresentationStore((state) => state.textScale);
+  const motionMode = usePresentationStore((state) => state.motionMode);
+  const transparencyMode = usePresentationStore(
+    (state) => state.transparencyMode,
+  );
+  const densityMode = usePresentationStore((state) => state.densityMode);
+  const contrastMode = usePresentationStore((state) => state.contrastMode);
   const distro = DISTRO_PROFILES[distroId];
 
+  const orientationModalOpen = useOnboardingStore(
+    (state) => state.orientationModalOpen,
+  );
+  const legendModalOpen = useOnboardingStore((state) => state.legendModalOpen);
+  const closeOrientationModal = useOnboardingStore(
+    (state) => state.closeOrientationModal,
+  );
+  const closeLegendModal = useOnboardingStore((state) => state.closeLegendModal);
   const hydrateOnboarding = useOnboardingStore((state) => state.hydrate);
   const openOrientationModal = useOnboardingStore(
     (state) => state.openOrientationModal,
@@ -135,11 +154,87 @@ export function ComputerDesktop({
     hydrateOnboarding();
   }, [hydrateOnboarding]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Escape closes open modals or active window
+      if (event.key === "Escape") {
+        if (orientationModalOpen) {
+          event.preventDefault();
+          closeOrientationModal();
+          return;
+        }
+        if (legendModalOpen) {
+          event.preventDefault();
+          closeLegendModal();
+          return;
+        }
+        if (focusedWindow) {
+          event.preventDefault();
+          closeWindow(focusedWindow);
+          return;
+        }
+      }
+
+      // F1 opens Glossary modal
+      if (event.key === "F1") {
+        event.preventDefault();
+        openLegendModal();
+        return;
+      }
+
+      // Alt+1..6 and Alt+W window shortcuts
+      if (event.altKey && !event.ctrlKey && !event.metaKey) {
+        if (event.key === "1") {
+          event.preventDefault();
+          openWindow("terminal");
+        } else if (event.key === "2") {
+          event.preventDefault();
+          openWindow("recon");
+        } else if (event.key === "3") {
+          event.preventDefault();
+          openWindow("underground");
+        } else if (event.key === "4") {
+          event.preventDefault();
+          openWindow("market");
+        } else if (event.key === "5") {
+          event.preventDefault();
+          openWindow("history");
+        } else if (event.key === "6") {
+          event.preventDefault();
+          openWindow("settings");
+        } else if (event.key.toLowerCase() === "w") {
+          event.preventDefault();
+          cycleFocusedWindow(event.shiftKey ? "backward" : "forward");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    orientationModalOpen,
+    legendModalOpen,
+    closeOrientationModal,
+    closeLegendModal,
+    focusedWindow,
+    closeWindow,
+    openWindow,
+    cycleFocusedWindow,
+    openLegendModal,
+  ]);
+
   return (
     <section
       className="desktop-surface"
       data-distro={distroId}
       data-theme={themeId}
+      data-text-scale={textScale}
+      data-motion-mode={motionMode}
+      data-transparency={transparencyMode}
+      data-density={densityMode}
+      data-contrast={contrastMode}
       aria-label={`${distro.label} computer`}
     >
       <header className="os-bar">
@@ -159,8 +254,8 @@ export function ComputerDesktop({
             size="sm"
             className="os-help-button"
             onClick={openLegendModal}
-            title="Open system symbols & truth vocabulary glossary"
-            aria-label="Open system glossary"
+            title="Open system symbols & truth vocabulary glossary (F1)"
+            aria-label="Open system glossary (F1)"
           >
             ? GLOSSARY
           </Button>
@@ -182,34 +277,65 @@ export function ComputerDesktop({
 
       <div className="desktop-workspace">
         <nav className="desktop-launcher" aria-label="Applications">
-          <button type="button" onClick={() => openWindow("terminal")}>
+          <button
+            type="button"
+            onClick={() => openWindow("terminal")}
+            aria-keyshortcuts="Alt+1"
+            title="Terminal (Alt+1)"
+          >
             <span className="launcher-glyph">&gt;_</span>
             Terminal
           </button>
-          <button type="button" onClick={() => openWindow("recon")}>
+          <button
+            type="button"
+            onClick={() => openWindow("recon")}
+            aria-keyshortcuts="Alt+2"
+            title="Recon (Alt+2)"
+          >
             <span className="launcher-glyph">◎</span>
             Recon
           </button>
-          <button type="button" onClick={() => openWindow("underground")}>
+          <button
+            type="button"
+            onClick={() => openWindow("underground")}
+            aria-keyshortcuts="Alt+3"
+            title="Underground Index (Alt+3)"
+          >
             <span className="launcher-glyph">◈</span>
             Index
           </button>
-          <button type="button" onClick={() => openWindow("market")}>
+          <button
+            type="button"
+            onClick={() => openWindow("market")}
+            aria-keyshortcuts="Alt+4"
+            title="Market & Rig (Alt+4)"
+          >
             <span className="launcher-glyph">⌸</span>
             Market
           </button>
-          <button type="button" onClick={() => openWindow("history")}>
+          <button
+            type="button"
+            onClick={() => openWindow("history")}
+            aria-keyshortcuts="Alt+5"
+            title="Run History (Alt+5)"
+          >
             <span className="launcher-glyph">▤</span>
             History
           </button>
-          <button type="button" onClick={() => openWindow("settings")}>
+          <button
+            type="button"
+            onClick={() => openWindow("settings")}
+            aria-keyshortcuts="Alt+6"
+            title="System & Appearance (Alt+6)"
+          >
             <span className="launcher-glyph">✦</span>
             Appearance
           </button>
           <button
             type="button"
             onClick={openLegendModal}
-            title="System symbols & truth vocabulary glossary"
+            aria-keyshortcuts="F1"
+            title="System symbols & truth vocabulary glossary (F1)"
           >
             <span className="launcher-glyph">?</span>
             Glossary
@@ -326,14 +452,15 @@ function WindowFrame({
   onClose,
   children,
 }: WindowFrameProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const reducedMotion = useEffectiveReducedMotion();
 
   return (
     <motion.section
-      {...getWindowMotionProps(prefersReducedMotion !== false)}
+      {...getWindowMotionProps(reducedMotion)}
       className={`os-window os-window-${id} ${focused ? "is-focused" : ""}`}
       onMouseDown={onFocus}
       aria-label={title}
+      tabIndex={-1}
     >
       <header className="window-titlebar">
         <span>{title}</span>
@@ -481,6 +608,116 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
         { id: promptId, type: "prompt", text: raw },
         { id: `guide-${Date.now()}`, type: "table", text: TERMINAL_GUIDE_TABLE },
       ]);
+      return;
+    }
+
+    const lower = raw.toLowerCase();
+    if (lower === "settings" || lower === "accessibility") {
+      const pres = usePresentationStore.getState();
+      const summaryTable = [
+        "┌── SYSTEM PRESENTATION & ACCESSIBILITY CONFIGURATION ────────────────────┐",
+        `│ Active Distro  │ ${pres.distroId.padEnd(20)} │ Sound FX     │ ${pres.soundEnabled ? "ENABLED" : "MUTED"}          │`,
+        `│ Active Theme   │ ${pres.themeId.padEnd(20)} │ Text Scale   │ ${pres.textScale.padEnd(16)} │`,
+        `│ Motion Mode    │ ${pres.motionMode.padEnd(20)} │ Transparency │ ${pres.transparencyMode.padEnd(16)} │`,
+        `│ Density Mode   │ ${pres.densityMode.padEnd(20)} │ Contrast     │ ${pres.contrastMode.padEnd(16)} │`,
+        "├──────────────────────────────────────────────────────────────────────────┤",
+        "│ Subcommands:                                                             │",
+        "│   settings scale <normal|large|extra-large>                              │",
+        "│   settings motion <system|reduce|standard>                               │",
+        "│   settings transparency <default|opaque>                                 │",
+        "│   settings density <compact|comfortable>                                 │",
+        "│   settings contrast <normal|high>                                        │",
+        "│   settings sound <on|off>                                                │",
+        "└──────────────────────────────────────────────────────────────────────────┘",
+      ].join("\n");
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        { id: `settings-${Date.now()}`, type: "table", text: summaryTable },
+      ]);
+      return;
+    }
+
+    if (lower.startsWith("settings ") || lower.startsWith("accessibility ")) {
+      const parts = raw.split(/\s+/);
+      const sub = parts[1]?.toLowerCase();
+      const val = parts[2]?.toLowerCase();
+      const pres = usePresentationStore.getState();
+
+      let successMessage: string | null = null;
+      let errorMessage: string | null = null;
+
+      if (sub === "scale") {
+        if (val === "normal" || val === "large" || val === "extra-large") {
+          pres.setTextScale(val);
+          successMessage = `Text scale updated to '${val}'.`;
+        } else {
+          errorMessage = "Usage: settings scale <normal|large|extra-large>";
+        }
+      } else if (sub === "motion") {
+        if (val === "system" || val === "reduce" || val === "standard") {
+          pres.setMotionMode(val);
+          successMessage = `Motion mode updated to '${val}'.`;
+        } else {
+          errorMessage = "Usage: settings motion <system|reduce|standard>";
+        }
+      } else if (sub === "transparency") {
+        if (val === "default" || val === "opaque") {
+          pres.setTransparencyMode(val);
+          successMessage = `Transparency updated to '${val}'.`;
+        } else {
+          errorMessage = "Usage: settings transparency <default|opaque>";
+        }
+      } else if (sub === "density") {
+        if (val === "compact" || val === "comfortable") {
+          pres.setDensityMode(val);
+          successMessage = `Density mode updated to '${val}'.`;
+        } else {
+          errorMessage = "Usage: settings density <compact|comfortable>";
+        }
+      } else if (sub === "contrast") {
+        if (val === "normal" || val === "high") {
+          pres.setContrastMode(val);
+          successMessage = `Contrast level updated to '${val}'.`;
+        } else {
+          errorMessage = "Usage: settings contrast <normal|high>";
+        }
+      } else if (sub === "sound") {
+        if (val === "on" || val === "off") {
+          pres.setSoundEnabled(val === "on");
+          successMessage = `UI audio effects ${val === "on" ? "enabled" : "muted"}.`;
+        } else {
+          errorMessage = "Usage: settings sound <on|off>";
+        }
+      } else {
+        errorMessage = `Unknown settings subcommand '${sub}'. Type 'settings' or 'help settings' for options.`;
+      }
+
+      if (successMessage) {
+        setItems((current) => [
+          ...current,
+          { id: promptId, type: "prompt", text: raw },
+          {
+            id: `res-${Date.now()}`,
+            type: "result",
+            badge: "CONFIG_SET",
+            glyph: "✦",
+            text: successMessage,
+          },
+        ]);
+      } else {
+        setItems((current) => [
+          ...current,
+          { id: promptId, type: "prompt", text: raw },
+          {
+            id: `err-${Date.now()}`,
+            type: "error",
+            badge: "INVALID_ARGUMENT",
+            glyph: "✖",
+            text: errorMessage ?? "Unknown setting.",
+          },
+        ]);
+      }
       return;
     }
 
