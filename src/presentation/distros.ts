@@ -168,9 +168,29 @@ export interface PresentationSelection {
   themeId: string;
 }
 
+export const TEXT_SCALE_OPTIONS = ["normal", "large", "extra-large"] as const;
+export type TextScale = (typeof TEXT_SCALE_OPTIONS)[number];
+
+export const MOTION_MODE_OPTIONS = ["system", "reduce", "standard"] as const;
+export type MotionMode = (typeof MOTION_MODE_OPTIONS)[number];
+
+export const TRANSPARENCY_MODE_OPTIONS = ["default", "opaque"] as const;
+export type TransparencyMode = (typeof TRANSPARENCY_MODE_OPTIONS)[number];
+
+export const DENSITY_MODE_OPTIONS = ["compact", "comfortable"] as const;
+export type DensityMode = (typeof DENSITY_MODE_OPTIONS)[number];
+
+export const CONTRAST_MODE_OPTIONS = ["normal", "high"] as const;
+export type ContrastMode = (typeof CONTRAST_MODE_OPTIONS)[number];
+
 export interface PresentationSettings extends PresentationSelection {
   installedDistroIds: DistroId[];
   soundEnabled: boolean;
+  textScale: TextScale;
+  motionMode: MotionMode;
+  transparencyMode: TransparencyMode;
+  densityMode: DensityMode;
+  contrastMode: ContrastMode;
 }
 
 export const DEFAULT_PRESENTATION: PresentationSelection = {
@@ -182,12 +202,52 @@ export const DEFAULT_PRESENTATION_SETTINGS: PresentationSettings = {
   ...DEFAULT_PRESENTATION,
   installedDistroIds: ["ghost-os"],
   soundEnabled: true,
+  textScale: "normal",
+  motionMode: "system",
+  transparencyMode: "default",
+  densityMode: "compact",
+  contrastMode: "normal",
 };
 
 export function isDistroId(value: unknown): value is DistroId {
   return (
     typeof value === "string" &&
     (DISTRO_IDS as readonly string[]).includes(value)
+  );
+}
+
+export function isTextScale(value: unknown): value is TextScale {
+  return (
+    typeof value === "string" &&
+    (TEXT_SCALE_OPTIONS as readonly string[]).includes(value)
+  );
+}
+
+export function isMotionMode(value: unknown): value is MotionMode {
+  return (
+    typeof value === "string" &&
+    (MOTION_MODE_OPTIONS as readonly string[]).includes(value)
+  );
+}
+
+export function isTransparencyMode(value: unknown): value is TransparencyMode {
+  return (
+    typeof value === "string" &&
+    (TRANSPARENCY_MODE_OPTIONS as readonly string[]).includes(value)
+  );
+}
+
+export function isDensityMode(value: unknown): value is DensityMode {
+  return (
+    typeof value === "string" &&
+    (DENSITY_MODE_OPTIONS as readonly string[]).includes(value)
+  );
+}
+
+export function isContrastMode(value: unknown): value is ContrastMode {
+  return (
+    typeof value === "string" &&
+    (CONTRAST_MODE_OPTIONS as readonly string[]).includes(value)
   );
 }
 
@@ -253,6 +313,11 @@ export function normalizePresentationSettings(
       ? (value as {
           installedDistroIds?: unknown;
           soundEnabled?: unknown;
+          textScale?: unknown;
+          motionMode?: unknown;
+          transparencyMode?: unknown;
+          densityMode?: unknown;
+          contrastMode?: unknown;
         })
       : {};
 
@@ -271,5 +336,20 @@ export function normalizePresentationSettings(
       typeof candidate.soundEnabled === "boolean"
         ? candidate.soundEnabled
         : DEFAULT_PRESENTATION_SETTINGS.soundEnabled,
+    textScale: isTextScale(candidate.textScale)
+      ? candidate.textScale
+      : DEFAULT_PRESENTATION_SETTINGS.textScale,
+    motionMode: isMotionMode(candidate.motionMode)
+      ? candidate.motionMode
+      : DEFAULT_PRESENTATION_SETTINGS.motionMode,
+    transparencyMode: isTransparencyMode(candidate.transparencyMode)
+      ? candidate.transparencyMode
+      : DEFAULT_PRESENTATION_SETTINGS.transparencyMode,
+    densityMode: isDensityMode(candidate.densityMode)
+      ? candidate.densityMode
+      : DEFAULT_PRESENTATION_SETTINGS.densityMode,
+    contrastMode: isContrastMode(candidate.contrastMode)
+      ? candidate.contrastMode
+      : DEFAULT_PRESENTATION_SETTINGS.contrastMode,
   };
 }

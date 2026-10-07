@@ -64,7 +64,36 @@ describe("usePresentationStore", () => {
     expect(state).not.toHaveProperty("targets");
   });
 
-  it("cannot mutate an authoritative run during install, boot or theme changes", () => {
+  it("updates and preserves accessibility overrides across distro switches", () => {
+    const store = usePresentationStore.getState();
+
+    store.setTextScale("extra-large");
+    store.setMotionMode("reduce");
+    store.setTransparencyMode("opaque");
+    store.setDensityMode("comfortable");
+    store.setContrastMode("high");
+
+    expect(usePresentationStore.getState()).toMatchObject({
+      textScale: "extra-large",
+      motionMode: "reduce",
+      transparencyMode: "opaque",
+      densityMode: "comfortable",
+      contrastMode: "high",
+    });
+
+    // Installing and activating another distro retains accessibility overrides
+    usePresentationStore.getState().completeDistroInstall("lattice");
+    expect(usePresentationStore.getState().distroId).toBe("lattice");
+    expect(usePresentationStore.getState()).toMatchObject({
+      textScale: "extra-large",
+      motionMode: "reduce",
+      transparencyMode: "opaque",
+      densityMode: "comfortable",
+      contrastMode: "high",
+    });
+  });
+
+  it("cannot mutate an authoritative run during install, boot, theme or accessibility changes", () => {
     const world = createSliceWorldState();
     const before = JSON.stringify(world);
 
@@ -72,6 +101,8 @@ describe("usePresentationStore", () => {
     usePresentationStore.getState().completeDistroInstall("petal");
     usePresentationStore.getState().activateInstalledDistro("velvet");
     usePresentationStore.getState().setSoundEnabled(false);
+    usePresentationStore.getState().setTextScale("large");
+    usePresentationStore.getState().setContrastMode("high");
 
     expect(JSON.stringify(world)).toBe(before);
   });
