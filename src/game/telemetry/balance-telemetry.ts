@@ -1415,9 +1415,7 @@ export function runBalanceTelemetry(
     scenarios?: readonly BalanceTelemetryScenario[];
   } = {},
 ): BalanceTelemetryReport {
-  const seeds =
-    input.seeds ??
-    Array.from({ length: BALANCE_TELEMETRY_SEEDS }, (_, index) => index + 1);
+  const seeds = input.seeds ?? CANONICAL_BETA_VARIED_SEEDS;
   const horizonDays =
     input.horizonDays ?? BALANCE_TELEMETRY_HORIZON_DAYS;
   const scenarios = input.scenarios ?? BALANCE_TELEMETRY_SCENARIOS;
