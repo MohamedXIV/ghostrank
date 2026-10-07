@@ -58,8 +58,8 @@ export function evaluateDirectivesProgress(snapshot: DirectivesProjectionSnapsho
     },
     {
       id: "contract-syndicate",
-      title: "4. Fulfill Syndicate Contract",
-      description: "Accept a contract commission in Underground matching your evidence.",
+      title: "4. Accept Syndicate Contract",
+      description: "Accept a commission in Underground that matches the evidence you can gather.",
       commandCue: "contract accept <id>",
       isComplete: hasEngagedContracts,
     },
