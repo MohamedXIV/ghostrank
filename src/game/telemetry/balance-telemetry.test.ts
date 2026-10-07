@@ -81,6 +81,9 @@ describe("Phase 8 P1 — local balance telemetry baseline", () => {
     expect(report.seedCount).toBe(BALANCE_TELEMETRY_SEEDS);
     expect(report.seeds).toEqual(CANONICAL_BETA_VARIED_SEEDS);
     expect(new Set(report.seeds).size).toBe(BALANCE_TELEMETRY_SEEDS);
+    expect(report.seeds.every((seed) => Number.isInteger(seed) && seed > 0)).toBe(
+      true,
+    );
     expect(report.horizonDays).toBe(BALANCE_TELEMETRY_HORIZON_DAYS);
 
     const idle = report.scenarios.idle;
