@@ -6,7 +6,8 @@ export type ComputerWindowId =
   | "recon"
   | "underground"
   | "market"
-  | "history";
+  | "history"
+  | "settings";
 
 interface UiState {
   activeSurface: ActiveSurface;

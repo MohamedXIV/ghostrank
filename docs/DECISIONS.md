@@ -649,3 +649,18 @@ No animation duration owns world time, and no P0 code changes simulation command
 Local verification at code head `f16dd17fecb42d1bfb832431ea4021264a2cc762`: 752 tests across 73 files, typecheck clean, lint clean except the pre-existing `postcss.config.mjs` warning, and production build clean. Hosted GitHub Actions were intentionally not used.
 
 Accepted 2026-10-06 as Phase 9 P0 / #57. P1 / #58 owns distro/theme architecture.
+
+
+## D053 — A distro change is an OS lifecycle, not an instant theme toggle
+
+Phase 9 P1 treats a distro as an installed operating environment.
+
+Ghost/OS begins installed. Other distros must complete an in-world installer sequence before they can become active. The installer exposes staged package verification, unpack/configuration, identity application, finalization and reboot/handover progress. Once installed, a distro remains in the presentation inventory and later switches use a shorter boot/handover sequence rather than reinstalling it.
+
+All installer and reboot duration is presentation time only. It never advances `WorldState.worldMinute`, ecosystem ticks, contract deadlines, physical pressure or any deterministic simulation outcome. Installation ownership, active distro/theme and UI-sound preference persist in the presentation settings store outside run saves.
+
+Each distro also owns a small sound identity for install, stage, completion and boot cues. P1 uses restrained procedural Web Audio tones so identities are distinct without requiring external audio assets; P7 may replace or enrich them with authored sound design. Audio is optional, mutable/muteable, and never the only carrier of information.
+
+Reduced-motion preference preserves the textual installation stages while shortening the decorative duration. Presentation storage or audio failure is non-fatal and must not interrupt gameplay.
+
+Accepted 2026-10-06 as a refinement of D051/D052 and a required exit condition for Phase 9 P1 / #58.

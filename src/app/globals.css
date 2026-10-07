@@ -53,6 +53,31 @@
   --motion-fast: 120ms;
   --motion-normal: 180ms;
 
+  --os-bar-height: 42px;
+  --os-footer-height: 28px;
+  --window-title-height: 34px;
+  --launcher-gap: 10px;
+
+  --game-glow: #17252c;
+  --boot-glow: #0d171b;
+  --boot-background: #030608;
+  --desktop-grid-line: rgb(255 255 255 / 0.018);
+  --desktop-grid-accent: rgb(148 209 182 / 0.025);
+  --desktop-vignette: rgb(0 0 0 / 36%);
+  --desktop-glow: #152229;
+  --desktop-background: #080c0f;
+  --chrome-background: rgb(7 11 14 / 94%);
+  --window-background: rgb(10 15 19 / 97%);
+  --window-title-background: #0f171b;
+  --launcher-hover: rgb(255 255 255 / 3%);
+  --terminal-background: #070b0d;
+  --terminal-foreground: #a8bbb3;
+  --input-background: #080d10;
+  --card-background: #0a1014;
+  --shadow-window-focused:
+    0 28px 90px rgb(0 0 0 / 62%),
+    0 0 0 1px rgb(148 209 182 / 8%);
+
   /* Compatibility aliases while existing app CSS migrates toward semantic
      names. They intentionally resolve through the tokens above. */
   --bg: var(--background);
@@ -267,7 +292,7 @@ textarea:focus-visible,
 
 .game-shell {
   background:
-    radial-gradient(circle at 50% -20%, #17252c 0%, transparent 38rem),
+    radial-gradient(circle at 50% -20%, var(--game-glow) 0%, transparent 38rem),
     var(--bg);
 }
 
@@ -276,8 +301,8 @@ textarea:focus-visible,
   place-content: center;
   gap: 10px;
   background:
-    radial-gradient(circle at center, #0d171b, transparent 30rem),
-    #030608;
+    radial-gradient(circle at center, var(--boot-glow), transparent 30rem),
+    var(--boot-background);
   text-align: center;
 }
 
@@ -301,13 +326,13 @@ textarea:focus-visible,
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: 42px 1fr 28px;
+  grid-template-rows: var(--os-bar-height) 1fr var(--os-footer-height);
   overflow: hidden;
   background:
-    linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px),
-    radial-gradient(circle at 78% 16%, #152229 0%, transparent 32rem),
-    #080c0f;
+    linear-gradient(var(--desktop-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--desktop-grid-line) 1px, transparent 1px),
+    radial-gradient(circle at 78% 16%, var(--desktop-glow) 0%, transparent 32rem),
+    var(--desktop-background);
   background-size: 32px 32px, 32px 32px, auto, auto;
 }
 
@@ -318,7 +343,7 @@ textarea:focus-visible,
   align-items: center;
   border-color: var(--line);
   border-style: solid;
-  background: rgb(7 11 14 / 94%);
+  background: var(--chrome-background);
   backdrop-filter: blur(10px);
 }
 
@@ -354,7 +379,7 @@ textarea:focus-visible,
   height: 7px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 12px rgb(148 209 182 / 70%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .os-stats span + span {
@@ -366,7 +391,7 @@ textarea:focus-visible,
 .recon-command button,
 .room-caption button {
   border: 1px solid var(--line-hot);
-  background: rgb(148 209 182 / 7%);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
   padding: 6px 10px;
   cursor: pointer;
 }
@@ -374,7 +399,7 @@ textarea:focus-visible,
 .os-room-button:hover,
 .recon-command button:hover,
 .room-caption button:hover {
-  background: rgb(148 209 182 / 14%);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .desktop-workspace {
@@ -388,8 +413,8 @@ textarea:focus-visible,
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(120deg, transparent 48%, rgb(148 209 182 / 0.025) 49%, transparent 50%),
-    radial-gradient(circle at 50% 50%, transparent 0%, rgb(0 0 0 / 36%) 100%);
+    linear-gradient(120deg, transparent 48%, var(--desktop-grid-accent) 49%, transparent 50%),
+    radial-gradient(circle at 50% 50%, transparent 0%, var(--desktop-vignette) 100%);
 }
 
 .desktop-launcher {
@@ -398,7 +423,7 @@ textarea:focus-visible,
   top: 20px;
   left: 18px;
   display: grid;
-  gap: 10px;
+  gap: var(--launcher-gap);
 }
 
 .desktop-launcher button {
@@ -412,7 +437,7 @@ textarea:focus-visible,
 
 .desktop-launcher button:hover {
   border-color: var(--line);
-  background: rgb(255 255 255 / 3%);
+  background: var(--launcher-hover);
   color: var(--text);
 }
 
@@ -433,16 +458,15 @@ textarea:focus-visible,
   min-width: 320px;
   overflow: hidden;
   border: 1px solid var(--line);
-  background: rgb(10 15 19 / 97%);
-  box-shadow: 0 28px 80px rgb(0 0 0 / 52%);
+  border-radius: var(--radius-panel);
+  background: var(--window-background);
+  box-shadow: var(--shadow-window);
 }
 
 .os-window.is-focused {
   z-index: 10;
   border-color: var(--line-hot);
-  box-shadow:
-    0 28px 90px rgb(0 0 0 / 62%),
-    0 0 0 1px rgb(148 209 182 / 8%);
+  box-shadow: var(--shadow-window-focused);
 }
 
 .os-window-terminal {
@@ -480,15 +504,22 @@ textarea:focus-visible,
   height: min(72vh, 650px);
 }
 
+.os-window-settings {
+  top: 8%;
+  left: 18%;
+  width: min(64vw, 820px);
+  height: min(74vh, 680px);
+}
+
 .window-titlebar {
-  height: 34px;
+  height: var(--window-title-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
   padding: 0 10px;
   color: var(--accent);
-  background: #0f171b;
+  background: var(--window-title-background);
   font-size: 11px;
   letter-spacing: 0.06em;
   user-select: none;
@@ -517,7 +548,7 @@ textarea:focus-visible,
 }
 
 .window-content {
-  height: calc(100% - 34px);
+  height: calc(100% - var(--window-title-height));
 }
 
 /* Terminal */
@@ -526,7 +557,7 @@ textarea:focus-visible,
   height: 100%;
   display: grid;
   grid-template-rows: 1fr 38px;
-  background: #070b0d;
+  background: var(--terminal-background);
   font-family: var(--font-mono);
 }
 
@@ -534,7 +565,7 @@ textarea:focus-visible,
   min-height: 0;
   overflow: auto;
   padding: 13px;
-  color: #a8bbb3;
+  color: var(--terminal-foreground);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -560,6 +591,10 @@ textarea:focus-visible,
   outline: 0;
   background: transparent;
   color: var(--text);
+}
+
+.terminal-input-row input {
+  color: var(--terminal-foreground);
 }
 
 /* Recon */
@@ -610,7 +645,7 @@ textarea:focus-visible,
 
 .recon-command input {
   border: 1px solid var(--line);
-  background: #080d10;
+  background: var(--input-background);
   padding: 8px 10px;
 }
 
@@ -624,7 +659,7 @@ textarea:focus-visible,
 .operation-panel {
   margin: 10px 0 18px;
   border: 1px solid var(--line);
-  background: #080d10;
+  background: var(--input-background);
   padding: 10px;
 }
 
@@ -653,7 +688,7 @@ textarea:focus-visible,
 .recon-inline-action {
   align-self: center;
   border: 1px solid var(--line-hot);
-  background: rgb(148 209 182 / 7%);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
   color: var(--accent);
   padding: 6px 8px;
   font-size: 9px;
@@ -661,7 +696,7 @@ textarea:focus-visible,
 }
 
 .recon-inline-action:hover:not(:disabled) {
-  background: rgb(148 209 182 / 14%);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .recon-inline-action:disabled {
@@ -686,7 +721,7 @@ textarea:focus-visible,
 .machine-card {
   margin-top: 8px;
   border: 1px solid var(--line);
-  background: #0a1014;
+  background: var(--card-background);
 }
 
 .machine-card > header {
@@ -732,7 +767,7 @@ textarea:focus-visible,
   gap: 10px;
   align-items: center;
   padding: 9px 12px;
-  border-top: 1px solid rgb(37 51 59 / 65%);
+  border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
   color: var(--muted);
   font-size: 10px;
 }
@@ -760,7 +795,7 @@ textarea:focus-visible,
   align-items: center;
   margin-top: 8px;
   border: 1px solid var(--line);
-  background: #0a1014;
+  background: var(--card-background);
   padding: 9px 12px;
   color: var(--muted);
   font-size: 10px;
@@ -854,7 +889,7 @@ textarea:focus-visible,
 
 .workflow-outcome-defective {
   border-color: var(--line-hot);
-  color: #d4904a;
+  color: var(--warning);
 }
 
 /* Room */
@@ -1279,7 +1314,7 @@ textarea:focus-visible,
 .machine-rename-row input {
   min-width: 0;
   border: 1px solid var(--line);
-  background: #080d10;
+  background: var(--input-background);
   color: var(--text);
   padding: 4px 8px;
   font-size: 10px;
@@ -1406,5 +1441,523 @@ textarea:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;
+  }
+}
+
+
+/* Phase 9 P1 — distro/theme presentation profiles.
+   These selectors sit entirely on the OS presentation surface. */
+
+:where(.desktop-surface, .boot-screen) {
+  --bg: var(--background);
+  --panel: var(--surface);
+  --panel-2: var(--surface-raised);
+  --line: var(--border);
+  --line-hot: var(--border-emphasis);
+  --text: var(--foreground);
+  --muted: var(--foreground-muted);
+  color: var(--text);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="lattice"] {
+  color-scheme: dark;
+  --background: #071019;
+  --surface: #0b1720;
+  --surface-raised: #10232f;
+  --surface-overlay: #132a36;
+  --border: #244150;
+  --border-emphasis: #5d9ebc;
+  --foreground: #dcecf3;
+  --foreground-muted: #7894a1;
+  --accent: #79c9ec;
+  --accent-foreground: #061017;
+  --success: #79c7ab;
+  --warning: #d4ae72;
+  --danger: #d26f7e;
+  --focus: #a9e5ff;
+  --truth-confirmed: #79c7ab;
+  --truth-observed: #79c9ec;
+  --truth-inferred: #a3a9e8;
+  --truth-rumored: #d4ae72;
+  --truth-stale: #7894a1;
+  --truth-unknown: #9aabb2;
+  --radius-control: 3px;
+  --radius-panel: 4px;
+  --os-bar-height: 38px;
+  --os-footer-height: 24px;
+  --window-title-height: 30px;
+  --launcher-gap: 7px;
+  --boot-glow: #102b3b;
+  --boot-background: #040a10;
+  --desktop-grid-line: rgb(121 201 236 / 7%);
+  --desktop-grid-accent: rgb(121 201 236 / 7%);
+  --desktop-vignette: rgb(0 0 0 / 28%);
+  --desktop-glow: #123247;
+  --desktop-background: #061019;
+  --chrome-background: rgb(5 16 24 / 96%);
+  --window-background: rgb(7 19 28 / 98%);
+  --window-title-background: #0d202c;
+  --launcher-hover: rgb(121 201 236 / 8%);
+  --terminal-background: #050c11;
+  --terminal-foreground: #a9c5d1;
+  --input-background: #07131b;
+  --card-background: #0a1821;
+  --shadow-window-focused:
+    0 24px 70px rgb(0 0 0 / 58%),
+    0 0 0 1px rgb(121 201 236 / 12%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="velvet"] {
+  color-scheme: dark;
+  --background: #100a12;
+  --surface: #17101a;
+  --surface-raised: #211624;
+  --surface-overlay: #281b2c;
+  --border: #493246;
+  --border-emphasis: #95668c;
+  --foreground: #eee3ed;
+  --foreground-muted: #a88fa4;
+  --accent: #d59ac7;
+  --accent-foreground: #190d17;
+  --success: #9cc8ae;
+  --warning: #d3ab7d;
+  --danger: #d36f87;
+  --focus: #edb7df;
+  --truth-confirmed: #9cc8ae;
+  --truth-observed: #a8b9df;
+  --truth-inferred: #c5a9e0;
+  --truth-rumored: #d3ab7d;
+  --truth-stale: #a88fa4;
+  --truth-unknown: #bba9b8;
+  --radius-control: 9px;
+  --radius-panel: 14px;
+  --os-bar-height: 44px;
+  --os-footer-height: 30px;
+  --window-title-height: 36px;
+  --launcher-gap: 12px;
+  --boot-glow: #352039;
+  --boot-background: #09060b;
+  --desktop-grid-line: rgb(213 154 199 / 2.5%);
+  --desktop-grid-accent: rgb(213 154 199 / 4%);
+  --desktop-vignette: rgb(20 7 18 / 34%);
+  --desktop-glow: #321c35;
+  --desktop-background: #0d0910;
+  --chrome-background: rgb(19 11 20 / 94%);
+  --window-background: rgb(21 13 23 / 97%);
+  --window-title-background: #251728;
+  --launcher-hover: rgb(213 154 199 / 8%);
+  --terminal-background: #0b080d;
+  --terminal-foreground: #cdb8c8;
+  --input-background: #140d16;
+  --card-background: #1a111d;
+  --shadow-window: 0 30px 90px rgb(4 0 5 / 48%);
+  --shadow-window-focused:
+    0 34px 100px rgb(4 0 5 / 58%),
+    0 0 0 1px rgb(213 154 199 / 13%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="daybreak"] {
+  color-scheme: light;
+  --background: #f3efe6;
+  --surface: #fffaf0;
+  --surface-raised: #ebe5da;
+  --surface-overlay: #ffffff;
+  --border: #c9c1b3;
+  --border-emphasis: #6f938d;
+  --foreground: #2d3433;
+  --foreground-muted: #6b7470;
+  --accent: #2f7c74;
+  --accent-foreground: #f7fffd;
+  --success: #3c7f65;
+  --warning: #95682d;
+  --danger: #a65454;
+  --focus: #236a64;
+  --truth-confirmed: #3c7f65;
+  --truth-observed: #3d7189;
+  --truth-inferred: #715c9b;
+  --truth-rumored: #95682d;
+  --truth-stale: #7b807d;
+  --truth-unknown: #626e6a;
+  --radius-control: 7px;
+  --radius-panel: 10px;
+  --os-bar-height: 44px;
+  --os-footer-height: 30px;
+  --window-title-height: 36px;
+  --launcher-gap: 12px;
+  --boot-glow: #d9e3d8;
+  --boot-background: #f1ede4;
+  --desktop-grid-line: rgb(55 75 70 / 5%);
+  --desktop-grid-accent: rgb(47 124 116 / 5%);
+  --desktop-vignette: rgb(84 72 50 / 8%);
+  --desktop-glow: #d6e5dd;
+  --desktop-background: #f0ece3;
+  --chrome-background: rgb(248 244 235 / 94%);
+  --window-background: rgb(255 252 246 / 98%);
+  --window-title-background: #e8e2d6;
+  --launcher-hover: rgb(47 124 116 / 8%);
+  --terminal-background: #17201f;
+  --terminal-foreground: #dce9e4;
+  --input-background: #f7f2e9;
+  --card-background: #f8f3ea;
+  --shadow-window: 0 24px 70px rgb(73 62 42 / 18%);
+  --shadow-window-focused:
+    0 28px 78px rgb(73 62 42 / 24%),
+    0 0 0 1px rgb(47 124 116 / 18%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"] {
+  color-scheme: light;
+  --background: #fff5fa;
+  --surface: #fffafe;
+  --surface-raised: #f8edf7;
+  --surface-overlay: #ffffff;
+  --border: #e4cddd;
+  --border-emphasis: #b66d9e;
+  --foreground: #433742;
+  --foreground-muted: #886f82;
+  --accent: #c8689f;
+  --accent-foreground: #fff8fc;
+  --success: #57967f;
+  --warning: #b87955;
+  --danger: #b94f73;
+  --focus: #a5568b;
+  --truth-confirmed: #57967f;
+  --truth-observed: #5f91bd;
+  --truth-inferred: #8f72bd;
+  --truth-rumored: #b87955;
+  --truth-stale: #917f8c;
+  --truth-unknown: #766772;
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --os-bar-height: 46px;
+  --os-footer-height: 30px;
+  --window-title-height: 38px;
+  --launcher-gap: 12px;
+  --boot-glow: #f1d9eb;
+  --boot-background: #fff4f9;
+  --desktop-grid-line: rgb(200 104 159 / 4%);
+  --desktop-grid-accent: rgb(144 114 189 / 5%);
+  --desktop-vignette: rgb(132 84 112 / 6%);
+  --desktop-glow: #f1d9ef;
+  --desktop-background: #fff4fa;
+  --chrome-background: rgb(255 247 252 / 94%);
+  --window-background: rgb(255 250 254 / 98%);
+  --window-title-background: #f7e7f2;
+  --launcher-hover: rgb(200 104 159 / 9%);
+  --terminal-background: #2a1c28;
+  --terminal-foreground: #f1ddeb;
+  --input-background: #fff5fb;
+  --card-background: #fff7fc;
+  --shadow-window: 0 26px 72px rgb(116 70 99 / 18%);
+  --shadow-window-focused:
+    0 30px 82px rgb(116 70 99 / 25%),
+    0 0 0 1px rgb(200 104 159 / 20%);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="petal"][data-theme="night"] {
+  color-scheme: dark;
+  --background: #190f1d;
+  --surface: #221426;
+  --surface-raised: #302036;
+  --surface-overlay: #38243f;
+  --border: #5c3c59;
+  --border-emphasis: #c779ac;
+  --foreground: #f5e7f2;
+  --foreground-muted: #b89bad;
+  --accent: #efa8d2;
+  --accent-foreground: #23101d;
+  --success: #8fc6ad;
+  --warning: #dfaa78;
+  --danger: #e17b9c;
+  --focus: #ffc5e7;
+  --truth-confirmed: #8fc6ad;
+  --truth-observed: #9fc4e7;
+  --truth-inferred: #c5a7ec;
+  --truth-rumored: #dfaa78;
+  --truth-stale: #a88f9f;
+  --truth-unknown: #c0aab8;
+  --boot-glow: #4d294d;
+  --boot-background: #120b15;
+  --desktop-grid-line: rgb(239 168 210 / 3%);
+  --desktop-grid-accent: rgb(166 133 226 / 5%);
+  --desktop-vignette: rgb(0 0 0 / 28%);
+  --desktop-glow: #4a294c;
+  --desktop-background: #160d19;
+  --chrome-background: rgb(27 15 31 / 95%);
+  --window-background: rgb(31 18 35 / 98%);
+  --window-title-background: #38213d;
+  --launcher-hover: rgb(239 168 210 / 9%);
+  --terminal-background: #100a12;
+  --terminal-foreground: #e8cfe0;
+  --input-background: #201325;
+  --card-background: #29182e;
+  --shadow-window: 0 28px 82px rgb(0 0 0 / 44%);
+  --shadow-window-focused:
+    0 32px 92px rgb(0 0 0 / 55%),
+    0 0 0 1px rgb(239 168 210 / 18%);
+}
+
+.appearance-app {
+  height: 100%;
+  overflow: auto;
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+  padding: var(--space-5);
+  background: var(--surface);
+}
+
+.appearance-app section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.appearance-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.appearance-heading h2,
+.appearance-app section > h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 18px;
+  line-height: var(--leading-tight);
+}
+
+.appearance-current {
+  flex: none;
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-control);
+  padding: 5px 8px;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.appearance-copy,
+.appearance-accessibility-note p {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+.distro-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.distro-card {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface-raised);
+  color: var(--foreground);
+  padding: var(--space-4);
+  text-align: left;
+  transition:
+    border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.distro-card:hover {
+  border-color: var(--border-emphasis);
+}
+
+.distro-card[data-selected="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-raised));
+}
+
+.distro-card-topline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.distro-glyph {
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.distro-installed {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.distro-description {
+  color: var(--foreground-muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.distro-swatches {
+  display: flex;
+  gap: 5px;
+}
+
+.distro-swatches > span {
+  width: 28px;
+  height: 7px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 999px;
+}
+
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.distro-actions {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.distro-current-note {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.appearance-sound {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+
+.appearance-sound > div {
+  display: grid;
+  gap: 3px;
+}
+
+.appearance-sound strong {
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+.distro-installer {
+  position: absolute;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--background) 74%, transparent),
+      color-mix(in srgb, var(--background) 88%, transparent)
+    );
+  backdrop-filter: blur(8px);
+}
+
+.distro-installer-panel {
+  width: min(520px, 100%);
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-panel);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-window-focused);
+  padding: clamp(20px, 4vw, 34px);
+}
+
+.distro-installer-brand {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--border-emphasis);
+  border-radius: calc(var(--radius-control) * 1.4);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+  font-size: 28px;
+}
+
+.distro-installer-panel h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 22px;
+}
+
+.distro-installer-stage {
+  min-height: 1.6em;
+  margin: 0;
+  color: var(--foreground-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+}
+
+.distro-progress {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.distro-progress > span {
+  display: block;
+  width: var(--distro-progress);
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent),
+      color-mix(in srgb, var(--accent) 72%, var(--truth-inferred))
+    );
+  transition: width 80ms linear;
+}
+
+.distro-installer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--foreground-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.appearance-accessibility-note {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .os-window-settings {
+    top: 7%;
+    left: 6%;
+    width: 86vw;
+    height: 78vh;
+  }
+
+  .distro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .distro-card,
+  .distro-progress > span {
+    transition: none;
   }
 }

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
+import { AppearanceApp } from "@/components/game/appearance-app";
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import {
   describeForumContractCopy,
@@ -53,6 +54,8 @@ import type { SimulationCommand } from "@/game/simulation/commands/types";
 import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { getWindowMotionProps } from "@/components/game/window-motion";
+import { DISTRO_PROFILES } from "@/presentation/distros";
+import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 import {
   type ComputerWindowId,
   useUiStore,
@@ -69,6 +72,7 @@ const WINDOW_LABELS: Record<ComputerWindowId, string> = {
   underground: "UNDERGROUND INDEX",
   market: "MARKET // RIG",
   history: "RUN HISTORY",
+  settings: "SYSTEM // APPEARANCE",
 };
 
 const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
@@ -100,13 +104,21 @@ export function ComputerDesktop({
   const openWindow = useUiStore((state) => state.openWindow);
   const closeWindow = useUiStore((state) => state.closeWindow);
   const focusWindow = useUiStore((state) => state.focusWindow);
+  const distroId = usePresentationStore((state) => state.distroId);
+  const themeId = usePresentationStore((state) => state.themeId);
+  const distro = DISTRO_PROFILES[distroId];
 
   return (
-    <section className="desktop-surface" aria-label="Ghostrank computer">
+    <section
+      className="desktop-surface"
+      data-distro={distroId}
+      data-theme={themeId}
+      aria-label={`${distro.label} computer`}
+    >
       <header className="os-bar">
         <div className="os-brand">
           <span className="status-dot" />
-          GHOST/OS
+          {distro.label}
         </div>
         <div className="os-stats">
           <span>{handle}</span>
@@ -140,6 +152,10 @@ export function ComputerDesktop({
           <button type="button" onClick={() => openWindow("history")}>
             <span className="launcher-glyph">▤</span>
             History
+          </button>
+          <button type="button" onClick={() => openWindow("settings")}>
+            <span className="launcher-glyph">✦</span>
+            Appearance
           </button>
         </nav>
 
@@ -207,6 +223,18 @@ export function ComputerDesktop({
               onClose={() => closeWindow("history")}
             >
               <HistoryApp runtime={runtime} />
+            </WindowFrame>
+          )}
+          {openWindows.includes("settings") && (
+            <WindowFrame
+              key="settings"
+              id="settings"
+              title={WINDOW_LABELS.settings}
+              focused={focusedWindow === "settings"}
+              onFocus={() => focusWindow("settings")}
+              onClose={() => closeWindow("settings")}
+            >
+              <AppearanceApp />
             </WindowFrame>
           )}
         </AnimatePresence>
