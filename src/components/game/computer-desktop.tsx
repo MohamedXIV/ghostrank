@@ -175,6 +175,12 @@ export function ComputerDesktop({
         }
       }
 
+      // While a modal owns focus, global app/window shortcuts must stay dormant.
+      // Escape is handled above; the modal focus trap owns all remaining keys.
+      if (orientationModalOpen || legendModalOpen) {
+        return;
+      }
+
       // F1 opens Glossary modal
       if (event.key === "F1") {
         event.preventDefault();
