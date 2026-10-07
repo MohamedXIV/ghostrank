@@ -58,7 +58,7 @@ describe("Field Directives progressive guidance evaluation", () => {
     expect(progress.allCompleted).toBe(false);
   });
 
-  it("marks all 4 directives complete after accepting or completing a contract", () => {
+  it("marks the final acceptance directive complete after accepting or completing a contract", () => {
     const snapshot: DirectivesProjectionSnapshot = {
       targetIds: ["nightshade"],
       machineIds: ["ns-relay"],
@@ -73,5 +73,7 @@ describe("Field Directives progressive guidance evaluation", () => {
     expect(progress.totalCount).toBe(4);
     expect(progress.allCompleted).toBe(true);
     expect(progress.items.every((i) => i.isComplete)).toBe(true);
+    expect(progress.items[3].title).toBe("4. Accept Syndicate Contract");
+    expect(progress.items[3].commandCue).toBe("contract accept <id>");
   });
 });
