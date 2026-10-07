@@ -101,7 +101,11 @@ describe("usePresentationStore", () => {
     usePresentationStore.getState().completeDistroInstall("petal");
     usePresentationStore.getState().activateInstalledDistro("velvet");
     usePresentationStore.getState().setSoundEnabled(false);
+    usePresentationStore.getState().setTheme("plum");
     usePresentationStore.getState().setTextScale("large");
+    usePresentationStore.getState().setMotionMode("reduce");
+    usePresentationStore.getState().setTransparencyMode("opaque");
+    usePresentationStore.getState().setDensityMode("comfortable");
     usePresentationStore.getState().setContrastMode("high");
 
     expect(JSON.stringify(world)).toBe(before);

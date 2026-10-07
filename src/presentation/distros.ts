@@ -21,6 +21,10 @@ export interface DistroSoundIdentity {
   stage: readonly number[];
   complete: readonly number[];
   boot: readonly number[];
+  /** Brief, optional cue for a terminal run ending. */
+  ending: readonly number[];
+  /** Brief, optional cue for a newly surfaced physical warning. */
+  warning: readonly number[];
 }
 
 export interface DistroProfile {
@@ -58,6 +62,8 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       stage: [330],
       complete: [330, 440, 660],
       boot: [196, 294, 392],
+      ending: [196, 147],
+      warning: [247],
     },
   },
   lattice: {
@@ -82,6 +88,8 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       stage: [523],
       complete: [392, 523, 784],
       boot: [294, 440, 587],
+      ending: [220, 330],
+      warning: [349],
     },
   },
   velvet: {
@@ -106,6 +114,8 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       stage: [294],
       complete: [247, 330, 494],
       boot: [220, 277, 415],
+      ending: [174, 220],
+      warning: [262],
     },
   },
   daybreak: {
@@ -130,6 +140,8 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       stage: [494],
       complete: [440, 554, 659],
       boot: [349, 523, 698],
+      ending: [262, 349],
+      warning: [440],
     },
   },
   petal: {
@@ -159,6 +171,8 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       stage: [659],
       complete: [523, 659, 784],
       boot: [440, 587, 880],
+      ending: [330, 262],
+      warning: [523],
     },
   },
 };

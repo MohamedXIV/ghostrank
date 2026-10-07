@@ -1,6 +1,12 @@
 import type { DistroSoundIdentity } from "@/presentation/distros";
 
-export type DistroSoundCue = "install" | "stage" | "complete" | "boot";
+export type DistroSoundCue =
+  | "install"
+  | "stage"
+  | "complete"
+  | "boot"
+  | "ending"
+  | "warning";
 
 let sharedContext: AudioContext | null = null;
 
@@ -57,7 +63,7 @@ export function playDistroSound(
 
   try {
     if (context.state === "suspended") {
-      void context.resume();
+      void context.resume().catch(() => undefined);
     }
 
     const notes = cueNotes(identity, cue);

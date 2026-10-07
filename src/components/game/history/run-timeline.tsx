@@ -1,6 +1,7 @@
 "use client";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
+import { getEndingCopy } from "@/components/game/ending/ending-presentation";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 
 export interface RunTimelineProps {
@@ -8,7 +9,7 @@ export interface RunTimelineProps {
 }
 
 export function RunTimeline({ run }: RunTimelineProps) {
-  const endingMeta = getEndingMeta(run.endingStatus);
+  const endingCopy = getEndingCopy(run.endingStatus);
 
   return (
     <article
@@ -16,11 +17,10 @@ export function RunTimeline({ run }: RunTimelineProps) {
       data-ending={run.endingStatus}
       aria-label={`Completed run: ${run.handle} - ${run.endingLabel}`}
     >
-      {/* Ending Hero Banner */}
       <div className="ending-hero-banner">
         <div className="ending-hero-left">
           <span className="ending-glyph" aria-hidden="true">
-            {endingMeta.glyph}
+            {endingCopy.glyph}
           </span>
           <div>
             <div className="ending-type-row">
@@ -32,6 +32,7 @@ export function RunTimeline({ run }: RunTimelineProps) {
               )}
             </div>
             <strong className="ending-handle">{run.handle}</strong>
+            <p className="history-ending-line">{endingCopy.line}</p>
           </div>
         </div>
         <div className="ending-time-block">
@@ -44,10 +45,43 @@ export function RunTimeline({ run }: RunTimelineProps) {
         <p className="ending-narrative-detail">{run.endingDetail}</p>
       )}
 
+      <section className="run-timeline-section" aria-label="Run timeline">
+        <div className="run-timeline-heading">
+          <span className="panel-label">RUN RECORD // SURFACED EVENTS</span>
+          <p>
+            Ordered by recorded world time. Nearby events share context; the
+            timeline does not claim one caused another.
+          </p>
+        </div>
+        {run.timeline.length > 0 ? (
+          <ol className="run-event-timeline">
+            {run.timeline.map((beat) => {
+              const meta = getBeatMeta(beat.kind);
+              return (
+                <li key={beat.id} className={`run-event run-event-${beat.kind}`}>
+                  <span className="run-event-glyph" aria-hidden="true">
+                    {meta.glyph}
+                  </span>
+                  <div className="run-event-copy">
+                    <div className="run-event-meta">
+                      <span>{meta.label}</span>
+                      <time>{formatWorldTime(beat.worldMinute)}</time>
+                    </div>
+                    <p>{beat.text}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="history-empty-note">No surfaced events were archived.</p>
+        )}
+      </section>
+
       {/* Visual Career Metrics Grid */}
       <div className="career-metrics-grid">
         <div className="metric-tile">
-          <span className="metric-label">FINAL RANK</span>
+            <span className="metric-label">REPUTATION RANK</span>
           <strong className="metric-value">#{run.finalRank.toLocaleString("en-US")}</strong>
         </div>
         <div className="metric-tile">
@@ -88,10 +122,9 @@ export function RunTimeline({ run }: RunTimelineProps) {
         </div>
       )}
 
-      {/* Causal Postmortem Timelines */}
       {run.postmortems.length > 0 && (
         <div className="run-postmortems-section">
-          <span className="panel-label">CAUSAL POSTMORTEM TIMELINES</span>
+          <span className="panel-label">POSTMORTEM // RECORDED PROVENANCE</span>
           {run.postmortems.map((pm) => (
             <div key={pm.compromiseId} className="postmortem-timeline-block">
               <div className="postmortem-header">
@@ -104,8 +137,11 @@ export function RunTimeline({ run }: RunTimelineProps) {
                 </span>
               </div>
 
-              {/* Vertical Step Timeline with Causal Connectors */}
-              <div className="causal-stepper">
+              <p className="postmortem-sequence-note">
+                Ordered evidence is shown with its stored provenance. Connected
+                rows do not make adjacent observations a proven cause.
+              </p>
+              <div className="sequence-stepper">
                 {pm.steps.map((step, idx) => {
                   const stepMeta = getStepMeta(step.kind);
                   const isLast = idx === pm.steps.length - 1;
@@ -139,41 +175,50 @@ export function RunTimeline({ run }: RunTimelineProps) {
   );
 }
 
-function getEndingMeta(status: string): { glyph: string; title: string } {
-  switch (status.toLowerCase()) {
-    case "arrested":
-      return { glyph: "⚠", title: "CUSTODIAL ARREST" };
-    case "retired":
-      return { glyph: "◆", title: "VOLUNTARY RETIREMENT" };
-    case "vanished":
-      return { glyph: "◌", title: "VANISHED WITHOUT TRACE" };
-    case "compromised":
-      return { glyph: "✕", title: "CATASTROPHIC BREACH" };
-    case "stranded":
-      return { glyph: "▲", title: "STRANDED RIG" };
-    case "unmasked":
-      return { glyph: "⚡", title: "PUBLIC UNMASKING" };
+function getBeatMeta(kind: string): { glyph: string; label: string } {
+  switch (kind) {
+    case "action":
+      return { glyph: "↳", label: "PLAYER ACTION" };
+    case "escalation":
+      return { glyph: "↑", label: "OPERATION ESCALATION" };
+    case "consequence":
+      return { glyph: "·", label: "RECORDED CONSEQUENCE" };
+    case "retaliation":
+      return { glyph: "↯", label: "PUBLIC RETALIATION" };
+    case "rival-probe":
+      return { glyph: "⌁", label: "RIVAL PROBE TELL" };
+    case "investigation":
+      return { glyph: "⌕", label: "SURFACED INVESTIGATION" };
+    case "physical-threat":
+      return { glyph: "!", label: "PHYSICAL SIGNAL" };
+    case "ending":
+      return { glyph: "■", label: "ENDING" };
     default:
-      return { glyph: "▣", title: "CONCLUDED RUN" };
+      return { glyph: "•", label: "RECORDED EVENT" };
   }
 }
 
 function getStepMeta(kind: string): { glyph: string; label: string } {
   switch (kind?.toLowerCase()) {
+    case "player-action":
     case "action":
     case "intrusion":
       return { glyph: "⚡", label: "PLAYER ACTION" };
+    case "defensive-reaction":
     case "reaction":
-      return { glyph: "✕", label: "TARGET REACTION" };
+      return { glyph: "·", label: "VISIBLE CONSEQUENCE" };
+    case "probe-tell":
     case "probe":
-      return { glyph: "◌", label: "RIVAL PROBE" };
+      return { glyph: "◌", label: "RIVAL PROBE TELL" };
+    case "authority-evidence":
     case "investigation":
-      return { glyph: "◈", label: "AUTHORITY SIGNAL" };
+      return { glyph: "◈", label: "SURFACED INVESTIGATION" };
+    case "physical-evidence":
     case "physical":
     case "physical-threat":
-      return { glyph: "⚠", label: "PHYSICAL REACH" };
+      return { glyph: "⚠", label: "PHYSICAL SIGNAL" };
     case "compromise":
-      return { glyph: "✕", label: "COMPROMISE" };
+      return { glyph: "✕", label: "RECORDED COMPROMISE" };
     default:
       return { glyph: "•", label: "INCIDENT" };
   }

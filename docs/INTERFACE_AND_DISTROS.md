@@ -136,13 +136,20 @@ Do not add decorative radar charts that obscure exact values. Visual summaries s
 
 Causal history is naturally visual:
 - action,
+- escalation,
 - consequence,
+- retaliation,
+- investigation,
 - reaction,
 - probe,
 - physical event,
 - ending.
 
-Timelines and causal connectors should help the player learn without exposing hidden facts that the safe postmortem intentionally withholds.
+Completed-run timelines are ordered from archived actions and surfaced evidence. They name the kind of record and its world time; adjacent events are context, not proof that one caused another. Postmortem attribution may cite stored provenance only through the existing player-safe facts, and must never expose hidden actors, investigation progress, probe correctness, or source ids.
+
+The final screen gives each ending its own authored presentation while preserving the terminal status and minute exactly. A cause is stated only when the player-safe record supports it; otherwise the screen reports the limit and shows nearby surfaced evidence without joining it into an invented explanation. Rank remains reputation only.
+
+The room is a restrained physical frame around the computer. Ambient motion follows the effective reduced-motion setting. Its tension light and optional warning cue may use only a projected physical signal at the current location; no room or audio presentation reads hidden actors or causes.
 
 ### Terminal
 
@@ -219,7 +226,7 @@ A distro is **not** a one-click theme toggle. The in-world computer should treat
 - Reduced-motion mode may shorten or remove decorative motion, but must preserve clear installation state/progress text.
 - The installation experience must remain cancel-safe before commit where practical and must never corrupt a run if presentation persistence is unavailable.
 
-Each distro may also define a **sound identity** for install, boot, completion, notifications, and other shell cues. P1 establishes the sound-profile contract and a restrained initial cue set; P7 may replace or enrich these with authored audio. Audio is never required information and must have a mute/disable path.
+Each distro may also define a **sound identity** for install, boot, completion, notifications, and other shell cues. P7 adds short ending and newly surfaced physical-warning cues to those profiles. These are event-driven, optional, muted before audio output is opened, and never a required carrier of state. No continuous room ambience is required.
 
 Presentation preferences, installed-distro records, and sound preferences live outside authoritative `WorldState`.
 
