@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { createGameSession } from "@/game/runtime/game-session";
+import { createGameRuntime } from "@/game/runtime/game-runtime";
 import type { RunPersistence } from "@/persistence/run-persistence";
-import { createSliceWorldState } from "@/game/runtime/slice-world";
-import { createInitialWorldState } from "@/game/simulation/state/world-state";
+import {
+  createNewRunWorldState,
+  createSliceWorldState,
+} from "@/game/runtime/slice-world";
+import {
+  createInitialWorldState,
+  type WorldState,
+} from "@/game/simulation/state/world-state";
+import { endRun } from "@/game/simulation/systems/endings";
+
 
 describe("GameSession", () => {
   it("loads an existing active run before creating a new slice", async () => {
@@ -454,4 +463,122 @@ describe("GameSession", () => {
     expect(active?.worldMinute).toBe(2_940);
   });
 
+  describe("Phase 9 P5 — seed variation and lifecycle hardening", () => {
+    it("two independently created new runs receive varying random seeds", () => {
+      const seeds = new Set<number>();
+      for (let i = 0; i < 20; i += 1) {
+        const run = createNewRunWorldState();
+        seeds.add(run.underground.seed);
+      }
+      expect(seeds.size).toBeGreaterThan(1);
+    });
+
+    it("the same chosen seed remains strictly deterministic across commands", () => {
+      const explicitSeed = 998_244_353;
+      const first = createSliceWorldState({ seed: explicitSeed });
+      const second = createSliceWorldState({ seed: explicitSeed });
+
+      const firstRuntime = createGameRuntime(first);
+      const secondRuntime = createGameRuntime(second);
+
+      firstRuntime.execute({ type: "advanceTime", minutes: 720 });
+      secondRuntime.execute({ type: "advanceTime", minutes: 720 });
+
+      expect(firstRuntime.snapshot().underground).toEqual(
+        secondRuntime.snapshot().underground,
+      );
+      expect(firstRuntime.snapshot().underground.seed).toBe(explicitSeed);
+    });
+
+    it("completed history survives starting a fresh run", async () => {
+      let active: WorldState | null = null;
+      const completed: WorldState[] = [];
+
+      const persistence: RunPersistence = {
+        loadActiveState: async () => (active ? structuredClone(active) : null),
+        saveActiveState: async (state) => {
+          active = structuredClone(state);
+        },
+        completeRun: async (state) => {
+          completed.unshift(structuredClone(state));
+          active = null;
+        },
+        loadCompletedStates: async () => structuredClone(completed),
+      };
+
+      // 1. Run 1 starts, finishes retirement, archives into history
+      const run1State = createSliceWorldState({ seed: 101 });
+      run1State.worldMinute = 2_940;
+      run1State.retirement = {
+        stage: "cooling",
+        startedWorldMinute: 0,
+        committedWorldMinute: 60,
+        coolingUntilWorldMinute: 2_940,
+      };
+
+      const session1 = await createGameSession({
+        initialState: run1State,
+        persistence,
+      });
+      session1.execute({ type: "finishRetirement" });
+      await session1.flush();
+
+      expect(completed).toHaveLength(1);
+      expect(active).toBeNull();
+
+      // 2. Run 2 starts fresh with different seed
+      const run2State = createSliceWorldState({ seed: 202 });
+      const session2 = await createGameSession({
+        initialState: run2State,
+        persistence,
+      });
+
+      expect(session2.snapshot().underground.seed).toBe(202);
+      expect(session2.snapshot().ending).toBeNull();
+
+      // Completed history remains intact with run 1
+      const hist = await session2.history();
+      expect(hist).toHaveLength(1);
+      expect(hist[0]?.endingStatus).toBe("retired");
+    });
+
+    it("ended run cannot revive across session reloads", async () => {
+      const endedWorld = createSliceWorldState();
+      endedWorld.worldMinute = 500;
+      endRun(endedWorld, {
+        status: "arrested",
+        causeKind: "investigation",
+        causeId: "case:1",
+        worldMinute: 500,
+      });
+
+      let storedState: WorldState | null = structuredClone(endedWorld);
+      const persistence: RunPersistence = {
+        loadActiveState: async () => (storedState ? structuredClone(storedState) : null),
+        saveActiveState: async (state) => {
+          storedState = structuredClone(state);
+        },
+      };
+
+      const session = await createGameSession({
+        initialState: createSliceWorldState(),
+        persistence,
+      });
+
+      expect(session.snapshot().ending?.status).toBe("arrested");
+      expect(session.execute({ type: "advanceTime", minutes: 10 })).toEqual({
+        ok: false,
+        events: [],
+        error: "RUN_ENDED",
+      });
+
+      // Reloading again
+      const reloaded = await createGameSession({
+        initialState: createSliceWorldState(),
+        persistence,
+      });
+      expect(reloaded.snapshot().ending?.status).toBe("arrested");
+    });
+  });
 });
+

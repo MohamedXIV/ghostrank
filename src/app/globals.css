@@ -3969,3 +3969,103 @@ textarea:focus-visible,
   flex-wrap: wrap;
 }
 
+/* Lifecycle & Recovery Screen Styles */
+.lifecycle-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.lifecycle-card {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-surface);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 45%);
+}
+
+.lifecycle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.lifecycle-title {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--foreground);
+}
+
+.lifecycle-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--radius-control);
+  text-transform: uppercase;
+}
+
+.lifecycle-badge-active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.lifecycle-badge-ended {
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+}
+
+.lifecycle-badge-error {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.lifecycle-diagnostic {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 12px;
+  font-size: 11px;
+  color: var(--foreground-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lifecycle-diagnostic-detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--danger);
+  word-break: break-all;
+}
+
+.lifecycle-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.lifecycle-actions-center {
+  justify-content: center;
+}
+
+

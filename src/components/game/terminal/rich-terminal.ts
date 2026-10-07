@@ -39,6 +39,7 @@ export const TERMINAL_HELP_TABLE: string = [
   "│ wait <minutes>     │ advance world clock                                │",
   "├── SYSTEM DISCOVERY ──────────────────────────────────────────────────────┤",
   "│ settings [subcmd]  │ inspect or adjust display and accessibility        │",
+  "│ run [status|new]   │ inspect active run state or request restart        │",
   "│ help <command>     │ view detailed syntax and semantics for a command   │",
   "│ legend             │ display truth vocabulary and symbol glossary       │",
   "│ guide              │ display progressive operational directives         │",
@@ -171,7 +172,17 @@ export const DETAILED_COMMAND_HELP: Record<string, string> = {
     "CATEGORY: Presentation & Accessibility",
     "PURPOSE: Alias for 'settings'. Inspects display and accessibility options.",
   ].join("\n"),
+  run: [
+    "COMMAND: run [status|new]",
+    "CATEGORY: Session Lifecycle",
+    "PURPOSE: Inspects the current session metadata or requests a fresh run.",
+    "SUBCOMMANDS:",
+    "  run status                  - display active player handle, rank, credits, and world minute",
+    "  run new                     - trigger confirmation prompt to start a fresh simulation run",
+    "EXAMPLE: run status",
+  ].join("\n"),
 };
+
 
 export function formatDetailedHelp(commandName: string): string | null {
   const normalized = commandName.trim().toLowerCase();

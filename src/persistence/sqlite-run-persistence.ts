@@ -38,6 +38,57 @@ export async function createSqliteRunPersistence(): Promise<RunPersistence> {
       return worldStateSchema.parse(JSON.parse(serialized));
     },
 
+    async inspectActiveRun() {
+      const rows = await database.select<SnapshotRow[]>(
+        `
+          SELECT snapshots.state_json
+          FROM snapshots
+          INNER JOIN runs ON runs.id = snapshots.run_id
+          WHERE runs.status = 'active'
+          ORDER BY
+            snapshots.world_minute DESC,
+            snapshots.created_at DESC,
+            snapshots.rowid DESC
+          LIMIT 1
+        `,
+      );
+
+      const serialized = rows[0]?.state_json;
+      if (!serialized) {
+        return { status: "empty" as const };
+      }
+
+      try {
+        const parsedJson = JSON.parse(serialized);
+        const validated = worldStateSchema.safeParse(parsedJson);
+        if (validated.success) {
+          return { status: "valid" as const, state: validated.data };
+        }
+        return {
+          status: "diagnostic_error" as const,
+          error: {
+            kind: "schema_validation_error" as const,
+            message: "SQLite active run snapshot failed schema validation",
+            details: validated.error.issues
+              .slice(0, 5)
+              .map((i) => `${i.path.join(".")}: ${i.message}`)
+              .join("; "),
+          },
+          rawContent: serialized,
+        };
+      } catch (err) {
+        return {
+          status: "diagnostic_error" as const,
+          error: {
+            kind: "corrupt_json" as const,
+            message: err instanceof Error ? err.message : "Malformed JSON",
+          },
+          rawContent: serialized,
+        };
+      }
+    },
+
+
     async saveActiveState(
       state: WorldState,
       newEvents: readonly SimulationEvent[],

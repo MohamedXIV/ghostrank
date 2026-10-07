@@ -84,6 +84,7 @@ import {
 interface ComputerDesktopProps {
   runtime: GameSession;
   onReturnToRoom: () => void;
+  onStartNewRun?: () => void;
 }
 
 const WINDOW_LABELS: Record<ComputerWindowId, string> = {
@@ -105,7 +106,9 @@ const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
 export function ComputerDesktop({
   runtime,
   onReturnToRoom,
+  onStartNewRun,
 }: ComputerDesktopProps) {
+
   const worldMinute = Number(
     useCell("meta", "world", "worldMinute", runtime.projection) ?? 0,
   );
@@ -255,6 +258,18 @@ export function ComputerDesktop({
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
         <div className="os-guidance-actions">
+          {onStartNewRun && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="os-help-button"
+              onClick={onStartNewRun}
+              title="Start a fresh simulation run with a new random seed"
+              aria-label="Start fresh simulation run"
+            >
+              + NEW RUN
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -364,7 +379,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("terminal")}
               onClose={() => closeWindow("terminal")}
             >
-              <TerminalApp runtime={runtime} />
+              <TerminalApp runtime={runtime} onStartNewRun={onStartNewRun} />
             </WindowFrame>
           )}
 
@@ -550,7 +565,13 @@ interface TerminalItem {
   glyph?: string;
 }
 
-function TerminalApp({ runtime }: { runtime: GameRuntime }) {
+function TerminalApp({
+  runtime,
+  onStartNewRun,
+}: {
+  runtime: GameRuntime;
+  onStartNewRun?: () => void;
+}) {
   const [input, setInput] = useState("");
   const [items, setItems] = useState<TerminalItem[]>([
     {
@@ -616,6 +637,70 @@ function TerminalApp({ runtime }: { runtime: GameRuntime }) {
       ]);
       return;
     }
+
+    if (raw.toLowerCase() === "run" || raw.toLowerCase().startsWith("run ")) {
+      const sub = raw.slice(3).trim().toLowerCase();
+      if (!sub || sub === "status") {
+        const snap = runtime.snapshot();
+        const runTable = [
+          "┌── SIMULATION RUN STATUS ─────────────────────────────────────────────────┐",
+          `│ Operator Handle │ ${snap.player.handle.padEnd(20)} │ Global Rank  │ #${String(snap.player.rank).padEnd(15)} │`,
+          `│ Credits Balance │ ${String(snap.economy.credits).padEnd(17)} cr │ World Time   │ ${formatWorldTime(snap.worldMinute).padEnd(16)} │`,
+          `│ World Seed      │ ${String(snap.underground.seed).padEnd(20)} │ Run Status   │ ${snap.ending ? snap.ending.status.toUpperCase() : "ACTIVE".padEnd(16)} │`,
+          "├──────────────────────────────────────────────────────────────────────────┤",
+          "│ Command: run new (requests fresh simulation run initialization)          │",
+          "└──────────────────────────────────────────────────────────────────────────┘",
+        ].join("\n");
+        setItems((current) => [
+          ...current,
+          { id: promptId, type: "prompt", text: raw },
+          { id: `run-${Date.now()}`, type: "table", text: runTable },
+        ]);
+        return;
+      }
+      if (sub === "new") {
+        if (onStartNewRun) {
+          onStartNewRun();
+          setItems((current) => [
+            ...current,
+            { id: promptId, type: "prompt", text: raw },
+            {
+              id: `res-${Date.now()}`,
+              type: "result",
+              badge: "NEW_RUN_INITIATED",
+              glyph: "✦",
+              text: "Fresh run initialization requested. Reviewing run lifecycle...",
+            },
+          ]);
+        } else {
+          setItems((current) => [
+            ...current,
+            { id: promptId, type: "prompt", text: raw },
+            {
+              id: `err-${Date.now()}`,
+              type: "error",
+              badge: "UNAVAILABLE",
+              glyph: "✖",
+              text: "Run lifecycle manager is not attached in this session context.",
+            },
+          ]);
+        }
+        return;
+      }
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `err-${Date.now()}`,
+          type: "error",
+          badge: "INVALID_ARGUMENT",
+          glyph: "✖",
+          text: `Unknown run subcommand '${sub}'. Usage: run [status|new]`,
+        },
+      ]);
+      return;
+    }
+
 
     const lower = raw.toLowerCase();
     if (lower === "settings" || lower === "accessibility") {
