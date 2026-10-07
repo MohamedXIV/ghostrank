@@ -2,6 +2,7 @@
 
 import {
   type CSSProperties,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -135,24 +136,24 @@ export function AppearanceApp() {
     lastStageId.current = frame.stage.id;
   }, [frame, soundEnabled, transition]);
 
-  const beginTransition = (
-    targetDistroId: DistroId,
-    kind: DistroTransitionKind,
-  ) => {
-    if (transition) {
-      return;
-    }
+  const beginTransition = useCallback(
+    (targetDistroId: DistroId, kind: DistroTransitionKind) => {
+      if (transition) {
+        return;
+      }
 
-    const targetProfile = DISTRO_PROFILES[targetDistroId];
-    lastStageId.current = null;
-    playDistroSound(targetProfile.sound, kind, soundEnabled);
-    setTransition({
-      distroId: targetDistroId,
-      kind,
-      startedAt: Date.now(),
-      elapsedMs: 0,
-    });
-  };
+      const targetProfile = DISTRO_PROFILES[targetDistroId];
+      lastStageId.current = null;
+      playDistroSound(targetProfile.sound, kind, soundEnabled);
+      setTransition({
+        distroId: targetDistroId,
+        kind,
+        startedAt: Date.now(),
+        elapsedMs: 0,
+      });
+    },
+    [soundEnabled, transition],
+  );
 
   return (
     <div className="appearance-app">
