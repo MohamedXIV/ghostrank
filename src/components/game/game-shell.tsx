@@ -151,20 +151,12 @@ export function GameShell() {
       setLifecycle({ type: "active", session });
     } catch (error) {
       console.error("Ghostrank persistence initialization failed", error);
+      setPersistenceInstance(null);
       setLifecycle({
-        type: "booting",
-        note: "persistence unavailable // volatile fallback",
+        type: "no_run",
+        note:
+          "persistent storage is unavailable; a manually started operation will run in volatile mode and will not overwrite durable data",
       });
-
-      const initial = forcedSeed !== undefined
-        ? createSliceWorldState({ seed: forcedSeed })
-        : createNewRunWorldState();
-
-      const session = await createGameSession({
-        initialState: initial,
-      });
-
-      setLifecycle({ type: "active", session });
     }
   }, []);
 
@@ -411,7 +403,7 @@ export function GameShell() {
             <p className="boot-line" style={{ textAlign: "left" }}>
               {isEnded
                 ? "The previous run has ended and is permanently archived in history. Initialize a fresh operation with a new random world seed?"
-                : `An active operation for ${active.player.handle} at minute ${active.worldMinute} is currently in progress. Starting a new run will abandon ongoing unsaved operations and initialize a fresh seed.`}
+                : `An active operation for ${active.player.handle} at minute ${active.worldMinute} is currently in progress. Starting a new run will replace this active progress after pending saves finish, then initialize a fresh seed.`}
             </p>
             <div className="lifecycle-actions">
               {!isEnded && (
