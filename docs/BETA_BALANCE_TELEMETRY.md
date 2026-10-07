@@ -72,11 +72,11 @@ The `rig-builder` policy was evaluated across 30 world days to measure whether c
   - First hardware purchase: median minute 2,998 (~Day 2.0).
   - Common hardware acquired: `storage-array` (250 cr), `ram-bank` (300 cr), `net-card` (350 cr), `cpu-overclock` (400 cr), `cpu-balanced` (550 cr), `gpu-entry` (900 cr).
 - **Housing Leases**:
-  - First lease signed: median minute 4,320 (~Day 3.0).
+  - First paid housing-upkeep charge: median minute 4,320 (~Day 3.0). Lease activation itself is free; this metric intentionally measures when the recurring cost first reaches the wallet.
   - Total housing upkeep paid: 240 to 675 credits across the run.
   - Progression: starts with `housing-basement-cot` (15 cr/day), upgrades to `housing-cowork-loft` (30 cr/day) once balance exceeds 800 cr.
 - **Software Licenses**:
-  - First software enabled: median minute 11,520 (~Day 8.0).
+  - First paid software-license charge: median minute 11,520 (~Day 8.0). Enabling a license itself is free; this metric measures the first recurring debit.
   - Total license upkeep paid: 280 to 1,930 credits.
   - Active licenses: `software-net-monitor` (40 cr/day) and `software-auto-recon` (70 cr/day).
 - **Local AI Models**:
@@ -116,5 +116,5 @@ Across 32 seeds per scenario, the Beta balance profiles demonstrate clear differ
 1. **Deterministic Parity**: For identical seed, policy, and horizon, `sampleBalanceRun` produces byte-identical sample output.
 2. **Pressure Band Assertion**: Dedicated regression test confirms `cautious-novice` samples reliably visit and evaluate in `known` and `entangled` bands.
 3. **Purchasing Assertion**: Dedicated regression test confirms `rig-builder` samples purchase across all catalog categories, pay upkeep, and record non-null first purchase timestamps.
-4. **Seed Variance**: Evaluated with both standard sequential seeds (`1..32`) and non-zero 32-bit varied seeds (`CANONICAL_BETA_VARIED_SEEDS`).
+4. **Seed Variance**: The canonical/default Beta matrix uses the fixed non-zero varied set `CANONICAL_BETA_VARIED_SEEDS`; callers may still provide explicit seed lists for focused comparisons.
 5. **No Rank Gating**: Confirmed that all purchases and contract offers flow through typed simulation commands without reading or gating on player rank.
