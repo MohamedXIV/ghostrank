@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: active — P0–P4 delivered; P5 is next. Tracked by #27.**
+**Status: active — P0–P5 delivered; P6 is next. Tracked by #27.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 
@@ -433,7 +433,7 @@ Grounded slice order:
 - **P2 — visual-first app information** *(delivered; #59 / PR #68)*: Recon topology, relationship/rival signatures, evidence semantics, contract/deadline visuals, market comparisons, rich terminal output and History/postmortem timelines.
 - **P3 — onboarding + discoverability** *(delivered; #60 / PR #69)*: teach the fictional OS/capability model through contextual, dismissible in-world guidance, first-run orientation briefing, visual command discovery, in-app glossary, and progressive field directives.
 - **P4 — accessibility + interaction comfort** *(delivered; #61 / PR #70)*: keyboard shortcuts/navigation, modal focus containment/restore, presentation-only text/motion/transparency/density/contrast overrides, terminal parity, screen-reader semantics/live regions, multi-distro compliance, and explicit STANDARD motion override semantics.
-- **P5 — new-run, save, migration + recovery hardening**: remove the fixed-alpha-seed boot assumption, harden historical saves and browser recovery.
+- **P5 — new-run, save, migration + recovery hardening** *(delivered; #62 / PR #71)*: explicit no-run/new-run lifecycle, varied deterministic seeds, historical-save migration fixtures, typed corrupt/incompatible diagnostics, non-destructive corrupt backup archival, flush-before-replace safety, terminal-run recovery, and completed-history preservation.
 - **P6 — beta balance + telemetry follow-ups**: add purchasing/affordability coverage, revisit unreachable pressure middle bands from measured evidence, and validate seed-varied runs.
 - **P7 — ending/history polish + room/audio atmosphere**: finish run presentation, causal history readability and restrained physical/UI atmosphere.
 - **P8 — browser performance + web release hardening**: profile/stress the finished web UI and close release-only browser gaps before Phase 10.
