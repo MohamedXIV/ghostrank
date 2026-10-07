@@ -11,7 +11,7 @@ Status: Complete (Beta Verified)
 Phase 9 P6 resolves the telemetry blind spots and balance questions identified during Phase 8:
 1. **Purchasing & Affordability Telemetry**: In Phase 8, all tested policies accumulated credits into unspent hoards without purchasing catalog items. P6 adds a dedicated `rig-builder` economy policy that actively buys hardware components, leases housing, enables software licenses, acquires local AI models, and purchases authored player tools, measuring timing, wallet pressure, upkeep burden, and catalog reachability.
 2. **Pressure-Band Reachability (`known` and `entangled` at 0/128)**: In Phase 8, `known` and `entangled` pressure bands recorded 0 samples out of 128. P6 determines the exact root cause: the tested Phase 8 policies were either completely idle or unpaced 24/7 contract bots that accumulated score > 20 before crossing the Day 14 long-run pressure threshold. Adding a realistic `cautious-novice` policy demonstrates that human-paced play (resting between operations and selecting low-intrusion recon work) reliably reaches and finishes in `known` and `entangled` bands.
-3. **Seed Variance**: Verified across diverse 32-bit seeds introduced in P5 (`CANONICAL_BETA_VARIED_SEEDS`), ensuring simulation determinism is preserved across real seed variation.
+3. **Seed Variance**: Verified across the canonical diverse 32-bit seeds introduced in P5 (`CANONICAL_BETA_VARIED_SEEDS`), ensuring simulation determinism is preserved across real seed variation.
 4. **Policy Breadth**: Expanded telemetry scenarios to 6 distinct archetypes: `idle`, `cautious-novice`, `contractor`, `reckless`, `rig-builder`, and `career-exit`.
 
 ---
@@ -55,7 +55,13 @@ Under `cautious-novice`:
 - Paced contracts (36h cooldown) result in ~7–10 completed contracts by Day 14.
 - At Day 14 (minute 20,160), history score is ~8–11, placing the run squarely in **`known`**.
 - As the operator continues between Day 14 and Day 22, completing contracts 11–15, score enters the 12–19 range, transitioning the run into **`entangled`**.
-- Multi-seed testing confirms that runs reliably experience `known` and `entangled` bands, and surviving runs finish in `entangled` or `veteran`.
+- Across the canonical 32-seed varied matrix (`CANONICAL_BETA_VARIED_SEEDS`):
+  - **`known` reachability**: 25 of 32 runs (78.1%) visit the `known` band.
+  - **`entangled` reachability**: 31 of 32 runs (96.9%) reach the `entangled` band.
+  - **Day 30 ending pressure distribution**: 8 of 32 runs (25.0%) finish in `entangled`, while 24 of 32 runs (75.0%) finish in `veteran`.
+  - All 32 runs survived to Day 30 with 0 arrests, 0 compromises, and 100% active ending status.
+  - Mean contracts completed: 16.6 (total 532 across 32 runs).
+  - Final credits: min 2,175, median 2,607.5, max 3,035 (mean: 2,604 cr).
 
 **Decision**: The 14-day threshold and score thresholds (6 / 12 / 20) are mathematically and narratively sound. No artificial reduction of thresholds is needed; the Phase 8 metric was an artifact of policy selection, now fully resolved.
 
@@ -63,34 +69,35 @@ Under `cautious-novice`:
 
 ### 3.2 Purchasing & Affordability Telemetry (`rig-builder`)
 
-The `rig-builder` policy was evaluated across 30 world days to measure whether catalog items are practically affordable, when purchases occur, and whether upkeep causes unrecoverable failure.
+The `rig-builder` policy was evaluated across 30 world days using the canonical varied-seed matrix to measure whether catalog items are practically affordable, when purchases occur, and whether upkeep causes unrecoverable failure.
 
 #### Purchasing Metrics Summary (30-day Horizon)
 
-- **Total Purchasing Spend**: 3,470 to 10,645 credits (median: 8,420 credits).
-- **Hardware Components**: 4 to 6 components acquired per run (median spend: 2,750 credits).
-  - First hardware purchase: median minute 2,998 (~Day 2.0).
-  - Common hardware acquired: `storage-array` (250 cr), `ram-bank` (300 cr), `net-card` (350 cr), `cpu-overclock` (400 cr), `cpu-balanced` (550 cr), `gpu-entry` (900 cr).
+- **Total Purchasing Spend**: 3,375 to 11,535 credits (median: 6,997.5 credits, mean: 7,046 credits).
+- **Hardware Components**: 4 to 7 components acquired per run (median: 5; median spend: 2,750 credits, mean: 2,750 credits).
+  - First hardware purchase: min minute 1,485 (~Day 1.0), median minute 3,394 (~Day 2.4), max minute 7,621 (~Day 5.3).
+  - Hardware catalog coverage across runs (7 components): `cpu-balanced`, `cpu-overclock`, `gpu-entry`, `gpu-memory`, `net-card`, `ram-bank`, `storage-array`.
 - **Housing Leases**:
-  - First paid housing-upkeep charge: median minute 4,320 (~Day 3.0). Lease activation itself is free; this metric intentionally measures when the recurring cost first reaches the wallet.
-  - Total housing upkeep paid: 240 to 675 credits across the run.
-  - Progression: starts with `housing-basement-cot` (15 cr/day), upgrades to `housing-cowork-loft` (30 cr/day) once balance exceeds 800 cr.
+  - First paid housing-upkeep charge: min minute 1,440 (~Day 1.0), median minute 4,320 (~Day 3.0), max minute 8,640 (~Day 6.0). Lease activation itself is free; this metric intentionally measures when the recurring cost first reaches the wallet.
+  - Total housing upkeep paid: 210 to 915 credits across the run (median: 442.5 credits, mean: 479 credits).
+  - Housing catalog coverage across runs (3 listings): `housing-basement-cot` (15 cr/day), `housing-cowork-loft` (30 cr/day), `housing-rented-lab` (60 cr/day).
 - **Software Licenses**:
-  - First paid software-license charge: median minute 11,520 (~Day 8.0). Enabling a license itself is free; this metric measures the first recurring debit.
-  - Total license upkeep paid: 280 to 1,930 credits.
-  - Active licenses: `software-net-monitor` (40 cr/day) and `software-auto-recon` (70 cr/day).
+  - First paid software-license charge: min minute 5,760 (~Day 4.0), median minute 10,800 (~Day 7.5), max minute 17,280 (~Day 12.0). Enabling a license itself is free; this metric measures the first recurring debit.
+  - Total license upkeep paid: 200 to 2,440 credits (median: 1,085 credits, mean: 1,180 credits).
+  - Software catalog coverage across runs (2 suites): `software-net-monitor` (40 cr/day) and `software-auto-recon` (70 cr/day).
 - **Local AI Models**:
-  - First model acquired: median minute 16,199 to 22,604 (~Days 11–15).
-  - Model acquisition spend: 600 to 2,250 credits.
-  - Models acquired: `model-local-salvage` (600 cr), `model-local-reliable` (750 cr), `model-local-workhorse` (900 cr).
+  - First model acquired: min minute 9,254 (~Day 6.4), median minute 16,871 (~Day 11.7), max minute 25,888 (~Day 18.0).
+  - Model acquisition spend: 600 to 2,250 credits (median: 1,350 credits, mean: 1,341 credits).
+  - Model catalog coverage across runs (3 local models): `model-local-salvage` (600 cr), `model-local-reliable` (750 cr), `model-local-workhorse` (900 cr).
 - **Authored Player Tools**:
-  - First tool acquired: median minute 15,024 to 17,544 (~Days 10–12).
-  - Tool spend: 500 to 2,100 credits.
-  - Tools acquired: `tool-paranoid-scraper` (500 cr), `tool-map-stitcher` (700 cr), `tool-silent-dedup` (900 cr).
+  - First tool acquired: min minute 9,251 (~Day 6.4), median minute 15,781.5 (~Day 11.0), max minute 24,447 (~Day 17.0).
+  - Tool spend: 500 to 2,100 credits (median: 1,200 credits, mean: 1,297 credits).
+  - Tool count: 1 to 3 tools acquired per run (median: 2, mean: 2.1).
+  - Tool catalog coverage across runs (3 tools): `tool-paranoid-scraper` (500 cr), `tool-map-stitcher` (700 cr), `tool-silent-dedup` (900 cr).
 - **Wallet Pressure & Upkeep Burden**:
-  - In contractor runs, credits steadily hoard to ~8,500 credits.
-  - In rig-builder runs, credits remain active working capital, finishing with 190 to 925 credits (mean: ~640 cr).
-  - Involuntary upkeep lapses occurred in ~38% of runs (1 lapse per run) when concurrent software and housing upkeep coincided with a gap between contract deliveries. Because Ghostrank lapses licenses and leases cleanly back to baseline without negative debt, the operator recovered safely in subsequent days.
+  - In contractor runs, credits steadily hoard to a median of 8,132.5 credits (up to 14,575 cr).
+  - In rig-builder runs, credits remain active working capital, finishing with 195 to 3,250 credits (median: 947.5 credits, mean: 1,139 cr).
+  - Involuntary upkeep lapses occurred in 7 of 32 runs (21.9%), at at most 1 lapse per run (median: 0, mean: 0.22 lapses per run), when concurrent software and housing upkeep coincided with a gap between contract deliveries. Because Ghostrank lapses licenses and leases cleanly back to baseline without negative debt, the operator recovered safely in subsequent days.
 
 **Decision**: Catalog pricing and daily upkeep rates are well-calibrated. All five catalog categories (hardware, housing, software, models, tools) are practically reachable through ordinary gameplay without level or rank gates.
 
@@ -98,16 +105,16 @@ The `rig-builder` policy was evaluated across 30 world days to measure whether c
 
 ### 3.3 Comparative Policy Distributions
 
-Across 32 seeds per scenario, the Beta balance profiles demonstrate clear differentiation:
+Across 32 seeds per scenario in the canonical matrix (`CANONICAL_BETA_VARIED_SEEDS`), the Beta balance profiles demonstrate clear differentiation:
 
-| Scenario | Median Run Minutes | Dominant Ending | Median Final Credits | Median Total Spent | Contracts Completed (Median) | Peak Pressure Band |
+| Scenario | Median Run Minutes | Dominant Ending | Median Final Credits | Median Total Spent | Contracts Completed (Total / Mean) | Peak Pressure Band |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`idle`** | 43,200 (Day 30) | Active (32/32) | 0 | 0 | 0 | Ordinary (32/32) |
-| **`cautious-novice`** | 43,200 (Day 30) | Active / High Survival | ~2,400 | 0 | ~16 | Entangled / Veteran |
-| **`contractor`** | 31,860 (~Day 22) | Arrested (84%) | ~8,527 | 0 | ~45 | Veteran (91%) |
-| **`reckless`** | 27,720 (~Day 19) | Arrested (94%) | ~7,122 | 0 | ~40 | Veteran (81%) |
-| **`rig-builder`** | 30,960 (~Day 21) | Arrested (75%) / Active | ~675 | ~8,420 | ~47 | Veteran (100%) |
-| **`career-exit`** | 23,344 (~Day 16) | Retired (84%) | ~3,905 | 0 | ~21 | Veteran (91%) |
+| **`idle`** | 43,200 (Day 30.0) | Active (32/32, 100%) | 0 | 0 | 0 / 0.0 | Ordinary (32/32, 100%) |
+| **`cautious-novice`** | 43,200 (Day 30.0) | Active (32/32, 100%) | 2,607.5 | 0 | 532 / 16.6 | Entangled (8/32) / Veteran (24/32) |
+| **`contractor`** | 30,060 (~Day 20.9) | Arrested (30/32, 93.8%) | 8,132.5 | 0 | 1,459 / 45.6 | Veteran (30/32, 93.8%) |
+| **`reckless`** | 24,660 (~Day 17.1) | Arrested (32/32, 100%) | 5,820 | 0 | 1,077 / 33.7 | Veteran (25/32, 78.1%) |
+| **`rig-builder`** | 30,060 (~Day 20.9) | Arrested (29/32, 90.6%) | 947.5 | 6,997.5 | 1,462 / 45.7 | Veteran (30/32, 93.8%) |
+| **`career-exit`** | 23,357.5 (~Day 16.2) | Retired (26/32, 81.3%) | 4,097.5 | 0 | 709 / 22.2 | Veteran (30/32, 93.8%) |
 
 ---
 
