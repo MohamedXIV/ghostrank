@@ -11,17 +11,48 @@ import {
   createGameSession,
   type GameSession,
 } from "@/game/runtime/game-session";
-import { createSliceWorldState } from "@/game/runtime/slice-world";
+import {
+  createNewRunWorldState,
+  createSliceWorldState,
+} from "@/game/runtime/slice-world";
+import type { RunPersistence } from "@/persistence/run-persistence";
+import {
+  formatSaveDiagnostic,
+  type SaveDiagnosticError,
+} from "@/persistence/save-diagnostics";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 import { useUiStore } from "@/stores/ui/use-ui-store";
+import { Button } from "@/components/ui/button";
+
+export type ShellLifecyclePhase =
+  | { type: "booting"; note: string }
+  | { type: "active"; session: GameSession }
+  | {
+      type: "corrupt_save";
+      diagnostic: SaveDiagnosticError;
+      rawSnippet?: string;
+    }
+  | { type: "prompt_new_run"; activeSession: GameSession };
 
 export function GameShell() {
-  const [session, setSession] = useState<GameSession | null>(null);
-  const [bootNote, setBootNote] = useState("mounting simulation");
+  const [lifecycle, setLifecycle] = useState<ShellLifecyclePhase>({
+    type: "booting",
+    note: "mounting simulation",
+  });
+  const [persistenceInstance, setPersistenceInstance] =
+    useState<RunPersistence | null>(null);
+
   const activeSurface = useUiStore((state) => state.activeSurface);
   const setActiveSurface = useUiStore((state) => state.setActiveSurface);
   const distroId = usePresentationStore((state) => state.distroId);
   const themeId = usePresentationStore((state) => state.themeId);
+  const textScale = usePresentationStore((state) => state.textScale);
+  const motionMode = usePresentationStore((state) => state.motionMode);
+  const transparencyMode = usePresentationStore(
+    (state) => state.transparencyMode,
+  );
+  const densityMode = usePresentationStore((state) => state.densityMode);
+  const contrastMode = usePresentationStore((state) => state.contrastMode);
   const hydratePresentation = usePresentationStore((state) => state.hydrate);
   const distro = DISTRO_PROFILES[distroId];
 
@@ -29,53 +60,82 @@ export function GameShell() {
     hydratePresentation();
   }, [hydratePresentation]);
 
+  const bootSimulation = useCallback(async (forcedSeed?: number) => {
+    setLifecycle({ type: "booting", note: "opening local persistence" });
+
+    try {
+      const { createPlatformRunPersistence } = await import(
+        "@/persistence/platform-run-persistence"
+      );
+      const persistence = await createPlatformRunPersistence();
+      setPersistenceInstance(persistence);
+
+      // Inspect active run state non-destructively
+      if (persistence.inspectActiveRun) {
+        const inspection = await persistence.inspectActiveRun();
+        if (inspection.status === "diagnostic_error") {
+          setLifecycle({
+            type: "corrupt_save",
+            diagnostic: inspection.error,
+            rawSnippet: inspection.rawContent,
+          });
+          return;
+        }
+      }
+
+      setLifecycle({
+        type: "booting",
+        note: persistence ? "restoring active run" : "web shell // volatile run",
+      });
+
+      const initial = forcedSeed !== undefined
+        ? createSliceWorldState({ seed: forcedSeed })
+        : createNewRunWorldState();
+
+      const session = await createGameSession({
+        initialState: initial,
+        persistence,
+      });
+
+      setLifecycle({ type: "active", session });
+    } catch (error) {
+      console.error("Ghostrank persistence initialization failed", error);
+      setLifecycle({
+        type: "booting",
+        note: "persistence unavailable // volatile fallback",
+      });
+
+      const initial = forcedSeed !== undefined
+        ? createSliceWorldState({ seed: forcedSeed })
+        : createNewRunWorldState();
+
+      const session = await createGameSession({
+        initialState: initial,
+      });
+
+      setLifecycle({ type: "active", session });
+    }
+  }, []);
+
   useEffect(() => {
     let disposed = false;
-    let activeSession: GameSession | null = null;
 
     void (async () => {
-      try {
-        setBootNote("opening local persistence");
-
-        const { createPlatformRunPersistence } = await import(
-          "@/persistence/platform-run-persistence"
-        );
-        const persistence = await createPlatformRunPersistence();
-
-        setBootNote(
-          persistence
-            ? "restoring active run"
-            : "web shell // volatile run",
-        );
-
-        activeSession = await createGameSession({
-          initialState: createSliceWorldState(),
-          persistence,
-        });
-      } catch (error) {
-        console.error("Ghostrank persistence initialization failed", error);
-        setBootNote("persistence unavailable // volatile fallback");
-
-        activeSession = await createGameSession({
-          initialState: createSliceWorldState(),
-        });
-      }
-
+      await bootSimulation();
       if (disposed) {
-        await activeSession.flush();
         return;
       }
-
-      setSession(activeSession);
     })();
 
     return () => {
       disposed = true;
-      if (activeSession) {
-        void activeSession.flush();
+      if (lifecycle.type === "active") {
+        void lifecycle.session.flush();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const enterComputer = useCallback(() => {
     setActiveSurface("computer");
@@ -85,26 +145,182 @@ export function GameShell() {
     setActiveSurface("room");
   }, [setActiveSurface]);
 
-  if (!session) {
+  const requestNewRun = useCallback(() => {
+    if (lifecycle.type === "active") {
+      setLifecycle({
+        type: "prompt_new_run",
+        activeSession: lifecycle.session,
+      });
+    }
+  }, [lifecycle]);
+
+  const cancelNewRunPrompt = useCallback(() => {
+    if (lifecycle.type === "prompt_new_run") {
+      setLifecycle({
+        type: "active",
+        session: lifecycle.activeSession,
+      });
+    }
+  }, [lifecycle]);
+
+  const confirmStartFreshRun = useCallback(async () => {
+    setLifecycle({ type: "booting", note: "initializing new simulation run" });
+    const freshState = createNewRunWorldState();
+    if (persistenceInstance) {
+      // Overwrite the active run slot with the new fresh run
+      await persistenceInstance.saveActiveState(freshState, []);
+    }
+    const nextSession = await createGameSession({
+      initialState: freshState,
+      persistence: persistenceInstance,
+    });
+    setLifecycle({ type: "active", session: nextSession });
+  }, [persistenceInstance]);
+
+  const archiveCorruptAndStartFresh = useCallback(async () => {
+    if (lifecycle.type === "corrupt_save" && persistenceInstance) {
+      if (persistenceInstance.archiveCorruptActiveRun) {
+        await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
+      }
+    }
+    await confirmStartFreshRun();
+  }, [confirmStartFreshRun, lifecycle, persistenceInstance]);
+
+  if (lifecycle.type === "booting") {
     return (
       <section
         className="boot-screen"
         data-distro={distroId}
         data-theme={themeId}
+        data-text-scale={textScale}
+        data-motion-mode={motionMode}
+        data-transparency={transparencyMode}
+        data-density={densityMode}
+        data-contrast={contrastMode}
         aria-live="polite"
       >
         <div className="boot-mark">{distro.label}</div>
-        <div className="boot-line">{bootNote}</div>
+        <div className="boot-line">{lifecycle.note}</div>
       </section>
+    );
+  }
+
+  if (lifecycle.type === "corrupt_save") {
+    return (
+      <main
+        className="boot-screen"
+        data-distro={distroId}
+        data-theme={themeId}
+        data-text-scale={textScale}
+        data-motion-mode={motionMode}
+        data-transparency={transparencyMode}
+        data-density={densityMode}
+        data-contrast={contrastMode}
+      >
+        <div className="lifecycle-screen">
+          <div className="lifecycle-card">
+            <div className="lifecycle-header">
+              <span className="lifecycle-title">RECOVERY DIAGNOSTIC</span>
+              <span className="lifecycle-badge lifecycle-badge-error">
+                CORRUPT OR INCOMPATIBLE SAVE
+              </span>
+            </div>
+            <p className="boot-line" style={{ textAlign: "left" }}>
+              Active persistent run data could not be parsed safely. Existing data has
+              been held intact and has not been silently discarded.
+            </p>
+            <div className="lifecycle-diagnostic">
+              <strong>{formatSaveDiagnostic(lifecycle.diagnostic)}</strong>
+              {lifecycle.diagnostic.details && (
+                <span className="lifecycle-diagnostic-detail">
+                  {lifecycle.diagnostic.details}
+                </span>
+              )}
+            </div>
+            <div className="lifecycle-actions">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void bootSimulation()}
+              >
+                RETRY LOAD
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => void archiveCorruptAndStartFresh()}
+              >
+                ARCHIVE BACKUP &amp; START FRESH RUN
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (lifecycle.type === "prompt_new_run") {
+    const active = lifecycle.activeSession.snapshot();
+    const isEnded = Boolean(active.ending);
+    return (
+      <main
+        className="boot-screen"
+        data-distro={distroId}
+        data-theme={themeId}
+        data-text-scale={textScale}
+        data-motion-mode={motionMode}
+        data-transparency={transparencyMode}
+        data-density={densityMode}
+        data-contrast={contrastMode}
+      >
+        <div className="lifecycle-screen">
+          <div className="lifecycle-card">
+            <div className="lifecycle-header">
+              <span className="lifecycle-title">INITIALIZE NEW RUN</span>
+              <span
+                className={`lifecycle-badge ${
+                  isEnded ? "lifecycle-badge-ended" : "lifecycle-badge-active"
+                }`}
+              >
+                {isEnded ? "COMPLETED RUN ARCHIVED" : "ACTIVE PROGRESS IN PROGRESS"}
+              </span>
+            </div>
+            <p className="boot-line" style={{ textAlign: "left" }}>
+              {isEnded
+                ? "The previous run has ended and is permanently archived in history. Initialize a fresh operation with a new random world seed?"
+                : `An active operation for ${active.player.handle} at minute ${active.worldMinute} is currently in progress. Starting a new run will abandon ongoing unsaved operations and initialize a fresh seed.`}
+            </p>
+            <div className="lifecycle-actions">
+              {!isEnded && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelNewRunPrompt}
+                >
+                  RESUME ACTIVE RUN
+                </Button>
+              )}
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => void confirmStartFreshRun()}
+              >
+                CONFIRM START FRESH RUN
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
     );
   }
 
   return (
     <ActiveGameShell
-      session={session}
+      session={lifecycle.session}
       activeSurface={activeSurface}
       enterComputer={enterComputer}
       enterRoom={enterRoom}
+      onStartNewRun={requestNewRun}
     />
   );
 }
@@ -114,11 +330,13 @@ function ActiveGameShell({
   activeSurface,
   enterComputer,
   enterRoom,
+  onStartNewRun,
 }: {
   session: GameSession;
   activeSurface: "room" | "computer";
   enterComputer: () => void;
   enterRoom: () => void;
+  onStartNewRun: () => void;
 }) {
   const ended =
     useCell("meta", "run", "ended", session.projection) === true;
@@ -144,6 +362,16 @@ function ActiveGameShell({
             {endingDetail ||
               "the handle is closed // this run accepts no further commands"}
           </div>
+          <div className="lifecycle-actions lifecycle-actions-center" style={{ marginTop: 24 }}>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onStartNewRun}
+              title="Initialize a fresh simulation run with a new random seed"
+            >
+              + START NEW OPERATION
+            </Button>
+          </div>
         </section>
       </main>
     );
@@ -160,8 +388,10 @@ function ActiveGameShell({
         <ComputerDesktop
           runtime={session}
           onReturnToRoom={enterRoom}
+          onStartNewRun={onStartNewRun}
         />
       )}
     </main>
   );
 }
+
