@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: active — P0–P6 delivered; P7 is next. Tracked by #27.**
+**Status: active — P0–P7 delivered; P8 is next. Tracked by #27.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 
@@ -435,7 +435,7 @@ Grounded slice order:
 - **P4 — accessibility + interaction comfort** *(delivered; #61 / PR #70)*: keyboard shortcuts/navigation, modal focus containment/restore, presentation-only text/motion/transparency/density/contrast overrides, terminal parity, screen-reader semantics/live regions, multi-distro compliance, and explicit STANDARD motion override semantics.
 - **P5 — new-run, save, migration + recovery hardening** *(delivered; #62 / PR #71)*: explicit no-run/new-run lifecycle, varied deterministic seeds, historical-save migration fixtures, typed corrupt/incompatible diagnostics, non-destructive corrupt backup archival, flush-before-replace safety, terminal-run recovery, and completed-history preservation.
 - **P6 — beta balance + telemetry follow-ups** *(delivered; #63 / PR #72)*: canonical 32-seed × 6-policy telemetry, measured purchasing/affordability, pressure-band reachability, novice pacing, ending/economy/rank/failure distributions, and evidence-backed decision to keep existing economy/pressure tuning.
-- **P7 — ending/history polish + room/audio atmosphere**: finish run presentation, causal history readability and restrained physical/UI atmosphere.
+- **P7 — ending/history polish + room/audio atmosphere** *(delivered; #64 / PR #73)*: authored presentation for all seven endings, player-safe archived run timeline/postmortem, restrained room atmosphere and known physical-warning cues, optional distro-aware ending/warning audio, and preserved accessibility/presentation-only boundaries.
 - **P8 — browser performance + web release hardening**: profile/stress the finished web UI and close release-only browser gaps before Phase 10.
 
 Cross-cutting rules:
