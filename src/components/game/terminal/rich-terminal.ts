@@ -37,8 +37,127 @@ export const TERMINAL_HELP_TABLE: string = [
   "│ read <message-id>  │ review intercepted message or rumor                │",
   "│ retire plan|commit|finish|cancel     │ orchestrate exit from the scene  │",
   "│ wait <minutes>     │ advance world clock                                │",
+  "├── SYSTEM DISCOVERY ──────────────────────────────────────────────────────┤",
+  "│ help <command>     │ view detailed syntax and semantics for a command   │",
+  "│ legend             │ display truth vocabulary and symbol glossary       │",
+  "│ guide              │ display progressive operational directives         │",
   "└──────────────────────────────────────────────────────────────────────────┘",
 ].join("\n");
+
+export const TERMINAL_LEGEND_TABLE: string = [
+  "┌── EPISTEMIC TRUTH VOCABULARY ────────────────────────────────────────────┐",
+  "│ CONFIRMED (●)   │ Authoritative fact from direct telemetry or execution  │",
+  "│ OBSERVED  (○)   │ Firsthand intelligence mapped via survey or inspection │",
+  "│ INFERRED  (◇)   │ Assistant AI hypothesis; unverified analytical claim   │",
+  "│ RUMORED   (┄)   │ Social forum whisper or leak; unconfirmed origin       │",
+  "│ STALE     (◌)   │ Aged intelligence; target posture may have changed     │",
+  "│ UNKNOWN   (?)   │ Unresolved entity handle or unmapped infrastructure    │",
+  "├── AI CONFIDENCE PIPS ────────────────────────────────────────────────────┤",
+  "│ ▪▫▫ LOW (1/3)   │ Speculative pattern-match on target architecture       │",
+  "│ ▪▪▫ MODERATE    │ Corroborated across multiple observed machine ports    │",
+  "│ ▪▪▪ HIGH (3/3)  │ High-probability analytical convergence                │",
+  "├── CONTRACT URGENCY ──────────────────────────────────────────────────────┤",
+  "│ ON SCHEDULE     │ Abundant operational window                            │",
+  "│ CLOSING         │ Approaching cutoff; finalize and deliver evidence      │",
+  "│ EXPIRING SOON   │ Imminent expiration; failure causes reputation loss    │",
+  "└──────────────────────────────────────────────────────────────────────────┘",
+].join("\n");
+
+export const TERMINAL_GUIDE_TABLE: string = [
+  "┌── OPERATIONAL FIELD GUIDE // QUICKSTART ─────────────────────────────────┐",
+  "│ 1. RESOLVE LEAD     │ observe <target>     e.g. observe nightshade       │",
+  "│ 2. OPEN RECON       │ op open <target>     stage: RECON (safe from heat) │",
+  "│ 3. SURVEY HOSTS     │ survey <target>      discovers perimeter machines  │",
+  "│ 4. MAP SERVICES     │ inspect <machine>    reveals evidence & ports      │",
+  "│ 5. DELIVER CONTRACT │ contract accept <id> -> contract deliver <id>      │",
+  "│ 6. CAUTION          │ op escalate enters intrusive stage (trace mounts)  │",
+  "│                     │ op exit disengages before retaliatory counter-probe│",
+  "└──────────────────────────────────────────────────────────────────────────┘",
+].join("\n");
+
+export const DETAILED_COMMAND_HELP: Record<string, string> = {
+  observe: [
+    "COMMAND: observe <target>",
+    "CATEGORY: Reconnaissance",
+    "PURPOSE: Resolves an unresolved handle lead into an indexed target profile.",
+    "EXAMPLE: observe nightshade",
+  ].join("\n"),
+  survey: [
+    "COMMAND: survey <target>",
+    "CATEGORY: Reconnaissance",
+    "PURPOSE: Scans the network perimeter of an active operation to discover host machines.",
+    "REQUIRES: Active operation session (op open <target>).",
+    "EXAMPLE: survey nightshade",
+  ].join("\n"),
+  inspect: [
+    "COMMAND: inspect <machine>",
+    "CATEGORY: Reconnaissance",
+    "PURPOSE: Probes a discovered host machine to map active services and port evidence.",
+    "EXAMPLE: inspect ns-relay",
+  ].join("\n"),
+  analyze: [
+    "COMMAND: analyze <target>",
+    "CATEGORY: Reconnaissance (AI)",
+    "PURPOSE: Dispatches an AI assistant to infer unmapped machines and services.",
+    "NOTE: Inferred claims carry confidence pips and must be verified.",
+    "EXAMPLE: analyze nightshade",
+  ].join("\n"),
+  op: [
+    "COMMAND: op open <target> | op escalate | op exit",
+    "CATEGORY: Operation Lifecycle",
+    "PURPOSE: Controls operation engagement stages.",
+    "  op open <target> : Begins passive recon session (low trace).",
+    "  op escalate      : Crosses into intrusive perimeter (accumulates trace).",
+    "  op exit          : Disengages and closes session safely.",
+  ].join("\n"),
+  contract: [
+    "COMMAND: contract accept|decline|deliver <id>",
+    "CATEGORY: Underground Syndicate",
+    "PURPOSE: Accepts or fulfills syndicate commissions based on mapped evidence.",
+    "EXAMPLE: contract accept contract:1",
+    "         contract deliver contract:1",
+  ].join("\n"),
+  buy: [
+    "COMMAND: buy <catalog-id>",
+    "CATEGORY: Rig & Hardware",
+    "PURPOSE: Purchases modular rig hardware to increase throughput and capability.",
+    "EXAMPLE: buy cpu-overclock",
+  ].join("\n"),
+  rent: [
+    "COMMAND: rent <housing-id>",
+    "CATEGORY: Housing & Anonymity",
+    "PURPOSE: Leases a safehouse dwelling to provide physical security and heat shielding.",
+    "EXAMPLE: rent housing-cowork-loft",
+  ].join("\n"),
+  model: [
+    "COMMAND: model buy|run|stop <model-id>",
+    "CATEGORY: AI Inference",
+    "PURPOSE: Manages local or cloud assistant models for automated analysis.",
+    "EXAMPLE: model run model-local-workhorse",
+  ].join("\n"),
+  wait: [
+    "COMMAND: wait <minutes>",
+    "CATEGORY: Simulation Clock",
+    "PURPOSE: Advances the world simulation clock by specified minutes.",
+    "EXAMPLE: wait 30",
+  ].join("\n"),
+  legend: [
+    "COMMAND: legend",
+    "CATEGORY: System Glossary",
+    "PURPOSE: Displays epistemic truth vocabulary, confidence pips, and urgency bands.",
+  ].join("\n"),
+  guide: [
+    "COMMAND: guide",
+    "CATEGORY: Operational Guidance",
+    "PURPOSE: Displays progressive operational steps and beginner quickstart cues.",
+  ].join("\n"),
+};
+
+export function formatDetailedHelp(commandName: string): string | null {
+  const normalized = commandName.trim().toLowerCase();
+  return DETAILED_COMMAND_HELP[normalized] ?? null;
+}
+
 
 export function formatRichCommandResult(type: SimulationCommand["type"]): {
   text: string;

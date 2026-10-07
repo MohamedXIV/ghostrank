@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: active — P0–P2 delivered; P3 is next. Tracked by #27.**
+**Status: active — P0–P3 delivered; P4 is next. Tracked by #27.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 
@@ -431,7 +431,7 @@ Grounded slice order:
 - **P0 — UI foundation + semantic visual language** *(delivered; #57 / PR #66)*: semantic tokens, owned shared primitives, UI/terminal typography separation, non-color epistemic markers, focus/reduced-motion baseline, and restrained Motion window transitions.
 - **P1 — OS shell + distro/theme architecture** *(delivered; #58 / PR #67)*: five cosmetic distro profiles, Petal Light/Night, installed-distro inventory and versioned presentation settings, in-world staged installer/reboot, short boot for installed distros, distinct optional sounds with mute, and distro-aware shell/chrome without gameplay changes.
 - **P2 — visual-first app information** *(delivered; #59 / PR #68)*: Recon topology, relationship/rival signatures, evidence semantics, contract/deadline visuals, market comparisons, rich terminal output and History/postmortem timelines.
-- **P3 — onboarding + discoverability**: teach the fictional OS/capability model through contextual, dismissible in-world guidance.
+- **P3 — onboarding + discoverability** *(delivered; #60)*: teach the fictional OS/capability model through contextual, dismissible in-world guidance, first-run orientation briefing, visual command discovery, in-app glossary, and progressive field directives.
 - **P4 — accessibility + interaction comfort**: keyboard/focus, contrast, non-color cues, reduced motion, UI/text scale, reduced transparency and dense-data readability.
 - **P5 — new-run, save, migration + recovery hardening**: remove the fixed-alpha-seed boot assumption, harden historical saves and browser recovery.
 - **P6 — beta balance + telemetry follow-ups**: add purchasing/affordability coverage, revisit unreachable pressure middle bands from measured evidence, and validate seed-varied runs.

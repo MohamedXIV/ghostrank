@@ -17,12 +17,9 @@ import {
   type DistroTransitionKind,
 } from "@/presentation/distro-installation";
 import { playDistroSound } from "@/presentation/distro-sound";
-import {
-  DISTRO_IDS,
-  DISTRO_PROFILES,
-  type DistroId,
-} from "@/presentation/distros";
+import { DISTRO_IDS, DISTRO_PROFILES, type DistroId } from "@/presentation/distros";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
+import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
 
 interface ActiveTransition {
   distroId: DistroId;
@@ -48,6 +45,13 @@ export function AppearanceApp() {
   const setSoundEnabled = usePresentationStore(
     (state) => state.setSoundEnabled,
   );
+  const hintsEnabled = useOnboardingStore((state) => state.hintsEnabled);
+  const directivesEnabled = useOnboardingStore((state) => state.directivesEnabled);
+  const setHintsEnabled = useOnboardingStore((state) => state.setHintsEnabled);
+  const setDirectivesEnabled = useOnboardingStore((state) => state.setDirectivesEnabled);
+  const resetAllHints = useOnboardingStore((state) => state.resetAllHints);
+  const openOrientationModal = useOnboardingStore((state) => state.openOrientationModal);
+  const openLegendModal = useOnboardingStore((state) => state.openLegendModal);
   const reducedMotion = useReducedMotion() !== false;
   const [transition, setTransition] = useState<ActiveTransition | null>(null);
   const lastStageId = useRef<string | null>(null);
@@ -271,6 +275,58 @@ export function AppearanceApp() {
         >
           {soundEnabled ? "MUTE" : "ENABLE"}
         </Button>
+      </section>
+
+      <section className="appearance-guidance" aria-label="Operational guidance">
+        <div className="appearance-heading">
+          <div>
+            <span className="panel-label">OPERATIONAL GUIDANCE</span>
+            <h2>Onboarding &amp; discoverability</h2>
+          </div>
+        </div>
+        <p className="appearance-copy">
+          Configure contextual in-app guidance, progressive directives, or review system reference materials.
+        </p>
+
+        <div className="guidance-settings-grid">
+          <div className="guidance-setting-row">
+            <div>
+              <strong>Contextual In-App Hints</strong>
+              <span className="setting-subtext">Dismissible guidance banners across Recon, Market, and Terminal.</span>
+            </div>
+            <Button
+              variant={hintsEnabled ? "default" : "ghost"}
+              onClick={() => setHintsEnabled(!hintsEnabled)}
+            >
+              {hintsEnabled ? "ENABLED" : "MUTED"}
+            </Button>
+          </div>
+
+          <div className="guidance-setting-row">
+            <div>
+              <strong>Progressive Field Directives</strong>
+              <span className="setting-subtext">Desktop dock tracking initial investigative milestones.</span>
+            </div>
+            <Button
+              variant={directivesEnabled ? "default" : "ghost"}
+              onClick={() => setDirectivesEnabled(!directivesEnabled)}
+            >
+              {directivesEnabled ? "SHOWN" : "HIDDEN"}
+            </Button>
+          </div>
+
+          <div className="guidance-setting-actions">
+            <Button variant="ghost" size="sm" onClick={resetAllHints}>
+              RESET DISMISSED HINTS
+            </Button>
+            <Button variant="ghost" size="sm" onClick={openOrientationModal}>
+              OPEN ORIENTATION BRIEFING
+            </Button>
+            <Button variant="ghost" size="sm" onClick={openLegendModal}>
+              OPEN SYSTEM GLOSSARY
+            </Button>
+          </div>
+        </div>
       </section>
 
       <section className="appearance-accessibility-note" aria-label="Accessibility">
