@@ -270,43 +270,47 @@ export function ComputerDesktop({
           <span>{credits.toLocaleString("en-US")} cr</span>
           <span>{formatWorldTime(worldMinute)}</span>
         </div>
-        <div className="os-guidance-actions">
-          {onStartNewRun && (
+        {/* Guidance buttons and ROOM share one wrapper so that, when the bar
+            wraps on a narrow screen, they wrap together and stay in DOM order. */}
+        <div className="os-actions">
+          <div className="os-guidance-actions">
+            {onStartNewRun && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="os-help-button"
+                onClick={onStartNewRun}
+                title="Start a fresh simulation run with a new random seed"
+                aria-label="Start fresh simulation run"
+              >
+                + NEW RUN
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
               className="os-help-button"
-              onClick={onStartNewRun}
-              title="Start a fresh simulation run with a new random seed"
-              aria-label="Start fresh simulation run"
+              onClick={openLegendModal}
+              title="Open system symbols & truth vocabulary glossary (F1)"
+              aria-label="Open system glossary (F1)"
             >
-              + NEW RUN
+              ? GLOSSARY
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="os-help-button"
-            onClick={openLegendModal}
-            title="Open system symbols & truth vocabulary glossary (F1)"
-            aria-label="Open system glossary (F1)"
-          >
-            ? GLOSSARY
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="os-help-button"
-            onClick={openOrientationModal}
-            title="Open operational orientation briefing"
-            aria-label="Open operational orientation briefing"
-          >
-            DIRECTIVES
+            <Button
+              variant="ghost"
+              size="sm"
+              className="os-help-button"
+              onClick={openOrientationModal}
+              title="Open operational orientation briefing"
+              aria-label="Open operational orientation briefing"
+            >
+              DIRECTIVES
+            </Button>
+          </div>
+          <Button className="os-room-button" onClick={onReturnToRoom}>
+            ROOM
           </Button>
         </div>
-        <Button className="os-room-button" onClick={onReturnToRoom}>
-          ROOM
-        </Button>
       </header>
 
       <div className="desktop-workspace">

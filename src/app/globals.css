@@ -537,7 +537,9 @@ textarea:focus-visible,
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: var(--os-bar-height) 1fr var(--os-footer-height);
+  /* The header row is at least --os-bar-height and grows only when its
+     controls must wrap (G1 acceptance: nothing is clipped at phone width). */
+  grid-template-rows: auto minmax(0, 1fr) var(--os-footer-height);
   overflow: hidden;
   background:
     linear-gradient(var(--desktop-grid-line) 1px, transparent 1px),
@@ -560,6 +562,9 @@ textarea:focus-visible,
 
 .os-bar {
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 6px;
+  min-height: var(--os-bar-height);
   border-width: 0 0 1px;
   padding: 0 12px;
   font-size: 12px;
@@ -591,6 +596,10 @@ textarea:focus-visible,
   border-radius: 999px;
   background: var(--accent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.os-stats span {
+  white-space: nowrap;
 }
 
 .os-stats span + span {
@@ -3517,8 +3526,17 @@ textarea:focus-visible,
    ========================================================================= */
 
 /* OS Bar Guidance Buttons */
+.os-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
 .os-guidance-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-left: auto;
@@ -3535,11 +3553,56 @@ textarea:focus-visible,
   border: 1px solid var(--border);
   color: var(--accent);
   background: var(--surface-overlay);
+  white-space: nowrap;
 }
 
 .os-help-button:hover {
   background: var(--accent);
   color: var(--background);
+}
+
+/* Narrow computer header (G1 acceptance). The bar wraps in DOM order, so the
+   controls keep their keyboard and screen-reader order and nothing is pushed
+   off the right edge. Phones get 44px touch targets and the guidance row
+   spans the width. */
+@media (max-width: 900px) {
+  .os-bar {
+    padding-block: 2px;
+  }
+}
+
+@media (max-width: 640px) {
+  .os-bar {
+    padding-block: 6px;
+  }
+
+  .os-stats {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  .os-actions {
+    flex: 1 1 100%;
+    gap: 6px;
+  }
+
+  .os-guidance-actions {
+    flex: 1 1 auto;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .os-help-button {
+    flex: 1 1 auto;
+    height: 44px;
+    padding: 0 8px;
+  }
+
+  .os-room-button {
+    min-height: 44px;
+  }
 }
 
 /* Contextual Hint Banner */

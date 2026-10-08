@@ -84,6 +84,36 @@ describe("ComputerDesktop accessibility & keyboard presentation", () => {
     expect(html).toContain('aria-keyshortcuts="F1"');
   });
 
+  it("keeps the header controls in one reading and focus order, with ROOM last inside the actions group", async () => {
+    // The narrow header wraps these controls with CSS (G1 acceptance). The wrap
+    // must not reorder them, so the DOM order here is the focus order too.
+    const runtime = await createGameSession({
+      initialState: createSliceWorldState(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(ComputerDesktop, {
+        runtime,
+        onReturnToRoom: () => {},
+        onStartNewRun: () => {},
+      }),
+    );
+
+    const header = html.slice(
+      html.indexOf('<header class="os-bar">'),
+      html.indexOf("</header>"),
+    );
+    const order = ["+ NEW RUN", "? GLOSSARY", "DIRECTIVES", "ROOM"].map((label) =>
+      header.indexOf(label),
+    );
+
+    expect(order.every((index) => index > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(header.indexOf('class="os-actions"')).toBeGreaterThan(0);
+    expect(header.indexOf('class="os-actions"')).toBeLessThan(order[0]);
+    expect(header.lastIndexOf("</div>")).toBeGreaterThan(order[3]);
+  });
+
   it("marks terminal output with aria-live polite for screen reader live region support", async () => {
     const runtime = await createGameSession({
       initialState: createSliceWorldState(),
