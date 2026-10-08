@@ -1,6 +1,6 @@
 # G1 acceptance (#77): engineering evidence and remaining gates
 
-**Status (2026-10-08):** engineering acceptance is clean on `main` at `637175a` plus this change. **G1 is not complete.** Five design decisions are open (section 5), and the human playtest gates have **not been run** (section 6). No playtest PASS is claimed anywhere in this document.
+**Status (2026-10-08):** engineering acceptance merged via PR #92 at `7f6a2c9a06818dfa7308004627c4a08774cea90e` (tested implementation on Node 24: 987 passing tests, 42 production Chromium PASS). **G1 is not complete.** Five UX/time-control decisions have default implementation directions below but are not shipped yet; human playtest gates have **not been run** (section 6). No playtest PASS is claimed anywhere in this document.
 
 Merged before this acceptance: PR #89 (D057, system jobs for builds, upkeep and outage releases), PR #90 (D058, proportional save path), PR #91 (D059, clock strip in the page flow). #89 also carries the terminal-snapshot regression: `world-schedule.test.ts` "never rewrites an archived terminal world on restore" (`ab4aafa`) and its guard in `reconcileSchedule` (`936472b`).
 
@@ -84,6 +84,18 @@ No gameplay change. Each candidate was checked against the code.
 3. **Playback speed across reload.** The speed returns to 1× after a reload. Decide whether it should persist.
 4. **HUD touch size.** The HUD's own buttons are 26 px tall. The header's controls are 44 px on phones. Decide whether the HUD matches on phones, which would make the strip taller (D059).
 5. **Terminal pause.** Pause and speed are GUI-only (D056). Decide whether the terminal should have a pause verb.
+
+### G1 closeout implementation directions (decided after PR #92 merge; NOT IMPLEMENTED)
+
+These are default game-first directions, subject to later human playtest feedback; they must not be reported as complete until shipped and verified:
+
+1. **Modal pause:** Opening a blocking DIRECTIVES/orientation, recovery, confirmation, or similarly reading-heavy modal suspends live progression, storing the prior playback mode. Closing the last blocking modal restores the prior mode unless the player explicitly changed it. Nested dialogs and tab visibility must not spuriously resume the clock. Treat this as presentation pacing; do not write a world simulation event.
+2. **Expiry notices:** Name `ContractExpired` only if that particular contract/offer was visible to the player. Example: `A known contract deadline passed. Time stopped at Day …`. Otherwise use the existing generic notice. Do not infer hidden actors, targets, or investigation details from the authoritative event alone.
+3. **Reload speed:** Keep current safe default of **1× on reload**. The durable world minute and running time job persist; last-selected playback acceleration does not. Document the intent so a reload cannot surprise the player with automatic ×16 speed.
+4. **HUD touch targets:** At narrow/touch widths, Pause/1×/4×/16×/Halt must offer an approximately **44×44 CSS-pixel minimum hit target** with focus visibility, wrapping without clipping or covering the play surface. This is a real gameplay control, not a decorative button.
+5. **Terminal pause:** Provide terminal `pause` and `resume` (optionally `speed 1|4|16` if consistent with the parser) through the same *presentation clock driver* as the HUD, not through `SimulationCommand` or authoritative world-time events. Keep it keyboard accessible and never double-advance time.
+
+**Engineering gate to rerun:** automated tests, typecheck, lint and build on Node 24, then production Chromium desktop + phone 320–390 px smoke including modal open/close, nested modal, hidden tab, concurrent job, reload, terminal/GUI parity and reduced motion. Prefer committing a scrubbed deterministic browser smoke harness for reproducibility. **Human feel/comfort testing remains separate and NOT RUN.**
 
 ## 6. Human playtest gates: NOT RUN
 
