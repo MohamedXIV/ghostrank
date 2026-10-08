@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: P0–P7 merged; P8 exit criteria verified in the canonical branch/PR, pending merge. Tracked by #27.**
+**Status: P0–P7 merged; P8 exit criteria verified in the canonical branch; PR creation pending. Tracked by #27.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 

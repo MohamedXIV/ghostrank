@@ -1,7 +1,7 @@
 # Ghostrank Web Beta Release Hardening
 
 **Phase:** 9 P8 — Browser Performance + Web Release Hardening  
-**Status:** Verification passed on `phase-9-p8-browser-release-hardening`; canonical PR is pending.  
+**Status:** Verification passed and branch pushed; PR creation was blocked because GitHub API requests returned `Forbidden`.
 **Verified source SHA:** `0f4ad1a1c926d5c01e0158e83ebd27c915ff12f8`  
 **Baseline:** `f2c8eacaa09bc210e7b3fd5543647a4aa39ea051`
 
@@ -85,3 +85,5 @@ No GitHub Actions were used.
 P8 performance, persistence, accessibility, and production-smoke checks pass for the tested Chromium target. No planned gameplay or UI architecture remains after this slice. Phase 10 desktop host/distribution work remains explicitly deferred until the Phase 9 PR is merged.
 
 **Issue access note:** GitHub issue #65 returned 404/forbidden from the cloud session. The supplied request and repository Phase 9 plan defined the verification scope.
+
+**PR access note:** The branch push succeeded, but both GitHub GraphQL and REST pull-request creation endpoints returned `Forbidden`; no PR number was created from this environment.
