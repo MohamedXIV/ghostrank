@@ -19,6 +19,12 @@ A typical operation is:
 The most important expert skill is often deciding not to continue.
 
 
+## Game-first completion note (2026-10-08)
+
+Phase 9 shipped an architecturally verified Web Beta, not an adequate complete game. An interactive hacking roguelike needs player-chosen identity, visibly advancing shared world time with truly concurrent jobs, procedural variations across seeds, actionable network/evidence puzzles, autonomous NPC counterplay, meaningful run loss/replay and embodied game interactions. The current command menus and static authored roster are a foundation, not the end state.
+
+The game-first design contract and dependency roadmap are in `docs/GAME_FIRST_REBOOT.md` / parent #75. In particular, **sleep and fast-forward must never silently skip ecosystem ticks**, and the first gameplay goal is a small truly interactive operation with multiple successful strategies.
+
 ## Interface as part of the world
 
 The simulated computer is a place the player inhabits, not a neutral menu wrapper around the simulation.
