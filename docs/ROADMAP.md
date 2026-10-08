@@ -421,7 +421,7 @@ breadth without violating established system rules.
 
 ## Phase 9 — Web Beta / Polish
 
-**Status: P0–P7 merged; P8 exit criteria verified in the canonical branch; PR creation pending. Tracked by #27.**
+**Status: completed — P0–P8 delivered via PRs #66–#74; parent #27 closed on 2026-10-08. Web Beta feature-complete for the tested Chromium target.**
 
 Canonical plan: `docs/superpowers/plans/2026-10-06-phase-9-plan.md`.
 
@@ -436,7 +436,7 @@ Grounded slice order:
 - **P5 — new-run, save, migration + recovery hardening** *(delivered; #62 / PR #71)*: explicit no-run/new-run lifecycle, varied deterministic seeds, historical-save migration fixtures, typed corrupt/incompatible diagnostics, non-destructive corrupt backup archival, flush-before-replace safety, terminal-run recovery, and completed-history preservation.
 - **P6 — beta balance + telemetry follow-ups** *(delivered; #63 / PR #72)*: canonical 32-seed × 6-policy telemetry, measured purchasing/affordability, pressure-band reachability, novice pacing, ending/economy/rank/failure distributions, and evidence-backed decision to keep existing economy/pressure tuning.
 - **P7 — ending/history polish + room/audio atmosphere** *(delivered; #64 / PR #73)*: authored presentation for all seven endings, player-safe archived run timeline/postmortem, restrained room atmosphere and known physical-warning cues, optional distro-aware ending/warning audio, and preserved accessibility/presentation-only boundaries.
-- **P8 — browser performance + web release hardening** *(verified in the canonical P8 branch; release checklist: `docs/WEB_BETA_RELEASE_HARDENING.md`)*: bounded completed-run and large archive rendering, memoized large table projections, reduced room/window animation cost, narrow-screen touch fixes, deterministic long-run stress fixtures, production Chromium persistence/recovery smoke, and explicit Firefox/Safari/physical-device evidence limits.
+- **P8 — browser performance + web release hardening** *(delivered; #65 / PR #74; release checklist: `docs/WEB_BETA_RELEASE_HARDENING.md`)*: bounded completed-run and large archive rendering, memoized large table projections, reduced room/window animation cost, narrow-screen touch fixes, deterministic long-run stress fixtures, production Chromium persistence/recovery smoke, and explicit Firefox/Safari/physical-device evidence limits.
 
 Cross-cutting rules:
 - the game must not collapse into terminal-styled menus and text,
@@ -457,7 +457,7 @@ Exit criteria:
 
 ## Phase 10 — Desktop Host / Packaging
 
-**Status: explicitly deferred until Phase 9 / #27 is merged. Tracked by #19.**
+**Status: unblocked after Phase 9 closure, but not started; desktop/Tauri work remains deliberately deferred until selected. Tracked by #19.**
 
 Start only after #27 (Phase 9 — Web Beta / Polish) is complete unless the project deliberately changes the platform decision.
 
