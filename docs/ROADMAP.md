@@ -2,6 +2,8 @@
 
 This is a full-project roadmap, not a disposable prototype plan. Early milestones establish production architecture that later systems will keep.
 
+**Gameplay completion is NOT achieved.** Phase 9 / #27 verified a technically capable Chromium Web Beta within its original scope, but first-hand evaluation on 2026-10-08 identified missing interactive gameplay, world clock/queue issues, hardcoded identity/world roster, procedural variety, roguelike structure and game-first UX. See **Game-First Completion Initiative #75**, `docs/GAME_FIRST_REBOOT.md` and issues #76–#84. Do not describe the complete *game* as feature-complete until #84 passes.
+
 ## Current platform policy — Web first
 
 Ghostrank will be completed as a **web game first**. Browser execution is the primary runtime for all remaining gameplay phases.
@@ -455,11 +457,33 @@ Exit criteria:
 - performance/accessibility meet release expectations,
 - remaining planned work is Phase 10 host/distribution integration rather than gameplay or UI architecture.
 
+## Game-First Completion Track — G0–G8 (active; supersedes gameplay-ready claim)
+
+**Status: NOT gameplay-complete.** The prior Phase 9 Web Beta closure remains valid only as a technical milestone for the tested Chromium target. Parent **#75** is the new gameplay readiness owner. Canonical design and scheduling contract: `docs/GAME_FIRST_REBOOT.md`.
+
+**Immediate order:** prove game feel and the clock first; keep the existing engine/UI/persistence infrastructure where helpful. The first prototype is one interactive, consequential 20–30-minute operation, not a whole UI rewrite.
+
+| Gate | Issue | Delivery | Status |
+| --- | --- | --- | --- |
+| G0 | #76 | Current playability audit, benchmark research, gameplay north star and focused playable slice | Next |
+| G1 | #77 | Authoritative visible clock, no-skipped-ticks scheduler, queue, sleep and interruptible fast-forward | Planned |
+| G2 | #78 | Chosen handle, curated/generated scenarios, weighted procedural NPC/organization/network generation | Planned |
+| G3 | #79 | Hands-on interactive fictional hacking operations, multiple player-skill routes, evidence and defense | Planned |
+| G4 | #80 | True roguelike run loop, emergent pressure/loss, replay variety, non-power meta | Planned |
+| G5 | #81 | Autonomous NPC agendas, organizations, alliances, consequences and story generation | Planned |
+| G6 | #82 | Embodied game-first UX, evidence board, tactile network tools, diegetic time/feedback | Planned |
+| G7 | #83 | Select and deepen varied, procedural hacking-inspired gameplay mechanics | Planned |
+| G8 | #84 | Human playtest evidence, determinism/solvability checks, balance and gameplay-ready sign-off | Planned |
+
+**Hard invariants:** rank is never a capability gate; deterministic fixed-seed/inputs; no hidden knowledge leaks; queued or sleeping world processes every due tick; first-ending-wins; save migrations and Terminal/GUI parity; no GitHub Actions unless necessary.
+
+**Tauri status:** #19 remains **blocked by #75/#84**, even though old #27 is closed. Avoid native host work until the *gameplay* is worth packaging.
+
 ## Phase 10 — Desktop Host / Packaging
 
-**Status: unblocked after Phase 9 closure, but not started; desktop/Tauri work remains deliberately deferred until selected. Tracked by #19.**
+**Status: DEFERRED/BLOCKED by gameplay initiative #75 and final human playtest gate #84. Tracked by #19.**
 
-Start only after #27 (Phase 9 — Web Beta / Polish) is complete unless the project deliberately changes the platform decision.
+Old prerequisite #27 is complete, but **gameplay is not**. Start only after #75 / #84 validate a playable, fun game-ready web build, unless the player explicitly revises this policy.
 
 Deliverables:
 - reconcile final save contract with the Tauri SQLite adapter,
