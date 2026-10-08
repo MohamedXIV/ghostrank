@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import { getEndingCopy } from "@/components/game/ending/ending-presentation";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
+import { paginateTimeline } from "./timeline-pagination";
+
+const TIMELINE_PAGE_SIZE = 100;
 
 export interface RunTimelineProps {
   run: CompletedRunSummary;
@@ -10,6 +15,12 @@ export interface RunTimelineProps {
 
 export function RunTimeline({ run }: RunTimelineProps) {
   const endingCopy = getEndingCopy(run.endingStatus);
+  const [requestedPage, setRequestedPage] = useState<number | null>(null);
+  const timelinePage = paginateTimeline(
+    run.timeline,
+    requestedPage ?? 0,
+    TIMELINE_PAGE_SIZE,
+  );
 
   return (
     <article
@@ -53,9 +64,31 @@ export function RunTimeline({ run }: RunTimelineProps) {
             timeline does not claim one caused another.
           </p>
         </div>
+        {timelinePage.pageCount > 1 && (
+          <nav className="timeline-page-controls" aria-label="Run timeline pages">
+            <button
+              type="button"
+              onClick={() => setRequestedPage(timelinePage.page + 1)}
+              disabled={timelinePage.page === timelinePage.pageCount - 1}
+            >
+              OLDER EVENTS
+            </button>
+            <span aria-live="polite">
+              EVENTS {timelinePage.startIndex + 1}–{timelinePage.endIndex} OF{" "}
+              {run.timeline.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setRequestedPage(timelinePage.page - 1)}
+              disabled={timelinePage.page === 0}
+            >
+              NEWER EVENTS
+            </button>
+          </nav>
+        )}
         {run.timeline.length > 0 ? (
           <ol className="run-event-timeline">
-            {run.timeline.map((beat) => {
+            {timelinePage.items.map((beat) => {
               const meta = getBeatMeta(beat.kind);
               return (
                 <li key={beat.id} className={`run-event run-event-${beat.kind}`}>

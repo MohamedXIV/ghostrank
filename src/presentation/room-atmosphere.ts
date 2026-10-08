@@ -44,3 +44,8 @@ export function describePhysicalRoomSignal(kind: PhysicalSignalKind): string {
       return "an unexpected delivery appeared";
   }
 }
+
+/** Keep the room's pointer feedback still when reduced motion is effective. */
+export function roomHoverZoom(reducedMotion: boolean): number {
+  return reducedMotion ? 1 : 1.015;
+}
