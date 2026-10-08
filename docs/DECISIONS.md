@@ -750,3 +750,28 @@ Still open, and not part of this decision:
 - Save and event-log growth per pump and per live step is unmeasured. That is the next G1 slice.
 - The Clock HUD overlaps the computer header on desktop. That is a separate presentation slice.
 - The pacing constants and the human playtest remain provisional.
+
+## D058 — The save path does work proportional to what changed (Game-First G1, #77)
+
+Every successful command saved the run, and every save copied the entire in-memory event log before slicing off the events the adapter had not seen. The cost of a save therefore grew with the whole run, and the cost of a run grew with the square of its number of commands. This decision keeps saves and event reads proportional to what is new, without changing what is saved or what the simulation returns.
+
+- **Event slices, not copies.** The runtime addresses events by absolute index, copies only the tail a reader asks for, and drops events that every reader has consumed. The save path sends the adapter only events it has not yet accepted. The clock names the count it had consumed before each read, so at most the batch it just read is held.
+- **Saves coalesce.** At most one save is queued. A command that lands before the queued save takes its snapshot is covered by that save. A command that lands after it queues one more. No command is lost, and a burst costs one trailing save.
+- **A failed save keeps its events.** The accepted count advances only on success, so the next save carries the unpersisted events again, as before.
+- **Writes are measured, not throttled.** In Chromium on the production build, one save is an open (median 1.9 ms), a readwrite transaction through commit (median 2.2 ms, p95 7 ms), and a close. A rest writes about four times a second and live time about 0.8 times a second. Throttling saves would lose up to a second of play on reload, which a player would see as time running backwards, so every successful command still saves. Caching the connection would save about 2 ms per write and is not worth the lifecycle risk yet.
+- **Unchanged by design.** `TimeJobProgressed` and `WorldTimeAdvanced` stay one per pump and one per live step. They record how the player split the time (D056), so thinning them would change the event contract. Flushing on hide or unload was considered and not added. A hidden tab issues no commands, and an unload cannot be awaited, so the flush would not change what survives.
+- **Removed.** `GameRuntime.events()`, the full history, had one caller, the save path. The log no longer keeps history, so the method is gone.
+
+Measured in Node on one seed, median of three runs, before and after this decision:
+
+| Scenario | Command time before | After | Events held at end, before | After |
+| --- | --- | --- | --- | --- |
+| Live day, 1,440 one-minute steps | 3.6 s | 2.3 s | 1,491 | 5 |
+| Sleep one day, 1-minute pumps | 5.0 s | 2.2 s | 2,932 | 6 |
+| Sleep three days, 7-minute pumps (interrupted by a contract expiry) | 0.7 s | 0.6 s | 840 | 23 |
+
+Both variants end with the same outcome and the same event totals, so the simulation is unchanged. The per-command floor of about 1.5 ms is the projection sync and the snapshot clone, which this decision leaves alone.
+
+Browser smoke, production build, Chromium: a sleep of 1,440 minutes at 1x advanced 30 game minutes per second and wrote four times a second. Reloading mid-sleep resumed the same rest, with no console errors.
+
+Tests: `game-session-saves.test.ts` covers a burst during an in-flight save (one trailing save), exactly-once in-order delivery to the adapter while readers release events, and the bounded hold without persistence. `game-runtime.test.ts` covers release without index shift. The existing failed-save retry test still holds.
