@@ -137,6 +137,27 @@ function offTickOutageWorld(endsWorldMinute = 500): WorldState {
 }
 
 describe("world scheduler — deadlines are exact (Game-First G1, D057)", () => {
+  it("never rewrites an archived terminal world on restore", () => {
+    const completed = createSliceWorldState();
+    completed.ending = {
+      status: "stranded",
+      causeKind: "compromise",
+      causeId: "compromise:fixture",
+      worldMinute: 360,
+    };
+    completed.worldMinute = 360;
+    const before = structuredClone(completed);
+
+    const restored = new CommandBus(completed).snapshot();
+    expect(restored).toEqual(before);
+    expect(restored.jobQueue).toEqual(before.jobQueue);
+    expect(new CommandBus(restored).execute({ type: "advanceLive", minutes: 1 })).toEqual({
+      ok: false,
+      events: [],
+      error: "RUN_ENDED",
+    });
+  });
+
   it("releases an outage at its own minute, between ticks, and completes the build after it", () => {
     const bus = new CommandBus(offTickOutageWorld());
     expectScheduleAgreesWithWorld(bus.snapshot());
