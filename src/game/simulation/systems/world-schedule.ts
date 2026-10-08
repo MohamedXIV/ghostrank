@@ -55,6 +55,12 @@ function nextDayBoundary(worldMinute: number): number {
  * agrees is returned unchanged.
  */
 export function reconcileSchedule(world: WorldState): void {
+  // Terminal snapshots are immutable. A restored completed run must not grow
+  // fresh upkeep/build deadlines during construction (first-ending-wins).
+  if (world.ending) {
+    return;
+  }
+
   let queue = world.jobQueue;
 
   if (!hasQueuedJob(queue, UPKEEP_JOB_ID)) {
