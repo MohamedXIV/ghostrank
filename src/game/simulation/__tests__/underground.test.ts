@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { CommandBus } from "@/game/simulation/command-bus";
+import {
+  CommandBus,
+  MAX_ADVANCE_MINUTES,
+} from "@/game/simulation/command-bus";
 import { createGameRuntime } from "@/game/runtime/game-runtime";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { projectWorld } from "@/game/simulation/projection/project-world";
-import {
-  MAX_CATCHUP_TICKS,
-  TICK_MINUTES,
-} from "@/game/simulation/systems/underground";
+import { TICK_MINUTES } from "@/game/simulation/systems/underground";
 import {
   createInitialWorldState,
   type UndergroundActor,
@@ -186,19 +186,28 @@ describe("underground NPC activity", () => {
     );
   });
 
-  it("only simulates a bounded catch-up for a huge wait", () => {
+  it("refuses a huge wait instead of silently truncating its ecosystem ticks", () => {
     const bus = new CommandBus(createSliceWorldState());
-    const actorCount = bus.snapshot().underground.actors.length;
+    const before = bus.snapshot();
 
     const result = wait(bus, 5_000_000);
 
-    expect(result.ok).toBe(true);
-    expect(bus.snapshot().underground.incidents.length).toBeLessThanOrEqual(
-      MAX_CATCHUP_TICKS * actorCount,
-    );
-    expect(bus.snapshot().worldMinute).toBe(5_000_000);
+    expect(result).toEqual({ ok: false, events: [], error: "ADVANCE_TOO_LONG" });
+    expect(bus.snapshot()).toEqual(before);
+  });
+
+  it("processes every boundary of a wait at the horizon limit (D054)", () => {
+    const whole = new CommandBus(createSliceWorldState());
+    expect(wait(whole, MAX_ADVANCE_MINUTES).ok).toBe(true);
+
+    const daily = new CommandBus(createSliceWorldState());
+    for (let elapsed = 0; elapsed < MAX_ADVANCE_MINUTES; elapsed += DAY) {
+      wait(daily, DAY);
+    }
+
+    expect(whole.snapshot().underground).toEqual(daily.snapshot().underground);
     expect(
-      bus
+      whole
         .snapshot()
         .underground.incidents.every(
           (incident) => incident.worldMinute % TICK_MINUTES === 0,

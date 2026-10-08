@@ -13,7 +13,7 @@ import {
 
 const DAY = 24 * 60;
 
-/** Waits in <= 7 day steps so the ecosystem's bounded catch-up never applies. */
+/** Waits in <= 7 day steps so each command stays small (D054). */
 function wait(bus: CommandBus, minutes: number) {
   const events: ReturnType<CommandBus["execute"]>["events"] = [];
   let remaining = minutes;

@@ -25,12 +25,6 @@ import {
 /** The ecosystem acts on fixed world-time boundaries (6 in-game hours). */
 export const TICK_MINUTES = 360;
 
-/**
- * A huge wait only simulates its most recent ticks (7 in-game days) so one
- * command can never stall the browser.
- */
-export const MAX_CATCHUP_TICKS = 28;
-
 export interface UndergroundAdvanceHooks {
   /** Advance deadline systems to this tick before NPC actions at the same minute. */
   beforeTick?: (worldMinute: number) => void;
@@ -1100,13 +1094,13 @@ export function advanceUnderground(
   const { underground } = world;
   const events: SimulationEvent[] = [];
 
+  // Every boundary after the last processed tick runs, in order. A long wait is
+  // never truncated: skipping a boundary would discard its NPC actions, contract
+  // expiries and probes, so one 14-day wait must equal fourteen 1-day waits
+  // (D054). Per-command cost is bounded at the command boundary instead.
   const lastTickIndex = Math.floor(underground.lastTickMinute / TICK_MINUTES);
   const endTickIndex = Math.floor(toMinute / TICK_MINUTES);
-  let startTickIndex = lastTickIndex + 1;
-
-  if (endTickIndex - startTickIndex + 1 > MAX_CATCHUP_TICKS) {
-    startTickIndex = endTickIndex - MAX_CATCHUP_TICKS + 1;
-  }
+  const startTickIndex = lastTickIndex + 1;
 
   // Phase 6 P2: peers with standing against the player may spend a tick pointing
   // an assistant at them. See the call site inside the loop for why the
@@ -1155,9 +1149,9 @@ export function advanceUnderground(
     // would not — probe records would depend on how the player pressed the
     // button. Reading standing at the tick makes the sequence a function of
     // world history alone. Inside this loop at all is the point: a probe is an
-    // ecosystem *action*, so it inherits the tick index and the catch-up cap
-    // rather than carrying a second clock cursor, and a tick that never ran is a
-    // probe that never happened — the deliberate contrast with P1's derived case
+    // ecosystem *action*, so it inherits the tick index and the same boundary
+    // order as every other action rather than carrying a second clock cursor. A
+    // probe is recorded for every boundary the wait crosses — the deliberate contrast with P1's derived case
     // material (D032).
     events.push(
       ...probeTick(world, tickIndex, worldMinute, probeCandidates(world)),

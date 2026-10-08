@@ -29,7 +29,7 @@ import {
   PROBE_QUIET_HABIT_ADJUST,
   RIVAL_PROBE_SUBJECTS,
 } from "@/game/simulation/systems/probes";
-import { MAX_CATCHUP_TICKS, TICK_MINUTES } from "@/game/simulation/systems/underground";
+import { TICK_MINUTES } from "@/game/simulation/systems/underground";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import {
@@ -52,7 +52,7 @@ import {
  * identity is not vacuous); read accuracy is assembled only from exposure and
  * counterplay the player controls; the hidden half of every record (`actorId`,
  * `correct`) never reaches the projection or the store; probes are ecosystem
- * *actions*, so they obey the catch-up cap (a skipped tick never happened) and
+ * *actions*, so they run in boundary order like every other action, with
  * split-invariance below it; and no probe gates a target, a verb, or a lease.
  */
 
@@ -90,7 +90,7 @@ function preContentAlphaBreadthWorld(): WorldState {
 }
 
 
-/** Waits in <= 7 day steps, the ecosystem tests' discipline against capped catch-up. */
+/** Waits in <= 7 day steps so each command stays small (D054). */
 function wait(bus: CommandBus, minutes: number) {
   let remaining = minutes;
 
@@ -619,35 +619,29 @@ describe("probes are ecosystem actions: splits under the cap, honest skipping ov
     expect(big.snapshot().probes.length).toBeGreaterThan(0);
   });
 
-  it("the catch-up cap skips probes instead of fabricating them", () => {
+  it("a long wait keeps every probe opportunity instead of skipping ticks", () => {
     const state = probedWorld(100_256, 3);
 
-    const capped = new CommandBus(structuredClone(state));
-    capped.execute({ type: "advanceTime", minutes: 60 * DAY });
+    const whole = new CommandBus(structuredClone(state));
+    whole.execute({ type: "advanceTime", minutes: 60 * DAY });
 
     const chunked = new CommandBus(structuredClone(state));
     wait(chunked, 60 * DAY);
 
-    const cappedProbes = capped.snapshot().probes;
-    const chunkedProbes = chunked.snapshot().probes;
-    expect(cappedProbes.length).toBeGreaterThan(0);
+    const wholeProbes = whole.snapshot().probes;
+    expect(wholeProbes.length).toBeGreaterThan(0);
 
-    // Unlike P1's derived case material, a skipped tick is a probe that never
-    // happened: everything the capped run recorded lies inside the tick window
-    // it actually ran — nothing from the skipped stretch appears as a record.
-    const lastTick = Math.floor(capped.snapshot().worldMinute / TICK_MINUTES);
-    const firstRan = lastTick - MAX_CATCHUP_TICKS + 1;
-    for (const probe of cappedProbes) {
+    // Every probe lies on a tick boundary, and the single wait records exactly
+    // the probes the chunked wait does: nothing is fabricated and nothing is
+    // dropped from the early part of the wait (D054).
+    for (const probe of wholeProbes) {
       expect(probe.worldMinute % TICK_MINUTES).toBe(0);
-      expect(probe.worldMinute / TICK_MINUTES).toBeGreaterThanOrEqual(firstRan);
     }
+    expect(wholeProbes).toEqual(chunked.snapshot().probes);
 
-    // And the full-history run saw probes the capped run structurally could
-    // not: its first record predates the capped window.
-    expect(chunkedProbes[0]!.worldMinute).toBeLessThan(cappedProbes[0]!.worldMinute);
-    // Ids stay append-sequential in both runs.
-    expect(cappedProbes.map((probe) => probe.id)).toEqual(
-      cappedProbes.map((_, index) => `probe:${index + 1}`),
+    // Ids stay append-sequential.
+    expect(wholeProbes.map((probe) => probe.id)).toEqual(
+      wholeProbes.map((_, index) => `probe:${index + 1}`),
     );
   });
 

@@ -35,10 +35,9 @@ import type {
  *   rather than statistical.
  * - **The file is derived; only the evidence list is stored.** `progress` and
  *   the citations are recomputed from the trace history at the current minute,
- *   so they are the same whether the wait was one command or ten, and the same
- *   even when a huge wait skips review boundaries (the way the ecosystem's
- *   catch-up cap legitimately drops ticks: a roll that never ran never happened,
- *   but footprint the player emitted is not erased by an idle calendar). What
+ *   so they are the same whether the wait was one command or ten. Footprint the
+ *   player emitted is not erased by an idle calendar, and no review boundary is
+ *   skipped (D054). What
  *   `signals` records is the one thing a pure read cannot recover — which pieces
  *   of evidence the world has already *told* the player about.
  * - **Inactivity cools, it does not thicken.** Material only grows when new

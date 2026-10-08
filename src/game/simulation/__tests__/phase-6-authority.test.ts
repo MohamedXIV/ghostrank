@@ -38,7 +38,7 @@ function boundaryAfter(minute: number): number {
   return (Math.floor(minute / TICK_MINUTES) + 1) * TICK_MINUTES;
 }
 
-/** Waits in <= 7 day steps, the ecosystem tests' discipline against capped catch-up. */
+/** Waits in <= 7 day steps so each command stays small (D054). */
 function wait(bus: CommandBus, minutes: number) {
   const events: ReturnType<CommandBus["execute"]>["events"] = [];
   let remaining = minutes;
@@ -439,23 +439,23 @@ describe("split and save invariance", () => {
     expect(on.investigations).toEqual(past.investigations);
   });
 
-  it("a capped catch-up wait keeps the same file and evidence", () => {
+  it("a single long wait keeps the same file and evidence as chunked waits", () => {
     const state = recklessWorld();
 
-    // One command far beyond the 28-boundary cap: only the most recent reviews
-    // run, exactly as the ecosystem's own catch-up works, so the catch-up can
-    // neither fabricate a file nor duplicate a piece of evidence.
+    // One command spanning every review boundary of 60 days: all of them run,
+    // exactly as chunked waits do, so one command can neither fabricate a file
+    // nor duplicate a piece of evidence (D054).
     const one = new CommandBus(structuredClone(state));
     one.execute({ type: "advanceTime", minutes: 60 * DAY });
-    const capped = one.snapshot();
+    const single = one.snapshot();
 
     const chunked = investigate(state, 60 * DAY).state;
 
-    expect(capped.investigations.map((file) => file.targetId)).toEqual(
+    expect(single.investigations.map((file) => file.targetId)).toEqual(
       chunked.investigations.map((file) => file.targetId),
     );
     expect(
-      capped.investigations.map((file) =>
+      single.investigations.map((file) =>
         file.signals.map((signal) => signal.kind),
       ),
     ).toEqual(
@@ -464,8 +464,8 @@ describe("split and save invariance", () => {
       ),
     );
     // The file still names the traces that opened it, from the boundary the
-    // crossing minute fell into — not from the boundary the catch-up visited.
-    expect(capped.investigations[0]?.sourceIds).toEqual(
+    // crossing minute fell into — not from a later review boundary.
+    expect(single.investigations[0]?.sourceIds).toEqual(
       chunked.investigations[0]?.sourceIds,
     );
   });
