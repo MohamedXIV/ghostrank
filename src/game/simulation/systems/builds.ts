@@ -7,12 +7,10 @@ import {
   findWorkflowSpec,
   type WorkflowSpec,
 } from "@/content/workflow-spec-catalog";
-import type { SimulationEvent } from "@/game/simulation/events/types";
 import type {
   InFlightBuild,
   OwnedWorkflow,
   WorkflowOutcome,
-  WorldState,
 } from "@/game/simulation/state/world-state";
 
 /**
@@ -309,68 +307,4 @@ export function nextBuildId(
  */
 export function settledBuildDueMinute(build: InFlightBuild): number {
   return build.dueWorldMinute + (build.accumulatedPausedMinutes ?? 0);
-}
-
-/**
- * Turn every due in-flight build into an owned workflow. Like upkeep, it works
- * from the clock alone: a job whose `dueWorldMinute` has been reached completes
- * once, on the tick that crosses it, and a split wait or save/restore visits
- * the same due minute with the same frozen outcome — the completion events and
- * inventory are identical either way. The completion minute is the due minute,
- * not "now", so splitting cannot move a deadline earlier or later. An empty
- * queue returns no events and touches nothing: the pre-P3 baseline.
- */
-export function advanceBuilds(
-  world: WorldState,
-  toMinute: number,
-): SimulationEvent[] {
-  const events: SimulationEvent[] = [];
-
-  if (world.builds.length === 0) {
-    return events;
-  }
-
-  const due = world.builds.filter(
-    (build) =>
-      build.pausedAtWorldMinute === undefined &&
-      settledBuildDueMinute(build) <= toMinute,
-  );
-
-  if (due.length === 0) {
-    return events;
-  }
-
-  const dueIds = new Set(due.map((build) => build.id));
-  world.builds = world.builds.filter((build) => !dueIds.has(build.id));
-
-  // Due jobs complete in effective due-minute order (ties: queue order). D034
-  // never rewrites the original due minute or frozen outcome.
-  const ordered = [...due].sort(
-    (a, b) => settledBuildDueMinute(a) - settledBuildDueMinute(b),
-  );
-
-  for (const build of ordered) {
-    const spec = findWorkflowSpec(build.specId);
-    const label = spec ? spec.label : build.specId;
-
-    world.economy.ownedWorkflows.push({
-      id: build.id,
-      specId: build.specId,
-      label,
-      outcome: build.outcome,
-      builtWithModelId: build.modelId,
-      acquiredWorldMinute: settledBuildDueMinute(build),
-    });
-
-    events.push({
-      type: "BuildCompleted",
-      buildId: build.id,
-      specId: build.specId,
-      modelId: build.modelId,
-      outcome: build.outcome,
-      worldMinute: settledBuildDueMinute(build),
-    });
-  }
-
-  return events;
 }

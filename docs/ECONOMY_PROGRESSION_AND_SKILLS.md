@@ -387,7 +387,7 @@ catalog without changing these capability-not-level rules.
   a trap. The three specs mirror the three premium licenses one-for-one, so
   #23's exit criterion is checkable: build the Homegrown Monitoring Loop, stop
   renting the Commercial Monitoring Suite, lose nothing. The queue is
-  completed by the same clock tick as upkeep (`advanceBuilds`), and the leak
+  completed by a scheduled system job on its due minute, as upkeep is (D057), and the leak
   rule inverts where it should: an in-flight build's frozen outcome is hidden
   until completion (a halfway report card grades the roll for free), but an
   owned workflow projects *in full* — outcome, tests, provenance — because it

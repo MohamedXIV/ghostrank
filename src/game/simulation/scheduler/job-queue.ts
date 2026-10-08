@@ -18,7 +18,13 @@
  * it, and returns those cancellations to the caller.
  */
 
-export type JobResource = "clock";
+/**
+ * `clock` is the player's time (one job at a time). `rig` and `system` hold no
+ * capacity: a build's footprint is contention, which slows work rather than
+ * blocking it (AI_SYSTEMS "Compute contention"), and system jobs are
+ * authoritative deadlines the world always runs.
+ */
+export type JobResource = "clock" | "rig" | "system";
 
 export type JobStatus = "queued" | "running";
 
@@ -32,6 +38,8 @@ export interface QueuedJob {
   dueWorldMinute: number;
   dependsOn: string[];
   status: JobStatus;
+  /** The world record a system job acts on (a build id, an outage id). */
+  subjectId?: string;
 }
 
 export interface JobQueueState {
@@ -46,10 +54,13 @@ export interface JobSpec {
   startedWorldMinute: number;
   dueWorldMinute: number;
   dependsOn?: string[];
+  /** A stable id for jobs the world names itself; otherwise `job:N`. */
+  id?: string;
+  subjectId?: string;
 }
 
 /** Capacity per resource. A resource absent here is unlimited. */
-export const RESOURCE_CAPACITY: Record<JobResource, number> = {
+export const RESOURCE_CAPACITY: Partial<Record<JobResource, number>> = {
   clock: 1,
 };
 
@@ -82,8 +93,14 @@ export function enqueueJob(
   spec: JobSpec,
 ): { queue: JobQueueState; job: QueuedJob } {
   const sequence = queue.nextSequence;
+  const id = spec.id ?? `job:${sequence + 1}`;
+
+  if (queue.jobs.some((existing) => existing.id === id)) {
+    throw new Error(`duplicate job id ${id}`);
+  }
+
   const job: QueuedJob = {
-    id: `job:${sequence + 1}`,
+    id,
     sequence,
     kind: spec.kind,
     resource: spec.resource,
@@ -92,6 +109,7 @@ export function enqueueJob(
     dueWorldMinute: spec.dueWorldMinute,
     dependsOn: [...(spec.dependsOn ?? [])],
     status: "queued",
+    ...(spec.subjectId !== undefined ? { subjectId: spec.subjectId } : {}),
   };
 
   return {
@@ -128,8 +146,9 @@ export function startRunnableJobs(queue: JobQueueState): JobQueueState {
 
     const dependenciesPending = job.dependsOn.some((id) => queuedIds.has(id));
     const used = inUse.get(job.resource) ?? 0;
+    const capacity = RESOURCE_CAPACITY[job.resource] ?? Infinity;
 
-    if (dependenciesPending || used >= RESOURCE_CAPACITY[job.resource]) {
+    if (dependenciesPending || used >= capacity) {
       continue;
     }
 
@@ -138,6 +157,23 @@ export function startRunnableJobs(queue: JobQueueState): JobQueueState {
   }
 
   return { nextSequence: queue.nextSequence, jobs };
+}
+
+/**
+ * Moves a queued job to a new due minute and restores queue order. Used when a
+ * deadline is re-derived, such as a build whose outage has just ended.
+ */
+export function rescheduleJob(
+  queue: JobQueueState,
+  jobId: string,
+  dueWorldMinute: number,
+): JobQueueState {
+  return {
+    nextSequence: queue.nextSequence,
+    jobs: queue.jobs
+      .map((job) => (job.id === jobId ? { ...job, dueWorldMinute } : job))
+      .sort(compareQueuedJobs),
+  };
 }
 
 /** Removes a finished job. Returns the queue without it. */
