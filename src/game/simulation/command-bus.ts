@@ -81,6 +81,7 @@ import {
   TIME_JOB_PHASE,
   firstStopEvent,
   isInterruptibleKind,
+  stopClassesFor,
   type TimeJobKind,
 } from "@/game/simulation/systems/time-jobs";
 import type {
@@ -117,11 +118,11 @@ const DEFENSIVE_WATCH_THRESHOLD = 5;
  */
 export const MAX_ADVANCE_MINUTES = 90 * 24 * 60;
 
-/** Ecosystem boundaries one command may simulate synchronously. */
-export const SYNC_ADVANCE_BOUNDARIES = MAX_ADVANCE_MINUTES / TICK_MINUTES;
-
 /** Boundaries one `pumpTime` may simulate, bounding one runtime frame of work. */
 export const MAX_PUMP_BOUNDARIES = 28;
+
+/** Most world minutes one `pumpTime` may advance. */
+export const MAX_PUMP_MINUTES = MAX_PUMP_BOUNDARIES * TICK_MINUTES;
 
 /** Commands that may run while a time job owns the clock. */
 function commandAllowedDuringTimeJob(type: string): boolean {
@@ -248,7 +249,10 @@ export class CommandBus {
         return this.cancelAdvance();
 
       case "pumpTime":
-        return this.pumpTime(command.maxBoundaries);
+        return this.pumpTime(command.minutes);
+
+      case "advanceLive":
+        return this.advanceLive(command.minutes);
 
       case "startRetirement":
         return this.startRetirement();
@@ -840,8 +844,10 @@ export class CommandBus {
   }
 
   /**
-   * Queues a time job due `minutes` from now on the clock, then runs it as far
-   * as the synchronous budget allows. Anything left is pumped later (D055).
+   * Queues a time job due `minutes` from now on the clock. A long wait runs its
+   * first slice now; anything left is pumped later (D055). Sleep and
+   * fast-forward run nothing in their command: the runtime clock paces them, so
+   * the player sees the time pass and can interrupt it (D056).
    */
   private startTimeJob(kind: TimeJobKind, minutes: number): CommandResult {
     if (!Number.isInteger(minutes) || minutes <= 0) {
@@ -867,22 +873,28 @@ export class CommandBus {
         targetWorldMinute: job.dueWorldMinute,
       },
     ];
-    events.push(...this.stepTimeJob(job.id, SYNC_ADVANCE_BOUNDARIES));
+    if (kind === "wait") {
+      events.push(...this.stepTimeJob(job.id, MAX_ADVANCE_MINUTES));
+    }
 
     return { ok: true, events };
   }
 
   /**
-   * Advances one running time job by at most `maxBoundaries` ecosystem
-   * boundaries and records how it ended, if it did.
+   * Advances one running time job by at most `maxMinutes` of world time, and
+   * records how it ended if it did.
    *
-   * Interruptible jobs advance one boundary per window, so every stop is checked
-   * on the boundary where it happens. Non-interruptible jobs advance in larger
-   * windows, which is safe because nothing can stop them early. Either way the
-   * same state results for any batching, which is the property the equivalence
-   * suite pins down.
+   * A job that can be stopped (sleep, fast-forward) is simulated one minute at
+   * a time and judged after each minute. A stop therefore lands on the minute
+   * of the event that caused it, and that minute is the same however the time
+   * was paced into `pumpTime` commands (D056). Judging whole ecosystem
+   * boundaries instead would make the stop depend on which minutes a pump
+   * happened to end inside, and would hold unjudged events across commands.
+   *
+   * A job that cannot be stopped (wait) has nothing to judge, so it runs in as
+   * few windows as its budget allows.
    */
-  private stepTimeJob(jobId: string, maxBoundaries: number): SimulationEvent[] {
+  private stepTimeJob(jobId: string, maxMinutes: number): SimulationEvent[] {
     const job = findQueuedJob(this.world.jobQueue, jobId);
 
     if (!job || job.status !== "running") {
@@ -890,9 +902,10 @@ export class CommandBus {
     }
 
     const kind = job.kind as TimeJobKind;
-    const interruptible = isInterruptibleKind(kind);
+    const fromMinute = this.world.worldMinute;
+    const stoppable = stopClassesFor(kind).length > 0;
     const events: SimulationEvent[] = [];
-    let budget = maxBoundaries;
+    let budget = maxMinutes;
     let stop: SimulationEvent | null = null;
 
     while (
@@ -901,23 +914,27 @@ export class CommandBus {
       !this.world.ending
     ) {
       const now = this.world.worldMinute;
-      const tick = Math.floor(now / TICK_MINUTES);
-      const windowEnd = interruptible
-        ? Math.min(job.dueWorldMinute, (tick + 1) * TICK_MINUTES)
-        : Math.min(job.dueWorldMinute, (tick + budget) * TICK_MINUTES);
-      const windowEvents = this.advanceWorldTime(windowEnd - now);
-
-      events.push(...windowEvents);
-      budget -= Math.max(
-        1,
-        Math.floor(this.world.worldMinute / TICK_MINUTES) - tick,
+      const windowEnd = Math.min(
+        job.dueWorldMinute,
+        now + (stoppable ? 1 : budget),
       );
+      const windowEvents = this.simulateWindow(windowEnd - now);
 
+      budget -= windowEnd - now;
+      events.push(...windowEvents);
       stop = firstStopEvent(kind, windowEvents);
 
       if (stop) {
         break;
       }
+    }
+
+    if (this.world.worldMinute > fromMinute) {
+      events.unshift({
+        type: "WorldTimeAdvanced",
+        fromMinute,
+        toMinute: this.world.worldMinute,
+      });
     }
 
     // A run ending freezes the tail: the job is discarded, and RunEnded is the
@@ -993,11 +1010,27 @@ export class CommandBus {
     };
   }
 
-  private pumpTime(maxBoundaries: number): CommandResult {
+  /**
+   * One bounded step of live time while no job holds the clock (D056). The
+   * clock gate refuses it during a job; this check keeps each command's work
+   * to a single boundary so a step never simulates an unbounded stretch.
+   */
+  private advanceLive(minutes: number): CommandResult {
+    if (!Number.isInteger(minutes) || minutes <= 0 || minutes > TICK_MINUTES) {
+      return this.failure("INVALID_TIME_DELTA");
+    }
+
+    return {
+      ok: true,
+      events: this.advanceWorldTime(minutes),
+    };
+  }
+
+  private pumpTime(minutes: number): CommandResult {
     if (
-      !Number.isInteger(maxBoundaries) ||
-      maxBoundaries < 1 ||
-      maxBoundaries > MAX_PUMP_BOUNDARIES
+      !Number.isInteger(minutes) ||
+      minutes < 1 ||
+      minutes > MAX_PUMP_MINUTES
     ) {
       return this.failure("INVALID_TIME_DELTA");
     }
@@ -1010,7 +1043,7 @@ export class CommandBus {
 
     return {
       ok: true,
-      events: this.stepTimeJob(job.id, maxBoundaries),
+      events: this.stepTimeJob(job.id, minutes),
     };
   }
 
@@ -1878,7 +1911,30 @@ export class CommandBus {
     return discoveryScope(effectiveCapability(this.world.economy).memory);
   }
 
+  /**
+   * Advances the world by `minutes` and returns one marker followed by the
+   * simulation events in the order they happened.
+   */
   private advanceWorldTime(minutes: number): SimulationEvent[] {
+    const fromMinute = this.world.worldMinute;
+    const events = this.simulateWindow(minutes);
+
+    return [
+      {
+        type: "WorldTimeAdvanced",
+        fromMinute,
+        toMinute: this.world.worldMinute,
+      },
+      ...events,
+    ];
+  }
+
+  /**
+   * The simulation itself, without a `WorldTimeAdvanced` marker, so a paced job
+   * can run many windows under one marker. Every window runs every ecosystem
+   * boundary and deadline it covers, in order (D054, D055).
+   */
+  private simulateWindow(minutes: number): SimulationEvent[] {
     const fromMinute = this.world.worldMinute;
     const toMinute = fromMinute + minutes;
     this.world.worldMinute = toMinute;
@@ -1938,19 +1994,25 @@ export class CommandBus {
       }
     }
 
-    return [
-      {
-        type: "WorldTimeAdvanced",
-        fromMinute,
-        toMinute: actualToMinute,
-      },
-      // Preserve the established category order for callers; each event carries
-      // its true world minute even though execution above is interleaved.
+    // Events are returned in the order they happened (D056). Each subsystem
+    // collects its own events, so a stable sort by world minute restores
+    // chronology. Events that share a minute keep the subsystem order below,
+    // which is the same whether the wait was split or not.
+    const ordered = [
       ...upkeepEvents,
       ...buildEvents,
       ...investigationEvents,
       ...undergroundEvents,
-    ];
+    ]
+      .map((event, index) => ({
+        event,
+        index,
+        minute: (event as { worldMinute?: number }).worldMinute ?? fromMinute,
+      }))
+      .sort((a, b) => a.minute - b.minute || a.index - b.index)
+      .map((entry) => entry.event);
+
+    return ordered;
   }
 
   private hasKnownServiceForTarget(targetId: string): boolean {

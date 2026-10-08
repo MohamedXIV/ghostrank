@@ -132,9 +132,20 @@ export type SimulationCommand =
     }
   | {
       /**
-       * Advances the active time job by at most `maxBoundaries` ecosystem
-       * boundaries. The runtime clock issues these; the player never types one.
+       * Advances the active time job by at most `minutes` of world time (at most
+       * MAX_PUMP_MINUTES). The runtime clock issues these; the player never types
+       * one. A stoppable job is judged minute by minute, so the pump size never
+       * changes where it stops (D056).
        */
       type: "pumpTime";
-      maxBoundaries: number;
+      minutes: number;
+    }
+  | {
+      /**
+       * One bounded step of live world time (D056). The runtime clock issues
+       * these while the player is idle on LIVE. A step never crosses more than
+       * one ecosystem boundary, so every boundary is still run, in order.
+       */
+      type: "advanceLive";
+      minutes: number;
     };

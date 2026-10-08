@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   CommandBus,
   MAX_ADVANCE_MINUTES,
-  MAX_PUMP_BOUNDARIES,
+  MAX_PUMP_MINUTES,
 } from "@/game/simulation/command-bus";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
+import { TICK_MINUTES } from "@/game/simulation/systems/underground";
 
 import {
   clockJobs,
@@ -116,7 +117,7 @@ describe("world clock equivalence (D054)", () => {
     reference.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES });
     reference.execute({ type: "advanceTime", minutes: 977 });
 
-    for (const pumpSize of [1, 7, MAX_PUMP_BOUNDARIES]) {
+    for (const pumpSize of [TICK_MINUTES, 7 * TICK_MINUTES, 1_000, MAX_PUMP_MINUTES]) {
       const pumped = new CommandBus(createSliceWorldState());
       pumped.execute({ type: "advanceTime", minutes: total });
       drainClock(pumped, pumpSize);

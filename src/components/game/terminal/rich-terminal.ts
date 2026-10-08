@@ -384,15 +384,15 @@ export function formatRichCommandResult(type: SimulationCommand["type"]): {
       };
     case "sleep":
       return {
-        badge: "RESTED",
+        badge: "RESTING",
         glyph: "☾",
-        text: "Rest taken on the clock // Stops early only for interrupts",
+        text: "Rest started // The clock plays it out and stops early only for interrupts",
       };
     case "fastForward":
       return {
         badge: "FAST FORWARD",
         glyph: "»",
-        text: "Time run forward // Stops for interrupts and notable news",
+        text: "Fast-forward started // The clock plays it out and stops for interrupts and notable news",
       };
     case "cancelAdvance":
       return {

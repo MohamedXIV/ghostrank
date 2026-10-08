@@ -683,12 +683,12 @@ D054 made every boundary run in order, but it bounded the player at 90 days per 
 
 - **One queue.** Time-owning jobs live in `WorldState.jobQueue`, ordered `(dueWorldMinute, phasePriority, sequence)`. Phase priority is `wait` 0, `sleep` 1, `fast-forward` 2. Sequence is assigned at enqueue and never reused, so equal-minute order is stable across replay and reload.
 - **Capacity and dependencies.** The `clock` resource admits one running job. A job is runnable only when its dependencies have left the queue. Cancelling a job cancels everything that depends on it.
-- **Synchronous bound unchanged.** A wait up to 90 days still completes inside its command, exactly as D054 defined. A longer wait becomes a `wait` job. Each command simulates at most 360 boundaries itself; `pumpTime` drains the rest in chunks of at most 28 boundaries.
+- **Synchronous bound unchanged.** A wait up to 90 days still completes inside its command, exactly as D054 defined. A longer wait becomes a `wait` job. Each command simulates at most 360 boundaries itself; ~~`pumpTime` drains the rest in chunks of at most 28 boundaries~~ (pumps are measured in minutes, D056).
 - **Three kinds.** `wait` is non-interruptible and cannot be halted. `sleep` stops on `interrupt` events. `fast-forward` stops on `interrupt` and `notice` events. Each event is classified from its public fields only.
-- **Stops land on boundaries.** Interruptible jobs advance one boundary per window and check for a stop on each. A stop therefore lands on the same minute however the work is batched, which keeps D054's equivalence invariant.
+- ~~**Stops land on boundaries.** Interruptible jobs advance one boundary per window and check for a stop on each. A stop therefore lands on the same minute however the work is batched, which keeps D054's equivalence invariant.~~ Superseded by D056: stoppable jobs are judged minute by minute, which keeps the same invariant and removes the boundary rounding.
 - **Clock ownership.** While a job holds the clock, only `pumpTime` and `cancelAdvance` run. Anything else is refused with `TIME_JOB_ACTIVE`.
 - **Ending precedence.** A run ending freezes the tail of the job at its minute and cancels the job silently. The ending is the record. Ending outranks interruption, which outranks completion.
-- **Pacing is presentation.** The runtime clock plays a running job at `CLOCK_SPEED_BOUNDARIES_PER_SECOND` (paused 0, live 0.5, x4 2, sprint 8, all tunable). Pause holds the job without cancelling it. The driver issues `pumpTime` through the same session as the terminal and never decides an outcome.
+- ~~**Pacing is presentation.** The runtime clock plays a running job at `CLOCK_SPEED_BOUNDARIES_PER_SECOND` (paused 0, live 0.5, x4 2, sprint 8, all tunable). Pause holds the job without cancelling it. The driver issues `pumpTime` through the same session as the terminal and never decides an outcome.~~ Superseded by D056: pacing is in game minutes per real second, and the driver still never decides an outcome.
 - **Terminal and GUI parity.** `sleep <minutes>`, `ff <minutes>` (or `fastforward`) and `halt` (or `wake`) produce the same commands as the HUD controls. Halt sends `cancelAdvance`.
 - **Player-safe notices.** Interruptions say that something needs attention and where the clock stopped. They never name the hidden actor, probe or trace behind them.
 - **Rank independence.** No time job reads player rank. A test runs the same fast-forward at rank 1 and rank 999,999 and requires identical events and ecosystem state.
@@ -698,8 +698,33 @@ Events: `TimeJobStarted`, `TimeJobProgressed`, `TimeJobCompleted`, `TimeJobInter
 
 Open or provisional:
 - Builds, upkeep, investigations and retirement still use their own due-minute logic, advanced by boundary hooks. They are not yet queued jobs.
-- A sleep or fast-forward of 90 days or less completes inside one command unless stopped, so its live pacing is not visible. Whether short rests should be paced on screen is a playtest question.
-- The speed rates, the 28-boundary pump bound and the notice classes are provisional tuning.
+- ~~A sleep or fast-forward of 90 days or less completes inside one command unless stopped, so its live pacing is not visible. Whether short rests should be paced on screen is a playtest question.~~ Superseded by D056: sleep and fast-forward are always paced.
+- The speed rates, the pump bound and the notice classes are provisional tuning (rates and bound replaced by D056).
 - Concurrency and dependencies are proven in the pure queue. The game currently holds at most one time job.
 
 Accepted 2026-10-08 as the G1 scheduler slice, pending human playtest. It supersedes the `ADVANCE_TOO_LONG` refusal in D054.
+
+## D056 — Live time plays with no job; paced rests stop minute by minute (Game-First G1, #77)
+
+D055 gave the clock one queue, but idle time still moved only when a command asked. Short rests resolved inside their command, and a stop landed on an ecosystem boundary. This decision makes the clock play on its own, paces every rest, and judges every stop at the minute it happens. It supersedes the struck bullets in D055 and the synchronous short-rest rule.
+
+- **LIVE is the default.** With no job holding the clock, the runtime clock issues `advanceLive` steps of one game minute. A step runs every ecosystem boundary it crosses, in order, and is refused above one boundary (360 minutes). At 1x one game minute takes 1.5 real seconds (`2/3` minute per second, a provisional design candidate). Pause holds the world exactly.
+- **Hidden tabs owe nothing.** A hidden tab holds the world and carries no time. When it returns, time resumes at the current pace. Nothing is replayed.
+- **Rests are paced.** `sleep` and `fast-forward` run nothing in their command. They queue a job, and the clock plays it at a base of 30 (sleep) or 120 (fast-forward) game minutes per real second at 1x, multiplied by pause 0, 1x, 4x or 16x. `wait` keeps its synchronous first slice of up to 90 days (D054) and is never paced on screen, because nothing can stop it.
+- **Pumps are in minutes.** `pumpTime { minutes }` advances the job by at most `MAX_PUMP_MINUTES` (28 boundaries, 10,080 minutes). A pump never crosses the job's due minute.
+- **Stops are judged per minute.** A stoppable job (sleep, fast-forward) is simulated one minute at a time and its stop classes are checked after each minute. A stop lands on the minute of the event that caused it. Judging whole boundaries would make the stop depend on where a pump happened to end, and would hold unjudged events between commands. Because each minute is judged alone, the same job stops on the same minute for every pump size. A wait is never judged.
+- **Chronological events.** `advanceWorldTime` returns its events stable-sorted by world minute, with subsystem order as the tie-break. One long wait and the same span split into live steps therefore return the same simulation events in the same order. Only `WorldTimeAdvanced` markers differ, because they record how the player split the time.
+- **Catch-up is forfeited.** The driver may replay at most 2 seconds of playback per frame (`CLOCK_CATCHUP_MS`) at the current pace and speed. A longer stall forfeits the excess. Time owed to one job or to live time is cleared whenever the job changes or ends, so a halted sleep cannot hand its unspent minutes to live time.
+- **Ending precedence.** An ending freezes a job at its own minute and cancels it silently. Ending outranks interruption when both fall in the same minute. Endings resolve on ecosystem boundaries, as D054 defined, so the ending test uses a boundary minute.
+- **Save and reload mid-job.** The job lives in `jobQueue` and the pump is an ordinary command, so a save taken mid-sleep resumes to the same world as an uninterrupted run. Tests cover a paced sleep and a live step.
+- **Presentation.** The HUD shows the time, the mode, job progress, speed controls, Halt and one player-safe notice. Halt sends `cancelAdvance`, the same command the terminal's `halt` sends. Speed buttons set the driver's multiplier and never touch world state.
+
+Still open, and the reason G1 is not complete:
+- **Builds, upkeep, investigations, deadlines and retirement are not queued jobs.** They already run at their exact due minutes inside every window, and the integration tests show a build completing at its due minute under live steps. But they have no queue entries, cancellation, or shared capacity. Moving them into `jobQueue` is a large change, and it must keep the P3 tie rules (outage before build, lapse before tick) and the D054 equivalence. It is the largest remaining G1 item.
+- **Per-step cost is unmeasured.** Each pump and each live step is a command, so each one persists the world. A sleep writes about four times a second. The event log also gains one `TimeJobProgressed` per pump, so a long sleep grows the log roughly linearly.
+- **Pacing constants are provisional.** The 2/3 minute-per-second live rate, the 30 and 120 rest rates and the 2-second catch-up are tuning values for a human playtest.
+- **Stop timing.** A stop lands on the minute of its event, so no event is passed over. The driver shows the notice on its next frame, within 250 ms of real time.
+
+Verification: the full Vitest suite passes (971 tests, 109 files). Typecheck is clean, and `eslint .` reports no errors. The production build succeeds. A browser smoke ran against the static export, and its results are recorded in the G1 status note.
+
+Accepted 2026-10-08 as the G1 live-clock slice, pending human playtest. It supersedes the synchronous-sleep rule and the boundary-judged stops in D055.

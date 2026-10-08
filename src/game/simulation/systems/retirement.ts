@@ -96,6 +96,7 @@ export function commandAllowedDuringRetirementCooling(type: string): boolean {
     type === "fastForward" ||
     type === "cancelAdvance" ||
     type === "pumpTime" ||
+    type === "advanceLive" ||
     type === "readMessage" ||
     type === "cancelRetirement" ||
     type === "finishRetirement"
