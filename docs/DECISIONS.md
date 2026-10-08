@@ -775,3 +775,15 @@ Both variants end with the same outcome and the same event totals, so the simula
 Browser smoke, production build, Chromium: a sleep of 1,440 minutes at 1x advanced 30 game minutes per second and wrote four times a second. Reloading mid-sleep resumed the same rest, with no console errors.
 
 Tests: `game-session-saves.test.ts` covers a burst during an in-flight save (one trailing save), exactly-once in-order delivery to the adapter while readers release events, and the bounded hold without persistence. `game-runtime.test.ts` covers release without index shift. The existing failed-save retry test still holds.
+
+## D059 — The clock strip is part of the page flow, not an overlay (Game-First G1, #77)
+
+The clock HUD was a fixed overlay: centred at the top on desktop, and docked to the bottom below 640 px. On desktop it sat over the computer's header bar. On a phone it covered the room's relocate, move and workstation controls, so "use workstation" could not be tapped. Placement is presentation, so the clock's behaviour and commands do not change; this decision only moves the strip.
+
+- **A strip above the surface.** The HUD is the first row of the shell, in the page flow. The surface is a wrapper that takes the remaining height, so no header or control sits under the clock on any width.
+- **It wraps inside its width.** The status and the controls each wrap within themselves, and each time or mode label stays on one line. A long mode label on a phone never runs past the edge, where centring would clip it.
+- **The notice is its own row.** This is the one height change: the surface moves down about 34 px while a notice is shown. A notice marks a stop the player must read, and it is dismissable. A reserved row would hold that height in every state.
+
+Verified in the production build in Chromium at 1280×800 and 390×844. In each state (room, computer, rest, halt with a notice) the strip starts at the top and the surface begins directly below it. The room's workstation control is hit-testable, and neither width scrolls horizontally.
+
+Not addressed here: the computer's header bar is wider than a 390 px screen, so its DIRECTIVES and ROOM controls are clipped. That layout predates this decision and needs a choice about what to collapse on narrow screens.
