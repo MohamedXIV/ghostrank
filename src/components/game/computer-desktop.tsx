@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
 
@@ -56,6 +57,11 @@ import { ContractCard } from "@/components/game/contracts/contract-card";
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
 import { RunTimeline } from "@/components/game/history/run-timeline";
 import {
+  RecordScopeControl,
+  recordPageCount,
+  visibleRecords,
+} from "@/components/game/visible-records";
+import {
   formatDetailedHelp,
   formatRichCommandResult,
   formatRichError,
@@ -80,6 +86,13 @@ import {
   type ComputerWindowId,
   useUiStore,
 } from "@/stores/ui/use-ui-store";
+
+const StableTerminalApp = memo(TerminalApp);
+const StableReconApp = memo(ReconApp);
+const StableUndergroundApp = memo(UndergroundApp);
+const StableMarketApp = memo(MarketApp);
+const StableHistoryApp = memo(HistoryApp);
+const StableAppearanceApp = memo(AppearanceApp);
 
 interface ComputerDesktopProps {
   runtime: GameSession;
@@ -379,7 +392,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("terminal")}
               onClose={() => closeWindow("terminal")}
             >
-              <TerminalApp runtime={runtime} onStartNewRun={onStartNewRun} />
+              <StableTerminalApp runtime={runtime} onStartNewRun={onStartNewRun} />
             </WindowFrame>
           )}
 
@@ -392,7 +405,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("recon")}
               onClose={() => closeWindow("recon")}
             >
-              <ReconApp runtime={runtime} />
+              <StableReconApp runtime={runtime} />
             </WindowFrame>
           )}
 
@@ -405,7 +418,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("underground")}
               onClose={() => closeWindow("underground")}
             >
-              <UndergroundApp runtime={runtime} />
+              <StableUndergroundApp runtime={runtime} />
             </WindowFrame>
           )}
 
@@ -418,7 +431,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("market")}
               onClose={() => closeWindow("market")}
             >
-              <MarketApp runtime={runtime} />
+              <StableMarketApp runtime={runtime} />
             </WindowFrame>
           )}
           {openWindows.includes("history") && (
@@ -430,7 +443,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("history")}
               onClose={() => closeWindow("history")}
             >
-              <HistoryApp runtime={runtime} />
+              <StableHistoryApp runtime={runtime} />
             </WindowFrame>
           )}
           {openWindows.includes("settings") && (
@@ -442,7 +455,7 @@ export function ComputerDesktop({
               onFocus={() => focusWindow("settings")}
               onClose={() => closeWindow("settings")}
             >
-              <AppearanceApp />
+              <StableAppearanceApp />
             </WindowFrame>
           )}
         </AnimatePresence>
@@ -1372,6 +1385,7 @@ function describeLongRunPressureReason(reason: string): string {
 }
 
 function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
+  const [recordPage, setRecordPage] = useState(0);
   const board = useTable("board", runtime.projection);
   const feed = useTable("feed", runtime.projection);
   const stances = useTable("stances", runtime.projection);
@@ -1408,77 +1422,133 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const machinesTable = useTable("machines", runtime.projection);
   const servicesTable = useTable("services", runtime.projection);
 
-  const handles = Object.entries(board).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.rank ?? 0) - Number(b.rank ?? 0) || idA.localeCompare(idB),
+  const handles = useMemo(
+    () =>
+      Object.entries(board).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.rank ?? 0) - Number(b.rank ?? 0) || idA.localeCompare(idB),
+      ),
+    [board],
   );
-  const incidents = Object.entries(feed).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const incidents = useMemo(
+    () =>
+      Object.entries(feed).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [feed],
   );
-  const stanceEntries = Object.entries(stances);
-  const messages = Object.entries(inbox).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const stanceEntries = useMemo(() => Object.entries(stances), [stances]);
+  const messages = useMemo(
+    () =>
+      Object.entries(inbox).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [inbox],
   );
 
-  const contracts = Object.entries(contractTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.expiresWorldMinute ?? 0) - Number(a.expiresWorldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const contracts = useMemo(
+    () =>
+      Object.entries(contractTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.expiresWorldMinute ?? 0) -
+            Number(a.expiresWorldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [contractTable],
   );
 
-  const heat = Object.entries(retaliationTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const heat = useMemo(
+    () =>
+      Object.entries(retaliationTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [retaliationTable],
   );
 
-  const descriptors = Object.entries(descriptorTable);
-  const forumPosts = Object.entries(forumTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const descriptors = useMemo(
+    () => Object.entries(descriptorTable),
+    [descriptorTable],
+  );
+  const forumPosts = useMemo(
+    () =>
+      Object.entries(forumTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [forumTable],
   );
   // Phase 5 P4: the ecosystem's AI users, read-only, name and model label only.
-  const assistants = Object.entries(assistantsTable).sort(([idA], [idB]) =>
-    idA.localeCompare(idB),
+  const assistants = useMemo(
+    () =>
+      Object.entries(assistantsTable).sort(([idA], [idB]) =>
+        idA.localeCompare(idB),
+      ),
+    [assistantsTable],
   );
   // Phase 6 P1: authority case files, read as evidence lists. The stage is a
   // band and each row is a noticed thing; there is deliberately no number here
   // to read as a meter, and no minute that implies a deadline.
-  const cases = Object.fromEntries(
-    Object.entries(investigationTable).map(([id, entry]) => [
-      id,
-      String(entry.stage ?? "probing"),
-    ]),
+  const cases = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(investigationTable).map(([id, entry]) => [
+          id,
+          String(entry.stage ?? "probing"),
+        ]),
+      ),
+    [investigationTable],
   );
-  const signals = Object.entries(signalTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const signals = useMemo(
+    () =>
+      Object.entries(signalTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [signalTable],
   );
-  const tells = Object.entries(probeTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const tells = useMemo(
+    () =>
+      Object.entries(probeTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [probeTable],
   );
-  const physicalSignals = Object.entries(physicalSignalTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const physicalSignals = useMemo(
+    () =>
+      Object.entries(physicalSignalTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [physicalSignalTable],
   );
-  const compromises = Object.entries(compromiseTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const compromises = useMemo(
+    () =>
+      Object.entries(compromiseTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [compromiseTable],
   );
-  const postmortems = Object.entries(postmortemTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const postmortems = useMemo(
+    () =>
+      Object.entries(postmortemTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [postmortemTable],
   );
   const postmortemStepsFor = (compromiseId: string) =>
     Object.entries(postmortemStepTable)
@@ -1498,16 +1568,39 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const pressureReasons = String(longRunPressure.reasons ?? "")
     .split(",")
     .filter(Boolean);
+  const recordLists = [
+    descriptors,
+    heat,
+    signals,
+    tells,
+    physicalSignals,
+    compromises,
+    postmortems,
+    Object.entries(postmortemStepTable),
+    contracts,
+    messages,
+    forumPosts,
+    handles,
+    incidents,
+    stanceEntries,
+    assistants,
+  ];
+  const pageCount = recordPageCount(recordLists);
 
   return (
     <div className="underground-app">
+      <RecordScopeControl
+        page={recordPage}
+        pageCount={pageCount}
+        onPageChange={setRecordPage}
+      />
       <section aria-label="Reputation">
         <span className="panel-label">HOW THE SCENE KNOWS YOU</span>
         {descriptors.length === 0 ? (
           <p className="underground-empty">Nobody has a word for you yet.</p>
         ) : (
           <ul className="underground-stances">
-            {descriptors.map(([id, entry]) => (
+            {visibleRecords(descriptors, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span>{String(entry.label ?? id)}</span>
                 <span className="underground-time">
@@ -1549,7 +1642,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
         <section aria-label="Heat">
           <span className="panel-label">HEAT</span>
           <ul className="underground-feed">
-            {heat.map(([id, entry]) => (
+            {visibleRecords(heat, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
@@ -1580,7 +1673,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           </p>
         ) : (
           <ul className="underground-feed">
-            {signals.map(([id, entry]) => (
+            {visibleRecords(signals, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
@@ -1595,7 +1688,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
               </li>
             ))}
-            {tells.map(([id, entry]) => (
+            {visibleRecords(tells, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
@@ -1608,7 +1701,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
               </li>
             ))}
-            {physicalSignals.map(([id, entry]) => (
+            {visibleRecords(physicalSignals, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))} {"// OUTSIDE"}
@@ -1638,7 +1731,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
         <section aria-label="Compromise">
           <span className="panel-label">COMPROMISE</span>
           <ul className="underground-feed">
-            {compromises.map(([id, entry]) => (
+            {visibleRecords(compromises, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
@@ -1652,7 +1745,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             you can recover from here belongs to the run, not this warning.
           </p>
 
-          {postmortems.map(([id, entry]) => (
+          {visibleRecords(postmortems, recordPage).map(([id, entry]) => (
             <div key={`postmortem:${id}`}>
               <span className="panel-label">
                 POSTMORTEM {"//"}{" "}
@@ -1662,7 +1755,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   : "INCOMPLETE ATTRIBUTION"}
               </span>
               <ul className="underground-feed">
-                {postmortemStepsFor(id).map(([stepId, step]) => (
+                {visibleRecords(postmortemStepsFor(id), recordPage).map(([stepId, step]) => (
                   <li key={stepId}>
                     <span className="underground-time">
                       {formatWorldTime(Number(step.worldMinute ?? 0))}
@@ -1770,7 +1863,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">No work on offer.</p>
         ) : (
           <div className="underground-contracts-list">
-            {contracts.map(([id, entry]) => {
+            {visibleRecords(contracts, recordPage).map(([id, entry]) => {
               const targetId = String(entry.targetId ?? "");
               const currentKnownMachines = Object.values(machinesTable).filter(
                 (m) => m.targetId === targetId,
@@ -1815,7 +1908,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">No messages.</p>
         ) : (
           <ul className="underground-messages">
-            {messages.map(([id, entry]) => (
+            {visibleRecords(messages, recordPage).map(([id, entry]) => (
               <li key={id} className={entry.read ? undefined : "is-unread"}>
                 <div>
                   <span className="underground-time">
@@ -1855,7 +1948,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">The board is quiet.</p>
         ) : (
           <ul className="underground-feed">
-            {forumPosts.map(([id, entry]) => (
+            {visibleRecords(forumPosts, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))} ·{" "}
@@ -1889,7 +1982,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
       <section aria-label="Public index">
         <span className="panel-label">PUBLIC INDEX</span>
         <ol className="underground-board">
-          {handles.map(([id, entry]) => {
+          {visibleRecords(handles, recordPage).map(([id, entry]) => {
             const handle = String(entry.handle ?? id);
             const stanceEntry = stanceEntries.find(([, s]) => String(s.handle ?? "") === handle);
             const heatEntry = heat.find(([, h]) => String(h.actorHandle ?? "") === handle);
@@ -1922,7 +2015,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">Nothing public yet.</p>
         ) : (
           <ul className="underground-feed">
-            {incidents.map(([id, entry]) => (
+            {visibleRecords(incidents, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span className="underground-time">
                   {formatWorldTime(Number(entry.worldMinute ?? 0))}
@@ -1948,7 +2041,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">No one you have observed has formed a view.</p>
         ) : (
           <div className="underground-stances-grid">
-            {stanceEntries.map(([id, entry]) => {
+            {visibleRecords(stanceEntries, recordPage).map(([id, entry]) => {
               const handle = String(entry.handle ?? id);
               const heatEntry = heat.find(([, h]) => String(h.actorHandle ?? "") === handle);
 
@@ -1973,7 +2066,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           <p className="underground-empty">No one in the scene is running an assistant.</p>
         ) : (
           <ul className="underground-assistants">
-            {assistants.map(([id, entry]) => (
+            {visibleRecords(assistants, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span>{String(entry.handle ?? id)}</span>
                 <span>
@@ -1998,6 +2091,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
 }
 
 function MarketApp({ runtime }: { runtime: GameRuntime }) {
+  const [recordPage, setRecordPage] = useState(0);
   const credits = Number(
     useCell("meta", "wallet", "credits", runtime.projection) ?? 0,
   );
@@ -2085,99 +2179,180 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
     ],
   ] as const;
 
-  const ownedHardware = Object.entries(hardwareTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.acquiredWorldMinute ?? 0) - Number(b.acquiredWorldMinute ?? 0) ||
-      idA.localeCompare(idB, undefined, { numeric: true }),
+  const ownedHardware = useMemo(
+    () =>
+      Object.entries(hardwareTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.acquiredWorldMinute ?? 0) -
+            Number(b.acquiredWorldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      ),
+    [hardwareTable],
   );
 
-  const catalog = Object.entries(catalogTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  const catalog = useMemo(
+    () =>
+      Object.entries(catalogTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+      ),
+    [catalogTable],
   );
 
-  const housing = Object.entries(housingTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
-      idA.localeCompare(idB),
+  const housing = useMemo(
+    () =>
+      Object.entries(housingTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+          idA.localeCompare(idB),
+      ),
+    [housingTable],
   );
 
-  const software = Object.entries(softwareTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
-      idA.localeCompare(idB),
+  const software = useMemo(
+    () =>
+      Object.entries(softwareTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+          idA.localeCompare(idB),
+      ),
+    [softwareTable],
   );
 
-  const ownedTools = Object.entries(ownedToolsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.acquiredWorldMinute ?? 0) -
-        Number(b.acquiredWorldMinute ?? 0) ||
-      idA.localeCompare(idB, undefined, { numeric: true }),
+  const ownedTools = useMemo(
+    () =>
+      Object.entries(ownedToolsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.acquiredWorldMinute ?? 0) -
+            Number(b.acquiredWorldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      ),
+    [ownedToolsTable],
   );
 
-  const toolListings = Object.entries(toolListingsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  const toolListings = useMemo(
+    () =>
+      Object.entries(toolListingsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+      ),
+    [toolListingsTable],
   );
 
-  const ownedMachines = Object.entries(ownedMachinesTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.acquiredWorldMinute ?? 0) -
-        Number(b.acquiredWorldMinute ?? 0) ||
-      idA.localeCompare(idB, undefined, { numeric: true }),
+  const ownedMachines = useMemo(
+    () =>
+      Object.entries(ownedMachinesTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.acquiredWorldMinute ?? 0) -
+            Number(b.acquiredWorldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      ),
+    [ownedMachinesTable],
   );
 
-  const machineListings = Object.entries(machineListingsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+  const machineListings = useMemo(
+    () =>
+      Object.entries(machineListingsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.cost ?? 0) - Number(b.cost ?? 0) || idA.localeCompare(idB),
+      ),
+    [machineListingsTable],
   );
 
-  const models = Object.entries(modelsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.cost ?? 0) - Number(b.cost ?? 0) ||
-      Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
-      idA.localeCompare(idB),
+  const models = useMemo(
+    () =>
+      Object.entries(modelsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.cost ?? 0) - Number(b.cost ?? 0) ||
+          Number(a.dailyCost ?? 0) - Number(b.dailyCost ?? 0) ||
+          idA.localeCompare(idB),
+      ),
+    [modelsTable],
   );
 
-  const forgeSpecs = Object.entries(forgeSpecsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.estimatedMinutes ?? 0) - Number(b.estimatedMinutes ?? 0) ||
-      idA.localeCompare(idB),
+  const forgeSpecs = useMemo(
+    () =>
+      Object.entries(forgeSpecsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.estimatedMinutes ?? 0) -
+            Number(b.estimatedMinutes ?? 0) ||
+          idA.localeCompare(idB),
+      ),
+    [forgeSpecsTable],
   );
 
   // The queue reads like a build log: soonest deadline first.
-  const buildQueue = Object.entries(buildQueueTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(a.dueWorldMinute ?? 0) - Number(b.dueWorldMinute ?? 0) ||
-      idA.localeCompare(idB, undefined, { numeric: true }),
+  const buildQueue = useMemo(
+    () =>
+      Object.entries(buildQueueTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(a.dueWorldMinute ?? 0) - Number(b.dueWorldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      ),
+    [buildQueueTable],
   );
 
-  const ownedWorkflows = Object.entries(ownedWorkflowsTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.acquiredWorldMinute ?? 0) - Number(a.acquiredWorldMinute ?? 0) ||
-      idA.localeCompare(idB, undefined, { numeric: true }),
+  const ownedWorkflows = useMemo(
+    () =>
+      Object.entries(ownedWorkflowsTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.acquiredWorldMinute ?? 0) -
+            Number(a.acquiredWorldMinute ?? 0) ||
+          idA.localeCompare(idB, undefined, { numeric: true }),
+      ),
+    [ownedWorkflowsTable],
   );
 
   const assistantRunning = String(assistant.modelId ?? "").length > 0;
 
-  const ledger = Object.entries(ledgerTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
-      idB.localeCompare(idA, undefined, { numeric: true }),
+  const ledger = useMemo(
+    () =>
+      Object.entries(ledgerTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) ||
+          idB.localeCompare(idA, undefined, { numeric: true }),
+      ),
+    [ledgerTable],
   );
 
   // Re-apply the graph's volume ordering here so the panel is stable even
   // though TinyBase table keys carry no guaranteed order across re-syncs.
-  const valueNodes = Object.entries(valueNodesTable).sort(
-    ([idA, a], [idB, b]) =>
-      Number(b.paid ?? 0) +
-        Number(b.received ?? 0) -
-        (Number(a.paid ?? 0) + Number(a.received ?? 0)) ||
-      idA.localeCompare(idB),
+  const valueNodes = useMemo(
+    () =>
+      Object.entries(valueNodesTable).sort(
+        ([idA, a], [idB, b]) =>
+          Number(b.paid ?? 0) +
+            Number(b.received ?? 0) -
+            (Number(a.paid ?? 0) + Number(a.received ?? 0)) ||
+          idA.localeCompare(idB),
+      ),
+    [valueNodesTable],
   );
+  const recordLists = [
+    ownedHardware,
+    catalog,
+    housing,
+    software,
+    ownedTools,
+    toolListings,
+    ownedMachines,
+    machineListings,
+    models,
+    forgeSpecs,
+    buildQueue,
+    ownedWorkflows,
+    valueNodes,
+    ledger,
+  ];
+  const pageCount = recordPageCount(recordLists);
 
   return (
     <div className="market-app">
+      <RecordScopeControl
+        page={recordPage}
+        pageCount={pageCount}
+        onPageChange={setRecordPage}
+      />
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -2266,7 +2441,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">No hardware installed.</p>
         ) : (
           <ul className="market-hardware">
-            {ownedHardware.map(([id, entry]) => (
+            {visibleRecords(ownedHardware, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span>{String(entry.label ?? entry.catalogId ?? id)}</span>
                 <span className="market-time">
@@ -2285,7 +2460,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">Nothing listed.</p>
         ) : (
           <ul className="market-catalog">
-            {catalog.map(([id, entry]) => {
+            {visibleRecords(catalog, recordPage).map(([id, entry]) => {
               const cost = Number(entry.cost ?? 0);
               const owned = Number(entry.owned ?? 0);
               const affordable = credits >= cost;
@@ -2343,7 +2518,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">No locations listed.</p>
         ) : (
           <ul className="market-catalog">
-            {housing.map(([id, entry]) => {
+            {visibleRecords(housing, recordPage).map(([id, entry]) => {
               const cost = Number(entry.dailyCost ?? 0);
               const active = entry.active === true;
               // Phase 6 P0: distance is part of the price of a dwelling, so it is
@@ -2434,7 +2609,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">No tools listed.</p>
         ) : (
           <ul className="market-catalog">
-            {software.map(([id, entry]) => {
+            {visibleRecords(software, recordPage).map(([id, entry]) => {
               const cost = Number(entry.dailyCost ?? 0);
               const active = entry.active === true;
               const factor = Number(entry.discountFactor ?? 1);
@@ -2504,7 +2679,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">Nothing authored is on offer.</p>
         ) : (
           <ul className="market-catalog">
-            {ownedTools.map(([id, entry]) => {
+            {visibleRecords(ownedTools, recordPage).map(([id, entry]) => {
               const factor = Number(entry.discountFactor ?? 1);
               const stats = [
                 ["cpu", entry.compute],
@@ -2552,7 +2727,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                 </li>
               );
             })}
-            {toolListings.map(([id, entry]) => {
+            {visibleRecords(toolListings, recordPage).map(([id, entry]) => {
               const cost = Number(entry.cost ?? 0);
               const affordable = credits >= cost;
               const factor = Number(entry.discountFactor ?? 1);
@@ -2621,7 +2796,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">No machines on offer.</p>
         ) : (
           <ul className="market-catalog">
-            {ownedMachines.map(([id, entry]) => {
+            {visibleRecords(ownedMachines, recordPage).map(([id, entry]) => {
               const stats = [
                 ["cpu", entry.compute],
                 ["mem", entry.memory],
@@ -2673,7 +2848,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                 </li>
               );
             })}
-            {machineListings.map(([id, entry]) => {
+            {visibleRecords(machineListings, recordPage).map(([id, entry]) => {
               const cost = Number(entry.cost ?? 0);
               const affordable = credits >= cost;
               const owned = Number(entry.ownedCount ?? 0);
@@ -2741,7 +2916,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
       <section aria-label="AI models">
         <span className="panel-label">AI MODELS // ASSISTANTS</span>
         <ul className="market-catalog">
-          {models.map(([id, entry]) => {
+          {visibleRecords(models, recordPage).map(([id, entry]) => {
             const cost = Number(entry.cost ?? 0);
             const perDay = Number(entry.dailyCost ?? 0);
             const owned = Boolean(entry.owned ?? false);
@@ -2852,7 +3027,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">The forge shelves are empty.</p>
         ) : (
           <ul className="market-catalog forge-specs">
-            {forgeSpecs.map(([id, entry]) => {
+            {visibleRecords(forgeSpecs, recordPage).map(([id, entry]) => {
               const minutes = Number(entry.estimatedMinutes ?? 0);
 
               return (
@@ -2899,7 +3074,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           </p>
         ) : (
           <ul className="market-catalog forge-queue">
-            {buildQueue.map(([id, entry]) => (
+            {visibleRecords(buildQueue, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <div>
                   <span className="panel-label">{String(entry.specLabel ?? id)}</span>
@@ -2934,7 +3109,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           </p>
         ) : (
           <ul className="market-catalog forge-owned">
-            {ownedWorkflows.map(([id, entry]) => {
+            {visibleRecords(ownedWorkflows, recordPage).map(([id, entry]) => {
               const outcome = String(entry.outcome ?? "");
 
               return (
@@ -2989,7 +3164,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           </p>
         ) : (
           <ul className="market-value-graph">
-            {valueNodes.map(([id, entry]) => {
+            {visibleRecords(valueNodes, recordPage).map(([id, entry]) => {
               const received = Number(entry.received ?? 0);
               const paid = Number(entry.paid ?? 0);
               const net = Number(entry.net ?? 0);
@@ -3060,7 +3235,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           <p className="market-empty">No value has moved yet.</p>
         ) : (
           <ul className="market-ledger">
-            {ledger.map(([id, entry]) => (
+            {visibleRecords(ledger, recordPage).map(([id, entry]) => (
               <li key={id}>
                 <span
                   className={

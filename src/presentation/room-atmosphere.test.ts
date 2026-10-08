@@ -8,6 +8,7 @@ import { playDistroSound } from "@/presentation/distro-sound";
 import {
   describePhysicalRoomSignal,
   latestKnownRoomSignal,
+  roomHoverZoom,
 } from "@/presentation/room-atmosphere";
 
 describe("room and audio presentation", () => {
@@ -95,5 +96,10 @@ describe("room and audio presentation", () => {
 
     expect(notesStarted).toBe(1);
     expect(world).toEqual(before);
+  });
+
+  it("removes the room camera hover motion in reduced mode", () => {
+    expect(roomHoverZoom(true)).toBe(1);
+    expect(roomHoverZoom(false)).toBe(1.015);
   });
 });

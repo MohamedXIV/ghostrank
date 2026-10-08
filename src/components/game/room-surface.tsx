@@ -15,6 +15,7 @@ import { playDistroSound } from "@/presentation/distro-sound";
 import {
   describePhysicalRoomSignal,
   latestKnownRoomSignal,
+  roomHoverZoom,
 } from "@/presentation/room-atmosphere";
 import { usePresentationStore } from "@/stores/ui/use-presentation-store";
 
@@ -190,19 +191,8 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
           const windowGlow = this.add
             .rectangle(635, 180, 88, 78, 0x6d2331, 0.08)
             .setStrokeStyle(2, 0x3f5965, 0.7);
-
-          if (reducedMotion) {
-            windowGlow.setAlpha(0.16);
-          } else {
-            this.tweens.add({
-              targets: windowGlow,
-              alpha: { from: 0.08, to: 0.34 },
-              duration: 2_400,
-              yoyo: true,
-              repeat: -1,
-              repeatDelay: 1_900,
-            });
-          }
+          // Keep the ambient street light still: it carries no changing state.
+          windowGlow.setAlpha(0.16);
 
           this.add
             .rectangle(480, 220, 190, 60, 0x1a2025, 1)
@@ -242,12 +232,11 @@ export function RoomSurface({ runtime, onUseDesk }: RoomSurfaceProps) {
             .rectangle(480, 215, 230, 120, 0xffffff, 0.001)
             .setInteractive({ useHandCursor: true });
 
-          deskHit.on("pointerover", () => {
-            camera.setZoom(1.015);
-          });
-          deskHit.on("pointerout", () => {
-            camera.setZoom(1);
-          });
+          const hoverZoom = roomHoverZoom(reducedMotion);
+          if (hoverZoom > 1) {
+            deskHit.on("pointerover", () => camera.setZoom(hoverZoom));
+            deskHit.on("pointerout", () => camera.setZoom(1));
+          }
           deskHit.on("pointerdown", onUseDesk);
         }
       }
