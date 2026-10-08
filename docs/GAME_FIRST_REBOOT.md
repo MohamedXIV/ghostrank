@@ -2,6 +2,7 @@
 
 **Status:** design + execution roadmap, not implemented.  
 **Parent:** #75, children #76–#84.  
+**G0 audit and vertical-slice brief (#76):** see `docs/GAME_FIRST_VERTICAL_SLICE.md`. Its slice is unvalidated until a human playtest.  
 **2026-10-08 decision:** Phase 9 Web Beta verified the technical web target, **not** that Ghostrank has shipped as a complete or engaging game. Desktop/Tauri #19 is deferred until game-ready validation (#84).
 
 ## 1. Player fantasy and north star
