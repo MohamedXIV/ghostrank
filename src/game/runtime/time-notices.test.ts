@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
+  describeLiveEvent,
   describeTimeJobEvent,
   formatClockMinute,
 } from "@/game/runtime/time-notices";
@@ -88,3 +89,40 @@ describe("player-safe clock notices (Game-First G1)", () => {
     expect(notice?.text).not.toMatch(/PhysicalThreat|actor|probe|trace/i);
   });
 });
+
+describe("live-time notices (Game-First G1, D056)", () => {
+  it("names a lease that lapses during live time", () => {
+    expect(
+      describeLiveEvent({
+        type: "HousingChanged",
+        housingId: null,
+        dailyCost: 0,
+        worldMinute: 1440,
+      }),
+    ).toEqual({
+      tone: "interrupt",
+      text: "Your lease ended at Day 2 · 00:00. Time stopped there.",
+      worldMinute: 1440,
+    });
+  });
+
+  it("leaves a run ending to the ending screen, and quiet steps unannounced", () => {
+    expect(
+      describeLiveEvent({
+        type: "RunEnded",
+        status: "stranded",
+        causeKind: "compromise",
+        causeId: "compromise:x",
+        worldMinute: 360,
+      }),
+    ).toBeNull();
+    expect(
+      describeLiveEvent({
+        type: "WorldTimeAdvanced",
+        fromMinute: 0,
+        toMinute: 360,
+      }),
+    ).toBeNull();
+  });
+});
+

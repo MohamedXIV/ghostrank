@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
 import { ClockHud, createSessionClockPort } from "@/components/game/clock-hud";
-import { createClockDriver } from "@/game/runtime/time-driver";
+import { createClockDriver, type ClockSpeed } from "@/game/runtime/time-driver";
 import type { ClockNotice } from "@/game/runtime/time-notices";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
@@ -459,11 +459,13 @@ function ActiveGameShell({
   const ended =
     useCell("meta", "run", "ended", session.projection) === true;
   const [clockNotice, setClockNotice] = useState<ClockNotice | null>(null);
+  const [clockSpeed, setClockSpeed] = useState<ClockSpeed>("1x");
   const clockDriver = useMemo(
     () =>
       createClockDriver({
         port: createSessionClockPort(session),
         onNotice: setClockNotice,
+        onSpeedChange: setClockSpeed,
       }),
     [session],
   );
@@ -473,6 +475,20 @@ function ActiveGameShell({
 
     return () => {
       clockDriver.dispose();
+    };
+  }, [clockDriver]);
+
+  // A hidden tab holds the world still. Playback never catches up on return.
+  useEffect(() => {
+    const syncVisibility = () => {
+      clockDriver.setVisible(document.visibilityState !== "hidden");
+    };
+
+    syncVisibility();
+    document.addEventListener("visibilitychange", syncVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncVisibility);
     };
   }, [clockDriver]);
 
@@ -489,7 +505,8 @@ function ActiveGameShell({
     <main className="game-shell">
       <ClockHud
         session={session}
-        driver={clockDriver}
+        speed={clockSpeed}
+        onSpeed={(next) => clockDriver.setSpeed(next)}
         notice={clockNotice}
         onDismissNotice={() => setClockNotice(null)}
       />

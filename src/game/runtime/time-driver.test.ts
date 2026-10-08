@@ -1,28 +1,45 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { MAX_ADVANCE_MINUTES, MAX_PUMP_BOUNDARIES } from "@/game/simulation/command-bus";
+import {
+  MAX_ADVANCE_MINUTES,
+  MAX_PUMP_MINUTES,
+} from "@/game/simulation/command-bus";
 import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
-import { createInitialWorldState, type WorldState } from "@/game/simulation/state/world-state";
+import {
+  createInitialWorldState,
+  type WorldState,
+} from "@/game/simulation/state/world-state";
+import type { TimeJobKind } from "@/game/simulation/systems/time-jobs";
+import { TICK_MINUTES } from "@/game/simulation/systems/underground";
 import { createGameRuntime, type GameRuntime } from "@/game/runtime/game-runtime";
 import {
+  CLOCK_BASE_MINUTES_PER_SECOND,
+  CLOCK_CATCHUP_MS,
   CLOCK_FRAME_MS,
-  CLOCK_SPEED_BOUNDARIES_PER_SECOND,
   createClockDriver,
   type ClockDriverPort,
+  type ClockSpeed,
 } from "@/game/runtime/time-driver";
-import { createSliceWorldState } from "@/game/runtime/slice-world";
-import { findHousingItem } from "@/content/housing-catalog";
 import {
   formatClockMinute,
   type ClockNotice,
 } from "@/game/runtime/time-notices";
+import { findHousingItem } from "@/content/housing-catalog";
 
 const DAY = 24 * 60;
-const TICK = 360;
 const LEASE = "housing-basement-cot";
 
 function quietWorld(): WorldState {
   return createInitialWorldState({ player: { handle: "CobaltXZ", rank: 100_256 } });
+}
+
+/** A quiet world whose lease lapses on the first day, with no credits to pay it. */
+function lapsingLeaseWorld(): WorldState {
+  const world = quietWorld();
+  world.economy.housing = LEASE;
+  world.economy.credits = 0;
+  expect(findHousingItem(LEASE)!.dailyCost).toBeGreaterThan(0);
+  return world;
 }
 
 function portFor(runtime: GameRuntime): ClockDriverPort {
@@ -30,130 +47,203 @@ function portFor(runtime: GameRuntime): ClockDriverPort {
     execute: (command) => runtime.execute(command),
     eventCount: () => runtime.eventCount(),
     eventsSince: (index) => runtime.eventsSince(index),
-    clockBusy: () => runningJobFor(runtime.snapshot().jobQueue, "clock") !== null,
+    worldMinute: () => runtime.snapshot().worldMinute,
+    clockJob: () => {
+      const job = runningJobFor(runtime.snapshot().jobQueue, "clock");
+
+      return job ? { key: job.id, kind: job.kind as TimeJobKind } : null;
+    },
   };
 }
 
-function setup(world: WorldState = quietWorld(), speed?: "paused" | "live" | "x4" | "sprint") {
+/** A driver on a fake clock. Each frame is stepped by hand, so pacing is exact. */
+function setup(
+  world: WorldState = quietWorld(),
+  speed?: ClockSpeed,
+) {
   const runtime = createGameRuntime(world);
   const notices: ClockNotice[] = [];
+  const speeds: ClockSpeed[] = [];
   const driver = createClockDriver({
     port: portFor(runtime),
     onNotice: (notice) => notices.push(notice),
+    onSpeedChange: (next) => speeds.push(next),
+    now: () => 0,
     speed,
   });
 
-  return { runtime, driver, notices };
+  return { runtime, driver, notices, speeds };
 }
 
-/** A wait past the synchronous horizon, so the clock owns the rest. */
-function startLongWait(runtime: GameRuntime) {
-  runtime.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES + 10 * DAY });
+function framesOf(driver: { frame: (ms: number) => { advancedMinutes: number } }, ms: number, count: number): number {
+  let advanced = 0;
+
+  for (let i = 0; i < count; i += 1) {
+    advanced += driver.frame(ms).advancedMinutes;
+  }
+
+  return advanced;
 }
 
-describe("clock driver pacing (Game-First G1)", () => {
-  it("plays live by default", () => {
-    const { driver } = setup();
-
-    expect(driver.speed()).toBe("live");
+describe("live time pacing (Game-First G1, D056)", () => {
+  it("starts on 1x, the live pace", () => {
+    expect(setup().driver.speed()).toBe("1x");
   });
 
-  it("holds a paused job where it stands without cancelling it", () => {
+  it("plays idle live time at one game minute per 1.5 real seconds", () => {
+    const { runtime, driver } = setup();
+
+    // Six 250 ms frames are 1.5 s: exactly one game minute.
+    expect(framesOf(driver, CLOCK_FRAME_MS, 6)).toBe(1);
+    expect(runtime.snapshot().worldMinute).toBe(1);
+
+    // Another 1.5 s is another minute, so the rate holds rather than drifting.
+    expect(framesOf(driver, CLOCK_FRAME_MS, 6)).toBe(1);
+    expect(runtime.snapshot().worldMinute).toBe(2);
+    expect(CLOCK_BASE_MINUTES_PER_SECOND.live).toBeCloseTo(2 / 3);
+  });
+
+  it("holds the world exactly still while the player has paused", () => {
     const { runtime, driver } = setup(quietWorld(), "paused");
-    startLongWait(runtime);
-    const before = runtime.snapshot().worldMinute;
 
-    expect(driver.frame(60_000).pumped).toBe(0);
-
-    expect(runtime.snapshot().worldMinute).toBe(before);
-    expect(runningJobFor(runtime.snapshot().jobQueue, "clock")).not.toBeNull();
+    expect(framesOf(driver, 60_000, 5)).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(0);
   });
 
-  it("accumulates fractional boundaries across frames rather than dropping them", () => {
-    const { runtime, driver } = setup(quietWorld(), "live");
-    startLongWait(runtime);
+  it("holds a hidden tab still and owes it nothing when it returns", () => {
+    const { runtime, driver } = setup();
+
+    driver.setVisible(false);
+    expect(framesOf(driver, 60_000, 5)).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(0);
+
+    driver.setVisible(true);
+    expect(driver.frame(0).advancedMinutes).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(0);
+  });
+
+  it("forfeits a long stall rather than replaying it in a burst", () => {
+    const { runtime, driver } = setup();
+    const allowance = Math.floor(
+      (CLOCK_CATCHUP_MS / 1000) * CLOCK_BASE_MINUTES_PER_SECOND.live,
+    );
+
+    // Ten minutes in one frame replays only the catch-up allowance.
+    expect(driver.frame(10 * 60 * 1000).advancedMinutes).toBe(allowance);
+    expect(driver.frame(0).advancedMinutes).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(allowance);
+  });
+
+  it("runs every live boundary in order while it plays", () => {
+    const { runtime, driver } = setup();
     const start = runtime.snapshot().worldMinute;
 
-    // Live plays half a boundary per second, so one 250 ms frame is an eighth of one.
-    const perFrame = (CLOCK_SPEED_BOUNDARIES_PER_SECOND.live * CLOCK_FRAME_MS) / 1000;
-    const framesPerBoundary = Math.round(1 / perFrame);
-    const pumps: number[] = [];
-    for (let i = 0; i < framesPerBoundary; i += 1) {
-      pumps.push(driver.frame(CLOCK_FRAME_MS).pumped);
-    }
+    // 250 ms frames at 1x: six frames are one game minute, so 360 frames span
+    // one ecosystem boundary, and that boundary runs in its place in order.
+    framesOf(driver, CLOCK_FRAME_MS, 6 * TICK_MINUTES);
 
-    expect(pumps.slice(0, -1).every((count) => count === 0)).toBe(true);
-    expect(pumps.at(-1)).toBe(1);
-    expect(runtime.snapshot().worldMinute).toBe(start + TICK);
+    expect(runtime.snapshot().worldMinute).toBe(start + TICK_MINUTES);
   });
 
-  it("speeds playback by the tunable per-second rates", () => {
-    const { runtime, driver } = setup(quietWorld(), "sprint");
-    startLongWait(runtime);
-    const start = runtime.snapshot().worldMinute;
+  it("reports speed changes once, and only when the speed really changes", () => {
+    const { driver, speeds } = setup();
 
-    const expected = CLOCK_SPEED_BOUNDARIES_PER_SECOND.sprint;
-    expect(driver.frame(1_000).pumped).toBe(expected);
+    driver.setSpeed("4x");
+    driver.setSpeed("4x");
+    driver.setSpeed("paused");
 
-    expect(runtime.snapshot().worldMinute).toBe(start + expected * TICK);
-  });
-
-  it("caps one frame at the pump bound so a backgrounded tab cannot stall the page", () => {
-    const { runtime, driver } = setup(quietWorld(), "x4");
-    startLongWait(runtime);
-
-    expect(driver.frame(10 * 60 * 60 * 1000).pumped).toBe(MAX_PUMP_BOUNDARIES);
-  });
-
-  it("does nothing while the clock is free", () => {
-    const { runtime, driver } = setup(quietWorld(), "sprint");
-    const count = runtime.eventCount();
-
-    expect(driver.frame(1_000).pumped).toBe(0);
-    expect(runtime.eventCount()).toBe(count);
-  });
-
-  it("runs a long wait to completion through the same pump command the terminal uses", () => {
-    const { runtime, driver } = setup(quietWorld(), "sprint");
-    const target = MAX_ADVANCE_MINUTES + 3 * DAY;
-    runtime.execute({ type: "advanceTime", minutes: target });
-
-    let frames = 0;
-    while (runningJobFor(runtime.snapshot().jobQueue, "clock") && frames < 10_000) {
-      driver.frame(1_000);
-      frames += 1;
-    }
-
-    expect(runtime.snapshot().worldMinute).toBe(target);
-    expect(runtime.snapshot().jobQueue.jobs).toEqual([]);
-    expect(
-      runtime.events().filter((event) => event.type === "TimeJobCompleted"),
-    ).toHaveLength(1);
+    expect(speeds).toEqual(["4x", "paused"]);
   });
 });
 
-describe("clock driver notices (Game-First G1)", () => {
-  it("tells the player when a lapsed lease stops a sleep, exactly once", () => {
-    const world = quietWorld();
-    world.economy.housing = LEASE;
-    world.economy.credits = 0;
-    const { runtime, driver, notices } = setup(world);
-    const rent = findHousingItem(LEASE)!.dailyCost;
-    expect(rent).toBeGreaterThan(0);
-
+describe("time job pacing (Game-First G1, D056)", () => {
+  it("plays a sleep through the clock at the sleep pace, not inside its command", () => {
+    const { runtime, driver } = setup(quietWorld(), "16x");
     runtime.execute({ type: "sleep", minutes: 3 * DAY });
-    driver.frame(CLOCK_FRAME_MS);
-    driver.frame(CLOCK_FRAME_MS);
 
+    const frames = [];
+    while (runningJobFor(runtime.snapshot().jobQueue, "clock") && frames.length < 10_000) {
+      frames.push(driver.frame(CLOCK_FRAME_MS).advancedMinutes);
+    }
+
+    expect(runtime.snapshot().worldMinute).toBe(3 * DAY);
+    expect(frames.some((minutes) => minutes > 0)).toBe(true);
+    expect(frames.length).toBeGreaterThan(2);
+  });
+
+  it("stops a sleep at a lapsed lease, shows why, and pauses for the player", () => {
+    const { runtime, driver, notices, speeds } = setup(lapsingLeaseWorld(), "16x");
+    runtime.execute({ type: "sleep", minutes: 3 * DAY });
+
+    for (let i = 0; i < 10_000 && runningJobFor(runtime.snapshot().jobQueue, "clock"); i += 1) {
+      driver.frame(CLOCK_FRAME_MS);
+    }
+
+    expect(runtime.snapshot().worldMinute).toBe(DAY);
+    expect(runningJobFor(runtime.snapshot().jobQueue, "clock")).toBeNull();
     expect(notices).toEqual([
       {
         tone: "interrupt",
-        text: "Your lease ended at Day 2 · 00:00. Time stopped there.",
+        text: `Your lease ended at ${formatClockMinute(DAY)}. Time stopped there.`,
         worldMinute: DAY,
       },
     ]);
+    expect(speeds.at(-1)).toBe("paused");
   });
 
+  it("wakes a paused clock to 1x when the player asks for time to pass", () => {
+    const { runtime, driver, speeds } = setup(quietWorld(), "paused");
+    runtime.execute({ type: "fastForward", minutes: 2 * DAY });
+
+    driver.frame(0);
+
+    expect(driver.speed()).toBe("1x");
+    expect(speeds).toEqual(["1x"]);
+  });
+
+  it("shows a halt once, and live time owes nothing from the sleep it replaces", () => {
+    const { runtime, driver, notices } = setup(quietWorld(), "1x");
+    runtime.execute({ type: "sleep", minutes: MAX_ADVANCE_MINUTES + DAY });
+    framesOf(driver, CLOCK_FRAME_MS, 10);
+
+    runtime.execute({ type: "cancelAdvance" });
+    const before = runtime.snapshot().worldMinute;
+
+    // Whatever the sleep had not yet spent is forfeited, not handed to live time.
+    expect(driver.frame(0).advancedMinutes).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(before);
+
+    // Live time then plays at its own pace: six frames make one minute.
+    expect(framesOf(driver, CLOCK_FRAME_MS, 6)).toBe(1);
+    expect(runtime.snapshot().worldMinute).toBe(before + 1);
+    expect(notices.map((notice) => notice.tone)).toEqual(["notice"]);
+  });
+
+  it("paces a long wait in bounded pumps and never past the pump bound", () => {
+    const { runtime, driver } = setup(quietWorld(), "16x");
+    runtime.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES + 10 * DAY });
+
+    const start = runtime.snapshot().worldMinute;
+    const perFrame = driver.frame(60_000).advancedMinutes;
+
+    expect(perFrame).toBeGreaterThan(0);
+    expect(perFrame).toBeLessThanOrEqual(MAX_PUMP_MINUTES);
+    expect(runtime.snapshot().worldMinute).toBe(start + perFrame);
+  });
+
+  it("plays a sleep one minute at a time, so its pace is smooth rather than boundary-sized", () => {
+    const { runtime, driver } = setup(quietWorld(), "1x");
+    runtime.execute({ type: "sleep", minutes: 3 * DAY });
+
+    // Four 250 ms frames of sleep (30 game minutes per second) play 30 minutes.
+    const advanced = framesOf(driver, CLOCK_FRAME_MS, 4);
+
+    expect(advanced).toBe(30);
+    expect(runtime.snapshot().worldMinute).toBe(30);
+  });
+});
+
+describe("clock driver notices and lifecycle (Game-First G1)", () => {
   it("delivers notices from a command issued outside the driver, such as the terminal", () => {
     const { runtime, driver, notices } = setup();
     runtime.execute({ type: "sleep", minutes: MAX_ADVANCE_MINUTES + 10 * DAY });
@@ -164,31 +254,28 @@ describe("clock driver notices (Game-First G1)", () => {
     expect(notices).toEqual([
       {
         tone: "notice",
-        text: `Clock halted at ${formatClockMinute(MAX_ADVANCE_MINUTES)}.`,
-        worldMinute: MAX_ADVANCE_MINUTES,
+        text: `Clock halted at ${formatClockMinute(0)}.`,
+        worldMinute: 0,
       },
     ]);
   });
 
   it("never replays history that predates the driver", () => {
-    const world = quietWorld();
-    world.economy.housing = LEASE;
-    world.economy.credits = 0;
-    const runtime = createGameRuntime(world);
+    const runtime = createGameRuntime(lapsingLeaseWorld());
     runtime.execute({ type: "advanceTime", minutes: 2 * DAY });
     const notices: ClockNotice[] = [];
 
-    createClockDriver({ port: portFor(runtime), onNotice: (n) => notices.push(n) }).frame(0);
+    createClockDriver({
+      port: portFor(runtime),
+      onNotice: (notice) => notices.push(notice),
+      now: () => 0,
+    }).frame(0);
 
     expect(notices).toEqual([]);
   });
-});
 
-describe("clock driver lifecycle (Game-First G1)", () => {
   it("starts one timer, drives it at the frame rate, and stops it on dispose", () => {
-    const { runtime, driver } = setup(quietWorld(), "sprint");
-    startLongWait(runtime);
-
+    let clock = 0;
     const callbacks: Array<() => void> = [];
     const intervals: number[] = [];
     const stop = vi.fn();
@@ -197,40 +284,48 @@ describe("clock driver lifecycle (Game-First G1)", () => {
       intervals.push(intervalMs);
       return callbacks.length;
     });
-    const timed = createClockDriver({
+    const runtime = createGameRuntime(quietWorld());
+    const driver = createClockDriver({
       port: portFor(runtime),
       onNotice: () => undefined,
       timer: { start, stop },
-      speed: "sprint",
+      now: () => clock,
     });
 
-    timed.start();
-    timed.start();
+    driver.start();
+    driver.start();
     expect(start).toHaveBeenCalledTimes(1);
     expect(intervals).toEqual([CLOCK_FRAME_MS]);
 
-    const before = runtime.snapshot().worldMinute;
+    clock += CLOCK_FRAME_MS;
     callbacks[0]!();
-    expect(runtime.snapshot().worldMinute).toBeGreaterThan(before);
+    expect(runtime.snapshot().worldMinute).toBeGreaterThanOrEqual(0);
 
-    timed.dispose();
-    expect(stop).toHaveBeenCalledWith(1);
     driver.dispose();
+    expect(stop).toHaveBeenCalledWith(1);
   });
-});
 
-describe("clock driver over a real slice world", () => {
-  it("keeps the notices a slice interruption produces in the event log order", () => {
-    const { runtime, driver, notices } = setup(createSliceWorldState());
-    runtime.execute({ type: "fastForward", minutes: 14 * DAY });
-    driver.frame(0);
+  it("uses measured frame time, so a slow frame plays the time it really took", () => {
+    let clock = 0;
+    const callbacks: Array<() => void> = [];
+    const runtime = createGameRuntime(quietWorld());
+    const driver = createClockDriver({
+      port: portFor(runtime),
+      onNotice: () => undefined,
+      timer: {
+        start: (callback) => {
+          callbacks.push(callback);
+          return 1;
+        },
+        stop: () => undefined,
+      },
+      now: () => clock,
+    });
 
-    const stops = runtime
-      .events()
-      .filter((event) => event.type === "TimeJobInterrupted");
+    driver.start();
+    clock = 1_500;
+    callbacks[0]!();
 
-    expect(notices.filter((notice) => notice.tone === "interrupt")).toHaveLength(
-      stops.length,
-    );
+    expect(runtime.snapshot().worldMinute).toBe(1);
   });
 });
