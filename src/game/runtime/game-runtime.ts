@@ -13,17 +13,28 @@ export interface GameRuntime {
   readonly projection: WorldProjectionStore;
   execute: (command: SimulationCommand) => CommandResult;
   snapshot: () => WorldState;
-  events: () => readonly SimulationEvent[];
-  /** Number of events recorded so far. Cheap, for cursor-based readers. */
+  /** Number of events recorded so far, counted from the start of the run. */
   eventCount: () => number;
-  /** Events recorded at or after `index`. Copies only the new tail. */
+  /**
+   * Events recorded at or after `index`, by the absolute count above. Copies only
+   * the new tail. An index before the released boundary yields the retained tail.
+   */
   eventsSince: (index: number) => readonly SimulationEvent[];
+  /**
+   * Drops events before `index` once every reader has consumed them, so the log
+   * holds only what is still needed. Absolute indices are unaffected.
+   */
+  releaseEventsBefore: (index: number) => void;
 }
 
 export function createGameRuntime(initialState: WorldState): GameRuntime {
   const bus = new CommandBus(initialState);
   const projection = createWorldProjectionStore();
+  // Held events are absolute indices [released, total). Readers pass absolute
+  // counts, so releasing consumed events never shifts a cursor.
   const eventLog: SimulationEvent[] = [];
+  let released = 0;
+  let total = 0;
 
   const sync = () => {
     syncWorldProjection(projection, projectWorld(bus.snapshot()));
@@ -39,6 +50,7 @@ export function createGameRuntime(initialState: WorldState): GameRuntime {
 
       if (result.ok) {
         eventLog.push(...result.events);
+        total += result.events.length;
         sync();
       }
 
@@ -49,16 +61,22 @@ export function createGameRuntime(initialState: WorldState): GameRuntime {
       return bus.snapshot();
     },
 
-    events() {
-      return structuredClone(eventLog);
-    },
-
     eventCount() {
-      return eventLog.length;
+      return total;
     },
 
     eventsSince(index) {
-      return structuredClone(eventLog.slice(Math.max(0, index)));
+      return structuredClone(eventLog.slice(Math.max(0, index - released)));
+    },
+
+    releaseEventsBefore(index) {
+      const upTo = Math.min(Math.max(index, released), total);
+      const drop = upTo - released;
+
+      if (drop > 0) {
+        eventLog.splice(0, drop);
+        released = upTo;
+      }
     },
   };
 }

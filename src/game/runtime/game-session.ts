@@ -13,6 +13,7 @@ import {
 import type { RunPersistence } from "@/persistence/run-persistence";
 
 export interface GameSession extends GameRuntime {
+  /** Resolves once every queued save has settled, or rejects with the first failure. */
   flush: () => Promise<void>;
   history: () => Promise<CompletedRunSummary[]>;
 }
@@ -49,21 +50,43 @@ export async function createGameSession({
   }
 
   let saveQueue: Promise<void> = Promise.resolve();
+  // Absolute count of events the adapter has accepted. A failed save leaves it
+  // behind, so the next save carries the unpersisted events again.
   let persistedEventCount = 0;
+  // Absolute count of events a cursor-based reader (the clock) has consumed.
+  let readCursor = 0;
+  // A save is queued but has not taken its snapshot yet. Any command that lands
+  // before that point is already in the snapshot, so it queues no second save.
+  let saveQueued = false;
+
+  /**
+   * Drops events nothing still needs: every reader has read them and the adapter
+   * has them. Without a persistence adapter only the reader matters.
+   */
+  const releaseConsumedEvents = () => {
+    runtime.releaseEventsBefore(
+      persistence
+        ? Math.min(readCursor, persistedEventCount)
+        : readCursor,
+    );
+  };
 
   const queueSave = () => {
-    if (!persistence) {
+    if (!persistence || saveQueued) {
       return;
     }
 
+    saveQueued = true;
     saveQueue = saveQueue
       .catch(() => undefined)
       .then(async () => {
+        saveQueued = false;
+
         const snapshot = runtime.snapshot();
-        const allEvents = [...runtime.events()];
-        const newEvents: SimulationEvent[] = allEvents.slice(
-          persistedEventCount,
-        );
+        const totalEvents = runtime.eventCount();
+        const newEvents: SimulationEvent[] = [
+          ...runtime.eventsSince(persistedEventCount),
+        ];
 
         if (snapshot.ending && persistence.completeRun) {
           try {
@@ -79,7 +102,8 @@ export async function createGameSession({
           await persistence.saveActiveState(snapshot, newEvents);
         }
 
-        persistedEventCount = allEvents.length;
+        persistedEventCount = totalEvents;
+        releaseConsumedEvents();
       });
   };
 
@@ -100,14 +124,21 @@ export async function createGameSession({
       return runtime.snapshot();
     },
 
-    events() {
-      return runtime.events();
-    },
     eventCount() {
       return runtime.eventCount();
     },
     eventsSince(index: number) {
-      return runtime.eventsSince(index);
+      // The index is the count the reader had consumed before this call. Events
+      // before it are released now, so at most the batch just read is held until
+      // the next call. The tail is copied before the release.
+      readCursor = Math.max(readCursor, index);
+      const tail = runtime.eventsSince(index);
+      releaseConsumedEvents();
+
+      return tail;
+    },
+    releaseEventsBefore(index: number) {
+      runtime.releaseEventsBefore(index);
     },
 
     async flush() {
