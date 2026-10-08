@@ -293,9 +293,18 @@ textarea:focus-visible,
 }
 
 .game-shell {
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(circle at 50% -20%, var(--game-glow) 0%, transparent 38rem),
     var(--bg);
+}
+
+/* The surface takes what the clock strip leaves, so no header sits under it. */
+.game-shell__surface {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .boot-screen {
@@ -4571,23 +4580,20 @@ textarea:focus-visible,
   justify-content: center;
 }
 
-/* Visible world clock (Game-First G1). A compact strip over the shell that
-   shows calendar time, the job holding the clock, playback and notices. */
+/* Visible world clock (Game-First G1). A strip in the page flow above the
+   surface, so it never covers a header or a control. Its notice joins the strip
+   while one is shown, and wraps onto a second row on a narrow screen. */
 .clock-hud {
-  position: fixed;
-  top: var(--space-2);
-  left: 50%;
-  z-index: 50;
-  transform: translateX(-50%);
+  position: relative;
+  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  max-width: calc(100vw - 32px);
+  width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border-bottom: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--foreground);
   font-family: var(--font-mono);
@@ -4597,23 +4603,28 @@ textarea:focus-visible,
 .clock-hud__time {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .clock-hud__job {
   color: var(--foreground-muted);
+  white-space: nowrap;
 }
 
+/* Each group may wrap inside its own width, so a long mode label on a phone
+   never runs past the strip's edge, where centring would clip it. */
 .clock-hud__status,
 .clock-hud__controls {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  white-space: nowrap;
+  max-width: 100%;
 }
 
 .clock-hud__progress {
   width: 72px;
+  min-width: 0;
   accent-color: var(--accent);
 }
 
@@ -4656,9 +4667,3 @@ textarea:focus-visible,
   color: var(--danger);
 }
 
-@media (max-width: 640px) {
-  .clock-hud {
-    top: auto;
-    bottom: var(--space-2);
-  }
-}

@@ -510,18 +510,20 @@ function ActiveGameShell({
         notice={clockNotice}
         onDismissNotice={() => setClockNotice(null)}
       />
-      {activeSurface === "room" ? (
-        <RoomSurface
-          runtime={session}
-          onUseDesk={enterComputer}
-        />
-      ) : (
-        <ComputerDesktop
-          runtime={session}
-          onReturnToRoom={enterRoom}
-          onStartNewRun={onStartNewRun}
-        />
-      )}
+      <div className="game-shell__surface">
+        {activeSurface === "room" ? (
+          <RoomSurface
+            runtime={session}
+            onUseDesk={enterComputer}
+          />
+        ) : (
+          <ComputerDesktop
+            runtime={session}
+            onReturnToRoom={enterRoom}
+            onStartNewRun={onStartNewRun}
+          />
+        )}
+      </div>
     </main>
   );
 }
