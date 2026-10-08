@@ -1,6 +1,6 @@
 # G1 acceptance (#77): engineering evidence and remaining gates
 
-**Status (2026-10-08):** engineering acceptance is clean on `main` at `637175a` plus this change. **G1 is not complete.** Three design decisions are open (section 5), and the human playtest gates have **not been run** (section 6). No playtest PASS is claimed anywhere in this document.
+**Status (2026-10-08):** engineering acceptance is clean on `main` at `637175a` plus this change. **G1 is not complete.** Five design decisions are open (section 5), and the human playtest gates have **not been run** (section 6). No playtest PASS is claimed anywhere in this document.
 
 Merged before this acceptance: PR #89 (D057, system jobs for builds, upkeep and outage releases), PR #90 (D058, proportional save path), PR #91 (D059, clock strip in the page flow). #89 also carries the terminal-snapshot regression: `world-schedule.test.ts` "never rewrites an archived terminal world on restore" (`ab4aafa`) and its guard in `reconcileSchedule` (`936472b`).
 
