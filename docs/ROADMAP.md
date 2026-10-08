@@ -461,12 +461,12 @@ Exit criteria:
 
 **Status: NOT gameplay-complete.** The prior Phase 9 Web Beta closure remains valid only as a technical milestone for the tested Chromium target. Parent **#75** is the new gameplay readiness owner. Canonical design and scheduling contract: `docs/GAME_FIRST_REBOOT.md`.
 
-**Immediate order:** G0 audit is merged (PR #85), pending human playtest; G1 clock correctness (#86) and the first persisted clock-job scheduler/HUD (#87) are merged, live idle time and paced sleep/fast-forward are delivered by D056 with browser smoke passing; full subsystem scheduling (builds, upkeep, investigations, deadlines as queued jobs) and realistic job concurrency remain. Prove game feel and the clock first; keep the existing engine/UI/persistence infrastructure where helpful. The first prototype is one interactive, consequential 20–30-minute operation, not a whole UI rewrite.
+**Immediate order:** G0 audit is merged (PR #85), pending human playtest; G1 clock correctness (#86) and the first persisted clock-job scheduler/HUD (#87) are merged, live idle time and paced sleep/fast-forward are delivered by merged PR #88 / D056 with Chromium production browser smoke passing; full subsystem scheduling (builds, upkeep, investigations, deadlines as queued jobs) and realistic job concurrency remain. Prove game feel and the clock first; keep the existing engine/UI/persistence infrastructure where helpful. The first prototype is one interactive, consequential 20–30-minute operation, not a whole UI rewrite.
 
 | Gate | Issue | Delivery | Status |
 | --- | --- | --- | --- |
 | G0 | #76 | Current playability audit, benchmark research, gameplay north star and focused playable slice | PR #85 merged; human playtest pending |
-| G1 | #77 | Authoritative visible clock, no-skipped-ticks scheduler, queue, sleep and interruptible fast-forward | Partial: PRs #86/#87 and D056 live-clock slice delivered (live idle time, paced sleep/FF, minute-judged stops, browser smoke); subsystem queue integration (builds, upkeep, investigations, deadlines) and human playtest pending |
+| G1 | #77 | Authoritative visible clock, no-skipped-ticks scheduler, queue, sleep and interruptible fast-forward | Partial: PRs #86/#87/#88 merged; D056 live-clock slice delivered (live idle time, paced sleep/FF, minute-judged stops, browser smoke); subsystem queue integration (builds, upkeep, investigations, deadlines) and human playtest pending |
 | G2 | #78 | Chosen handle, curated/generated scenarios, weighted procedural NPC/organization/network generation | Planned |
 | G3 | #79 | Hands-on interactive fictional hacking operations, multiple player-skill routes, evidence and defense | Planned |
 | G4 | #80 | True roguelike run loop, emergent pressure/loss, replay variety, non-power meta | Planned |
