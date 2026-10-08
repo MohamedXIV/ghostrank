@@ -466,7 +466,7 @@ Exit criteria:
 | Gate | Issue | Delivery | Status |
 | --- | --- | --- | --- |
 | G0 | #76 | Current playability audit, benchmark research, gameplay north star and focused playable slice | PR #85 merged; human playtest pending |
-| G1 | #77 | Authoritative visible clock, no-skipped-ticks scheduler, queue, sleep and interruptible fast-forward | Partial: PRs #86/#87/#88 merged; D056 live-clock slice delivered; D057 subsystem jobs deliver builds, upkeep and outage releases as queued system jobs with exact release and an invariant suite. D058 bounds the save path and event log; D059 fixes the HUD overlap. Pending: the phone computer header clipping, human playtest. Investigations, contract expiry and retirement stay derived by design |
+| G1 | #77 | Authoritative visible clock, no-skipped-ticks scheduler, queue, sleep and interruptible fast-forward | Partial: PRs #86/#87/#88 merged; D056 live-clock slice delivered; PR #89 / D057 integrates builds, upkeep and outage releases as scheduled jobs with exact release and an invariant suite. PR #90 / D058 bounds the save path and event log; PR #91 / D059 fixes the HUD overlap. Pending: the phone computer header clipping, human playtest. Investigations, contract expiry and retirement stay derived by design |
 | G2 | #78 | Chosen handle, curated/generated scenarios, weighted procedural NPC/organization/network generation | Planned |
 | G3 | #79 | Hands-on interactive fictional hacking operations, multiple player-skill routes, evidence and defense | Planned |
 | G4 | #80 | True roguelike run loop, emergent pressure/loss, replay variety, non-power meta | Planned |
