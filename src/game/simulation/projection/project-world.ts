@@ -1,3 +1,8 @@
+import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
+import {
+  isInterruptibleKind,
+  type TimeJobKind,
+} from "@/game/simulation/systems/time-jobs";
 import {
   relationshipStance,
   type RelationshipStance,
@@ -694,8 +699,17 @@ export interface VisibleLongRunPressure {
   reasons: LongRunPressureReason[];
 }
 
+/** The player-owned time job holding the clock, as the HUD may show it (D055). */
+export interface VisibleClockJob {
+  kind: TimeJobKind;
+  startedWorldMinute: number;
+  targetWorldMinute: number;
+  interruptible: boolean;
+}
+
 export interface WorldProjection {
   worldMinute: number;
+  clockJob: VisibleClockJob | null;
   player: {
     handle: string;
     rank: number;
@@ -1521,6 +1535,23 @@ function projectLongRunPressure(
   };
 }
 
+function projectClockJob(state: WorldState): VisibleClockJob | null {
+  const job = runningJobFor(state.jobQueue, "clock");
+
+  if (!job) {
+    return null;
+  }
+
+  const kind = job.kind as TimeJobKind;
+
+  return {
+    kind,
+    startedWorldMinute: job.startedWorldMinute,
+    targetWorldMinute: job.dueWorldMinute,
+    interruptible: isInterruptibleKind(kind),
+  };
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1596,6 +1627,7 @@ export function projectWorld(state: WorldState): WorldProjection {
 
   return {
     worldMinute: state.worldMinute,
+    clockJob: projectClockJob(state),
     player: {
       handle: state.player.handle,
       rank: state.player.rank,

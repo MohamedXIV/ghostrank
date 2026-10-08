@@ -1,3 +1,8 @@
+import {
+  createJobQueue,
+  type JobQueueState,
+} from "@/game/simulation/scheduler/job-queue";
+
 export interface PlayerState {
   handle: string;
   rank: number;
@@ -680,6 +685,13 @@ export interface WorldState {
    * plan is still a live run and can be cancelled until P3 finalizes an ending.
    */
   retirement: RetirementPlan | null;
+  /**
+   * Time-owning player jobs (Game-First G1, #77): waits longer than one command
+   * can finish, sleeps and fast-forwards. Empty is the pre-G1 baseline, so a
+   * world with nothing queued advances exactly as before. Terminal jobs leave
+   * the queue; the clock is the only resource a time job holds.
+   */
+  jobQueue: JobQueueState;
 }
 
 export interface InitialTargetState
@@ -851,5 +863,6 @@ export function createInitialWorldState(
       initial.retirement === undefined
         ? null
         : structuredClone(initial.retirement),
+    jobQueue: createJobQueue(),
   };
 }

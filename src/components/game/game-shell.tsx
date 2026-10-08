@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
+import { ClockHud, createSessionClockPort } from "@/components/game/clock-hud";
+import { createClockDriver } from "@/game/runtime/time-driver";
+import type { ClockNotice } from "@/game/runtime/time-notices";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
 import { DISTRO_PROFILES } from "@/presentation/distros";
@@ -455,6 +458,24 @@ function ActiveGameShell({
 }) {
   const ended =
     useCell("meta", "run", "ended", session.projection) === true;
+  const [clockNotice, setClockNotice] = useState<ClockNotice | null>(null);
+  const clockDriver = useMemo(
+    () =>
+      createClockDriver({
+        port: createSessionClockPort(session),
+        onNotice: setClockNotice,
+      }),
+    [session],
+  );
+
+  useEffect(() => {
+    clockDriver.start();
+
+    return () => {
+      clockDriver.dispose();
+    };
+  }, [clockDriver]);
+
   if (ended) {
     return (
       <EndingScreen
@@ -466,6 +487,12 @@ function ActiveGameShell({
 
   return (
     <main className="game-shell">
+      <ClockHud
+        session={session}
+        driver={clockDriver}
+        notice={clockNotice}
+        onDismissNotice={() => setClockNotice(null)}
+      />
       {activeSurface === "room" ? (
         <RoomSurface
           runtime={session}

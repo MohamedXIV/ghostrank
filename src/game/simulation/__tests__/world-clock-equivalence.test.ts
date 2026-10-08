@@ -3,9 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   CommandBus,
   MAX_ADVANCE_MINUTES,
+  MAX_PUMP_BOUNDARIES,
 } from "@/game/simulation/command-bus";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
+
+import {
+  clockJobs,
+  drainClock,
+  worldWithoutJobQueue,
+} from "@/game/simulation/__tests__/clock-helpers";
 
 const DAY = 24 * 60;
 const SEEDS = [20_261_003, 7, 424_242] as const;
@@ -67,22 +74,58 @@ describe("world clock equivalence (D054)", () => {
     expect(snapshot.underground.lastTickMinute).toBe(14 * DAY);
   });
 
-  it("accepts the horizon limit exactly and refuses one minute past it", () => {
+  it("reaches the synchronous horizon exactly in one command", () => {
     const bus = new CommandBus(createSliceWorldState());
-    const before = bus.snapshot();
-
-    expect(
-      bus.execute({
-        type: "advanceTime",
-        minutes: MAX_ADVANCE_MINUTES + 1,
-      }),
-    ).toEqual({ ok: false, events: [], error: "ADVANCE_TOO_LONG" });
-    expect(bus.snapshot()).toEqual(before);
 
     expect(
       bus.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES }).ok,
     ).toBe(true);
     expect(bus.snapshot().worldMinute).toBe(MAX_ADVANCE_MINUTES);
+    expect(clockJobs(bus.snapshot())).toEqual([]);
+  });
+
+  it("queues one minute past the horizon and drains it to the same world (D055)", () => {
+    const queued = new CommandBus(createSliceWorldState());
+
+    const started = queued.execute({
+      type: "advanceTime",
+      minutes: MAX_ADVANCE_MINUTES + 1,
+    });
+    expect(started.ok).toBe(true);
+    expect(queued.snapshot().worldMinute).toBe(MAX_ADVANCE_MINUTES);
+    expect(clockJobs(queued.snapshot())).toHaveLength(1);
+
+    drainClock(queued);
+
+    expect(queued.snapshot().worldMinute).toBe(MAX_ADVANCE_MINUTES + 1);
+    expect(clockJobs(queued.snapshot())).toEqual([]);
+
+    const direct = new CommandBus(createSliceWorldState());
+    direct.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES });
+    direct.execute({ type: "advanceTime", minutes: 1 });
+
+    expect(worldWithoutJobQueue(queued.snapshot())).toEqual(
+      worldWithoutJobQueue(direct.snapshot()),
+    );
+  });
+
+  it("drains a queued long wait identically for any pump size", () => {
+    const total = MAX_ADVANCE_MINUTES * 2 + 977;
+    const reference = new CommandBus(createSliceWorldState());
+    reference.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES });
+    reference.execute({ type: "advanceTime", minutes: MAX_ADVANCE_MINUTES });
+    reference.execute({ type: "advanceTime", minutes: 977 });
+
+    for (const pumpSize of [1, 7, MAX_PUMP_BOUNDARIES]) {
+      const pumped = new CommandBus(createSliceWorldState());
+      pumped.execute({ type: "advanceTime", minutes: total });
+      drainClock(pumped, pumpSize);
+
+      expect(pumped.snapshot().worldMinute).toBe(total);
+      expect(worldWithoutJobQueue(pumped.snapshot())).toEqual(
+        worldWithoutJobQueue(reference.snapshot()),
+      );
+    }
   });
 
   it("a reloaded world continues exactly as one uninterrupted run", () => {

@@ -103,6 +103,12 @@ export async function createGameSession({
     events() {
       return runtime.events();
     },
+    eventCount() {
+      return runtime.eventCount();
+    },
+    eventsSince(index: number) {
+      return runtime.eventsSince(index);
+    },
 
     async flush() {
       await saveQueue;

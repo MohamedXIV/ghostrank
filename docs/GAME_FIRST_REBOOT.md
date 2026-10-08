@@ -4,7 +4,7 @@
 **Parent:** #75, children #76–#84.  
 **G0 audit and vertical-slice brief (#76):** see `docs/GAME_FIRST_VERTICAL_SLICE.md`. Its slice is unvalidated until a human playtest.  
 **2026-10-08 decision:** Phase 9 Web Beta verified the technical web target, **not** that Ghostrank has shipped as a complete or engaging game. Desktop/Tauri #19 is deferred until game-ready validation (#84).  
-**G1 (#77) status:** partial. Every ecosystem boundary now runs in order, and single waits above 90 days are refused with `ADVANCE_TOO_LONG` rather than truncated (D054). The shared scheduler, job queue, sleep, fast-forward and chunked UI advance are not yet implemented.
+**G1 (#77) status:** scheduler slice delivered (D054, D055). Every ecosystem boundary runs in order. Waits longer than 90 days queue on one shared clock and drain in bounded chunks. Sleep, fast-forward, halt, pause and playback speed are live in both the terminal and the GUI, and the clock shows its time, job progress and player-safe notices. Not yet: builds, upkeep, investigations and retirement still run on boundary hooks rather than queued jobs; short sleeps finish in one command; the G0 slice still needs a human playtest.
 
 ## 1. Player fantasy and north star
 

@@ -11,6 +11,7 @@ describe("world projection store", () => {
     const store = createWorldProjectionStore();
     const projection: WorldProjection = {
       worldMinute: 45,
+      clockJob: null,
       player: {
         handle: "CobaltXZ",
         rank: 100_256,

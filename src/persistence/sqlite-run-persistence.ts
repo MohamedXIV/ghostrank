@@ -165,5 +165,12 @@ function eventWorldMinute(event: SimulationEvent): number {
       return event.worldMinute;
     case "WorldTimeAdvanced":
       return event.toMinute;
+    case "TimeJobStarted":
+      return event.startedWorldMinute;
+    case "TimeJobProgressed":
+    case "TimeJobCompleted":
+    case "TimeJobInterrupted":
+    case "TimeJobCancelled":
+      return event.worldMinute;
   }
 }

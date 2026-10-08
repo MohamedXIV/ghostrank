@@ -4570,3 +4570,86 @@ textarea:focus-visible,
 .lifecycle-actions-center {
   justify-content: center;
 }
+
+/* Visible world clock (Game-First G1). A compact strip over the shell that
+   shows calendar time, the job holding the clock, playback and notices. */
+.clock-hud {
+  position: fixed;
+  top: var(--space-2);
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: calc(100vw - 32px);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--panel-2);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.clock-hud__time {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-hud__job {
+  color: var(--foreground-muted);
+}
+
+.clock-hud__progress {
+  width: 96px;
+  accent-color: var(--accent);
+}
+
+.clock-hud__speeds {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.clock-hud button {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.clock-hud button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.clock-hud button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.clock-hud__notice {
+  flex-basis: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--foreground-muted);
+}
+
+.clock-hud__notice--interrupt {
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .clock-hud {
+    top: auto;
+    bottom: var(--space-2);
+  }
+}
