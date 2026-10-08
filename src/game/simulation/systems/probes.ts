@@ -66,10 +66,11 @@ import {
  * Placement is a deliberate constraint, not a detail: `probeTick` is called from
  * inside `advanceUnderground`'s existing tick loop. A probe is an ecosystem
  * *action*, so it gets the tick index from the loop that already computes it,
- * obeys the catch-up cap the ecosystem already obeys, and needs no second clock
- * cursor on the save. The consequence is that unlike P1's derived case material,
- * a skipped tick is a probe that never happened — right for an action, wrong for
- * a reading of the record, and the difference between the two is D032's point.
+ * runs in the same boundary order as every other ecosystem action, and needs no
+ * second clock cursor on the save. Every boundary a wait crosses produces its
+ * probe opportunity, so the record does not depend on how the player split the
+ * wait (D054). Unlike P1's derived case material, a probe is an action rather
+ * than a reading of the record, and the difference between the two is D032's point.
  */
 
 /**

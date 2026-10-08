@@ -91,6 +91,17 @@ export interface CommandResult {
 
 const DEFENSIVE_WATCH_THRESHOLD = 5;
 
+/**
+ * Longest single `advanceTime` the authority accepts (D054). Every ecosystem
+ * boundary inside the wait is simulated, so per-command work grows with the
+ * horizon: in the authored slice a 90-day wait takes roughly 80 ms, while a
+ * decade-long wait takes several seconds on one thread. Longer horizons are
+ * rejected with `ADVANCE_TOO_LONG` and move nothing; the player chains waits
+ * instead. Rejecting is the only alternative to truncating, and truncation is
+ * the defect this bound replaces.
+ */
+export const MAX_ADVANCE_MINUTES = 90 * 24 * 60;
+
 export class CommandBus {
   private readonly world: WorldState;
 
@@ -768,6 +779,10 @@ export class CommandBus {
   private advanceTime(minutes: number): CommandResult {
     if (!Number.isInteger(minutes) || minutes <= 0) {
       return this.failure("INVALID_TIME_DELTA");
+    }
+
+    if (minutes > MAX_ADVANCE_MINUTES) {
+      return this.failure("ADVANCE_TOO_LONG");
     }
 
     return {
@@ -1652,9 +1667,9 @@ export class CommandBus {
 
     // P3 makes chronology observable: a lease can lapse before a later tick,
     // an investigation can warm before a rival acts, and an outage can beat a
-    // build due at the exact same boundary. The underground loop still owns tick
-    // selection and the 28-tick catch-up cap; hooks only fold deadline systems
-    // around the ticks it actually chose to run.
+    // build due at the exact same boundary. The underground loop owns tick
+    // selection and runs every boundary in order (D054); hooks only fold deadline
+    // systems around the ticks it runs.
     const undergroundEvents = advanceUnderground(this.world, toMinute, {
       beforeTick: (tickMinute) => {
         upkeepEvents.push(...advanceUpkeep(this.world, cursor, tickMinute));

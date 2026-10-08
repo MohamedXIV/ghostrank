@@ -129,7 +129,7 @@ Accepted 2026-10-03.
 
 NPC ecosystem activity advances on fixed 360-minute world-time boundaries inside every world-time advance. Randomness is a stateless hash of the world seed, tick, actor and purpose, so there is no RNG state to persist and splitting a wait never changes outcomes.
 
-Rank is an output of ecosystem events and never an input to any decision. A very long wait simulates only its most recent 28 ticks.
+Rank is an output of ecosystem events and never an input to any decision. ~~A very long wait simulates only its most recent 28 ticks.~~ Superseded by D054: every boundary now runs in order, and long waits are refused rather than truncated.
 
 Accepted 2026-10-03 as the Phase 3 substrate. Numeric rank/relationship deltas are provisional tuning; the ranking formula remains open.
 
@@ -664,3 +664,15 @@ Each distro also owns a small sound identity for install, stage, completion and 
 Reduced-motion preference preserves the textual installation stages while shortening the decorative duration. Presentation storage or audio failure is non-fatal and must not interrupt gameplay.
 
 Accepted 2026-10-06 as a refinement of D051/D052 and a required exit condition for Phase 9 P1 / #58.
+
+## D054 — Every ecosystem boundary runs; long waits are refused, not truncated (Game-First G1, #77)
+
+D017's 28-tick catch-up cap is removed. Advancing time now simulates every 360-minute ecosystem boundary between the last processed tick and the target minute, in order. Truncation discarded NPC actions, contract expiries, probes and investigation reviews. In the authored slice a single 14-day wait produced 346 simulation events and a different world state from fourteen 1-day waits, which produced 773.
+
+The invariant is now exact: splitting a wait at any points produces an identical world snapshot and the same simulation events in the same order. The one difference is the `WorldTimeAdvanced` marker, which records how the player split the wait and is excluded from the comparison. Snapshot reload continues identically to an uninterrupted run.
+
+Per-command cost grows with the horizon. Measured synchronously on the authored slice: about 80 ms for 90 days, 0.3 s for a year, and 8 s for a decade (roughly 196k events). `CommandBus` therefore rejects any single `advanceTime` longer than `MAX_ADVANCE_MINUTES` (90 days) with `ADVANCE_TOO_LONG`, and changes nothing. Players chain waits. Explicit refusal is allowed; silent truncation is not.
+
+Not yet delivered from #77: a resumable chunked advance that yields to the UI and persists a checkpoint, the shared priority-queue scheduler (jobs, reservations, cancellation), sleep until a wake trigger, and fast-forward. Until those land, the 90-day refusal is the bound on single-command UI work.
+
+Accepted 2026-10-08 as the G1 correction. It supersedes the truncation rule stated in D017.
