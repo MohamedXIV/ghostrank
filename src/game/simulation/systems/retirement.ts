@@ -92,6 +92,10 @@ export function cancelRetirementPlan(world: WorldState): void {
 export function commandAllowedDuringRetirementCooling(type: string): boolean {
   return (
     type === "advanceTime" ||
+    type === "sleep" ||
+    type === "fastForward" ||
+    type === "cancelAdvance" ||
+    type === "pumpTime" ||
     type === "readMessage" ||
     type === "cancelRetirement" ||
     type === "finishRetirement"

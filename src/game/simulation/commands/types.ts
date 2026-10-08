@@ -115,4 +115,26 @@ export type SimulationCommand =
     }
   | {
       type: "finishRetirement";
+    }
+  | {
+      /** Interruptible: stops early on threats and decisions (Game-First G1). */
+      type: "sleep";
+      minutes: number;
+    }
+  | {
+      /** Interruptible: stops early on threats, decisions and notices. */
+      type: "fastForward";
+      minutes: number;
+    }
+  | {
+      /** Halts an interruptible time job at the current minute. */
+      type: "cancelAdvance";
+    }
+  | {
+      /**
+       * Advances the active time job by at most `maxBoundaries` ecosystem
+       * boundaries. The runtime clock issues these; the player never types one.
+       */
+      type: "pumpTime";
+      maxBoundaries: number;
     };

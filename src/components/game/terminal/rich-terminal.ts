@@ -382,6 +382,30 @@ export function formatRichCommandResult(type: SimulationCommand["type"]): {
         glyph: "⏱",
         text: "World clock advanced // Ecosystem ticked",
       };
+    case "sleep":
+      return {
+        badge: "RESTED",
+        glyph: "☾",
+        text: "Rest taken on the clock // Stops early only for interrupts",
+      };
+    case "fastForward":
+      return {
+        badge: "FAST FORWARD",
+        glyph: "»",
+        text: "Time run forward // Stops for interrupts and notable news",
+      };
+    case "cancelAdvance":
+      return {
+        badge: "HALTED",
+        glyph: "■",
+        text: "Clock halted // Time stays where it stopped",
+      };
+    case "pumpTime":
+      return {
+        badge: "CLOCK",
+        glyph: "⏱",
+        text: "Clock advanced // Ecosystem ticked",
+      };
     default:
       return {
         badge: "EXECUTED",
@@ -391,14 +415,31 @@ export function formatRichCommandResult(type: SimulationCommand["type"]): {
   }
 }
 
+/**
+ * Player-facing wording for clock refusals (D055). These are the only errors
+ * that name the clock itself, so they are written out rather than shown as codes.
+ */
+const CLOCK_ERROR_TEXT: Record<string, string> = {
+  TIME_JOB_ACTIVE:
+    "The clock is busy // Wait for it to finish, or 'halt' a sleep or fast-forward",
+  ADVANCE_NOT_CANCELLABLE: "This wait cannot be halted // It finishes on its own",
+  NO_ACTIVE_TIME_JOB: "Nothing is running on the clock",
+  INVALID_TIME_DELTA:
+    "Enter a whole number of minutes above zero // Type 'help' for syntax",
+};
+
 export function formatRichError(error: string): {
   badge: string;
   glyph: string;
   text: string;
 } {
+  const clockText = CLOCK_ERROR_TEXT[error];
+
   return {
     badge: "ERROR",
     glyph: "✕",
-    text: `${error.toLowerCase()} // Type 'help' to review valid command formats`,
+    text:
+      clockText ??
+      `${error.toLowerCase()} // Type 'help' to review valid command formats`,
   };
 }

@@ -61,6 +61,28 @@ export function syncWorldProjection(
     ]),
   );
 
+  // Game-First G1: the clock row tells the HUD what owns time right now. An
+  // empty kind means the clock is free, so every reader can test one cell.
+  store.setCell("meta", "clock", "jobKind", projection.clockJob?.kind ?? "");
+  store.setCell(
+    "meta",
+    "clock",
+    "jobStartedWorldMinute",
+    projection.clockJob?.startedWorldMinute ?? 0,
+  );
+  store.setCell(
+    "meta",
+    "clock",
+    "jobTargetWorldMinute",
+    projection.clockJob?.targetWorldMinute ?? 0,
+  );
+  store.setCell(
+    "meta",
+    "clock",
+    "interruptible",
+    projection.clockJob?.interruptible ?? false,
+  );
+
   // Phase 6 P1 — authority case files. The file row carries only the band, and
   // its evidence is flattened into its own table keyed by signal id, so the
   // surface reads a list of noticed things rather than a number: `progress`,

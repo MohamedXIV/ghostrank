@@ -186,14 +186,31 @@ describe("underground NPC activity", () => {
     );
   });
 
-  it("refuses a huge wait instead of silently truncating its ecosystem ticks", () => {
+  it("queues a huge wait as a clock job instead of truncating or refusing it (D055)", () => {
     const bus = new CommandBus(createSliceWorldState());
-    const before = bus.snapshot();
 
     const result = wait(bus, 5_000_000);
+    const state = bus.snapshot();
+    const running = state.jobQueue.jobs.filter(
+      (job) => job.status === "running",
+    );
 
-    expect(result).toEqual({ ok: false, events: [], error: "ADVANCE_TOO_LONG" });
-    expect(bus.snapshot()).toEqual(before);
+    expect(result.ok).toBe(true);
+    expect(state.worldMinute).toBe(MAX_ADVANCE_MINUTES);
+    expect(running).toEqual([
+      expect.objectContaining({
+        kind: "wait",
+        resource: "clock",
+        dueWorldMinute: 5_000_000,
+      }),
+    ]);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "TimeJobStarted",
+        kind: "wait",
+        targetWorldMinute: 5_000_000,
+      }),
+    );
   });
 
   it("processes every boundary of a wait at the horizon limit (D054)", () => {

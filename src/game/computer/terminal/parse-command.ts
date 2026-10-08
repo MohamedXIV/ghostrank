@@ -136,12 +136,49 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
       };
     }
 
+    case "sleep":
+      return parseDurationCommand(args, (minutes) => ({
+        type: "sleep",
+        minutes,
+      }));
+
+    case "fastforward":
+    case "ff":
+      return parseDurationCommand(args, (minutes) => ({
+        type: "fastForward",
+        minutes,
+      }));
+
+    case "halt":
+    case "wake":
+      return args.length === 0
+        ? { ok: true, command: { type: "cancelAdvance" } }
+        : { ok: false, error: "INVALID_ARGUMENT" };
+
     default:
       return {
         ok: false,
         error: "UNKNOWN_COMMAND",
       };
   }
+}
+
+/** A whole, positive number of minutes, as the clock verbs take it. */
+function parseDurationCommand(
+  args: string[],
+  create: (minutes: number) => SimulationCommand,
+): TerminalParseResult {
+  if (args.length !== 1) {
+    return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+
+  const minutes = Number(args[0]);
+
+  if (!Number.isInteger(minutes) || minutes <= 0) {
+    return { ok: false, error: "INVALID_ARGUMENT" };
+  }
+
+  return { ok: true, command: create(minutes) };
 }
 
 function parseRetirementCommand(args: string[]): TerminalParseResult {

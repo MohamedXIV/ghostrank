@@ -61,6 +61,7 @@ import {
 } from "@/content/software-catalog";
 import {
   advanceUnderground,
+  TICK_MINUTES,
   applyProvocation,
   applyReactionRelationship,
   contractDueMinute,
@@ -68,6 +69,20 @@ import {
   rewardContract,
   spreadPlayerFootprint,
 } from "@/game/simulation/systems/underground";
+import {
+  cancelJob,
+  completeJob,
+  enqueueJob,
+  findQueuedJob,
+  runningJobFor,
+  startRunnableJobs,
+} from "@/game/simulation/scheduler/job-queue";
+import {
+  TIME_JOB_PHASE,
+  firstStopEvent,
+  isInterruptibleKind,
+  type TimeJobKind,
+} from "@/game/simulation/systems/time-jobs";
 import type {
   AnalysisRecord,
   EvidenceKind,
@@ -102,6 +117,17 @@ const DEFENSIVE_WATCH_THRESHOLD = 5;
  */
 export const MAX_ADVANCE_MINUTES = 90 * 24 * 60;
 
+/** Ecosystem boundaries one command may simulate synchronously. */
+export const SYNC_ADVANCE_BOUNDARIES = MAX_ADVANCE_MINUTES / TICK_MINUTES;
+
+/** Boundaries one `pumpTime` may simulate, bounding one runtime frame of work. */
+export const MAX_PUMP_BOUNDARIES = 28;
+
+/** Commands that may run while a time job owns the clock. */
+function commandAllowedDuringTimeJob(type: string): boolean {
+  return type === "cancelAdvance" || type === "pumpTime";
+}
+
 export class CommandBus {
   private readonly world: WorldState;
 
@@ -116,6 +142,13 @@ export class CommandBus {
   execute(command: SimulationCommand): CommandResult {
     if (this.world.ending) {
       return this.failure("RUN_ENDED");
+    }
+
+    if (
+      runningJobFor(this.world.jobQueue, "clock") &&
+      !commandAllowedDuringTimeJob(command.type)
+    ) {
+      return this.failure("TIME_JOB_ACTIVE");
     }
 
     if (
@@ -204,6 +237,18 @@ export class CommandBus {
 
       case "advanceTime":
         return this.advanceTime(command.minutes);
+
+      case "sleep":
+        return this.startTimeJob("sleep", command.minutes);
+
+      case "fastForward":
+        return this.startTimeJob("fast-forward", command.minutes);
+
+      case "cancelAdvance":
+        return this.cancelAdvance();
+
+      case "pumpTime":
+        return this.pumpTime(command.maxBoundaries);
 
       case "startRetirement":
         return this.startRetirement();
@@ -781,13 +826,191 @@ export class CommandBus {
       return this.failure("INVALID_TIME_DELTA");
     }
 
-    if (minutes > MAX_ADVANCE_MINUTES) {
-      return this.failure("ADVANCE_TOO_LONG");
+    // A wait within the synchronous budget is one plain advance, exactly as
+    // before the job queue existed. A longer one becomes a non-interruptible
+    // wait job that the runtime clock finishes in bounded chunks (D055).
+    if (minutes <= MAX_ADVANCE_MINUTES) {
+      return {
+        ok: true,
+        events: this.advanceWorldTime(minutes),
+      };
+    }
+
+    return this.startTimeJob("wait", minutes);
+  }
+
+  /**
+   * Queues a time job due `minutes` from now on the clock, then runs it as far
+   * as the synchronous budget allows. Anything left is pumped later (D055).
+   */
+  private startTimeJob(kind: TimeJobKind, minutes: number): CommandResult {
+    if (!Number.isInteger(minutes) || minutes <= 0) {
+      return this.failure("INVALID_TIME_DELTA");
+    }
+
+    const startedWorldMinute = this.world.worldMinute;
+    const { queue, job } = enqueueJob(this.world.jobQueue, {
+      kind,
+      resource: "clock",
+      phasePriority: TIME_JOB_PHASE[kind],
+      startedWorldMinute,
+      dueWorldMinute: startedWorldMinute + minutes,
+    });
+    this.world.jobQueue = startRunnableJobs(queue);
+
+    const events: SimulationEvent[] = [
+      {
+        type: "TimeJobStarted",
+        jobId: job.id,
+        kind,
+        startedWorldMinute,
+        targetWorldMinute: job.dueWorldMinute,
+      },
+    ];
+    events.push(...this.stepTimeJob(job.id, SYNC_ADVANCE_BOUNDARIES));
+
+    return { ok: true, events };
+  }
+
+  /**
+   * Advances one running time job by at most `maxBoundaries` ecosystem
+   * boundaries and records how it ended, if it did.
+   *
+   * Interruptible jobs advance one boundary per window, so every stop is checked
+   * on the boundary where it happens. Non-interruptible jobs advance in larger
+   * windows, which is safe because nothing can stop them early. Either way the
+   * same state results for any batching, which is the property the equivalence
+   * suite pins down.
+   */
+  private stepTimeJob(jobId: string, maxBoundaries: number): SimulationEvent[] {
+    const job = findQueuedJob(this.world.jobQueue, jobId);
+
+    if (!job || job.status !== "running") {
+      return [];
+    }
+
+    const kind = job.kind as TimeJobKind;
+    const interruptible = isInterruptibleKind(kind);
+    const events: SimulationEvent[] = [];
+    let budget = maxBoundaries;
+    let stop: SimulationEvent | null = null;
+
+    while (
+      budget > 0 &&
+      this.world.worldMinute < job.dueWorldMinute &&
+      !this.world.ending
+    ) {
+      const now = this.world.worldMinute;
+      const tick = Math.floor(now / TICK_MINUTES);
+      const windowEnd = interruptible
+        ? Math.min(job.dueWorldMinute, (tick + 1) * TICK_MINUTES)
+        : Math.min(job.dueWorldMinute, (tick + budget) * TICK_MINUTES);
+      const windowEvents = this.advanceWorldTime(windowEnd - now);
+
+      events.push(...windowEvents);
+      budget -= Math.max(
+        1,
+        Math.floor(this.world.worldMinute / TICK_MINUTES) - tick,
+      );
+
+      stop = firstStopEvent(kind, windowEvents);
+
+      if (stop) {
+        break;
+      }
+    }
+
+    // A run ending freezes the tail: the job is discarded, and RunEnded is the
+    // record. It takes precedence over any interruption in the same window.
+    if (this.world.ending) {
+      this.world.jobQueue = cancelJob(this.world.jobQueue, job.id).queue;
+      return events;
+    }
+
+    if (stop) {
+      this.world.jobQueue = startRunnableJobs(
+        cancelJob(this.world.jobQueue, job.id).queue,
+      );
+      events.push({
+        type: "TimeJobInterrupted",
+        jobId: job.id,
+        kind,
+        worldMinute: this.world.worldMinute,
+        targetWorldMinute: job.dueWorldMinute,
+        cause: stop.type,
+      });
+      return events;
+    }
+
+    if (this.world.worldMinute >= job.dueWorldMinute) {
+      this.world.jobQueue = startRunnableJobs(
+        completeJob(this.world.jobQueue, job.id),
+      );
+      events.push({
+        type: "TimeJobCompleted",
+        jobId: job.id,
+        kind,
+        worldMinute: this.world.worldMinute,
+      });
+      return events;
+    }
+
+    events.push({
+      type: "TimeJobProgressed",
+      jobId: job.id,
+      kind,
+      worldMinute: this.world.worldMinute,
+      targetWorldMinute: job.dueWorldMinute,
+    });
+    return events;
+  }
+
+  private cancelAdvance(): CommandResult {
+    const job = runningJobFor(this.world.jobQueue, "clock");
+
+    if (!job) {
+      return this.failure("NO_ACTIVE_TIME_JOB");
+    }
+
+    const kind = job.kind as TimeJobKind;
+
+    if (!isInterruptibleKind(kind)) {
+      return this.failure("ADVANCE_NOT_CANCELLABLE");
+    }
+
+    const { queue, cancelled } = cancelJob(this.world.jobQueue, job.id);
+    this.world.jobQueue = startRunnableJobs(queue);
+
+    return {
+      ok: true,
+      events: cancelled.map((removed) => ({
+        type: "TimeJobCancelled" as const,
+        jobId: removed.id,
+        kind: removed.kind as TimeJobKind,
+        worldMinute: this.world.worldMinute,
+        targetWorldMinute: removed.dueWorldMinute,
+      })),
+    };
+  }
+
+  private pumpTime(maxBoundaries: number): CommandResult {
+    if (
+      !Number.isInteger(maxBoundaries) ||
+      maxBoundaries < 1 ||
+      maxBoundaries > MAX_PUMP_BOUNDARIES
+    ) {
+      return this.failure("INVALID_TIME_DELTA");
+    }
+
+    const job = runningJobFor(this.world.jobQueue, "clock");
+
+    if (!job) {
+      return { ok: true, events: [] };
     }
 
     return {
       ok: true,
-      events: this.advanceWorldTime(minutes),
+      events: this.stepTimeJob(job.id, maxBoundaries),
     };
   }
 

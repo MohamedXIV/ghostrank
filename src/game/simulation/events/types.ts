@@ -394,4 +394,40 @@ export type SimulationEvent =
       type: "WorldTimeAdvanced";
       fromMinute: number;
       toMinute: number;
+    }
+  | {
+      type: "TimeJobStarted";
+      jobId: string;
+      kind: "wait" | "sleep" | "fast-forward";
+      startedWorldMinute: number;
+      targetWorldMinute: number;
+    }
+  | {
+      type: "TimeJobProgressed";
+      jobId: string;
+      kind: "wait" | "sleep" | "fast-forward";
+      worldMinute: number;
+      targetWorldMinute: number;
+    }
+  | {
+      type: "TimeJobCompleted";
+      jobId: string;
+      kind: "wait" | "sleep" | "fast-forward";
+      worldMinute: number;
+    }
+  | {
+      type: "TimeJobInterrupted";
+      jobId: string;
+      kind: "wait" | "sleep" | "fast-forward";
+      worldMinute: number;
+      targetWorldMinute: number;
+      /** The event type that stopped the job, for the player-facing reason. */
+      cause: string;
+    }
+  | {
+      type: "TimeJobCancelled";
+      jobId: string;
+      kind: "wait" | "sleep" | "fast-forward";
+      worldMinute: number;
+      targetWorldMinute: number;
     };

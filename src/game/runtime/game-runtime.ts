@@ -14,6 +14,10 @@ export interface GameRuntime {
   execute: (command: SimulationCommand) => CommandResult;
   snapshot: () => WorldState;
   events: () => readonly SimulationEvent[];
+  /** Number of events recorded so far. Cheap, for cursor-based readers. */
+  eventCount: () => number;
+  /** Events recorded at or after `index`. Copies only the new tail. */
+  eventsSince: (index: number) => readonly SimulationEvent[];
 }
 
 export function createGameRuntime(initialState: WorldState): GameRuntime {
@@ -47,6 +51,14 @@ export function createGameRuntime(initialState: WorldState): GameRuntime {
 
     events() {
       return structuredClone(eventLog);
+    },
+
+    eventCount() {
+      return eventLog.length;
+    },
+
+    eventsSince(index) {
+      return structuredClone(eventLog.slice(Math.max(0, index)));
     },
   };
 }

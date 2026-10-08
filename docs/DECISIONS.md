@@ -671,8 +671,35 @@ D017's 28-tick catch-up cap is removed. Advancing time now simulates every 360-m
 
 The invariant is now exact: splitting a wait at any points produces an identical world snapshot and the same simulation events in the same order. The one difference is the `WorldTimeAdvanced` marker, which records how the player split the wait and is excluded from the comparison. Snapshot reload continues identically to an uninterrupted run.
 
-Per-command cost grows with the horizon. Measured synchronously on the authored slice: about 80 ms for 90 days, 0.3 s for a year, and 8 s for a decade (roughly 196k events). `CommandBus` therefore rejects any single `advanceTime` longer than `MAX_ADVANCE_MINUTES` (90 days) with `ADVANCE_TOO_LONG`, and changes nothing. Players chain waits. Explicit refusal is allowed; silent truncation is not.
+Per-command cost grows with the horizon. Measured synchronously on the authored slice: about 80 ms for 90 days, 0.3 s for a year, and 8 s for a decade (roughly 196k events). ~~`CommandBus` therefore rejects any single `advanceTime` longer than `MAX_ADVANCE_MINUTES` (90 days) with `ADVANCE_TOO_LONG`, and changes nothing. Players chain waits. Explicit refusal is allowed; silent truncation is not.~~ Superseded by D055: longer waits are queued and drained, never refused.
 
-Not yet delivered from #77: a resumable chunked advance that yields to the UI and persists a checkpoint, the shared priority-queue scheduler (jobs, reservations, cancellation), sleep until a wake trigger, and fast-forward. Until those land, the 90-day refusal is the bound on single-command UI work.
+~~Not yet delivered from #77: a resumable chunked advance that yields to the UI and persists a checkpoint, the shared priority-queue scheduler (jobs, reservations, cancellation), sleep until a wake trigger, and fast-forward. Until those land, the 90-day refusal is the bound on single-command UI work.~~ Delivered by D055.
 
 Accepted 2026-10-08 as the G1 correction. It supersedes the truncation rule stated in D017.
+
+## D055 — Time-owning jobs share one scheduler; long waits queue and drain (Game-First G1, #77)
+
+D054 made every boundary run in order, but it bounded the player at 90 days per command and had no sleep or fast-forward. This decision replaces the `ADVANCE_TOO_LONG` refusal with queued jobs on a single authoritative clock.
+
+- **One queue.** Time-owning jobs live in `WorldState.jobQueue`, ordered `(dueWorldMinute, phasePriority, sequence)`. Phase priority is `wait` 0, `sleep` 1, `fast-forward` 2. Sequence is assigned at enqueue and never reused, so equal-minute order is stable across replay and reload.
+- **Capacity and dependencies.** The `clock` resource admits one running job. A job is runnable only when its dependencies have left the queue. Cancelling a job cancels everything that depends on it.
+- **Synchronous bound unchanged.** A wait up to 90 days still completes inside its command, exactly as D054 defined. A longer wait becomes a `wait` job. Each command simulates at most 360 boundaries itself; `pumpTime` drains the rest in chunks of at most 28 boundaries.
+- **Three kinds.** `wait` is non-interruptible and cannot be halted. `sleep` stops on `interrupt` events. `fast-forward` stops on `interrupt` and `notice` events. Each event is classified from its public fields only.
+- **Stops land on boundaries.** Interruptible jobs advance one boundary per window and check for a stop on each. A stop therefore lands on the same minute however the work is batched, which keeps D054's equivalence invariant.
+- **Clock ownership.** While a job holds the clock, only `pumpTime` and `cancelAdvance` run. Anything else is refused with `TIME_JOB_ACTIVE`.
+- **Ending precedence.** A run ending freezes the tail of the job at its minute and cancels the job silently. The ending is the record. Ending outranks interruption, which outranks completion.
+- **Pacing is presentation.** The runtime clock plays a running job at `CLOCK_SPEED_BOUNDARIES_PER_SECOND` (paused 0, live 0.5, x4 2, sprint 8, all tunable). Pause holds the job without cancelling it. The driver issues `pumpTime` through the same session as the terminal and never decides an outcome.
+- **Terminal and GUI parity.** `sleep <minutes>`, `ff <minutes>` (or `fastforward`) and `halt` (or `wake`) produce the same commands as the HUD controls. Halt sends `cancelAdvance`.
+- **Player-safe notices.** Interruptions say that something needs attention and where the clock stopped. They never name the hidden actor, probe or trace behind them.
+- **Rank independence.** No time job reads player rank. A test runs the same fast-forward at rank 1 and rank 999,999 and requires identical events and ecosystem state.
+- **Save.** `jobQueue` is part of the world-state schema with an empty default, so pre-G1 saves load with no job.
+
+Events: `TimeJobStarted`, `TimeJobProgressed`, `TimeJobCompleted`, `TimeJobInterrupted`, `TimeJobCancelled`.
+
+Open or provisional:
+- Builds, upkeep, investigations and retirement still use their own due-minute logic, advanced by boundary hooks. They are not yet queued jobs.
+- A sleep or fast-forward of 90 days or less completes inside one command unless stopped, so its live pacing is not visible. Whether short rests should be paced on screen is a playtest question.
+- The speed rates, the 28-boundary pump bound and the notice classes are provisional tuning.
+- Concurrency and dependencies are proven in the pure queue. The game currently holds at most one time job.
+
+Accepted 2026-10-08 as the G1 scheduler slice, pending human playtest. It supersedes the `ADVANCE_TOO_LONG` refusal in D054.

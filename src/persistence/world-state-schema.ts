@@ -407,6 +407,28 @@ const storedWorldStateSchema = z.object({
   ending: runEndingSchema.nullable().default(null),
   // Phase 7 P2: and have no voluntary exit plan in progress.
   retirement: retirementPlanSchema.nullable().default(null),
+  // Game-First G1: and nothing is queued on the clock yet. A save restored
+  // mid-job resumes from its persisted minute, applying each boundary once.
+  jobQueue: z
+    .object({
+      nextSequence: z.number().int().nonnegative(),
+      jobs: z
+        .array(
+          z.object({
+            id: z.string().min(1),
+            sequence: z.number().int().nonnegative(),
+            kind: z.enum(["wait", "sleep", "fast-forward"]),
+            resource: z.enum(["clock"]),
+            phasePriority: z.number().int().nonnegative(),
+            startedWorldMinute: z.number().int().nonnegative(),
+            dueWorldMinute: z.number().int().nonnegative(),
+            dependsOn: z.array(z.string().min(1)).default([]),
+            status: z.enum(["queued", "running"]),
+          }),
+        )
+        .default([]),
+    })
+    .default({ nextSequence: 0, jobs: [] }),
 });
 
 export const worldStateSchema = storedWorldStateSchema.transform((state) => {

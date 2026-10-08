@@ -128,6 +128,27 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
     description: "Advance world clock by specified minutes",
     example: "wait 30",
   },
+  {
+    category: "underground",
+    syntax: "sleep <minutes>",
+    label: "sleep",
+    description: "Rest on the clock; stops early only if something needs you",
+    example: "sleep 480",
+  },
+  {
+    category: "underground",
+    syntax: "ff <minutes>",
+    label: "ff",
+    description: "Fast-forward the clock; also stops for notable news",
+    example: "ff 1440",
+  },
+  {
+    category: "underground",
+    syntax: "halt",
+    label: "halt",
+    description: "Stop a sleep or fast-forward where it stands",
+    example: "halt",
+  },
 
   // System
   {
