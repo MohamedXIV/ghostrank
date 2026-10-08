@@ -191,8 +191,10 @@ describe("underground NPC activity", () => {
 
     const result = wait(bus, 5_000_000);
     const state = bus.snapshot();
+    // System jobs (upkeep, builds, releases) share the queue but hold no clock,
+    // so this asserts only the player's time job.
     const running = state.jobQueue.jobs.filter(
-      (job) => job.status === "running",
+      (job) => job.status === "running" && job.resource === "clock",
     );
 
     expect(result.ok).toBe(true);

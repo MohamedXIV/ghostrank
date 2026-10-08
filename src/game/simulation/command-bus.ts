@@ -6,7 +6,6 @@ import {
 } from "@/content/hardware-catalog";
 import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
-import { advanceUpkeep } from "@/game/simulation/systems/upkeep";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { compromiseTick } from "@/game/simulation/systems/compromise";
@@ -43,12 +42,23 @@ import {
 import { findModelItem } from "@/content/model-catalog";
 import { runAnalysis } from "@/game/simulation/systems/analysis";
 import {
-  advanceBuilds,
   buildMinutes,
   nextBuildId,
   poolForNewBuild,
   rollBuildOutcome,
 } from "@/game/simulation/systems/builds";
+import {
+  createScheduleSink,
+  dispatchAt,
+  dispatchBefore,
+  dispatchThrough,
+  reconcileSchedule,
+} from "@/game/simulation/systems/world-schedule";
+import {
+  SYSTEM_PHASE,
+  cancelSystemJob,
+  enqueueSystemJob,
+} from "@/game/simulation/scheduler/system-jobs";
 import { contestedModelFactor } from "@/game/simulation/systems/contention";
 import { findWorkflowSpec } from "@/content/workflow-spec-catalog";
 import {
@@ -134,6 +144,8 @@ export class CommandBus {
 
   constructor(initialState: WorldState) {
     this.world = structuredClone(initialState);
+    // Derives the world's own deadlines for saves that predate them (D057).
+    reconcileSchedule(this.world);
   }
 
   snapshot(): WorldState {
@@ -1849,6 +1861,17 @@ export class CommandBus {
     applyActiveOutageToBuild(this.world, build);
     this.world.builds.push(build);
 
+    // A paused build has no due minute until its outage releases it (D057).
+    if (build.pausedAtWorldMinute === undefined) {
+      this.world.jobQueue = enqueueSystemJob(this.world.jobQueue, {
+        id: build.id,
+        kind: "build",
+        dueWorldMinute: build.dueWorldMinute,
+        startedWorldMinute: build.startedWorldMinute,
+        subjectId: build.id,
+      });
+    }
+
     return {
       ok: true,
       events: [
@@ -1875,6 +1898,7 @@ export class CommandBus {
     }
 
     const [build] = this.world.builds.splice(index, 1);
+    this.world.jobQueue = cancelSystemJob(this.world.jobQueue, build.id);
 
     return {
       ok: true,
@@ -1942,22 +1966,20 @@ export class CommandBus {
     const upkeepEvents: SimulationEvent[] = [];
     const buildEvents: SimulationEvent[] = [];
     const investigationEvents: SimulationEvent[] = [];
+    const schedule = createScheduleSink();
     let cursor = fromMinute;
 
     // P3 makes chronology observable: a lease can lapse before a later tick,
     // an investigation can warm before a rival acts, and an outage can beat a
     // build due at the exact same boundary. The underground loop owns tick
-    // selection and runs every boundary in order (D054); hooks only fold deadline
-    // systems around the ticks it runs.
+    // selection and runs every boundary in order (D054). Around each tick the
+    // world's own scheduler runs its deadlines (D057): everything due before the
+    // tick first, then the deadlines that belong at the tick, and builds due on
+    // the tick after it.
     const undergroundEvents = advanceUnderground(this.world, toMinute, {
       beforeTick: (tickMinute) => {
-        upkeepEvents.push(...advanceUpkeep(this.world, cursor, tickMinute));
-
-        // Strictly earlier jobs have already landed. An exact tie waits until
-        // after the NPC tick so a physical outage can pause it (D034).
-        if (tickMinute > 0) {
-          buildEvents.push(...advanceBuilds(this.world, tickMinute - 1));
-        }
+        dispatchBefore(this.world, tickMinute, schedule);
+        dispatchAt(this.world, tickMinute, SYSTEM_PHASE["outage-release"], schedule);
 
         investigationEvents.push(
           ...advanceInvestigations(this.world, tickMinute),
@@ -1970,7 +1992,9 @@ export class CommandBus {
         return [...compromiseEvents, ...endingEvents];
       },
       afterTick: (tickMinute) => {
-        buildEvents.push(...advanceBuilds(this.world, tickMinute));
+        // An exact tie waits until after the NPC tick so a physical outage can
+        // pause it (D034). `build` is the last phase at a minute.
+        dispatchAt(this.world, tickMinute, SYSTEM_PHASE.build, schedule);
       },
     });
 
@@ -1980,19 +2004,19 @@ export class CommandBus {
     // A terminal event inside an ecosystem boundary freezes the command at that
     // exact minute. Nothing in the unelapsed tail may bill, finish, or advance.
     if (!this.world.ending) {
-      // A final partial tick still pays bills, completes work, and advances
+      // A final partial window still pays bills, completes work, and advances
       // derived case material even though no ecosystem action was scheduled.
-      if (cursor < toMinute) {
-        upkeepEvents.push(...advanceUpkeep(this.world, cursor, toMinute));
+      // Deadlines between the last tick and the window's end run here, at their
+      // own minutes, so the world a window leaves is the same however it was cut.
+      dispatchThrough(this.world, toMinute, schedule);
+
+      if (cursor < toMinute || cursor === fromMinute) {
         investigationEvents.push(...advanceInvestigations(this.world, toMinute));
-        buildEvents.push(...advanceBuilds(this.world, toMinute));
-      } else if (cursor === fromMinute) {
-        // No ecosystem boundary crossed.
-        upkeepEvents.push(...advanceUpkeep(this.world, fromMinute, toMinute));
-        investigationEvents.push(...advanceInvestigations(this.world, toMinute));
-        buildEvents.push(...advanceBuilds(this.world, toMinute));
       }
     }
+
+    upkeepEvents.push(...schedule.upkeep);
+    buildEvents.push(...schedule.builds);
 
     // Events are returned in the order they happened (D056). Each subsystem
     // collects its own events, so a stable sort by world minute restores

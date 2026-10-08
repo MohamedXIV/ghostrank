@@ -417,13 +417,21 @@ const storedWorldStateSchema = z.object({
           z.object({
             id: z.string().min(1),
             sequence: z.number().int().nonnegative(),
-            kind: z.enum(["wait", "sleep", "fast-forward"]),
-            resource: z.enum(["clock"]),
+            kind: z.enum([
+              "wait",
+              "sleep",
+              "fast-forward",
+              "build",
+              "upkeep",
+              "outage-release",
+            ]),
+            resource: z.enum(["clock", "rig", "system"]),
             phasePriority: z.number().int().nonnegative(),
             startedWorldMinute: z.number().int().nonnegative(),
             dueWorldMinute: z.number().int().nonnegative(),
             dependsOn: z.array(z.string().min(1)).default([]),
             status: z.enum(["queued", "running"]),
+            subjectId: z.string().min(1).optional(),
           }),
         )
         .default([]),

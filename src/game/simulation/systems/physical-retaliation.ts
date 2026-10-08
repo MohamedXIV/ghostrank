@@ -4,6 +4,11 @@ import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
+  cancelSystemJob,
+  enqueueSystemJob,
+  outageReleaseJobId,
+} from "@/game/simulation/scheduler/system-jobs";
+import {
   PLAYER_ACTOR_ID,
   type InFlightBuild,
   type PhysicalSignalKind,
@@ -121,39 +126,6 @@ export function applyActiveOutageToBuild(
   }
 }
 
-function settleExpiredOutages(world: WorldState, worldMinute: number): void {
-  for (const outage of world.physicalThreats) {
-    if (
-      outage.kind !== "outage" ||
-      outage.endsWorldMinute === undefined ||
-      outage.endsWorldMinute > worldMinute
-    ) {
-      continue;
-    }
-
-    for (const buildId of outage.affectedBuildIds) {
-      const build = world.builds.find((candidate) => candidate.id === buildId);
-
-      if (
-        !build ||
-        build.pausedAtWorldMinute === undefined ||
-        build.pausedByThreatId !== outage.id
-      ) {
-        continue;
-      }
-
-      const pausedMinutes = Math.max(
-        0,
-        outage.endsWorldMinute - build.pausedAtWorldMinute,
-      );
-      build.accumulatedPausedMinutes =
-        (build.accumulatedPausedMinutes ?? 0) + pausedMinutes;
-      delete build.pausedAtWorldMinute;
-      delete build.pausedByThreatId;
-    }
-  }
-}
-
 function pauseBuilds(
   world: WorldState,
   threat: PhysicalThreat,
@@ -173,6 +145,9 @@ function pauseBuilds(
     build.pausedAtWorldMinute = worldMinute;
     build.pausedByThreatId = threat.id;
     threat.affectedBuildIds.push(build.id);
+
+    // A paused build is not due anywhere until its outage releases it (D057).
+    world.jobQueue = cancelSystemJob(world.jobQueue, build.id);
   }
 }
 
@@ -257,7 +232,6 @@ export function physicalRetaliationTick(
   tickIndex: number,
   worldMinute: number,
 ): SimulationEvent[] {
-  settleExpiredOutages(world, worldMinute);
   const events: SimulationEvent[] = [];
 
   for (const actor of world.underground.actors) {
@@ -312,6 +286,15 @@ export function physicalRetaliationTick(
 
     if (threat.kind === "outage") {
       pauseBuilds(world, threat, worldMinute);
+      // The release is a scheduled deadline in its own right, so an outage ends
+      // at its minute even when no tick falls there (D057).
+      world.jobQueue = enqueueSystemJob(world.jobQueue, {
+        id: outageReleaseJobId(threat.id),
+        kind: "outage-release",
+        dueWorldMinute: threat.endsWorldMinute ?? worldMinute,
+        startedWorldMinute: worldMinute,
+        subjectId: threat.id,
+      });
     } else if (threat.kind === "property-hit") {
       destroyOneHardware(world, threat);
     }

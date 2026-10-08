@@ -4,11 +4,16 @@ import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import { CommandBus } from "@/game/simulation/command-bus";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { projectWorld } from "@/game/simulation/projection/project-world";
-import {
-  advanceBuilds,
-  settledBuildDueMinute,
-} from "@/game/simulation/systems/builds";
+import { settledBuildDueMinute } from "@/game/simulation/systems/builds";
 import { derivePresence } from "@/game/simulation/systems/location";
+import { SYSTEM_PHASE } from "@/game/simulation/scheduler/system-jobs";
+import type { SimulationEvent } from "@/game/simulation/events/types";
+import {
+  createScheduleSink,
+  dispatchAt,
+  reconcileSchedule,
+  settleBuildDeadlines,
+} from "@/game/simulation/systems/world-schedule";
 import {
   applyActiveOutageToBuild,
   PHYSICAL_ASSISTANT_ADOPTION_PERCENT,
@@ -115,6 +120,24 @@ function seedThatTriggers(
 function arm(state: WorldState, options?: { adoption?: boolean }): WorldState {
   state.underground.seed = seedThatTriggers(state, options);
   return state;
+}
+
+/**
+ * One ecosystem tick in the command bus's order (D057): due outage releases, the
+ * tick's own turns, then builds due at that minute. Builds set up directly on
+ * the record are queued by the reconcile the bus runs on load.
+ */
+function tickAt(
+  state: WorldState,
+  tickIndex: number,
+  minute: number,
+): SimulationEvent[] {
+  const sink = createScheduleSink();
+  reconcileSchedule(state);
+  dispatchAt(state, minute, SYSTEM_PHASE["outage-release"], sink);
+  physicalRetaliationTick(state, tickIndex, minute);
+  dispatchAt(state, minute, SYSTEM_PHASE.build, sink);
+  return sink.builds;
 }
 
 function addBoundaryBuild(state: WorldState, dueWorldMinute = 360): void {
@@ -251,18 +274,21 @@ describe("Phase 6 P3 — physical retaliation", () => {
     addBoundaryBuild(state, 360);
 
     physicalRetaliationTick(state, 1, 360);
-    expect(advanceBuilds(state, 360)).toEqual([]);
+    expect(settleBuildDeadlines(state, 360)).toEqual([]);
     expect(state.builds[0]!.dueWorldMinute).toBe(360);
 
-    physicalRetaliationTick(state, 2, 720);
+    // The release is its own deadline at 720: it fires before that tick's turns.
+    const sink = createScheduleSink();
+    dispatchAt(state, 720, SYSTEM_PHASE["outage-release"], sink);
     expect(state.builds[0]!.pausedAtWorldMinute).toBeUndefined();
     expect(state.builds[0]!.accumulatedPausedMinutes).toBe(
       PHYSICAL_OUTAGE_MINUTES,
     );
     expect(settledBuildDueMinute(state.builds[0]!)).toBe(720);
+    expect(state.builds[0]!.dueWorldMinute).toBe(360);
 
-    const completed = advanceBuilds(state, 720);
-    expect(completed).toEqual([
+    // Completion is phase 3, after the tick, and never before the release.
+    expect(tickAt(state, 2, 720)).toEqual([
       expect.objectContaining({
         type: "BuildCompleted",
         buildId: "workflow:1",
@@ -344,6 +370,7 @@ describe("Phase 6 P3 — physical retaliation", () => {
     state.underground.relationships = [];
 
     physicalRetaliationTick(state, 3, 1_080);
+    settleBuildDeadlines(state, 1_080);
 
     expect(state.builds[0]!.pausedAtWorldMinute).toBeUndefined();
     expect(state.builds[0]!.pausedByThreatId).toBeUndefined();
@@ -363,8 +390,7 @@ describe("Phase 6 P3 — physical retaliation", () => {
     expect(restored.physicalThreats).toEqual(original.physicalThreats);
 
     for (const state of [original, restored]) {
-      physicalRetaliationTick(state, 2, 720);
-      advanceBuilds(state, 720);
+      tickAt(state, 2, 720);
     }
 
     expect(restored.builds).toEqual(original.builds);
