@@ -1,5 +1,6 @@
 "use client";
 
+import { useClockHold } from "@/components/game/clock-context";
 import { Button } from "@/components/ui/button";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
@@ -38,6 +39,8 @@ export function OrientationModal({
     onClose: activeClose,
     autoFocusSelector: ".orientation-start-btn",
   });
+  // A blocking briefing holds the clock while it is open (D062).
+  useClockHold(activeIsOpen);
 
   if (!activeIsOpen) {
     return null;

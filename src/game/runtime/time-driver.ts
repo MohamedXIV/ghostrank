@@ -13,10 +13,11 @@ import {
   describeLiveEvent,
   describeTimeJobEvent,
   type ClockNotice,
+  type StopContext,
 } from "@/game/runtime/time-notices";
 
 /**
- * Runtime clock driver (Game-First G1, #77; live time D056).
+ * Runtime clock driver (Game-First G1, #77; live time D056; holds D062).
  *
  * Presentation only. The driver decides how fast the world's time passes on
  * the real clock; it never decides what the simulation does. Every step is a
@@ -26,6 +27,17 @@ import {
  * - a time job owns the clock: bounded `pumpTime` steps until it ends.
  *
  * Pacing can therefore never skip, reorder or invent a boundary.
+ *
+ * Two separate things decide how fast the clock plays (D062):
+ *
+ * - the **chosen speed** is what the player picked (paused, 1x, 4x, 16x), by the
+ *   HUD, by the terminal, or by an interruption that stops playback;
+ * - **holds** are reasons playback must stop right now, such as a blocking
+ *   window or a hidden tab. A hold never changes the chosen speed, so closing
+ *   the window restores exactly what the player had chosen.
+ *
+ * The clock plays at the chosen speed unless a hold is active, in which case it
+ * plays at paused.
  */
 
 export const CLOCK_SPEEDS = ["paused", "1x", "4x", "16x"] as const;
@@ -72,6 +84,9 @@ export const LIVE_STEP_MINUTES = 1;
  */
 export const CLOCK_CATCHUP_MS = 2_000;
 
+/** The hold a hidden browser tab places on the clock (D062). */
+export const HIDDEN_TAB_HOLD = "hidden-tab";
+
 /** Absorbs binary floating error in the pacing arithmetic (2/3 of a minute). */
 const PACE_EPSILON = 1e-9;
 
@@ -95,6 +110,12 @@ export interface ClockDriverPort {
   worldMinute: () => number;
   /** The time job owning the clock, if any. */
   clockJob: () => ClockJobView | null;
+  /**
+   * Whether the player can see this contract on their contract list. A stop is
+   * only named after a contract the player knows; anything else stays generic.
+   * Absent means no contract is known, which is the safe default.
+   */
+  contractKnown?: (contractId: string) => boolean;
 }
 
 export interface ClockTimer {
@@ -105,10 +126,15 @@ export interface ClockTimer {
 export interface ClockDriverOptions {
   port: ClockDriverPort;
   onNotice: (notice: ClockNotice) => void;
+  /** Called when the chosen speed changes. Holds do not call it. */
   onSpeedChange?: (speed: ClockSpeed) => void;
   timer?: ClockTimer;
   /** Real time in milliseconds. Injected so pacing is exact under test. */
   now?: () => number;
+  /**
+   * The chosen speed at creation. Playback never persists the chosen speed, so
+   * a reload always creates a driver at 1x (D062). Only tests pass this.
+   */
   speed?: ClockSpeed;
   frameMs?: number;
 }
@@ -120,14 +146,39 @@ export interface ClockFrame {
   advancedMinutes: number;
 }
 
+/** What the HUD and the terminal show. Replaced whenever one of its fields changes. */
+export interface ClockState {
+  /** The speed the player chose. Holds never change it. */
+  speed: ClockSpeed;
+  /** The speed the world moves at now: the chosen speed, or paused under a hold. */
+  playing: ClockSpeed;
+  /** What holds playback right now. A hidden tab is reported ahead of a window. */
+  hold: "none" | "tab" | "window";
+}
+
 export interface ClockDriver {
+  /** The speed the player chose. */
   speed: () => ClockSpeed;
+  /**
+   * Chooses a speed. Pausing here is the player's own choice and stays until
+   * they choose again, unlike a hold, which lifts when its reason ends.
+   */
   setSpeed: (speed: ClockSpeed) => void;
   /**
-   * Tab visibility. A hidden tab holds the world still and never catches up
-   * when it returns: time is only ever played, never owed (no hidden losses).
+   * Holds playback for `reason` until `release` is called with the same reason.
+   * Reasons form a set, so nested windows never release one another.
+   */
+  hold: (reason: string) => void;
+  release: (reason: string) => void;
+  /**
+   * Tab visibility. A hidden tab holds playback and never catches up when it
+   * returns: time is only ever played, never owed (no hidden losses).
    */
   setVisible: (visible: boolean) => void;
+  /** The current state. The same object until the state changes. */
+  state: () => ClockState;
+  /** Calls `listener` whenever the state changes. Returns the unsubscribe. */
+  subscribe: (listener: () => void) => () => void;
   /** Starts the real-time timer. Idempotent. */
   start: () => void;
   /** Stops the real-time timer. The world is left where it stands. */
@@ -151,31 +202,94 @@ export function createClockDriver(options: ClockDriverOptions): ClockDriver {
   const timer = options.timer ?? defaultTimer;
   const now = options.now ?? defaultNow;
   const frameMs = options.frameMs ?? CLOCK_FRAME_MS;
-  let speed: ClockSpeed = options.speed ?? "1x";
-  let visible = true;
+  const contractKnown = port.contractKnown ?? (() => false);
+
+  let chosen: ClockSpeed = options.speed ?? "1x";
+  const holds = new Set<string>();
+  const listeners = new Set<() => void>();
+  let state: ClockState = readState();
   let carryMinutes = 0;
   let lastFrameAt = now();
   let lastJobKey: string | null = null;
   let eventCursor = port.eventCount();
   let handle: unknown = null;
 
-  const setSpeed = (next: ClockSpeed) => {
-    if (next === speed) {
+  function playingSpeed(): ClockSpeed {
+    return holds.size > 0 ? "paused" : chosen;
+  }
+
+  function readState(): ClockState {
+    return {
+      speed: chosen,
+      playing: playingSpeed(),
+      hold: holds.has(HIDDEN_TAB_HOLD)
+        ? "tab"
+        : holds.size > 0
+          ? "window"
+          : "none",
+    };
+  }
+
+  /** Publishes a new state only when a field a reader shows has changed. */
+  const publish = () => {
+    const next = readState();
+
+    if (
+      next.speed === state.speed &&
+      next.playing === state.playing &&
+      next.hold === state.hold
+    ) {
       return;
     }
 
-    speed = next;
+    state = next;
+
+    for (const listener of listeners) {
+      listener();
+    }
+  };
+
+  const setSpeed = (next: ClockSpeed) => {
+    if (next === chosen) {
+      return;
+    }
+
+    chosen = next;
     carryMinutes = 0;
     options.onSpeedChange?.(next);
+    publish();
   };
+
+  const hold = (reason: string) => {
+    if (holds.has(reason)) {
+      return;
+    }
+
+    holds.add(reason);
+    // Time owed before the hold is never spent after it.
+    carryMinutes = 0;
+    publish();
+  };
+
+  const release = (reason: string) => {
+    if (holds.delete(reason)) {
+      publish();
+    }
+  };
+
+  const stopContext = (batch: readonly SimulationEvent[]): StopContext => ({
+    batch,
+    contractKnown,
+  });
 
   /** Shows events from any source that the driver has not shown yet. */
   const deliverNotices = () => {
     const fresh = port.eventsSince(eventCursor);
     eventCursor += fresh.length;
+    const context = stopContext(fresh);
 
     for (const event of fresh) {
-      const notice = describeTimeJobEvent(event);
+      const notice = describeTimeJobEvent(event, context);
 
       if (notice) {
         // An interruption stops playback so the player can read it.
@@ -193,12 +307,14 @@ export function createClockDriver(options: ClockDriverOptions): ClockDriver {
    * events are returned to the driver.
    */
   const reactToLiveEvents = (events: readonly SimulationEvent[]) => {
+    const context = stopContext(events);
+
     for (const event of events) {
       if (classifyEvent(event) !== "interrupt") {
         continue;
       }
 
-      const notice = describeLiveEvent(event);
+      const notice = describeLiveEvent(event, context);
       setSpeed("paused");
 
       if (notice) {
@@ -220,21 +336,23 @@ export function createClockDriver(options: ClockDriverOptions): ClockDriver {
       lastJobKey = jobKey;
       carryMinutes = 0;
 
-      // Asking for time to pass is a request to play. A paused clock resumes
+      // Asking for time to pass is a request to play. A paused choice resumes
       // at 1x so the rest the player asked for is not left frozen on screen.
-      if (job && speed === "paused") {
+      if (job && chosen === "paused") {
         setSpeed("1x");
       }
     }
 
-    if (!visible || speed === "paused") {
+    const playing = playingSpeed();
+
+    if (playing === "paused") {
       carryMinutes = 0;
       return IDLE;
     }
 
     const pace: ClockPace = job ? job.kind : "live";
     const rate =
-      CLOCK_BASE_MINUTES_PER_SECOND[pace] * CLOCK_MULTIPLIER[speed];
+      CLOCK_BASE_MINUTES_PER_SECOND[pace] * CLOCK_MULTIPLIER[playing];
     carryMinutes = Math.min(
       carryMinutes + (rate * elapsedMs) / 1000,
       (rate * CLOCK_CATCHUP_MS) / 1000,
@@ -284,16 +402,30 @@ export function createClockDriver(options: ClockDriverOptions): ClockDriver {
   };
 
   return {
-    speed: () => speed,
+    speed: () => chosen,
 
     setSpeed,
 
-    setVisible(next) {
-      visible = next;
+    hold,
 
-      if (!next) {
-        carryMinutes = 0;
+    release,
+
+    setVisible(next) {
+      if (next) {
+        release(HIDDEN_TAB_HOLD);
+      } else {
+        hold(HIDDEN_TAB_HOLD);
       }
+    },
+
+    state: () => state,
+
+    subscribe(listener) {
+      listeners.add(listener);
+
+      return () => {
+        listeners.delete(listener);
+      };
     },
 
     start() {

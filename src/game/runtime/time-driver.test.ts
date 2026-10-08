@@ -16,6 +16,7 @@ import {
   CLOCK_BASE_MINUTES_PER_SECOND,
   CLOCK_CATCHUP_MS,
   CLOCK_FRAME_MS,
+  HIDDEN_TAB_HOLD,
   createClockDriver,
   type ClockDriverPort,
   type ClockSpeed,
@@ -24,6 +25,8 @@ import {
   formatClockMinute,
   type ClockNotice,
 } from "@/game/runtime/time-notices";
+import { createSliceWorldState } from "@/game/runtime/slice-world";
+import type { UndergroundContract } from "@/game/simulation/state/world-state";
 import { findHousingItem } from "@/content/housing-catalog";
 
 const DAY = 24 * 60;
@@ -53,6 +56,9 @@ function portFor(runtime: GameRuntime): ClockDriverPort {
 
       return job ? { key: job.id, kind: job.kind as TimeJobKind } : null;
     },
+    // The contract list the player sees, as the HUD's port reads it.
+    contractKnown: (contractId) =>
+      runtime.projection.hasRow("contracts", contractId),
   };
 }
 
@@ -327,5 +333,308 @@ describe("clock driver notices and lifecycle (Game-First G1)", () => {
     callbacks[0]!();
 
     expect(runtime.snapshot().worldMinute).toBe(1);
+  });
+});
+
+describe("presentation holds (Game-First G1 closeout, D062)", () => {
+  it("holds playback while a window is open, and resumes at the chosen speed on close", () => {
+    const { runtime, driver } = setup(quietWorld(), "4x");
+
+    driver.hold("orientation");
+    expect(driver.frame(60_000).advancedMinutes).toBe(0);
+    expect(driver.state()).toEqual({ speed: "4x", playing: "paused", hold: "window" });
+    expect(runtime.snapshot().worldMinute).toBe(0);
+
+    driver.release("orientation");
+    expect(driver.state()).toEqual({ speed: "4x", playing: "4x", hold: "none" });
+
+    // Six 250 ms frames at 4x are 1.5 s of 4x live time: four game minutes.
+    expect(framesOf(driver, CLOCK_FRAME_MS, 6)).toBe(4);
+  });
+
+  it("keeps the player's own pause after a window closes", () => {
+    const { runtime, driver } = setup(quietWorld(), "1x");
+
+    driver.setSpeed("paused");
+    driver.hold("legend");
+    driver.release("legend");
+
+    expect(driver.state()).toEqual({ speed: "paused", playing: "paused", hold: "none" });
+    expect(framesOf(driver, 60_000, 5)).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(0);
+  });
+
+  it("applies a speed the player chose while held, once the hold lifts", () => {
+    const { driver } = setup(quietWorld(), "1x");
+
+    driver.hold("orientation");
+    driver.setSpeed("16x");
+
+    expect(driver.state()).toEqual({ speed: "16x", playing: "paused", hold: "window" });
+
+    driver.release("orientation");
+    expect(driver.state().playing).toBe("16x");
+  });
+
+  it("nested windows never release one another", () => {
+    const { driver } = setup();
+
+    driver.hold("orientation");
+    driver.hold("legend");
+    driver.release("legend");
+
+    expect(driver.state().hold).toBe("window");
+    expect(driver.state().playing).toBe("paused");
+
+    driver.release("orientation");
+    expect(driver.state().hold).toBe("none");
+  });
+
+  it("ignores a repeated hold or a release of a hold that is not active", () => {
+    const { driver } = setup();
+    const seen: ClockSpeed[] = [];
+    driver.subscribe(() => seen.push(driver.state().playing));
+
+    driver.hold("orientation");
+    driver.hold("orientation");
+    driver.release("never-held");
+    driver.release("orientation");
+
+    expect(seen).toEqual(["paused", "1x"]);
+  });
+
+  it("holds a hidden tab, and a window closed while hidden does not resume the clock", () => {
+    const { runtime, driver } = setup();
+
+    driver.setVisible(false);
+    driver.hold("orientation");
+    driver.release("orientation");
+
+    expect(driver.state()).toEqual({ speed: "1x", playing: "paused", hold: "tab" });
+    expect(framesOf(driver, 60_000, 5)).toBe(0);
+    expect(runtime.snapshot().worldMinute).toBe(0);
+
+    driver.setVisible(true);
+    expect(driver.state()).toEqual({ speed: "1x", playing: "1x", hold: "none" });
+  });
+
+  it("reports a hidden tab ahead of a window, and a window again once the tab returns", () => {
+    const { driver } = setup();
+
+    driver.hold("orientation");
+    driver.setVisible(false);
+    expect(driver.state().hold).toBe("tab");
+
+    driver.setVisible(true);
+    expect(driver.state().hold).toBe("window");
+    expect(driver.state().playing).toBe("paused");
+  });
+
+  it("names the tab hold the way the HUD reads it", () => {
+    const { driver } = setup();
+    driver.setVisible(false);
+
+    expect(HIDDEN_TAB_HOLD).toBe("hidden-tab");
+    expect(driver.state().hold).toBe("tab");
+  });
+
+  it("notifies subscribers only when a field a reader shows has changed", () => {
+    const { driver } = setup();
+    let calls = 0;
+    const unsubscribe = driver.subscribe(() => {
+      calls += 1;
+    });
+
+    driver.hold("orientation"); // hold and playing change: one call
+    expect(calls).toBe(1);
+
+    driver.hold("orientation"); // already held: no call
+    driver.setSpeed("1x"); // unchanged chosen speed: no call
+    expect(calls).toBe(1);
+
+    driver.setSpeed("4x"); // the chosen speed shows in the HUD even while held
+    expect(calls).toBe(2);
+
+    driver.release("orientation"); // playing changes to 4x
+    expect(calls).toBe(3);
+
+    unsubscribe();
+    driver.hold("again");
+    expect(calls).toBe(3);
+  });
+
+  it("hands the same state object to every reader until the state changes", () => {
+    const { driver } = setup();
+    const before = driver.state();
+
+    expect(driver.state()).toBe(before);
+
+    driver.hold("orientation");
+    expect(driver.state()).not.toBe(before);
+  });
+});
+
+describe("explicit 1x reload policy (Game-First G1 closeout, D062)", () => {
+  it("resumes a rest at 1x after a reload, even when the clock ran at 16x before it", () => {
+    const first = createGameRuntime(quietWorld());
+    const before = createClockDriver({
+      port: portFor(first),
+      onNotice: () => undefined,
+      speed: "16x",
+      now: () => 0,
+    });
+
+    first.execute({ type: "sleep", minutes: 3 * DAY });
+    before.frame(CLOCK_FRAME_MS);
+    expect(before.state().speed).toBe("16x");
+    before.dispose();
+
+    // A reload restores the durable world, not the playback speed.
+    const restored = createGameRuntime(structuredClone(first.snapshot()));
+    const after = createClockDriver({
+      port: portFor(restored),
+      onNotice: () => undefined,
+      now: () => 0,
+    });
+
+    expect(after.speed()).toBe("1x");
+    expect(runningJobFor(restored.snapshot().jobQueue, "clock")).not.toBeNull();
+
+    // At 1x a sleep plays 30 game minutes a second: a 250 ms frame is 7 minutes,
+    // where 16x would be 120.
+    expect(after.frame(CLOCK_FRAME_MS).advancedMinutes).toBe(7);
+  });
+
+  it("resumes live time at 1x after a reload, not at the speed it was left on", () => {
+    const first = createGameRuntime(quietWorld());
+    const before = createClockDriver({
+      port: portFor(first),
+      onNotice: () => undefined,
+      speed: "4x",
+      now: () => 0,
+    });
+    before.frame(CLOCK_FRAME_MS);
+    before.dispose();
+
+    const restored = createGameRuntime(structuredClone(first.snapshot()));
+    const after = createClockDriver({
+      port: portFor(restored),
+      onNotice: () => undefined,
+      now: () => 0,
+    });
+
+    expect(after.speed()).toBe("1x");
+    expect(after.state().playing).toBe("1x");
+  });
+});
+
+describe("player-safe contract expiry (Game-First G1 closeout, D063)", () => {
+  /** A world with one offer that lapses at the end of day one. */
+  function worldWithExpiringOffer(): WorldState {
+    const world = createSliceWorldState();
+    const offer: UndergroundContract = {
+      id: "contract:1",
+      issuerId: "vesper",
+      targetId: "nightshade",
+      objective: "recon-report",
+      requiredServices: 1,
+      status: "offered",
+      offeredWorldMinute: 0,
+      expiresWorldMinute: DAY,
+    };
+    world.underground.contracts.push(offer);
+    return world;
+  }
+
+  function runSleepToStop(
+    runtime: GameRuntime,
+    port: ClockDriverPort,
+  ): ClockNotice[] {
+    const notices: ClockNotice[] = [];
+    const driver = createClockDriver({
+      port,
+      onNotice: (notice) => notices.push(notice),
+      now: () => 0,
+      speed: "16x",
+    });
+
+    runtime.execute({ type: "sleep", minutes: 3 * DAY });
+
+    for (
+      let i = 0;
+      i < 10_000 && runningJobFor(runtime.snapshot().jobQueue, "clock");
+      i += 1
+    ) {
+      driver.frame(CLOCK_FRAME_MS);
+    }
+
+    return notices;
+  }
+
+  it("names a deadline the player can see, and only that much", () => {
+    const runtime = createGameRuntime(worldWithExpiringOffer());
+    const notices = runSleepToStop(runtime, portFor(runtime));
+
+    const stop = runtime.snapshot().worldMinute;
+    expect(runtime.snapshot().underground.contracts[0]!.status).toBe("expired");
+    expect(notices).toEqual([
+      {
+        tone: "interrupt",
+        text: `A known contract deadline passed. Time stopped at ${formatClockMinute(stop)}.`,
+        worldMinute: stop,
+      },
+    ]);
+    // Nothing about the target, the issuer or the contract is exposed.
+    expect(notices[0]!.text).not.toMatch(/contract:1|nightshade|vesper/i);
+  });
+
+  it("keeps the generic notice for an expiry the player cannot see", () => {
+    const runtime = createGameRuntime(worldWithExpiringOffer());
+    const hidden: ClockDriverPort = { ...portFor(runtime), contractKnown: () => false };
+    const notices = runSleepToStop(runtime, hidden);
+
+    const stop = runtime.snapshot().worldMinute;
+    expect(notices).toEqual([
+      {
+        tone: "interrupt",
+        text: `Something needs your attention. Time stopped at ${formatClockMinute(stop)}.`,
+        worldMinute: stop,
+      },
+    ]);
+  });
+
+  it("keeps the generic notice when the port cannot say what the player knows", () => {
+    const runtime = createGameRuntime(worldWithExpiringOffer());
+    const { contractKnown: _unused, ...unaware } = portFor(runtime);
+    void _unused;
+
+    const notices = runSleepToStop(runtime, unaware);
+
+    expect(notices[0]!.text).toMatch(/^Something needs your attention\./);
+  });
+
+  it("names a live expiry the same way, and stops live time", () => {
+    const runtime = createGameRuntime(worldWithExpiringOffer());
+    const notices: ClockNotice[] = [];
+    const driver = createClockDriver({
+      port: portFor(runtime),
+      onNotice: (notice) => notices.push(notice),
+      now: () => 0,
+      speed: "16x",
+    });
+
+    for (let i = 0; i < 20_000 && notices.length === 0; i += 1) {
+      driver.frame(CLOCK_FRAME_MS);
+    }
+
+    const stop = runtime.snapshot().worldMinute;
+    expect(notices).toEqual([
+      {
+        tone: "interrupt",
+        text: `A known contract deadline passed. Time stopped at ${formatClockMinute(stop)}.`,
+        worldMinute: stop,
+      },
+    ]);
+    expect(driver.speed()).toBe("paused");
   });
 });

@@ -15,6 +15,22 @@ export interface ClockNotice {
   worldMinute: number;
 }
 
+/**
+ * What a stop may say about itself (G1 closeout, D063). `batch` is the set of
+ * events recorded with the stop, so a stop can be traced to the expiry that
+ * caused it. `contractKnown` answers whether the player can see a contract.
+ */
+export interface StopContext {
+  batch: readonly SimulationEvent[];
+  contractKnown: (contractId: string) => boolean;
+}
+
+/** Without a context, nothing is known, so every stop keeps its generic wording. */
+export const NO_STOP_CONTEXT: StopContext = {
+  batch: [],
+  contractKnown: () => false,
+};
+
 const MINUTES_PER_DAY = 24 * 60;
 
 /** `Day 3 · 06:00`: the calendar the player reads, derived from world minutes. */
@@ -27,14 +43,41 @@ export function formatClockMinute(worldMinute: number): string {
   return `Day ${day} · ${hours}:${minutes}`;
 }
 
+/**
+ * Whether a stop at `worldMinute` may name a contract deadline. It may only
+ * when a contract that expired at that minute, in the same batch, is one the
+ * player knows. A hidden expiry is never named, and the notice never counts
+ * expiries, so it reveals nothing the player has not already seen.
+ */
+function knownExpiryAt(context: StopContext, worldMinute: number): boolean {
+  return context.batch.some(
+    (event) =>
+      event.type === "ContractExpired" &&
+      event.worldMinute === worldMinute &&
+      context.contractKnown(event.contractId),
+  );
+}
+
 /** The wording for a stop. A lapsed lease is named; anything else stays generic. */
-function interruptNotice(cause: string, worldMinute: number): ClockNotice {
+function interruptNotice(
+  cause: string,
+  worldMinute: number,
+  namesKnownContract: boolean,
+): ClockNotice {
   const at = formatClockMinute(worldMinute);
 
   if (cause === "HousingChanged") {
     return {
       tone: "interrupt",
       text: `Your lease ended at ${at}. Time stopped there.`,
+      worldMinute,
+    };
+  }
+
+  if (cause === "ContractExpired" && namesKnownContract) {
+    return {
+      tone: "interrupt",
+      text: `A known contract deadline passed. Time stopped at ${at}.`,
       worldMinute,
     };
   }
@@ -50,7 +93,10 @@ function interruptNotice(cause: string, worldMinute: number): ClockNotice {
  * The notice a time-job event deserves, or null when it passes quietly. Starts,
  * progress and completions are the clock doing its job, so they stay silent.
  */
-export function describeTimeJobEvent(event: SimulationEvent): ClockNotice | null {
+export function describeTimeJobEvent(
+  event: SimulationEvent,
+  context: StopContext = NO_STOP_CONTEXT,
+): ClockNotice | null {
   switch (event.type) {
     case "TimeJobCancelled":
       return {
@@ -60,7 +106,12 @@ export function describeTimeJobEvent(event: SimulationEvent): ClockNotice | null
       };
 
     case "TimeJobInterrupted":
-      return interruptNotice(event.cause, event.worldMinute);
+      return interruptNotice(
+        event.cause,
+        event.worldMinute,
+        event.cause === "ContractExpired" &&
+          knownExpiryAt(context, event.worldMinute),
+      );
 
     default:
       return null;
@@ -72,7 +123,10 @@ export function describeTimeJobEvent(event: SimulationEvent): ClockNotice | null
  * attention qualify. A run ending is not a notice, because the ending screen
  * is its own record.
  */
-export function describeLiveEvent(event: SimulationEvent): ClockNotice | null {
+export function describeLiveEvent(
+  event: SimulationEvent,
+  context: StopContext = NO_STOP_CONTEXT,
+): ClockNotice | null {
   if (event.type === "RunEnded" || classifyEvent(event) !== "interrupt") {
     return null;
   }
@@ -81,5 +135,8 @@ export function describeLiveEvent(event: SimulationEvent): ClockNotice | null {
     return null;
   }
 
-  return interruptNotice(event.type, event.worldMinute);
+  const namesKnownContract =
+    event.type === "ContractExpired" && context.contractKnown(event.contractId);
+
+  return interruptNotice(event.type, event.worldMinute, namesKnownContract);
 }

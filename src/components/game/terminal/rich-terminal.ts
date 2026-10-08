@@ -1,4 +1,7 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import type { PlaybackRequest } from "@/game/runtime/playback-command";
+import type { ClockState } from "@/game/runtime/time-driver";
+import { formatClockMinute } from "@/game/runtime/time-notices";
 
 export interface TerminalLogEntry {
   id: string;
@@ -37,6 +40,7 @@ export const TERMINAL_HELP_TABLE: string = [
   "│ read <message-id>  │ review intercepted message or rumor                │",
   "│ retire plan|commit|finish|cancel     │ orchestrate exit from the scene  │",
   "│ wait <minutes>     │ advance world clock                                │",
+  "│ pause|resume|speed │ hold the clock, play it again, or set its pace     │",
   "├── SYSTEM DISCOVERY ──────────────────────────────────────────────────────┤",
   "│ settings [subcmd]  │ inspect or adjust display and accessibility        │",
   "│ run [status|new]   │ inspect active run state or request restart        │",
@@ -78,6 +82,27 @@ export const TERMINAL_GUIDE_TABLE: string = [
 ].join("\n");
 
 export const DETAILED_COMMAND_HELP: Record<string, string> = {
+  pause: [
+    "COMMAND: pause",
+    "CATEGORY: Clock",
+    "PURPOSE: Holds the world clock where it stands. Playback only: nothing in the world changes, and a rest or fast-forward keeps its place.",
+    "NOTE: Halt still ends a rest or fast-forward. Resume plays again at 1x.",
+    "EXAMPLE: pause",
+  ].join("\n"),
+  resume: [
+    "COMMAND: resume",
+    "CATEGORY: Clock",
+    "PURPOSE: Plays the world clock again at 1x, the same pace as a fresh start.",
+    "NOTE: If a window is open, the clock stays held until it closes.",
+    "EXAMPLE: resume",
+  ].join("\n"),
+  speed: [
+    "COMMAND: speed <1|4|16>",
+    "CATEGORY: Clock",
+    "PURPOSE: Sets how fast the world clock plays: 1 for 1x, 4 for 4x, 16 for 16x. Playback only, never a change to the world.",
+    "NOTE: A reload always returns to 1x.",
+    "EXAMPLE: speed 4",
+  ].join("\n"),
   observe: [
     "COMMAND: observe <target>",
     "CATEGORY: Reconnaissance",
@@ -189,6 +214,44 @@ export function formatDetailedHelp(commandName: string): string | null {
   return DETAILED_COMMAND_HELP[normalized] ?? null;
 }
 
+
+/**
+ * Wording for the playback verbs (D062). The result names any hold still in
+ * force, so the terminal never claims the clock is running when a window holds it.
+ */
+export function formatPlaybackResult(
+  request: PlaybackRequest,
+  state: ClockState,
+  worldMinute: number,
+): { text: string; badge: string; glyph: string } {
+  const heldNote =
+    state.hold === "tab"
+      ? " // Held while this tab is hidden"
+      : state.hold === "window"
+        ? " // Held while a window is open"
+        : "";
+
+  switch (request.type) {
+    case "pause":
+      return {
+        badge: "PAUSED",
+        glyph: "‖",
+        text: `Clock paused at ${formatClockMinute(worldMinute)} // Time stays where it stopped`,
+      };
+    case "resume":
+      return {
+        badge: "PLAYING",
+        glyph: "▶",
+        text: `Clock playing at 1× // Live time continues${heldNote}`,
+      };
+    case "speed":
+      return {
+        badge: "PLAYING",
+        glyph: "⏱",
+        text: `Clock speed set to ${request.speed.replace("x", "×")} // Playback only${heldNote}`,
+      };
+  }
+}
 
 export function formatRichCommandResult(type: SimulationCommand["type"]): {
   text: string;
