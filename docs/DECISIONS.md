@@ -774,7 +774,7 @@ Both variants end with the same outcome and the same event totals, so the simula
 
 Browser smoke, production build, Chromium: a sleep of 1,440 minutes at 1x advanced 30 game minutes per second and wrote four times a second. Reloading mid-sleep resumed the same rest, with no console errors.
 
-Tests: `game-session-saves.test.ts` covers a burst during an in-flight save (one trailing save), exactly-once in-order delivery to the adapter while readers release events, and the bounded hold without persistence. `game-runtime.test.ts` covers release without index shift. The existing failed-save retry test still holds.
+Tests: `game-session-saves.test.ts` covers a burst during an in-flight save (one trailing save), exactly-once in-order delivery to the adapter while readers release events, and the bounded hold without persistence. The release without index shift is covered in `game-session-saves.test.ts` (its `runtime` describe), not in `game-runtime.test.ts`. The existing failed-save retry test still holds.
 
 ## D059 — The clock strip is part of the page flow, not an overlay (Game-First G1, #77)
 
@@ -786,4 +786,41 @@ The clock HUD was a fixed overlay: centred at the top on desktop, and docked to 
 
 Verified in the production build in Chromium at 1280×800 and 390×844. In each state (room, computer, rest, halt with a notice) the strip starts at the top and the surface begins directly below it. The room's workstation control is hit-testable, and neither width scrolls horizontally.
 
-Not addressed here: the computer's header bar is wider than a 390 px screen, so its DIRECTIVES and ROOM controls are clipped. That layout predates this decision and needs a choice about what to collapse on narrow screens.
+Not addressed here, and addressed by D060: the computer's header bar is wider than a 390 px screen, so its DIRECTIVES and ROOM controls were clipped. That layout predates this decision.
+
+## D060 — The computer header wraps in DOM order and gives phone controls touch-sized targets (Game-First G1, #77)
+
+The computer's header is brand, stats, NEW RUN, GLOSSARY, DIRECTIVES and ROOM in one row. It was a non-wrapping flex row inside a fixed 42 px grid row, and the desktop surface clips overflow. At 390 px, DIRECTIVES and ROOM sat wholly off the screen (left edges at 402 and 477 px on a 390 px viewport), GLOSSARY was cut at its right edge, and the stats wrapped out of the bar. Nothing scrolled, so a phone player could not reach those controls. The fault predates D059 and is independent of it.
+
+- **The bar wraps, and its height follows its content.** The header row is `auto` with `min-height: var(--os-bar-height)`, so every distro and density keeps its height whenever the controls fit on one line. The bar wraps in DOM order.
+- **The guidance buttons and ROOM are one group.** They sit in an `os-actions` wrapper, so they wrap together and ROOM stays last. DOM order, visual order and focus order are the same, and a markup test in `computer-desktop-a11y.test.ts` asserts it.
+- **Narrow screens get touch-sized targets.** At 640 px and below, the help buttons and ROOM are 44 px tall, the actions group takes its own full row, and the stats wrap inside their row.
+- **Desktop and tablet do not change.** At 1280 px and 768 px every control has the same measured position as before the change. Text is `nowrap` only inside each stat, so "0 cr" and "DAY 1 // 01:09" no longer split.
+
+Rejected alternatives:
+- Horizontal scrolling inside the bar. Controls off the edge are hard to find and hard to tap, and the bar is `overflow: hidden`.
+- A collapsed menu. It adds a new navigation model and hides actions the player should see. That needs its own decision.
+- Moving ROOM onto the brand row. That breaks the DOM and focus order.
+- A fixed mobile breakpoint. The one-row header fits only between about 641 and 900 px, depending on the handle and the credit and day text, so the wrap has to follow content, not a width.
+
+Verified in the production build in Chromium (`check-header.mjs` and `check-header-touch.mjs`, scratch scripts outside the repo; results in `docs/G1_ACCEPTANCE.md`):
+- 390×844 and 360×740: all four controls on one 44 px row, each in view and hit-testable, no horizontal scroll. Tap on DIRECTIVES, GLOSSARY and ROOM each does its job.
+- 320×640: ROOM takes its own right-aligned row, and nothing is clipped.
+- 641–900 px: the actions group wraps as a unit and stays flush right.
+- Keyboard: Tab visits the four controls in DOM order, and each shows a 2 px focus ring.
+- Distro heights hold on desktop: lattice 38 px, velvet 44 px, comfortable 48 px.
+
+Not changed: the clock HUD's own buttons (Pause, 1×, 4×, 16×, Halt) keep their size. Their touch size is recorded as a human playtest gate, not treated as a PASS.
+
+## D061 — Derived timing stays derived; the queue holds only per-job deadlines (Game-First G1, #77)
+
+D057 made builds, upkeep and outage releases scheduled jobs. Before G1 closes, each remaining time-owning candidate was checked against gameplay. The question was whether it needs its own queue entry, or whether a derived or stored minute already gives the same truth.
+
+- **Compute is a commissioning read, not a job.** A build's minutes are computed once, when it is commissioned, from the rig and the model's delivered factor, and then frozen (`command-bus.ts` `startBuild`, and the header of `systems/builds.ts`). A compute job would charge the same minutes a second time, or invent a per-minute rate that the design does not have.
+- **Investigations advance on the ecosystem cadence, not on jobs.** Investigation progress moves at each tick and at each window end (D032; `command-bus.ts` `advanceInvestigations` at both call sites). A job would give a second owner to "how far has this investigation got" and could reorder it against NPC turns.
+- **Contract expiry is a tick action.** `expireContracts` runs inside the tick body (D054), so expiry shares the NPC chronology. An expiry that stops a rest is already a dispatched interruption (`TimeJobInterrupted`, cause `ContractExpired`). A queue entry would move it out of that order.
+- **Retirement cooling is a stored minute, compared on read.** `coolingUntilWorldMinute` is stored when the plan starts and compared with the world minute when read (`systems/retirement.ts`, D039). It needs no entry. A change to `RETIREMENT_COOLING_MINUTES` applies to plans started after the change, and a plan already cooling keeps the minute it stored.
+- **`dependsOn` is unused by any system job.** The queue implements it, and `job-queue.test.ts` tests it, but no system job declares a dependency, and no gameplay rule needs one yet. The field stays, with its tests. Dependencies are not added to create queue entries.
+- **`rig` is contention, not admission.** The rig resource is unlimited, and a second build slows the model rather than waiting in a queue (D057). Any future admission rule needs its own decision, because it changes gameplay.
+
+**Decision:** no gameplay change in G1. The four derived items above stay derived. A new time-owning thing becomes a system job only when its deadline cannot be derived from a tick or a stored minute. When it does, it takes the phase rule of D057 and the invariant test of `world-schedule.test.ts`.
