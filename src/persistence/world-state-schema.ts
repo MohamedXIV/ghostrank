@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isStoredPlayerHandle } from "@/game/identity/player-handle";
+
 const evidenceSchema = z.object({
   id: z.string().min(1),
   kind: z.enum([
@@ -382,7 +384,12 @@ const retirementPlanSchema = z.discriminatedUnion("stage", [
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
   player: z.object({
-    handle: z.string().min(1),
+    // Shape only: a stored handle was validated on entry, and a save must not
+    // become unreadable because the authored roster later changes.
+    handle: z.string().refine(isStoredPlayerHandle, {
+      message:
+        "player handle must be 3-16 ASCII letters or digits, with at most one - or _ between parts",
+    }),
     rank: z.number().int().positive(),
   }),
   targets: z.array(targetSchema),

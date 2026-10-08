@@ -1,5 +1,9 @@
 import { STARTER_RIG_ID } from "@/content/hardware-catalog";
-import { instantiateWorldContent } from "@/content/world-content";
+import {
+  instantiateWorldContent,
+  type InstantiatedWorldContent,
+} from "@/content/world-content";
+import { validatePlayerHandle } from "@/game/identity/player-handle";
 import { generateRunSeed } from "@/game/simulation/rng/seeded-rng";
 import {
   createInitialWorldState,
@@ -7,6 +11,13 @@ import {
 } from "@/game/simulation/state/world-state";
 
 export const SLICE_WORLD_SEED = 20_261_003;
+
+/**
+ * The handle a run takes when a caller does not choose one. Every player-facing
+ * start path passes the handle the player typed, so this only serves tests and
+ * the canonical preset.
+ */
+export const DEFAULT_PLAYER_HANDLE = "CobaltXZ";
 
 export interface CreateSliceWorldOptions {
   seed?: number;
@@ -17,16 +28,38 @@ export interface CreateSliceWorldOptions {
  * Creates the standard slice world state.
  * If seed is not specified, defaults to SLICE_WORLD_SEED to preserve
  * determinism for existing tests and predictable runs.
+ *
+ * The handle is checked against the authored roster, so a run can never open
+ * under the name of an actor or target the world already knows. A rejected
+ * handle is a programming error here: the entry screen validates first and
+ * only passes a handle that it accepted.
  */
+/** Every handle the authored roster already uses. A new run may not take one. */
+export function authoredHandleRoster(): string[] {
+  return rosterHandles(instantiateWorldContent());
+}
+
+function rosterHandles(content: InstantiatedWorldContent): string[] {
+  return [...content.actors, ...content.targets].map((entry) => entry.handle);
+}
+
 export function createSliceWorldState(
   options: CreateSliceWorldOptions = {},
 ): WorldState {
   const content = instantiateWorldContent();
   const seed = options.seed ?? SLICE_WORLD_SEED;
+  const handle = validatePlayerHandle(
+    options.handle ?? DEFAULT_PLAYER_HANDLE,
+    rosterHandles(content),
+  );
+
+  if (!handle.ok) {
+    throw new RangeError(`Invalid player handle: ${handle.reason}`);
+  }
 
   return createInitialWorldState({
     player: {
-      handle: options.handle ?? "CobaltXZ",
+      handle: handle.handle,
       rank: 100_256,
     },
     knownTargetIds: [],
