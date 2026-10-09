@@ -4,7 +4,12 @@ import {
   type InstantiatedWorldContent,
 } from "@/content/world-content";
 import { validatePlayerHandle } from "@/game/identity/player-handle";
+import { generateScenarioContent } from "@/game/world-generation/generate-scenario";
 import { generateRunSeed } from "@/game/simulation/rng/seeded-rng";
+import {
+  DEFAULT_RUN_SCENARIO,
+  type RunScenario,
+} from "@/game/simulation/state/run-scenario";
 import {
   createInitialWorldState,
   type WorldState,
@@ -22,6 +27,17 @@ export const DEFAULT_PLAYER_HANDLE = "CobaltXZ";
 export interface CreateSliceWorldOptions {
   seed?: number;
   handle?: string;
+  /** How the starting world is made. Defaults to the authored canonical roster. */
+  scenario?: RunScenario;
+}
+
+/** Every handle the authored roster already uses. A new run may not take one. */
+export function authoredHandleRoster(): string[] {
+  return rosterHandles(instantiateWorldContent());
+}
+
+function rosterHandles(content: InstantiatedWorldContent): string[] {
+  return [...content.actors, ...content.targets].map((entry) => entry.handle);
 }
 
 /**
@@ -33,35 +49,42 @@ export interface CreateSliceWorldOptions {
  * under the name of an actor or target the world already knows. A rejected
  * handle is a programming error here: the entry screen validates first and
  * only passes a handle that it accepted.
+ *
+ * The canonical scenario uses the authored roster unchanged, so every existing
+ * save and test keeps its meaning. A generated scenario draws its people and
+ * infrastructure from the seed, and never reuses the player's handle or an
+ * authored name (D065).
  */
-/** Every handle the authored roster already uses. A new run may not take one. */
-export function authoredHandleRoster(): string[] {
-  return rosterHandles(instantiateWorldContent());
-}
-
-function rosterHandles(content: InstantiatedWorldContent): string[] {
-  return [...content.actors, ...content.targets].map((entry) => entry.handle);
-}
-
 export function createSliceWorldState(
   options: CreateSliceWorldOptions = {},
 ): WorldState {
-  const content = instantiateWorldContent();
+  const authored = instantiateWorldContent();
+  const scenario = options.scenario ?? DEFAULT_RUN_SCENARIO;
   const seed = options.seed ?? SLICE_WORLD_SEED;
   const handle = validatePlayerHandle(
     options.handle ?? DEFAULT_PLAYER_HANDLE,
-    rosterHandles(content),
+    rosterHandles(authored),
   );
 
   if (!handle.ok) {
     throw new RangeError(`Invalid player handle: ${handle.reason}`);
   }
 
+  const people =
+    scenario === "canonical"
+      ? { actors: authored.actors, targets: authored.targets, relationships: null }
+      : generateScenarioContent({
+          seed,
+          scenario,
+          reservedHandles: [handle.handle, ...rosterHandles(authored)],
+        });
+
   return createInitialWorldState({
     player: {
       handle: handle.handle,
       rank: 100_256,
     },
+    scenario,
     knownTargetIds: [],
     evidence: [],
     economy: {
@@ -78,9 +101,12 @@ export function createSliceWorldState(
     underground: {
       seed,
       playerNetwork: "white",
-      actors: content.actors,
+      actors: people.actors,
+      // A generated scene supplies its own starting ties, the player's included.
+      // The canonical path leaves this out, so the default ties are unchanged.
+      ...(people.relationships ? { relationships: people.relationships } : {}),
     },
-    targets: content.targets,
+    targets: people.targets,
   });
 }
 
@@ -94,4 +120,3 @@ export function createNewRunWorldState(
   const seed = options.seed ?? generateRunSeed();
   return createSliceWorldState({ ...options, seed });
 }
-

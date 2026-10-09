@@ -45,12 +45,33 @@ describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
       previousSession,
       persistence,
       "Night_Wren",
+      "fresh-scene",
     );
 
     expect(order).toEqual(["flush", "save-fresh"]);
     expect(fresh.ending).toBeNull();
     expect(fresh.worldMinute).toBe(0);
     expect(fresh.player.handle).toBe("Night_Wren");
+    expect(fresh.scenario).toBe("fresh-scene");
+  });
+
+  it("starts the authored canonical scene when that scene is chosen", async () => {
+    const persistence = {
+      loadActiveState: async () => null,
+      saveActiveState: async () => undefined,
+    };
+
+    const fresh = await prepareFreshRunState(
+      null,
+      persistence,
+      "Night_Wren",
+      "canonical",
+    );
+
+    expect(fresh.scenario).toBe("canonical");
+    expect(fresh.underground.actors.map((actor) => actor.id)).toContain(
+      "nightshade",
+    );
   });
 
   it("refuses to start a fresh run under an authored name, before any save", async () => {
@@ -63,7 +84,7 @@ describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
     };
 
     await expect(
-      prepareFreshRunState(null, persistence, "nightshade"),
+      prepareFreshRunState(null, persistence, "nightshade", "fresh-scene"),
     ).rejects.toThrow(RangeError);
     expect(order).toEqual([]);
   });

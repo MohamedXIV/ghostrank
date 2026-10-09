@@ -11,6 +11,10 @@ import {
   deriveRetirementOutcome,
   type RetirementVariant,
 } from "@/game/simulation/systems/retirement";
+import {
+  DEFAULT_RUN_SCENARIO,
+  type RunScenario,
+} from "@/game/simulation/state/run-scenario";
 import type {
   RunEndingStatus,
   WorldState,
@@ -28,6 +32,8 @@ const ENDING_LABELS: Record<RunEndingStatus, string> = {
 
 export interface CompletedRunSummary {
   handle: string;
+  /** How the run's starting scene was made (D065). Legacy saves read as canonical. */
+  scenario: RunScenario;
   endingStatus: RunEndingStatus;
   endingLabel: string;
   endingWorldMinute: number;
@@ -67,6 +73,7 @@ export function deriveCompletedRunSummary(
 
   return {
     handle: world.player.handle,
+    scenario: world.scenario ?? DEFAULT_RUN_SCENARIO,
     endingStatus: world.ending.status,
     endingLabel: ENDING_LABELS[world.ending.status],
     endingWorldMinute: world.ending.worldMinute,

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { formatWorldTime } from "@/game/computer/format-world-time";
 import { getEndingCopy } from "@/components/game/ending/ending-presentation";
+import { SCENARIO_PRESENTATION } from "@/content/world-scenarios";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import { paginateTimeline } from "./timeline-pagination";
 
@@ -36,6 +37,9 @@ export function RunTimeline({ run }: RunTimelineProps) {
           <div>
             <div className="ending-type-row">
               <span className="ending-badge">{run.endingLabel.toUpperCase()}</span>
+              <span className="run-scenario-pill" data-scenario={run.scenario}>
+                {SCENARIO_PRESENTATION[run.scenario].label.toUpperCase()}
+              </span>
               {run.retirementVariant && (
                 <span className="retirement-variant-pill">
                   {run.retirementVariant.replaceAll("-", " ").toUpperCase()}

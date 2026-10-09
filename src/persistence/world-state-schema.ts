@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { isStoredPlayerHandle } from "@/game/identity/player-handle";
+import {
+  DEFAULT_RUN_SCENARIO,
+  RUN_SCENARIOS,
+} from "@/game/simulation/state/run-scenario";
 
 const evidenceSchema = z.object({
   id: z.string().min(1),
@@ -383,6 +387,8 @@ const retirementPlanSchema = z.discriminatedUnion("stage", [
 
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
+  // G2 (D065): a save from before G2 has no scenario and is canonical.
+  scenario: z.enum(RUN_SCENARIOS).optional(),
   player: z.object({
     // Shape only: a stored handle was validated on entry, and a save must not
     // become unreadable because the authored roster later changes.
@@ -466,6 +472,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
 
   return {
     ...state,
+    scenario: state.scenario ?? DEFAULT_RUN_SCENARIO,
     evidence,
     operation: state.operation ?? null,
     traces: state.traces ?? [],

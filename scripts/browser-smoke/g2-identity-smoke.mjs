@@ -104,11 +104,6 @@ function serveBuild() {
 async function runDesktop(page, errors, check, info, spec) {
   const press = (locator) => (spec.phone ? locator.tap() : locator.click());
   const bodyText = () => page.evaluate(() => document.body.innerText);
-  const waitForText = async (text, timeout = 60_000) => {
-    await page.waitForFunction((needle) => document.body.innerText.includes(needle), text, {
-      timeout,
-    });
-  };
   const field = page.locator(FIELD);
   const start = page.getByRole("button", { name: /start new operation/i });
   const terminal = page.getByLabel("Terminal command");
@@ -160,6 +155,15 @@ async function runDesktop(page, errors, check, info, spec) {
   check("a padded valid handle is accepted", await start.isEnabled());
   check("an accepted field is not marked invalid", (await field.getAttribute("aria-invalid")) === null);
 
+  // The starting scene is chosen on the same screen (D065). The authored scene
+  // is the default; the first run takes the generated Fresh Scene.
+  const canonicalScene = page.getByRole("radio", { name: /Canonical Underground/ });
+  const freshScene = page.getByRole("radio", { name: /Fresh Scene/ });
+  check("the authored canonical scene is the default starting scene", await canonicalScene.isChecked());
+  await press(freshScene);
+  check("a generated scene can be chosen before the run starts", await freshScene.isChecked());
+  check("choosing a scene leaves the handle and start action in place", await start.isEnabled());
+
   await press(start);
   await field.waitFor({ state: "detached", timeout: 60_000 });
   check("the new run opens in the room, not at the entry screen", true);
@@ -191,6 +195,10 @@ async function runDesktop(page, errors, check, info, spec) {
     await press(endStart.first());
     await field.waitFor({ timeout: 15_000 });
     check("the replacement prompt opens with an empty handle", (await field.inputValue()) === "");
+    check(
+      "the replacement prompt starts on the canonical scene again",
+      await page.getByRole("radio", { name: /Canonical Underground/ }).isChecked(),
+    );
     const confirm = page.getByRole("button", { name: "CONFIRM START FRESH RUN" });
     check("the replacement is held back until a handle is accepted", await confirm.isDisabled());
 
@@ -213,6 +221,8 @@ async function runDesktop(page, errors, check, info, spec) {
     const completed = page.getByLabel(/Completed run: Night_Wren/);
     await completed.first().waitFor({ timeout: 15_000 }).catch(() => undefined);
     check("Run History lists the ended run under its handle", (await completed.count()) > 0);
+    const sceneLabel = await completed.first().innerText().catch(() => "");
+    check("Run History labels the ended run with its starting scene", sceneLabel.includes("FRESH SCENE"));
 
     // 8. Reload: History keeps the ended run, and the new run keeps its handle.
     await page.reload({ waitUntil: "load" });
@@ -226,10 +236,12 @@ async function runDesktop(page, errors, check, info, spec) {
     // The list loads from the saved archive, so wait for it rather than sample it.
     const archived = page.getByLabel(/Completed run: Night_Wren/);
     await archived.first().waitFor({ timeout: 15_000 }).catch(() => undefined);
+    const archivedScene = await archived.first().innerText().catch(() => "");
     check(
       "after a reload, History still lists the ended run and the new run keeps its handle",
       (await archived.count()) > 0 && (await bodyText()).includes("Ember_Two"),
     );
+    check("after a reload, History still labels the run with its scene", archivedScene.includes("FRESH SCENE"));
   }
 
   // 9. No page or console errors in the whole flow.

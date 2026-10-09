@@ -4691,6 +4691,64 @@ textarea:focus-visible,
   color: var(--danger);
 }
 
+/* Starting scene for a new run (Game-First G2, #78; D065). One radio option per
+   scene, each with its editorial preview; the chosen one takes the accent. */
+.run-scenario-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  text-align: left;
+}
+
+.run-scenario-picker legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.run-scenario-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.run-scenario-option[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.run-scenario-option input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.run-scenario-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.run-scenario-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--foreground);
+}
+
+.run-scenario-preview {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--foreground-muted);
+}
+
 /* Visible world clock (Game-First G1). A strip in the page flow above the
    surface, so it never covers a header or a control. Its notice joins the strip
    while one is shown, and wraps onto a second row on a narrow screen. */
