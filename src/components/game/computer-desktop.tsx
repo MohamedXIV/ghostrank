@@ -45,6 +45,8 @@ import {
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
+import { parsePlaybackCommand } from "@/game/runtime/playback-command";
+import { useClockControl } from "@/components/game/clock-context";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
@@ -63,6 +65,7 @@ import {
 } from "@/components/game/visible-records";
 import {
   formatDetailedHelp,
+  formatPlaybackResult,
   formatRichCommandResult,
   formatRichError,
   TERMINAL_GUIDE_TABLE,
@@ -590,6 +593,7 @@ function TerminalApp({
   onStartNewRun?: () => void;
 }) {
   const [input, setInput] = useState("");
+  const clock = useClockControl();
   const [items, setItems] = useState<TerminalItem[]>([
     {
       id: "init-0",
@@ -826,6 +830,63 @@ function TerminalApp({
           },
         ]);
       }
+      return;
+    }
+
+    const playback = parsePlaybackCommand(raw);
+
+    if (playback) {
+      // Playback changes how this screen's clock plays and nothing else (D062).
+      // It never becomes a simulation command, so it cannot write a world event.
+      let reply: { kind: "result" | "error"; badge: string; glyph: string; text: string };
+
+      if (!playback.ok) {
+        reply = { kind: "error", badge: "INVALID_ARGUMENT", glyph: "✖", text: playback.error };
+      } else if (!clock) {
+        reply = {
+          kind: "error",
+          badge: "ERROR",
+          glyph: "✕",
+          text: "The clock is not running in this view.",
+        };
+      } else {
+        const { request } = playback;
+        clock.driver.setSpeed(
+          request.type === "pause"
+            ? "paused"
+            : request.type === "resume"
+              ? "1x"
+              : request.speed,
+        );
+        reply = {
+          kind: "result",
+          ...formatPlaybackResult(
+            request,
+            clock.driver.state(),
+            runtime.snapshot().worldMinute,
+          ),
+        };
+      }
+
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        reply.kind === "result"
+          ? {
+              id: `res-${Date.now()}`,
+              type: "result",
+              badge: reply.badge,
+              glyph: reply.glyph,
+              text: reply.text,
+            }
+          : {
+              id: `err-${Date.now()}`,
+              type: "error",
+              badge: reply.badge,
+              glyph: reply.glyph,
+              text: reply.text,
+            },
+      ]);
       return;
     }
 

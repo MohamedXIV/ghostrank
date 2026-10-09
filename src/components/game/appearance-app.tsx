@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { useClockHold } from "@/components/game/clock-context";
 import { Button } from "@/components/ui/button";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useEffectiveReducedMotion } from "@/components/game/window-motion";
@@ -78,6 +79,8 @@ export function AppearanceApp() {
     isOpen: transition !== null,
     onClose: ignoreInstallerEscape,
   });
+  // The installer is a blocking dialog, so the clock holds while it runs (D062).
+  useClockHold(transition !== null);
   const lastStageId = useRef<string | null>(null);
   const activeProfile = DISTRO_PROFILES[distroId];
   const transitionDistroId = transition?.distroId ?? null;

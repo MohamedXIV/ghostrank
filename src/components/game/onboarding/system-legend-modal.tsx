@@ -1,5 +1,6 @@
 "use client";
 
+import { useClockHold } from "@/components/game/clock-context";
 import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
@@ -27,6 +28,8 @@ export function SystemLegendModal({
     onClose: activeClose,
     autoFocusSelector: ".system-modal-close",
   });
+  // A blocking glossary holds the clock while it is open (D062).
+  useClockHold(activeIsOpen);
 
   if (!activeIsOpen) {
     return null;

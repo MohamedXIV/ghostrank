@@ -5,7 +5,8 @@ import { useCell } from "tinybase/ui-react";
 import { ClockHud, createSessionClockPort } from "@/components/game/clock-hud";
 import { PlayerHandleField } from "@/components/game/identity/player-handle-field";
 import { validatePlayerHandle } from "@/game/identity/player-handle";
-import { createClockDriver, type ClockSpeed } from "@/game/runtime/time-driver";
+import { ClockProvider } from "@/components/game/clock-context";
+import { createClockDriver } from "@/game/runtime/time-driver";
 import type { ClockNotice } from "@/game/runtime/time-notices";
 
 import { ComputerDesktop } from "@/components/game/computer-desktop";
@@ -501,15 +502,23 @@ function ActiveGameShell({
   const ended =
     useCell("meta", "run", "ended", session.projection) === true;
   const [clockNotice, setClockNotice] = useState<ClockNotice | null>(null);
-  const [clockSpeed, setClockSpeed] = useState<ClockSpeed>("1x");
+  // One driver per session. The HUD, the terminal and blocking windows all reach
+  // it through the provider below, so nothing else can move the clock (D062).
   const clockDriver = useMemo(
     () =>
       createClockDriver({
         port: createSessionClockPort(session),
         onNotice: setClockNotice,
-        onSpeedChange: setClockSpeed,
       }),
     [session],
+  );
+  const clockControl = useMemo(
+    () => ({
+      driver: clockDriver,
+      notice: clockNotice,
+      dismissNotice: () => setClockNotice(null),
+    }),
+    [clockDriver, clockNotice],
   );
 
   useEffect(() => {
@@ -544,28 +553,24 @@ function ActiveGameShell({
   }
 
   return (
-    <main className="game-shell">
-      <ClockHud
-        session={session}
-        speed={clockSpeed}
-        onSpeed={(next) => clockDriver.setSpeed(next)}
-        notice={clockNotice}
-        onDismissNotice={() => setClockNotice(null)}
-      />
-      <div className="game-shell__surface">
-        {activeSurface === "room" ? (
-          <RoomSurface
-            runtime={session}
-            onUseDesk={enterComputer}
-          />
-        ) : (
-          <ComputerDesktop
-            runtime={session}
-            onReturnToRoom={enterRoom}
-            onStartNewRun={onStartNewRun}
-          />
-        )}
-      </div>
-    </main>
+    <ClockProvider value={clockControl}>
+      <main className="game-shell">
+        <ClockHud session={session} />
+        <div className="game-shell__surface">
+          {activeSurface === "room" ? (
+            <RoomSurface
+              runtime={session}
+              onUseDesk={enterComputer}
+            />
+          ) : (
+            <ComputerDesktop
+              runtime={session}
+              onReturnToRoom={enterRoom}
+              onStartNewRun={onStartNewRun}
+            />
+          )}
+        </div>
+      </main>
+    </ClockProvider>
   );
 }
