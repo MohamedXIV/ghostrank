@@ -151,11 +151,11 @@ The 3–10 in-game day run length (AGENTS.md) is judged in G4 and G8 by real pla
 3. **Known residuals.** The terminal help table's `contract accept|decline|deliver` row is one column wider than the other rows. This predates the closeout and is left as it was. The contract-expiry naming is not exercised in the browser (section 3b).
 4. The browser acceptance harness is now in the repository (`scripts/browser-smoke`, `npm run smoke:browser`). It is no longer scratch-only.
 
-## 8. Start of G2 (#78), identified only
+## 8. Start of G2 (#78)
 
 The dependency-ready start is **player identity**, not procedural worlds.
 - Identity needs nothing from G1 beyond the run lifecycle. `createSliceWorldState` already takes a `handle` option (default `CobaltXZ`), and the run schema already stores one (`world-state-schema.ts`).
 - The gap is the new-run path: `game-shell.tsx` calls `createNewRunWorldState()` with no options, so every run is `CobaltXZ`. No UI or seed path sets a handle.
 - Procedural worlds come after that. They need a named RNG stream per concern (`seeded-rng.ts` and `stateless-hash.ts` exist) and a content seam that accepts a generated roster in place of `instantiateWorldContent()`, plus the id, reachability and solvability checks in GAME_FIRST_REBOOT §4.
 
-G2 has not been started.
+Status: player identity is implemented (D064, PR #94, draft, not merged). The procedural scenario slice comes next; see the G2 row in `docs/ROADMAP.md`.

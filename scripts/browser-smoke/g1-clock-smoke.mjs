@@ -208,6 +208,9 @@ async function runView(browser, name) {
     }, visible ? "visible" : "hidden");
 
   await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "load" });
+  // A fresh profile has no run. G2 (D064) keeps the start action disabled until
+  // the player has entered an accepted handle, so the harness enters one first.
+  await page.locator("input[name=\"player-handle\"]").fill("Night_Wren");
   await press(page.getByRole("button", { name: /start new operation/i }));
   await hud.waitFor({ timeout: 20000 });
   await sleep(500);
