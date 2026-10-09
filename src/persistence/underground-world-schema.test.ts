@@ -25,6 +25,7 @@ describe("underground persistence schema", () => {
       playerNetwork: null,
       actors: [],
       relationships: [],
+      organizations: [],
       incidents: [],
       rumors: [],
       messages: [],

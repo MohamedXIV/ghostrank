@@ -1,5 +1,9 @@
 import type { WorldActorArchetype, WorldTargetArchetype } from "@/content/world-content";
 import type { RunScenario } from "@/game/simulation/state/run-scenario";
+import type {
+  OrganizationAgenda,
+  OrganizationMotive,
+} from "@/game/simulation/state/world-state";
 
 /**
  * Editorial data for run scenarios (Game-First G2, #78). Nothing here is
@@ -45,8 +49,17 @@ export interface ScenarioSpec {
   activity: readonly [number, number];
   /** Inclusive display-rank range. Rank is presentation only; no system reads it for outcomes. */
   rank: readonly [number, number];
-  /** Hidden sponsor identities that owners are attached to. */
-  sponsors: number;
+  /**
+   * Organizations the owners belong to (G2). Owners are dealt across them so
+   * every organization owns at least one target. A member inherits its
+   * organization's network.
+   */
+  organizations: number;
+  /** Percent chance that any two organizations are in open rivalry. */
+  rivalryPercent: number;
+  /** Relative weights for an organization's motive and agenda. Zero excludes a value. */
+  motiveWeights: Record<OrganizationMotive, number>;
+  agendaWeights: Record<OrganizationAgenda, number>;
   /** Percent chance of a peer-to-peer tie for each ordered pair of actors. */
   linkPercent: number;
 }
@@ -61,7 +74,10 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     discretion: [25, 70],
     activity: [12, 30],
     rank: [2_000, 90_000],
-    sponsors: 3,
+    organizations: 3,
+    rivalryPercent: 35,
+    motiveWeights: { profit: 4, leverage: 3, retribution: 1, prestige: 2 },
+    agendaWeights: { "undercut-rivals": 2, "collect-favours": 3, "watch-the-board": 3, recruit: 2 },
     linkPercent: 25,
   },
   "high-pressure": {
@@ -73,7 +89,10 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     discretion: [40, 85],
     activity: [25, 45],
     rank: [800, 40_000],
-    sponsors: 2,
+    organizations: 2,
+    rivalryPercent: 70,
+    motiveWeights: { profit: 1, leverage: 2, retribution: 4, prestige: 2 },
+    agendaWeights: { "undercut-rivals": 4, "collect-favours": 1, "watch-the-board": 2, recruit: 2 },
     linkPercent: 40,
   },
 };
@@ -88,6 +107,19 @@ export const NAME_PREFIXES = [
 export const NAME_SUFFIXES = [
   "wick", "loom", "fox", "rook", "sprite", "tooth",
   "veil", "ward", "hook", "mire", "pike", "wren",
+] as const;
+
+/**
+ * Organization name parts. A name is one head and one tail, so it always has a
+ * space and can never be mistaken for a handle, which has none.
+ */
+export const ORGANIZATION_NAME_HEADS = [
+  "Glasshouse", "Brassline", "Hollow", "Quarry", "Tidewater", "Lantern",
+  "Greywater", "Saltmarsh", "Copperkeel", "Lowtide",
+] as const;
+
+export const ORGANIZATION_NAME_TAILS = [
+  "Exchange", "Syndicate", "Collective", "Works", "Concern", "Guild",
 ] as const;
 
 /**

@@ -5,6 +5,10 @@ import {
   DEFAULT_RUN_SCENARIO,
   RUN_SCENARIOS,
 } from "@/game/simulation/state/run-scenario";
+import {
+  ORGANIZATION_AGENDAS,
+  ORGANIZATION_MOTIVES,
+} from "@/game/simulation/state/world-state";
 
 const evidenceSchema = z.object({
   id: z.string().min(1),
@@ -88,6 +92,19 @@ const undergroundActorSchema = z.object({
   // actor works without AI. Optional so legacy saves load as unassisted.
   modelId: z.string().min(1).optional(),
   targetId: z.string().min(1).optional(),
+  // G2 (organizations): a pre-G2 or canonical actor belongs to none.
+  organizationId: z.string().min(1).optional(),
+});
+
+const undergroundOrganizationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  network: networkSchema,
+  motive: z.enum(ORGANIZATION_MOTIVES),
+  agenda: z.enum(ORGANIZATION_AGENDAS),
+  memberIds: z.array(z.string().min(1)),
+  targetIds: z.array(z.string().min(1)),
+  rivalIds: z.array(z.string().min(1)),
 });
 
 const undergroundRelationshipSchema = z.object({
@@ -178,6 +195,7 @@ const undergroundSchema = z.object({
   playerNetwork: networkSchema.nullable().default(null),
   actors: z.array(undergroundActorSchema).default([]),
   relationships: z.array(undergroundRelationshipSchema).default([]),
+  organizations: z.array(undergroundOrganizationSchema).default([]),
   incidents: z.array(undergroundIncidentSchema).default([]),
   rumors: z.array(undergroundRumorSchema).default([]),
   messages: z.array(undergroundMessageSchema).default([]),
@@ -483,6 +501,7 @@ export const worldStateSchema = storedWorldStateSchema.transform((state) => {
       playerNetwork: null,
       actors: [],
       relationships: [],
+      organizations: [],
       incidents: [],
       rumors: [],
       messages: [],

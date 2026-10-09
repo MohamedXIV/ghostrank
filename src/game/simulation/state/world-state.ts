@@ -393,6 +393,27 @@ export const PLAYER_ACTOR_ID = "player";
 
 export type UndergroundNetwork = "white" | "black";
 
+/**
+ * Why an organization exists and what it is doing now (Game-First G2, #78;
+ * GAME_FIRST_REBOOT §4). Both are hidden truth: nothing projects them yet.
+ * They are closed vocabularies so the save schema can check them.
+ */
+export const ORGANIZATION_MOTIVES = [
+  "profit",
+  "leverage",
+  "retribution",
+  "prestige",
+] as const;
+export type OrganizationMotive = (typeof ORGANIZATION_MOTIVES)[number];
+
+export const ORGANIZATION_AGENDAS = [
+  "undercut-rivals",
+  "collect-favours",
+  "watch-the-board",
+  "recruit",
+] as const;
+export type OrganizationAgenda = (typeof ORGANIZATION_AGENDAS)[number];
+
 export interface UndergroundActor {
   id: string;
   handle: string;
@@ -417,6 +438,29 @@ export interface UndergroundActor {
   modelId?: string;
   /** Operation target this actor owns; rank is kept in sync with it. */
   targetId?: string;
+  /**
+   * The organization this actor belongs to, or undefined for an independent
+   * (authored canonical actors and generated brokers). Mirrors
+   * `UndergroundOrganization.memberIds`; both sides are validated together.
+   */
+  organizationId?: string;
+}
+
+/**
+ * A procedural organization (Game-First G2, #78). Generated scenes create them
+ * from the seed; canonical has none, so its world is unchanged. Membership and
+ * ownership are both explicit: `memberIds` lists the people, `targetIds` the
+ * infrastructure those members own. Rivalries are symmetric and never reflexive.
+ */
+export interface UndergroundOrganization {
+  id: string;
+  name: string;
+  network: UndergroundNetwork;
+  motive: OrganizationMotive;
+  agenda: OrganizationAgenda;
+  memberIds: string[];
+  targetIds: string[];
+  rivalIds: string[];
 }
 
 export interface UndergroundRelationship {
@@ -524,6 +568,8 @@ export interface UndergroundState {
   playerNetwork: UndergroundNetwork | null;
   actors: UndergroundActor[];
   relationships: UndergroundRelationship[];
+  /** Generated organizations (G2). Empty for canonical and every pre-G2 save. */
+  organizations: UndergroundOrganization[];
   incidents: UndergroundIncident[];
   rumors: UndergroundRumor[];
   messages: UndergroundMessage[];
@@ -743,6 +789,9 @@ function createInitialUnderground(
   const relationships = initial?.relationships
     ? structuredClone(initial.relationships)
     : [];
+  const organizations = initial?.organizations
+    ? structuredClone(initial.organizations)
+    : [];
 
   if (playerNetwork && !initial?.relationships) {
     for (const actor of actors) {
@@ -766,6 +815,7 @@ function createInitialUnderground(
     playerNetwork,
     actors,
     relationships,
+    organizations,
     incidents: initial?.incidents ? structuredClone(initial.incidents) : [],
     rumors: initial?.rumors ? structuredClone(initial.rumors) : [],
     messages: initial?.messages ? structuredClone(initial.messages) : [],

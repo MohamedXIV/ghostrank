@@ -889,3 +889,23 @@ Until G2 every run opened as `CobaltXZ`. The handle is the one identity the play
 **Alternatives rejected.** A scene chosen by rank tier would make rank a power level, which AGENTS.md forbids. An organization entity now would widen the simulation before any system needs one. Storing only the seed and regenerating on load would let a generator change reshape saved runs.
 
 **Not decided.** The canonical default is a product choice to revisit after playtest. Scene-specific balance is untuned. High Pressure varies people, networks and tie density, but not intel windows: §4's shorter intel windows are not built. Generated actors have no assistants. Peer-tie systems (rumour, alliance, rivalry) are not built. The human playtest gates stay NOT RUN.
+
+## D066 — Organizations are generated entities with a motive, an agenda, owned targets and rivals; canonical has none (Game-First G2, #78)
+
+**Choice.** A generated scene now creates real organizations (`UndergroundOrganization` in `src/game/simulation/state/world-state.ts`). Each has an id, a name, a network, a motive, an agenda, its members, the targets those members own, and its rivals. Motives (`profit`, `leverage`, `retribution`, `prestige`) and agendas (`undercut-rivals`, `collect-favours`, `watch-the-board`, `recruit`) are closed vocabularies. Each scene weights them (`src/content/world-scenarios.ts`). Both are hidden truth. Nothing projects them.
+
+**Ownership and networks.** Owners are dealt across the organizations in a seeded order, so every organization owns at least one target. A member takes its organization's network. The network is part of the organization's identity, not a coin toss per person. This changes how the black share is drawn compared with D065: it is now drawn once per organization, so a given seed can put different people on black. Saved runs are unaffected, because they store their people. Brokers belong to no organization; they are independent intermediaries. The hidden `sponsorId` on each generated target now names its owning organization, so the stored target shape does not change.
+
+**Rivalry.** Each unordered pair of organizations is in rivalry with the scene's percentage (fresh-scene 35, high-pressure 70). Rivalry is symmetric and never reflexive. Nothing reads it yet. The next slice makes rivalries move real decisions.
+
+**Rules.** The organization checker runs on every candidate, after the structural validator and the handle rules. It requires unique ids and names, closed vocabularies, members that point back to the organization and share its network, owned targets whose owner is a member, symmetric non-reflexive rivalries, and exactly one owning organization per target. A failing candidate is retried under the same bounded attempts as before, and a seed that exhausts them still throws.
+
+**Names.** An organization name is a head and a tail joined by a space, so it cannot be mistaken for a handle, which has none. Names come from their own salted pool and never read a handle. Reserving a person's name therefore moves no organization. A test pins this.
+
+**Canonical and legacy.** The canonical scene has no organizations. The canonical golden trace matches `main` exactly: four starting worlds, 30 days each, every command result, every daily snapshot and the final state. The one difference is the new empty `underground.organizations` key, which the comparison removes. A save from before G2 reads with `organizations: []`. One existing legacy-shape test now expects that default.
+
+**Player-safe.** The projection does not carry organizations. A test checks that no organization name, motive, agenda or rivalry appears in the projected world for a generated run.
+
+**Alternatives rejected.** An organization per target would duplicate the owner's identity, since the owner already carries the target's handle. An organization with a rank would make rank a power level, which AGENTS.md forbids. Organizations as a separate roster that owns targets directly would duplicate membership and let the two drift.
+
+**Not decided.** No system reads organizations or their rivalries yet. Agendas are fixed for the run. Organization names are not shown anywhere. The canonical scene has none, which is a compatibility choice rather than a design verdict.
