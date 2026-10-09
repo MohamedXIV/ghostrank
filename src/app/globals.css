@@ -4669,9 +4669,14 @@ textarea:focus-visible,
   white-space: nowrap;
 }
 
+/* The mode label wraps inside the strip. A nowrap label with a hold reason would
+   be wider than a phone, and the mobile browser would widen the whole page to
+   fit it, zooming everything out (G1 closeout). */
 .clock-hud__job {
   color: var(--foreground-muted);
-  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* Each group may wrap inside its own width, so a long mode label on a phone
@@ -4714,6 +4719,32 @@ textarea:focus-visible,
 .clock-hud button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.clock-hud button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Touch-sized clock controls (G1 closeout, D063). On a phone or a coarse pointer
+   Pause, 1×, 4×, 16×, Halt and the notice dismiss target are at least 44 css px.
+   The strip stays in the page flow, so the larger targets wrap instead of
+   covering the play surface. */
+@media (max-width: 640px), (pointer: coarse) {
+  .clock-hud__speeds {
+    gap: 6px;
+  }
+
+  .clock-hud__controls,
+  .clock-hud__status {
+    gap: var(--space-2);
+  }
+
+  .clock-hud button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 12px;
+  }
 }
 
 .clock-hud__notice {

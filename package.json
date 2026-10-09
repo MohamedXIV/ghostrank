@@ -17,7 +17,8 @@
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "telemetry:balance": "vitest run src/game/telemetry/balance-telemetry.test.ts --reporter=verbose"
+    "telemetry:balance": "vitest run src/game/telemetry/balance-telemetry.test.ts --reporter=verbose",
+    "smoke:browser": "node scripts/browser-smoke/g1-clock-smoke.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.1",
@@ -43,6 +44,7 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.8",
+    "playwright-core": "1.56.1",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vitest": "5.0.3"

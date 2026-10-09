@@ -126,3 +126,101 @@ describe("live-time notices (Game-First G1, D056)", () => {
   });
 });
 
+describe("contract expiry notices (Game-First G1 closeout, D063)", () => {
+  const expiry = (contractId: string, worldMinute: number): SimulationEvent => ({
+    type: "ContractExpired",
+    contractId,
+    stage: "offer",
+    worldMinute,
+  });
+  const stop = (worldMinute: number): SimulationEvent => ({
+    type: "TimeJobInterrupted",
+    jobId: "job:1",
+    kind: "sleep",
+    worldMinute,
+    targetWorldMinute: 4320,
+    cause: "ContractExpired",
+  });
+  const known = (...ids: string[]) => (id: string) => ids.includes(id);
+
+  it("names a deadline the player knows, as a deadline and nothing more", () => {
+    const batch = [expiry("contract:1", 1800), stop(1800)];
+
+    expect(
+      describeTimeJobEvent(stop(1800), {
+        batch,
+        contractKnown: known("contract:1"),
+      }),
+    ).toEqual({
+      tone: "interrupt",
+      text: "A known contract deadline passed. Time stopped at Day 2 · 06:00.",
+      worldMinute: 1800,
+    });
+  });
+
+  it("keeps the generic wording for a deadline the player does not know", () => {
+    const batch = [expiry("contract:1", 1800), stop(1800)];
+
+    expect(
+      describeTimeJobEvent(stop(1800), { batch, contractKnown: known() })?.text,
+    ).toBe("Something needs your attention. Time stopped at Day 2 · 06:00.");
+  });
+
+  it("names only a contract that expired at the stop itself", () => {
+    // A known contract expired an earlier minute; this stop has no expiry of its own.
+    const batch = [expiry("contract:1", 1440), stop(1800)];
+
+    expect(
+      describeTimeJobEvent(stop(1800), {
+        batch,
+        contractKnown: known("contract:1"),
+      })?.text,
+    ).toBe("Something needs your attention. Time stopped at Day 2 · 06:00.");
+  });
+
+  it("is named by a known expiry in the same batch, not by a hidden one beside it", () => {
+    const batch = [expiry("contract:hidden", 1800), expiry("contract:1", 1800), stop(1800)];
+
+    expect(
+      describeTimeJobEvent(stop(1800), {
+        batch,
+        contractKnown: known("contract:1"),
+      })?.text,
+    ).toBe("A known contract deadline passed. Time stopped at Day 2 · 06:00.");
+  });
+
+  it("never counts or names the expiries it does not show", () => {
+    const batch = [
+      expiry("contract:a", 1800),
+      expiry("contract:b", 1800),
+      stop(1800),
+    ];
+    const text = describeTimeJobEvent(stop(1800), {
+      batch,
+      contractKnown: known("contract:a"),
+    })?.text;
+
+    expect(text).not.toMatch(/contract:|\d+ contracts?|two|both/i);
+  });
+
+  it("names a live expiry only when the player knows that contract", () => {
+    const live = expiry("contract:1", 1800);
+
+    expect(
+      describeLiveEvent(live, { batch: [live], contractKnown: known("contract:1") })?.text,
+    ).toBe("A known contract deadline passed. Time stopped at Day 2 · 06:00.");
+    expect(
+      describeLiveEvent(live, { batch: [live], contractKnown: known() })?.text,
+    ).toBe("Something needs your attention. Time stopped at Day 2 · 06:00.");
+  });
+
+  it("keeps the generic wording with no context, as every older caller does", () => {
+    expect(describeTimeJobEvent(stop(1800))?.text).toBe(
+      "Something needs your attention. Time stopped at Day 2 · 06:00.",
+    );
+    expect(describeLiveEvent(expiry("contract:1", 1800))?.text).toBe(
+      "Something needs your attention. Time stopped at Day 2 · 06:00.",
+    );
+  });
+});
+

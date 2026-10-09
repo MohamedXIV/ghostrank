@@ -149,6 +149,27 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
     description: "Stop a sleep or fast-forward where it stands",
     example: "halt",
   },
+  {
+    category: "underground",
+    syntax: "pause",
+    label: "pause",
+    description: "Hold the clock where it stands; playback only, nothing in the world changes",
+    example: "pause",
+  },
+  {
+    category: "underground",
+    syntax: "resume",
+    label: "resume",
+    description: "Play the clock again at 1x",
+    example: "resume",
+  },
+  {
+    category: "underground",
+    syntax: "speed <1|4|16>",
+    label: "speed",
+    description: "Set clock playback to 1x, 4x or 16x; a reload returns to 1x",
+    example: "speed 4",
+  },
 
   // System
   {
