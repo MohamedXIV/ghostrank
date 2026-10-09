@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
 import { ClockHud, createSessionClockPort } from "@/components/game/clock-hud";
+import { PlayerHandleField } from "@/components/game/identity/player-handle-field";
+import { validatePlayerHandle } from "@/game/identity/player-handle";
 import { ClockProvider } from "@/components/game/clock-context";
 import { createClockDriver } from "@/game/runtime/time-driver";
 import type { ClockNotice } from "@/game/runtime/time-notices";
@@ -16,6 +18,7 @@ import {
   type GameSession,
 } from "@/game/runtime/game-session";
 import {
+  authoredHandleRoster,
   createNewRunWorldState,
   createSliceWorldState,
 } from "@/game/runtime/slice-world";
@@ -63,15 +66,21 @@ export function lifecycleFromActiveRunInspection(
   return null;
 }
 
+/** Names an authored actor or target already holds, which a new run may not take. */
+const RESERVED_HANDLES = authoredHandleRoster();
+
 export async function prepareFreshRunState(
   previousSession: GameSession | null,
   persistence: RunPersistence | null,
+  handle: string,
 ) {
   if (previousSession) {
     await previousSession.flush();
   }
 
-  const freshState = createNewRunWorldState();
+  // The factory re-checks the handle against the roster, so a refused name
+  // throws here and the caller returns the player to their previous run.
+  const freshState = createNewRunWorldState({ handle });
 
   if (persistence) {
     await persistence.saveActiveState(freshState, []);
@@ -88,6 +97,14 @@ export function GameShell() {
   const [persistenceInstance, setPersistenceInstance] =
     useState<RunPersistence | null>(null);
   const activeSessionRef = useRef<GameSession | null>(null);
+  // The handle the player is typing for a new run. Shared by the three start
+  // screens, and reset each time a new run is requested.
+  const [handleDraft, setHandleDraft] = useState("");
+  const handleCheck = useMemo(
+    () => validatePlayerHandle(handleDraft, RESERVED_HANDLES),
+    [handleDraft],
+  );
+  const chosenHandle = handleCheck.ok ? handleCheck.handle : null;
 
   const activeSurface = useUiStore((state) => state.activeSurface);
   const setActiveSurface = useUiStore((state) => state.setActiveSurface);
@@ -194,6 +211,7 @@ export function GameShell() {
 
   const requestNewRun = useCallback(() => {
     if (lifecycle.type === "active") {
+      setHandleDraft("");
       setLifecycle({
         type: "prompt_new_run",
         activeSession: lifecycle.session,
@@ -210,7 +228,7 @@ export function GameShell() {
     }
   }, [lifecycle]);
 
-  const confirmStartFreshRun = useCallback(async () => {
+  const confirmStartFreshRun = useCallback(async (handle: string) => {
     const previousSession =
       lifecycle.type === "prompt_new_run"
         ? lifecycle.activeSession
@@ -228,6 +246,7 @@ export function GameShell() {
       const freshState = await prepareFreshRunState(
         previousSession,
         persistenceInstance,
+        handle,
       );
 
       const nextSession = await createGameSession({
@@ -252,20 +271,23 @@ export function GameShell() {
     }
   }, [lifecycle, persistenceInstance]);
 
-  const archiveCorruptAndStartFresh = useCallback(async () => {
-    if (lifecycle.type !== "corrupt_save" || !persistenceInstance) {
-      return;
-    }
+  const archiveCorruptAndStartFresh = useCallback(
+    async (handle: string) => {
+      if (lifecycle.type !== "corrupt_save" || !persistenceInstance) {
+        return;
+      }
 
-    if (!persistenceInstance.archiveCorruptActiveRun) {
-      // Never overwrite corrupt durable data if this persistence adapter cannot
-      // archive it non-destructively.
-      return;
-    }
+      if (!persistenceInstance.archiveCorruptActiveRun) {
+        // Never overwrite corrupt durable data if this persistence adapter cannot
+        // archive it non-destructively.
+        return;
+      }
 
-    await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
-    await confirmStartFreshRun();
-  }, [confirmStartFreshRun, lifecycle, persistenceInstance]);
+      await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
+      await confirmStartFreshRun(handle);
+    },
+    [confirmStartFreshRun, lifecycle, persistenceInstance],
+  );
 
   if (lifecycle.type === "booting") {
     return (
@@ -309,11 +331,17 @@ export function GameShell() {
               explicitly start one; its world seed is chosen at initialization
               and then remains deterministic for that run.
             </p>
+            <PlayerHandleField
+              value={handleDraft}
+              rejection={handleCheck.ok ? null : handleCheck.reason}
+              onChange={setHandleDraft}
+            />
             <div className="lifecycle-actions">
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => void confirmStartFreshRun()}
+                disabled={chosenHandle === null}
+                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle)}
               >
                 + START NEW OPERATION
               </Button>
@@ -356,6 +384,11 @@ export function GameShell() {
                 </span>
               )}
             </div>
+            <PlayerHandleField
+              value={handleDraft}
+              rejection={handleCheck.ok ? null : handleCheck.reason}
+              onChange={setHandleDraft}
+            />
             <div className="lifecycle-actions">
               <Button
                 variant="ghost"
@@ -367,7 +400,10 @@ export function GameShell() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => void archiveCorruptAndStartFresh()}
+                disabled={chosenHandle === null}
+                onClick={() =>
+                  chosenHandle && void archiveCorruptAndStartFresh(chosenHandle)
+                }
               >
                 ARCHIVE BACKUP &amp; START FRESH RUN
               </Button>
@@ -409,6 +445,11 @@ export function GameShell() {
                 ? "The previous run has ended and is permanently archived in history. Initialize a fresh operation with a new random world seed?"
                 : `An active operation for ${active.player.handle} at minute ${active.worldMinute} is currently in progress. Starting a new run will replace this active progress after pending saves finish, then initialize a fresh seed.`}
             </p>
+            <PlayerHandleField
+              value={handleDraft}
+              rejection={handleCheck.ok ? null : handleCheck.reason}
+              onChange={setHandleDraft}
+            />
             <div className="lifecycle-actions">
               {!isEnded && (
                 <Button
@@ -422,7 +463,8 @@ export function GameShell() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => void confirmStartFreshRun()}
+                disabled={chosenHandle === null}
+                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle)}
               >
                 CONFIRM START FRESH RUN
               </Button>

@@ -7,6 +7,7 @@ import {
   lifecycleFromActiveRunInspection,
   prepareFreshRunState,
 } from "@/components/game/game-shell";
+import { PlayerHandleField } from "@/components/game/identity/player-handle-field";
 import { createBrowserRunPersistence } from "@/persistence/browser-run-persistence";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { endRun } from "@/game/simulation/systems/endings";
@@ -40,11 +41,66 @@ describe("Phase 9 P5 — Run lifecycle browser & shell smoke", () => {
       },
     };
 
-    const fresh = await prepareFreshRunState(previousSession, persistence);
+    const fresh = await prepareFreshRunState(
+      previousSession,
+      persistence,
+      "Night_Wren",
+    );
 
     expect(order).toEqual(["flush", "save-fresh"]);
     expect(fresh.ending).toBeNull();
     expect(fresh.worldMinute).toBe(0);
+    expect(fresh.player.handle).toBe("Night_Wren");
+  });
+
+  it("refuses to start a fresh run under an authored name, before any save", async () => {
+    const order: string[] = [];
+    const persistence = {
+      loadActiveState: async () => null,
+      saveActiveState: async () => {
+        order.push("save-fresh");
+      },
+    };
+
+    await expect(
+      prepareFreshRunState(null, persistence, "nightshade"),
+    ).rejects.toThrow(RangeError);
+    expect(order).toEqual([]);
+  });
+
+  it("renders the handle field on the no-run screen with the start action held back", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(PlayerHandleField, {
+        value: "",
+        rejection: "empty",
+        onChange: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("OPERATOR HANDLE");
+    expect(html).toContain('name="player-handle"');
+    // Before the player types, the standing rule shows and no refusal is raised.
+    expect(html).toContain("3–16 letters or numbers");
+    expect(html).not.toContain("aria-invalid");
+    expect(html).not.toContain("run-handle-error");
+  });
+
+  it("raises the refusal once the player has typed a taken name", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(PlayerHandleField, {
+        value: "nightshade",
+        rejection: "taken",
+        onChange: () => undefined,
+      }),
+    );
+
+    expect(html).toContain('aria-invalid="true"');
+    expect(html).toContain("Another handle on this network already uses that name.");
+
+    // The input echoes what the player typed; the refusal must not name the
+    // authored handle it collided with.
+    const refusal = /class="run-handle-error"[^>]*>([^<]*)</.exec(html)?.[1] ?? "";
+    expect(refusal).not.toMatch(/nightshade/i);
   });
 
   it("renders boot screen during initial load with proper accessibility attributes", () => {

@@ -4643,6 +4643,54 @@ textarea:focus-visible,
   justify-content: center;
 }
 
+/* Operator handle on the run-start screens (Game-First G2, #78). The rule is
+   shown before the player types; a refusal appears only after they have. */
+.run-handle-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.run-handle-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--foreground-muted);
+}
+
+.run-handle-input {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--foreground);
+  background: var(--input-background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 8px 10px;
+}
+
+.run-handle-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.run-handle-hint,
+.run-handle-error {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.run-handle-hint {
+  color: var(--foreground-muted);
+}
+
+.run-handle-error {
+  color: var(--danger);
+}
+
 /* Visible world clock (Game-First G1). A strip in the page flow above the
    surface, so it never covers a header or a control. Its notice joins the strip
    while one is shown, and wraps onto a second row on a narrow screen. */

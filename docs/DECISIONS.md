@@ -847,3 +847,19 @@ The G1 acceptance notes showed two player-facing gaps. A rest stopped by a contr
 - **The mode label wraps.** While a window holds the clock, the mode text is longer, and a nowrap label was wider than a phone. The mobile browser then widened the layout viewport to fit it, which zoomed the whole page out. The browser smoke run found this at 320 px, and the label now wraps inside the strip. The smoke run checks that the layout keeps the device width while a window is open.
 
 **Decision:** a stop names a contract only when the player can see it, and it otherwise stays generic. Clock controls on phones and coarse pointers are at least 44 css px and never widen the page.
+
+## D064 — The player names the run; the world refuses a name it already holds (Game-First G2, #78)
+
+Until G2 every run opened as `CobaltXZ`. The handle is the one identity the player owns, and `GAME_FIRST_REBOOT.md` §4 asks for a chosen, unique, in-run handle that persists through run and History. The rules live in `src/game/identity/player-handle.ts`. They are pure and carry no mechanical weight: rank is never an input, and no handle grants a bonus or a gate (AGENTS.md).
+
+**Shape.** Once trimmed, a handle is 3–16 characters: ASCII letters and digits, with at most one `-` or `_` between parts. It is ASCII only, so a look-alike spelled with another alphabet (a Cyrillic capital A in NIGHTSHADE) cannot pass for an authored name. The shape rule is also the save-data invariant: `storedWorldStateSchema` accepts a stored handle only when it satisfies the same check, applied to the exact string, with no trimming.
+
+**Roster.** A new run may not take the name of an authored actor or target, ignoring case. The entry screen refuses it, and `createSliceWorldState` checks it again and throws a `RangeError`. The roster is an entry rule only. The save schema never reads it, so a content change cannot make an existing save unreadable.
+
+**Entry.** The three screens that start a run (no active run, the replacement prompt from an active or ended run, and the corrupt-save recovery) all show the same field. Their start action stays disabled until the handle is accepted. The standing rule is shown before the player types, and a refusal names the rule, never the name it collided with or any hidden cause. The accepted handle reaches `prepareFreshRunState` and then `createNewRunWorldState({ handle })`, so it is stored with the run and shown in the desktop header, the public rank listing, the ending and History.
+
+**Not decided here.** Renaming is not offered. `GAME_FIRST_REBOOT.md` allows a name change only through an explicit future mechanic. Real-name and profanity policy is not enforced; the field tells the player what it accepts and nothing more. Procedural worlds (G2 scenarios) must pass their generated roster to the same roster check, and that work does not start until this identity flow is accepted.
+
+**Alternatives rejected.** Free text with no rules would allow spaces, look-alikes and unbounded length in the header and History. Putting the roster rule in the save schema would strand saves whenever authored content changes.
+
+**Residual.** `bootSimulation` still builds a default-handle state before restoring. Restoring a saved run discards that state. It is used only when a saved run was reported but no state could be loaded, a case the lifecycle code does not expect to reach. The browser check of this flow is committed as `npm run smoke:browser:identity` (`scripts/browser-smoke/g2-identity-smoke.mjs`): the refusal and acceptance states, start, reload persistence, retirement to an ended run, the replacement prompt, Run History across the new run, and a phone-width entry check. The build ships no `favicon.ico`, so the browser request for it is reported as INFO rather than hidden.
