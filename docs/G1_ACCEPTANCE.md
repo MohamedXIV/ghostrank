@@ -1,6 +1,6 @@
 # G1 acceptance (#77): engineering evidence and remaining gates
 
-**Status (2026-10-08):** engineering acceptance merged via PR #92 at `7f6a2c9a06818dfa7308004627c4a08774cea90e` (tested implementation on Node 24: 987 passing tests, 42 production Chromium PASS). **G1 is not complete.** The five UX/time-control directions in section 5 are now implemented on the closeout branch `g1/77-closeout` (D062, D063), with a committed browser smoke harness (section 3b). That closeout PR is open and **not merged**. **G1 is not complete** until the closeout is reviewed and merged and the human playtest gates are recorded (section 6), which are **not run**. No playtest PASS is claimed anywhere in this document.
+**Status (2026-10-09):** G1 engineering complete via PR #93 (`108c517afd11d0d5e29e6850c74252e0918305bd`): D062/D063 playback holds, terminal controls, safe notices, 44px phone targets and checked-in Chromium smoke harness. Claude's Node 24 run: 112 files / 1019 tests passing, and production Chromium 111 PASS / 0 FAIL across desktop and 320/360/390px phone viewports. **Issue #77 remains OPEN for human acceptance; all subjective playtest gates in section 6 are NOT RUN.**
 
 Merged before this acceptance: PR #89 (D057, system jobs for builds, upkeep and outage releases), PR #90 (D058, proportional save path), PR #91 (D059, clock strip in the page flow). #89 also carries the terminal-snapshot regression: `world-schedule.test.ts` "never rewrites an archived terminal world on restore" (`ab4aafa`) and its guard in `reconcileSchedule` (`936472b`).
 
@@ -146,7 +146,7 @@ The 3–10 in-game day run length (AGENTS.md) is judged in G4 and G8 by real pla
 
 ## 7. What is genuinely left for G1
 
-1. **Review and merge the closeout PR.** It is open and not merged, by design.
+1. **Engineering closeout merged via PR #93.** No further D062/D063 implementation is pending unless human testing finds a defect.
 2. **Run the human gates in section 6** and record the evidence. They stay NOT RUN until a human plays the build.
 3. **Known residuals.** The terminal help table's `contract accept|decline|deliver` row is one column wider than the other rows. This predates the closeout and is left as it was. The contract-expiry naming is not exercised in the browser (section 3b).
 4. The browser acceptance harness is now in the repository (`scripts/browser-smoke`, `npm run smoke:browser`). It is no longer scratch-only.
@@ -158,4 +158,4 @@ The dependency-ready start is **player identity**, not procedural worlds.
 - The gap is the new-run path: `game-shell.tsx` calls `createNewRunWorldState()` with no options, so every run is `CobaltXZ`. No UI or seed path sets a handle.
 - Procedural worlds come after that. They need a named RNG stream per concern (`seeded-rng.ts` and `stateless-hash.ts` exist) and a content seam that accepts a generated roster in place of `instantiateWorldContent()`, plus the id, reachability and solvability checks in GAME_FIRST_REBOOT §4.
 
-Status: player identity is implemented (D064, PR #94, draft, not merged). The scene slice is implemented as D065 on a stacked draft: a run starts in a chosen scene, and the two generated scenes are seeded, solvable and rank-free. Organizations exist only as hidden sponsors. Human G0/G1 playtest gates remain NOT RUN. See the G2 row in `docs/ROADMAP.md`.
+Status: **PR #94 (D064) and PR #95 (D065) MERGED.** Players choose a handle and one of three scenarios. Canonical preserves the authored roster; Fresh Scene and High Pressure generate deterministic actors, targets, machines/services and starting ties. Organizations remain only hidden sponsor tags and peer ties are not yet consumed by simulation; G2 #78 stays OPEN. Human G0/G1 playtest gates remain NOT RUN. See `docs/ROADMAP.md`.
