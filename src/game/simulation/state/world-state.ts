@@ -429,6 +429,32 @@ export interface UndergroundActor {
    * actors and for the whole authored roster. Hidden truth.
    */
   organizationId?: string;
+  /** Generated scenes only (D068). Absent for the authored roster. Hidden truth. */
+  hackerArchetype?: HackerArchetype;
+  /** Generated scenes only (D068). Hidden personality that changes behaviour. */
+  temperament?: Temperament;
+}
+
+/**
+ * How a generated hacker works. Each archetype draws its temperament from its own
+ * ranges and is weighted per scene. `fixer` brokers deal with the player at lower
+ * trust, and `tinkerer` runs an assistant. Hidden truth.
+ */
+export type HackerArchetype =
+  | "opportunist"
+  | "ghost"
+  | "enforcer"
+  | "fixer"
+  | "tinkerer";
+
+/** Personality, each 0-100. Read by intrusion tempo, discretion and offer rate (D068). */
+export interface Temperament {
+  /** Adds to the chance of acting on a tick. */
+  aggression: number;
+  /** Adds to discretion, so the actor's incidents stay private more often. */
+  caution: number;
+  /** Adds to the actor's contract offer rate. */
+  greed: number;
 }
 
 export type OrganizationKind = "crew" | "syndicate" | "exchange";

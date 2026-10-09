@@ -1,7 +1,10 @@
 import {
+  ARCHETYPE_TEMPERAMENT,
   GENERATED_SCENARIO_SPECS,
+  HACKER_ARCHETYPE_WEIGHTS,
   MACHINE_TEMPLATES,
   MOTIVE_AGENDAS,
+  TINKERER_MODELS,
   NAME_PREFIXES,
   NAME_SUFFIXES,
   ORGANIZATION_HEADS,
@@ -24,8 +27,10 @@ import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import {
   PLAYER_ACTOR_ID,
   STARTING_NETWORK_TRUST,
+  type HackerArchetype,
   type MachineState,
   type OrganizationKind,
+  type Temperament,
   type TargetState,
   type UndergroundActor,
   type UndergroundOrganization,
@@ -248,6 +253,60 @@ function assignRivalries(
   }
 }
 
+/** A generated hacker's archetype, personality and, for a tinkerer, its assistant. */
+interface HackerDraw {
+  hackerArchetype: HackerArchetype;
+  temperament: Temperament;
+  modelId?: string;
+}
+
+/**
+ * Draws a hacker's archetype with its scene's weights, then its temperament from
+ * that archetype's ranges. Every draw is salted by its role, so the same person
+ * keeps its archetype when another person's draws change (D068).
+ */
+function drawHacker(
+  seed: number,
+  scenario: GeneratedRunScenario,
+  attempt: number,
+  ...parts: Array<string | number>
+): HackerDraw {
+  const hackerArchetype = pickWeighted(
+    seed,
+    HACKER_ARCHETYPE_WEIGHTS[scenario],
+    attempt,
+    "hacker",
+    ...parts,
+  );
+  const ranges = ARCHETYPE_TEMPERAMENT[hackerArchetype];
+  const temperament: Temperament = {
+    aggression: range(seed, ranges.aggression, attempt, "aggression", ...parts),
+    caution: range(seed, ranges.caution, attempt, "caution", ...parts),
+    greed: range(seed, ranges.greed, attempt, "greed", ...parts),
+  };
+
+  return {
+    hackerArchetype,
+    temperament,
+    ...(hackerArchetype === "tinkerer"
+      ? {
+          modelId:
+            TINKERER_MODELS[
+              range(seed, [0, TINKERER_MODELS.length - 1], attempt, "model", ...parts)
+            ],
+        }
+      : {}),
+  };
+}
+
+function hackerFields(draw: HackerDraw) {
+  return {
+    hackerArchetype: draw.hackerArchetype,
+    temperament: draw.temperament,
+    ...(draw.modelId === undefined ? {} : { modelId: draw.modelId }),
+  };
+}
+
 function buildMachines(
   seed: number,
   attempt: number,
@@ -377,6 +436,7 @@ function buildCandidate(
       owner < organizations.length
         ? organizations[owner]!
         : organizations[range(seed, [0, organizations.length - 1], attempt, "member", owner)]!;
+    const hacker = drawHacker(seed, scenario, attempt, "owner", owner);
 
     const actor: UndergroundActor = {
       id,
@@ -389,6 +449,7 @@ function buildCandidate(
       activity: range(seed, spec.activity, attempt, "activity", owner),
       targetId: id,
       organizationId: home.id,
+      ...hackerFields(hacker),
     };
 
     const target: TargetState = {
@@ -428,6 +489,7 @@ function buildCandidate(
         discretion: range(seed, spec.discretion, attempt, "discretion", "broker", broker),
         activity: range(seed, spec.activity, attempt, "activity", "broker", broker),
         ...(member === undefined ? {} : { organizationId: member.id }),
+        ...hackerFields(drawHacker(seed, scenario, attempt, "broker", broker)),
       },
     });
   }

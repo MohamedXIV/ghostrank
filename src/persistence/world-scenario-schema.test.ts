@@ -53,6 +53,27 @@ describe("run scenario persistence (Game-First G2, #78; D065)", () => {
     expect(canonical.underground.organizations).toBeUndefined();
   });
 
+  it("round-trips each generated hacker's archetype, temperament and assistant", () => {
+    const generated = createSliceWorldState({ seed: 11, handle: "Night_Wren", scenario: "high-pressure" });
+    const parsed = worldStateSchema.parse(savedJson(generated));
+
+    for (const [index, actor] of generated.underground.actors.entries()) {
+      expect(parsed.underground.actors[index]!.hackerArchetype).toBe(actor.hackerArchetype);
+      expect(parsed.underground.actors[index]!.temperament).toEqual(actor.temperament);
+      expect(parsed.underground.actors[index]!.modelId).toBe(actor.modelId);
+    }
+    expect(generated.underground.actors.some((actor) => actor.hackerArchetype === "tinkerer")).toBe(true);
+  });
+
+  it("gives a canonical save's actors no archetype or temperament", () => {
+    const canonical = worldStateSchema.parse(
+      savedJson(createSliceWorldState({ seed: 11, handle: "Night_Wren", scenario: "canonical" })),
+    );
+
+    expect(canonical.underground.actors.every((actor) => actor.hackerArchetype === undefined)).toBe(true);
+    expect(canonical.underground.actors.every((actor) => actor.temperament === undefined)).toBe(true);
+  });
+
   it("refuses a scene the game does not know", () => {
     const saved = savedJson(createSliceWorldState({ seed: 42 })) as Record<string, unknown>;
 

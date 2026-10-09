@@ -1,5 +1,6 @@
 import type { WorldActorArchetype, WorldTargetArchetype } from "@/content/world-content";
 import type {
+  HackerArchetype,
   OrganizationAgenda,
   OrganizationKind,
   OrganizationMotive,
@@ -150,6 +151,55 @@ export const MOTIVE_AGENDAS: Record<
     { value: "undercut", weight: 40 },
   ],
 };
+
+/**
+ * Hacker archetypes and their weights per scene (D068). `High Pressure` weights
+ * enforcers and tinkerers up, so the volatile scene has more active and
+ * retaliatory actors. These weights are editorial data; the draw itself is seeded.
+ */
+export const HACKER_ARCHETYPE_WEIGHTS: Record<
+  GeneratedRunScenario,
+  ReadonlyArray<{ value: HackerArchetype; weight: number }>
+> = {
+  "fresh-scene": [
+    { value: "opportunist", weight: 30 },
+    { value: "ghost", weight: 20 },
+    { value: "enforcer", weight: 20 },
+    { value: "fixer", weight: 15 },
+    { value: "tinkerer", weight: 15 },
+  ],
+  "high-pressure": [
+    { value: "opportunist", weight: 25 },
+    { value: "ghost", weight: 10 },
+    { value: "enforcer", weight: 35 },
+    { value: "fixer", weight: 10 },
+    { value: "tinkerer", weight: 20 },
+  ],
+};
+
+/** Inclusive temperament ranges (0-100) for each archetype. */
+export const ARCHETYPE_TEMPERAMENT: Record<
+  HackerArchetype,
+  {
+    aggression: readonly [number, number];
+    caution: readonly [number, number];
+    greed: readonly [number, number];
+  }
+> = {
+  opportunist: { aggression: [40, 70], caution: [0, 30], greed: [50, 90] },
+  ghost: { aggression: [0, 20], caution: [60, 95], greed: [10, 40] },
+  enforcer: { aggression: [60, 95], caution: [20, 50], greed: [30, 60] },
+  fixer: { aggression: [10, 40], caution: [40, 70], greed: [60, 95] },
+  tinkerer: { aggression: [20, 50], caution: [40, 70], greed: [20, 50] },
+};
+
+/** Assistant models a tinkerer may run. Non-premium, so a generated scene needs no purchase. */
+export const TINKERER_MODELS: readonly string[] = [
+  "model-local-workhorse",
+  "model-local-tuned",
+  "model-local-reliable",
+  "model-cloud-compact",
+];
 
 export const MACHINE_TEMPLATES: ReadonlyArray<{ role: string; label: string }> = [
   { role: "relay", label: "Outer Relay" },

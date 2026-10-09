@@ -938,3 +938,43 @@ Canonical scenes, and saves with no scene, keep the uniform picks exactly, so th
 **Observed, not yet tuned.** Grudges rise quickly and saturate. Over 30 days the typical grudge is 45–75 in both scenes, which flattens the weights toward a common high value. This is the same accumulation canonical play has. Decay, or a cap on how much one incident can add, is the next tuning question. It is not changed here, because it would change canonical behaviour too.
 
 **Not decided.** Standing does not yet change an actor's activity rate, and the player's own ties do not yet feed these picks. Both are later.
+
+## D068 — Hacker archetypes carry a personality that changes what a hacker does (Game-First G2, #78)
+
+**Before.** A generated hacker differed from another only by name, network and stats drawn from the same ranges. Its activity, discretion and offer rate meant the same thing for every person in the scene.
+
+**Rule.** Each generated hacker (owner or broker) draws an archetype from its scene's weights (`HACKER_ARCHETYPE_WEIGHTS` in `src/content/world-scenarios.ts`), then a temperament from that archetype's ranges (`ARCHETYPE_TEMPERAMENT`). Every draw is seeded and salted by the person's role, so a person keeps its archetype when another person's draws change.
+
+| Archetype | Fresh Scene | High Pressure | Temperament character |
+| --- | --- | --- | --- |
+| opportunist | 30 | 25 | greedy, moderately aggressive, not cautious |
+| ghost | 20 | 10 | cautious, quiet, low greed |
+| enforcer | 20 | 35 | aggressive, moderately cautious |
+| fixer | 15 | 10 | deals with the player from zero trust, greedy |
+| tinkerer | 15 | 20 | middling, and runs one assistant model |
+
+Temperament is three traits, each 0–100. Each trait changes exactly one decision, by a tenth of its value:
+- `aggression` adds to the chance an actor acts on a tick (`activityBonus`).
+- `caution` adds to discretion, so its incidents surface less often (`cautionBonus`).
+- `greed` adds to its contract offer rate, before the 100% cap (`greedBonus`).
+
+A `fixer` deals with the player from zero trust, as a contact and as an issuer (`contactTrustThreshold`). Every other archetype keeps the base threshold. A `tinkerer` gets a non-premium assistant model, so a generated scene needs no purchase; the existing assist rules (Phase 5 P4) apply to it unchanged.
+
+**Canonical and legacy.** The authored roster and every pre-G2 save have no archetype and no temperament. Each helper returns zero for them, and `contactTrustThreshold` returns the base. The canonical golden fingerprint (`canonical-golden.test.ts`) still holds, so no canonical behaviour moved.
+
+**Consequence.** Enforcers initiate more intrusions than ghosts, and a ghost's incidents surface less often. A black fixer issues work from the first day. No other black issuer does, in these scenes.
+
+**Measured.** Over 24 seeds and 30 days, enforcers initiate 34.6 intrusions per actor against ghosts' 27.6 in Fresh Scene, and 51.4 against 44.8 in High Pressure. Their public share is 0.51 against 0.41 and 0.33 against 0.28. Black fixers issue 181 offers in Fresh Scene and 147 in High Pressure, and black non-fixers issue none. The tests assert weaker bounds than these.
+
+**Player-safe.** Archetype, temperament and assistant are hidden truth. The player sees only what an intrusion already publishes, and the contracts it is offered. No projection carries them (the projection test checks the serialized output).
+
+**Rank.** No archetype or temperament value reads rank.
+
+**Alternatives rejected.** Giving archetypes their own rule set (a fixer-only offer path, say) would be a scripted special case. A per-archetype flag (`canOfferToPlayer: true`) would move the behaviour out of the seeded standing the rest of G2 uses. Temperament traits scale numbers the simulation already reads, so no new decision was added.
+
+**Observed, not yet tuned.**
+- Greed has a bounded effect. An issuer offers work only while it has fewer than `MAX_OPEN_CONTRACTS` open, so a greedier issuer mostly fills the same slots sooner. Planned for slice 4: greedy issuers take a different objective mix, which is where greed can change what is offered, not only how often.
+- Black non-fixer owners never offer work to the player in these scenes. That is a real gap in the generated opportunity set, and slice 4 addresses it with white brokers in generated starts.
+- A `tinkerer`'s assistant helps only through the existing assist rules, so its archetype adds no new behaviour of its own.
+
+**Not decided.** The archetype weights and temperament ranges are editorial data and are untuned by any playtest. They are not balance-approved, and the human G0/G1 playtest gates are NOT RUN.
