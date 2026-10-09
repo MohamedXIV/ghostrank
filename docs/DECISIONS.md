@@ -1009,3 +1009,31 @@ Canonical scenes and saves with no scene keep the uniform objective draw and sta
 - Scene weights and opening counts are editorial data and are not playtest-tuned.
 
 **Not decided.** Whether High Pressure's opening offers should expire sooner. Whether an opening offer should be an infrastructure-map or a quiet-recon once the player has a rig that can meet it.
+
+## D070 — Generated scenes hold across 120 seeds, and the sweep reports what it does not reach (Game-First G2, #78)
+
+**Before.** Generated-scene tests checked a few seeds each: 12 for simulation properties, 40 for generation. A claim about "every seed" rested on a handful.
+
+**Rule.** Each generated scene is checked across seeds 1–120. Generation alone is checked across seeds 1–300, which gives margin beyond the 100-seed minimum. The check files are:
+- `generated-seed-sweep.test.ts` (new): generation succeeds and matches its spec for every seed in 1–300; every seed yields its own people; generation and the starting save are deterministic; every starting save parses through the save schema; at least 95% of targets receive an offer within 30 days; and every seed has work on the board by day three.
+- `generate-scenario.test.ts`, `generated-organizations.test.ts`, `generated-run.test.ts` and `generated-ties.test.ts`, raised from 40 or 12 seeds to 120. These cover the structural invariants, organization and rivalry rules, replay, rank independence, operation breadth and early offers.
+
+Two checks deliberately keep fewer seeds. `generated-archetypes.test.ts` measures behaviour over 24 seeds and 30 days, and its figures are recorded in D068. `generated-opportunities.test.ts` measures objective shares over 40 seeds and 30 days, and its figures are recorded in D069. Both are stated in their test files. Opening-offer solvability runs over all 120 seeds.
+
+**Measured** on seeds 1–120. Generation fails for no seed in 1–300, in either scene. Each scene yields 120 distinct rosters out of 120 seeds. Every start parses through the save schema, and every seed replays identically over two days. Offers reach 709 of 720 Fresh Scene targets (98.5%) and 813 of 840 High Pressure targets (96.8%) within 30 days. No seed is without work by day three. The sweep asserts a 95% floor.
+
+**Gap, not hidden.** 1.5% of Fresh Scene targets and 3.2% of High Pressure targets receive no offer within 30 days. The cause is not yet diagnosed. A target counts as unoffered when no eligible issuer draws it within 30 days. A player can still reach such a target: the operation breadth test surveys every target on seeds 1–120. The floor is a measured one, not a target of 100%.
+
+**Player-safe.** The sweep adds no projection of its own. The projection assertions in `generated-organizations.test.ts` now run across all 120 seeds, so the hidden-key check covers the full range.
+
+**Rank.** The rank-independence test in `generated-run.test.ts` now runs across all 120 seeds.
+
+**Alternatives rejected.**
+- A single 120-seed sim sweep of every property. Rejected: the heavy properties, such as 30-day sims, would cost minutes per run. Only the rate and reach measures run at 30 days.
+- Asserting 100% offer reach. Rejected: the measured tail is real, and a test that hid it would be a false pass. The floor records the present state.
+
+**Observed, not yet tuned.** The unoffered tail. Options are a per-target minimum-offer rule, or a higher offer cadence for generated scenes only. Neither is made here. A rule scoped to generated scenes would leave canonical offers unchanged, so it is the one to try first, after diagnosis.
+
+**Not decided.** Whether to extend the sweep to 1000 seeds in CI. That would need a runtime budget, so it waits for a decision on test time.
+
+**Human gates.** The G0 and G1 playtest gates remain NOT RUN. This sweep proves structural and deterministic properties. It does not establish that the scenes are fun, fair or readable to a player.

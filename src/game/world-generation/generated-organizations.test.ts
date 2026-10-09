@@ -29,7 +29,7 @@ import { generateScenarioContent } from "@/game/world-generation/generate-scenar
 
 const DAY = 24 * 60;
 const SCENES: readonly GeneratedRunScenario[] = ["fresh-scene", "high-pressure"];
-const SEEDS = Array.from({ length: 40 }, (_, index) => index + 1);
+const SEEDS = Array.from({ length: 120 }, (_, index) => index + 1);
 const RESERVED = (() => {
   const content = instantiateWorldContent();
   return [...content.actors, ...content.targets].map((entry) => entry.handle);
@@ -58,7 +58,7 @@ describe("generated organizations are real and consistent (D066)", () => {
 
   it("gives each organization a public name that matches its kind", () => {
     for (const scenario of SCENES) {
-      for (const seed of SEEDS.slice(0, 12)) {
+      for (const seed of SEEDS) {
         for (const org of scene(seed, scenario).organizations) {
           const tails = ORGANIZATION_KIND_TAILS[org.kind];
           expect(tails.some((tail) => org.name.endsWith(` ${tail}`))).toBe(true);
@@ -156,7 +156,7 @@ describe("canonical has no organizations (legacy compatibility)", () => {
 describe("agendas drive decisions, and the player sees only a public name", () => {
   it("never offers a member work against its own organization's infrastructure", () => {
     for (const scenario of SCENES) {
-      for (const seed of SEEDS.slice(0, 12)) {
+      for (const seed of SEEDS) {
         const bus = new CommandBus(sceneWorld(seed, scenario));
         bus.execute({ type: "advanceTime", minutes: 10 * DAY });
         const world = bus.snapshot();
@@ -177,7 +177,7 @@ describe("agendas drive decisions, and the player sees only a public name", () =
     let checked = 0;
 
     for (const scenario of SCENES) {
-      for (const seed of SEEDS.slice(0, 12)) {
+      for (const seed of SEEDS) {
         const bus = new CommandBus(sceneWorld(seed, scenario));
         bus.execute({ type: "advanceTime", minutes: 10 * DAY });
         const world = bus.snapshot();
@@ -256,7 +256,7 @@ describe("agendas drive decisions, and the player sees only a public name", () =
     let sawName = false;
 
     for (const scenario of SCENES) {
-      for (const seed of SEEDS.slice(0, 12)) {
+      for (const seed of SEEDS) {
         const bus = new CommandBus(sceneWorld(seed, scenario));
         bus.execute({ type: "advanceTime", minutes: 10 * DAY });
         const world = bus.snapshot();

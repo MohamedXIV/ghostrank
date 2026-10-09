@@ -11,7 +11,7 @@ import {
 } from "@/game/world-generation/generate-scenario";
 
 const GENERATED: readonly GeneratedRunScenario[] = ["fresh-scene", "high-pressure"];
-const SEEDS = Array.from({ length: 40 }, (_, index) => index + 1);
+const SEEDS = Array.from({ length: 120 }, (_, index) => index + 1);
 const AUTHORED_RESERVED = (() => {
   const content = instantiateWorldContent();
   return [...content.actors, ...content.targets].map((entry) => entry.handle);
@@ -116,7 +116,7 @@ describe("seeded scenario generation (Game-First G2, #78; D065)", () => {
 
   it("never reuses the player's handle or an authored name", () => {
     for (const scenario of GENERATED) {
-      for (const seed of SEEDS.slice(0, 12)) {
+      for (const seed of SEEDS) {
         const world = generate(seed, scenario);
         const taken = new Set(AUTHORED_RESERVED.map((name) => name.toLowerCase()));
 

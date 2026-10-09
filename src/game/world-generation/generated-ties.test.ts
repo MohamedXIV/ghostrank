@@ -21,7 +21,7 @@ import { organizationOfActor } from "@/game/simulation/systems/organizations";
 
 const DAY = 24 * 60;
 const SCENES = ["fresh-scene", "high-pressure"] as const;
-const SEEDS = Array.from({ length: 12 }, (_, index) => index + 1);
+const SEEDS = Array.from({ length: 120 }, (_, index) => index + 1);
 
 function grudge(world: WorldState, fromId: string, toId: string): number {
   return (
