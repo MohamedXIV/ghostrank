@@ -158,4 +158,4 @@ The dependency-ready start is **player identity**, not procedural worlds.
 - The gap is the new-run path: `game-shell.tsx` calls `createNewRunWorldState()` with no options, so every run is `CobaltXZ`. No UI or seed path sets a handle.
 - Procedural worlds come after that. They need a named RNG stream per concern (`seeded-rng.ts` and `stateless-hash.ts` exist) and a content seam that accepts a generated roster in place of `instantiateWorldContent()`, plus the id, reachability and solvability checks in GAME_FIRST_REBOOT §4.
 
-Status: player identity is implemented (D064, PR #94, draft, not merged). The procedural scenario slice comes next; see the G2 row in `docs/ROADMAP.md`.
+Status: player identity is implemented (D064, PR #94, draft, not merged). The scene slice is implemented as D065 on a stacked draft: a run starts in a chosen scene, and the two generated scenes are seeded, solvable and rank-free. Organizations exist only as hidden sponsors. Human G0/G1 playtest gates remain NOT RUN. See the G2 row in `docs/ROADMAP.md`.

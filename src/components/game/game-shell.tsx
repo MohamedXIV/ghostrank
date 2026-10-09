@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCell } from "tinybase/ui-react";
 import { ClockHud, createSessionClockPort } from "@/components/game/clock-hud";
 import { PlayerHandleField } from "@/components/game/identity/player-handle-field";
+import { RunScenarioPicker } from "@/components/game/identity/run-scenario-picker";
 import { validatePlayerHandle } from "@/game/identity/player-handle";
+import {
+  DEFAULT_RUN_SCENARIO,
+  type RunScenario,
+} from "@/game/simulation/state/run-scenario";
 import { ClockProvider } from "@/components/game/clock-context";
 import { createClockDriver } from "@/game/runtime/time-driver";
 import type { ClockNotice } from "@/game/runtime/time-notices";
@@ -73,6 +78,7 @@ export async function prepareFreshRunState(
   previousSession: GameSession | null,
   persistence: RunPersistence | null,
   handle: string,
+  scenario: RunScenario,
 ) {
   if (previousSession) {
     await previousSession.flush();
@@ -80,7 +86,7 @@ export async function prepareFreshRunState(
 
   // The factory re-checks the handle against the roster, so a refused name
   // throws here and the caller returns the player to their previous run.
-  const freshState = createNewRunWorldState({ handle });
+  const freshState = createNewRunWorldState({ handle, scenario });
 
   if (persistence) {
     await persistence.saveActiveState(freshState, []);
@@ -105,6 +111,12 @@ export function GameShell() {
     [handleDraft],
   );
   const chosenHandle = handleCheck.ok ? handleCheck.handle : null;
+  // The starting scene for the next run, chosen on the same start screens. The
+  // canonical scene is the default, so a player who does not choose gets the
+  // authored roster exactly as before G2 (D065).
+  const [scenarioDraft, setScenarioDraft] = useState<RunScenario>(
+    DEFAULT_RUN_SCENARIO,
+  );
 
   const activeSurface = useUiStore((state) => state.activeSurface);
   const setActiveSurface = useUiStore((state) => state.setActiveSurface);
@@ -212,6 +224,7 @@ export function GameShell() {
   const requestNewRun = useCallback(() => {
     if (lifecycle.type === "active") {
       setHandleDraft("");
+      setScenarioDraft(DEFAULT_RUN_SCENARIO);
       setLifecycle({
         type: "prompt_new_run",
         activeSession: lifecycle.session,
@@ -228,51 +241,55 @@ export function GameShell() {
     }
   }, [lifecycle]);
 
-  const confirmStartFreshRun = useCallback(async (handle: string) => {
-    const previousSession =
-      lifecycle.type === "prompt_new_run"
-        ? lifecycle.activeSession
-        : lifecycle.type === "active"
-          ? lifecycle.session
-          : null;
+  const confirmStartFreshRun = useCallback(
+    async (handle: string, scenario: RunScenario) => {
+      const previousSession =
+        lifecycle.type === "prompt_new_run"
+          ? lifecycle.activeSession
+          : lifecycle.type === "active"
+            ? lifecycle.session
+            : null;
 
-    setLifecycle({ type: "booting", note: "finalizing previous run state" });
+      setLifecycle({ type: "booting", note: "finalizing previous run state" });
 
-    try {
-      // Do not let a delayed autosave from the previous session race with and
-      // overwrite the fresh run. Ended sessions also need their archive move
-      // fully settled before the next active slot is created.
-      setLifecycle({ type: "booting", note: "initializing new simulation run" });
-      const freshState = await prepareFreshRunState(
-        previousSession,
-        persistenceInstance,
-        handle,
-      );
+      try {
+        // Do not let a delayed autosave from the previous session race with and
+        // overwrite the fresh run. Ended sessions also need their archive move
+        // fully settled before the next active slot is created.
+        setLifecycle({ type: "booting", note: "initializing new simulation run" });
+        const freshState = await prepareFreshRunState(
+          previousSession,
+          persistenceInstance,
+          handle,
+          scenario,
+        );
 
-      const nextSession = await createGameSession({
-        initialState: freshState,
-        persistence: persistenceInstance,
-      });
-      setLifecycle({ type: "active", session: nextSession });
-    } catch (error) {
-      console.error("Ghostrank failed to start a fresh run safely", error);
-
-      // A persistence/flush failure must never destroy or replace the previous
-      // recoverable session. Return it to the foreground when one exists;
-      // otherwise return to the explicit no-run screen.
-      if (previousSession) {
-        setLifecycle({ type: "active", session: previousSession });
-      } else {
-        setLifecycle({
-          type: "no_run",
-          note: "new run could not be initialized safely // retry",
+        const nextSession = await createGameSession({
+          initialState: freshState,
+          persistence: persistenceInstance,
         });
+        setLifecycle({ type: "active", session: nextSession });
+      } catch (error) {
+        console.error("Ghostrank failed to start a fresh run safely", error);
+
+        // A persistence/flush failure must never destroy or replace the previous
+        // recoverable session. Return it to the foreground when one exists;
+        // otherwise return to the explicit no-run screen.
+        if (previousSession) {
+          setLifecycle({ type: "active", session: previousSession });
+        } else {
+          setLifecycle({
+            type: "no_run",
+            note: "new run could not be initialized safely // retry",
+          });
+        }
       }
-    }
-  }, [lifecycle, persistenceInstance]);
+    },
+    [lifecycle, persistenceInstance],
+  );
 
   const archiveCorruptAndStartFresh = useCallback(
-    async (handle: string) => {
+    async (handle: string, scenario: RunScenario) => {
       if (lifecycle.type !== "corrupt_save" || !persistenceInstance) {
         return;
       }
@@ -284,7 +301,7 @@ export function GameShell() {
       }
 
       await persistenceInstance.archiveCorruptActiveRun(lifecycle.diagnostic);
-      await confirmStartFreshRun(handle);
+      await confirmStartFreshRun(handle, scenario);
     },
     [confirmStartFreshRun, lifecycle, persistenceInstance],
   );
@@ -336,12 +353,13 @@ export function GameShell() {
               rejection={handleCheck.ok ? null : handleCheck.reason}
               onChange={setHandleDraft}
             />
+            <RunScenarioPicker value={scenarioDraft} onChange={setScenarioDraft} />
             <div className="lifecycle-actions">
               <Button
                 variant="default"
                 size="sm"
                 disabled={chosenHandle === null}
-                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle)}
+                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle, scenarioDraft)}
               >
                 + START NEW OPERATION
               </Button>
@@ -389,6 +407,7 @@ export function GameShell() {
               rejection={handleCheck.ok ? null : handleCheck.reason}
               onChange={setHandleDraft}
             />
+            <RunScenarioPicker value={scenarioDraft} onChange={setScenarioDraft} />
             <div className="lifecycle-actions">
               <Button
                 variant="ghost"
@@ -402,7 +421,7 @@ export function GameShell() {
                 size="sm"
                 disabled={chosenHandle === null}
                 onClick={() =>
-                  chosenHandle && void archiveCorruptAndStartFresh(chosenHandle)
+                  chosenHandle && void archiveCorruptAndStartFresh(chosenHandle, scenarioDraft)
                 }
               >
                 ARCHIVE BACKUP &amp; START FRESH RUN
@@ -450,6 +469,7 @@ export function GameShell() {
               rejection={handleCheck.ok ? null : handleCheck.reason}
               onChange={setHandleDraft}
             />
+            <RunScenarioPicker value={scenarioDraft} onChange={setScenarioDraft} />
             <div className="lifecycle-actions">
               {!isEnded && (
                 <Button
@@ -464,7 +484,7 @@ export function GameShell() {
                 variant="default"
                 size="sm"
                 disabled={chosenHandle === null}
-                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle)}
+                onClick={() => chosenHandle && void confirmStartFreshRun(chosenHandle, scenarioDraft)}
               >
                 CONFIRM START FRESH RUN
               </Button>

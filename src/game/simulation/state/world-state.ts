@@ -1,4 +1,8 @@
 import {
+  DEFAULT_RUN_SCENARIO,
+  type RunScenario,
+} from "@/game/simulation/state/run-scenario";
+import {
   createJobQueue,
   type JobQueueState,
 } from "@/game/simulation/scheduler/job-queue";
@@ -635,6 +639,11 @@ export interface EconomyState {
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
+  /**
+   * The scenario this run was started under (G2, D065). Absent in saves made
+   * before G2, which are canonical.
+   */
+  scenario?: RunScenario;
   targets: TargetState[];
   knownTargetIds: string[];
   evidence: EvidenceRecord[];
@@ -701,6 +710,8 @@ export interface InitialTargetState
 
 export interface InitialWorldState {
   worldMinute?: number;
+  /** How the starting world was made. Absent means canonical (G2, D065). */
+  scenario?: RunScenario;
   player?: PlayerState;
   targets?: InitialTargetState[];
   knownTargetIds?: string[];
@@ -823,6 +834,7 @@ export function createInitialWorldState(
       handle: "unknown",
       rank: 100_000,
     },
+    scenario: initial.scenario ?? DEFAULT_RUN_SCENARIO,
     targets: initial.targets
       ? initial.targets.map((target) => ({
           ...structuredClone(target),

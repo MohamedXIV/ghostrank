@@ -863,3 +863,29 @@ Until G2 every run opened as `CobaltXZ`. The handle is the one identity the play
 **Alternatives rejected.** Free text with no rules would allow spaces, look-alikes and unbounded length in the header and History. Putting the roster rule in the save schema would strand saves whenever authored content changes.
 
 **Residual.** `bootSimulation` still builds a default-handle state before restoring. Restoring a saved run discards that state. It is used only when a saved run was reported but no state could be loaded, a case the lifecycle code does not expect to reach. The browser check of this flow is committed as `npm run smoke:browser:identity` (`scripts/browser-smoke/g2-identity-smoke.mjs`): the refusal and acceptance states, start, reload persistence, retirement to an ended run, the replacement prompt, Run History across the new run, and a phone-width entry check. The build ships no `favicon.ico`, so the browser request for it is reported as INFO rather than hidden.
+
+## D065 — A run starts in a chosen scene; generated scenes are seeded, solvable and rank-free (Game-First G2, #78)
+
+**Choice.** `RunScenario` is `canonical`, `fresh-scene` or `high-pressure` (`src/game/simulation/state/run-scenario.ts`). The three start screens offer them as one radio group, with `canonical` selected by default. A player who does not choose gets the authored roster exactly as before. The scene is stored on the world as `scenario`. The save schema reads it as optional, and a save without one is canonical, so existing saves keep their meaning. A canonical world built with no options is identical to the default world, and it adds no starting ties.
+
+**Generation.** A generated scene is a pure function of the run seed, the scene and the reserved names (`src/game/world-generation/generate-scenario.ts`). Every decision draws from a named, salted stateless hash, so changing one count (a machine count, say) does not reshuffle unrelated people. The name pool is the only thing a reserved name can change. A test reserves one generated name and checks that nothing else about that person moves.
+
+**One name per person.** An owner's actor and target share the owner's handle and rank, as NIGHTSHADE does in the authored roster. Uniqueness applies per person, not per record. The player's handle and every authored name are reserved, ignoring case.
+
+**Solvable starts.** A candidate must pass the structural validator (`validateWorldContentRoster`), the stored handle shape, name uniqueness and reservation, and two rules: every target has an online service a survey can read, and at least one white-network actor other than its owner can offer it. A failed candidate is retried with a new salt, up to eight attempts. The generator never accepts a partial roster and throws if every attempt fails. Seeds 1–40 for both generated scenes never exhaust the attempts.
+
+**Organizations are hidden.** `GAME_FIRST_REBOOT.md` §4 asks for organization identities. This slice does not build them as entities: each generated target carries a hidden `sponsorId` (`sponsor-N`) in its `hidden` block, the shape the authored roster already uses for its sponsor. No system reads `target.hidden`, and nothing shows the sponsor. An organization becomes an entity when a system needs to read one.
+
+**Ties.** Every actor starts with a tie to the player: trust 20 for white, 0 for black, zero grudge. Peer-to-peer ties are drawn at the scene's link rate and recorded, so later systems share one graph. No system reads an actor-to-actor tie yet. Every existing read of the relationship table filters to a tie whose target is the player, so the peer ties change no outcome.
+
+**Rank is never an input.** Display ranks come from the scene's spec, and no generator input or outcome reads rank. A test runs the same operation script at rank 1 and rank 999,999 and compares every field whose name does not contain `rank`. The results match. A temporary change that let rank into contract offers failed that test, so the check can catch a leak.
+
+**Stored, not regenerated.** Generation runs once, when the run is created. The people are written into the world state, as the authored roster is, so a saved run carries its own people. Loading never regenerates them, and a later change to the scene tables cannot reshape a saved run.
+
+**Early play.** For seeds 1–12, both scenes: two identical worlds advanced two days produce identical snapshots and identical results; every target takes observe, open, survey and disengage without a rank gate; and at least one contract is offered within three days.
+
+**History records the scene.** `CompletedRunSummary` carries `scenario`, and the run card shows its label. A world with no scenario reads as canonical.
+
+**Alternatives rejected.** A scene chosen by rank tier would make rank a power level, which AGENTS.md forbids. An organization entity now would widen the simulation before any system needs one. Storing only the seed and regenerating on load would let a generator change reshape saved runs.
+
+**Not decided.** The canonical default is a product choice to revisit after playtest. Scene-specific balance is untuned. High Pressure varies people, networks and tie density, but not intel windows: §4's shorter intel windows are not built. Generated actors have no assistants. Peer-tie systems (rumour, alliance, rivalry) are not built. The human playtest gates stay NOT RUN.
