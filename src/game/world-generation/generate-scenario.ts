@@ -166,6 +166,7 @@ function buildRelationships(
   attempt: number,
   spec: ScenarioSpec,
   actors: readonly UndergroundActor[],
+  organizations: readonly UndergroundOrganization[],
 ): UndergroundRelationship[] {
   // The player's ties mirror what the authored roster gets: white actors start
   // trusting the player, and black actors start with none.
@@ -179,11 +180,47 @@ function buildRelationships(
     updatedWorldMinute: 0,
   }));
 
-  // Peer-to-peer ties. No system reads these yet; they are recorded so later
-  // systems share one graph rather than inventing their own.
+  const rivalOrganizations = new Set(
+    organizations.flatMap((org) => org.rivalIds.map((rivalId) => `${org.id}|${rivalId}`)),
+  );
+
+  // Peer-to-peer ties. Organization structure sets the strong ties: members of
+  // one organization are allies, and members of rival organizations hold a
+  // grudge. Every other pair is linked at the scene's link rate. The simulation
+  // reads these ties when it picks a counterpart or a contract target (D067).
   for (const from of actors) {
     for (const to of actors) {
       if (from.id === to.id) {
+        continue;
+      }
+
+      if (from.organizationId !== undefined && from.organizationId === to.organizationId) {
+        relationships.push({
+          id: `rel:${from.id}>${to.id}`,
+          fromId: from.id,
+          toId: to.id,
+          trust: range(seed, [25, 45], attempt, "ally-trust", from.id, to.id),
+          fear: range(seed, [0, 10], attempt, "ally-fear", from.id, to.id),
+          grudge: 0,
+          updatedWorldMinute: 0,
+        });
+        continue;
+      }
+
+      if (
+        from.organizationId !== undefined &&
+        to.organizationId !== undefined &&
+        rivalOrganizations.has(`${from.organizationId}|${to.organizationId}`)
+      ) {
+        relationships.push({
+          id: `rel:${from.id}>${to.id}`,
+          fromId: from.id,
+          toId: to.id,
+          trust: range(seed, [-35, -15], attempt, "rival-trust", from.id, to.id),
+          fear: range(seed, [0, 15], attempt, "rival-fear", from.id, to.id),
+          grudge: range(seed, [25, 40], attempt, "rival-grudge", from.id, to.id),
+          updatedWorldMinute: 0,
+        });
         continue;
       }
 
@@ -298,7 +335,7 @@ function buildCandidate(
   return {
     actors,
     targets,
-    relationships: buildRelationships(seed, attempt, spec, actorList),
+    relationships: buildRelationships(seed, attempt, spec, actorList, organizations),
     organizations,
   };
 }

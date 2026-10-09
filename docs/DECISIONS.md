@@ -909,3 +909,21 @@ Until G2 every run opened as `CobaltXZ`. The handle is the one identity the play
 **Alternatives rejected.** An organization per target would duplicate the owner's identity, since the owner already carries the target's handle. An organization with a rank would make rank a power level, which AGENTS.md forbids. Organizations as a separate roster that owns targets directly would duplicate membership and let the two drift.
 
 **Not decided.** No system reads organizations or their rivalries yet. Agendas are fixed for the run. Organization names are not shown anywhere. The canonical scene has none, which is a compatibility choice rather than a design verdict.
+
+## D067 — Peer ties decide who an NPC hits and what an issuer asks for, in generated scenes only (Game-First G2 P2, #78)
+
+**Choice.** In a generated scene, an actor's peer ties now weight two picks that were uniform before. The first is the counterpart of an NPC intrusion (`pickCounterpart` in `src/game/simulation/systems/underground.ts`). The second is the target of a contract offer (`pickOfferTarget`). Each candidate's weight is 100, plus 6 for each point of grudge the actor holds toward it, minus three quarters of the trust it holds, with a floor of 20. A stranger, or a pair with no tie, weighs 100. The draw is the same hash stream as before.
+
+**Seeded from organizations.** Members of one organization start as allies: trust 25–45, no grudge. Members of rival organizations start hostile: trust −35 to −15, grudge 25–40, in both directions. Every other pair keeps the scene's link rate. The generator sets these, and the simulation only reads them.
+
+**Consequences.** A successful intrusion already raises the victim's grudge toward its attacker (D054's rule). That grudge now feeds back into the victim's next picks, so feuds escalate through play and not only at the start. Issuers with a grudge against an owner ask the player to scout that owner's infrastructure more often. Allies are picked less.
+
+**Canonical and legacy stay uniform.** The canonical scene, and any save with no scene, keep uniform picks. Their peer grudges form during play, so reading them there would change saved canonical worlds. The canonical golden trace (four starting worlds, 30 days, every command result, every daily snapshot, final state) matches `main` exactly. A test injects a hostile tie into a canonical world and checks that every pick is unchanged.
+
+**Rank is never an input.** The weights read grudge and trust only. A test compares picks at rank 1 and rank 999,999.
+
+**Player-safe.** Peer ties are not projected. A test checks that no actor-to-actor tie id appears in the projected world.
+
+**Measured.** Each pick was measured across 2,000 tick indices. A rival with grudge 40 and trust −20 was picked at the weight formula's share, within 0.05. An ally was picked below the uniform share. A generated issuer picked its rival's target at least 1.8 times as often as a uniform draw. Disabling peer decisions makes all three behaviour tests fail. Over 30 days, six seeds per generated scene stayed inside their bounds: no ending, no rank change from NPC feuds, and incident counts in the 190–415 range.
+
+**Not decided.** Peer grudges never decay, so some feuds reach the 100 cap within a month. Fear is recorded but not read. Alliances do not form during play; they exist only as generated ties. Rival organizations do not yet start contracts against each other. These are follow-ups, and slices 3 and 4 may take some of them.

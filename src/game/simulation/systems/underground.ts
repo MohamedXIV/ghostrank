@@ -1,5 +1,6 @@
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
+import { DEFAULT_RUN_SCENARIO } from "@/game/simulation/state/run-scenario";
 import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
@@ -19,6 +20,7 @@ import {
   type UndergroundRetaliation,
   type UndergroundRelationship,
   type UndergroundRumor,
+  type TargetState,
   type WorldState,
 } from "@/game/simulation/state/world-state";
 
@@ -110,6 +112,128 @@ function clamp(value: number, min: number, max: number): number {
 
 function relationshipId(fromId: string, toId: string): string {
   return `rel:${fromId}>${toId}`;
+}
+
+/**
+ * Peer ties decide outcomes in generated scenes only (Game-First G2 P2, D067).
+ * The canonical scene keeps its uniform picks: that behaviour is the legacy
+ * compatibility contract, and its peers' grudges form during play, so reading
+ * them there would change saved canonical worlds.
+ */
+function peerTiesDecide(world: WorldState): boolean {
+  return world.scenario !== undefined && world.scenario !== DEFAULT_RUN_SCENARIO;
+}
+
+/** A stranger has no tie, so it carries the neutral weight of a plain uniform pick. */
+const PEER_BASE_WEIGHT = 100;
+/** Each point of grudge pulls a pick toward the holder's rival. */
+const PEER_GRUDGE_WEIGHT = 6;
+/** Warmth pushes a pick away from an ally: three quarters of trust is discounted. */
+const PEER_WARMTH_DISCOUNT_PERCENT = 75;
+/** No tie may reach zero weight, so every peer stays possible. */
+const PEER_MIN_WEIGHT = 20;
+
+/**
+ * How strongly one peer's standing toward another pulls a pick toward it. Only
+ * ties between peers reach this, and rank is never an input.
+ */
+export function peerPickWeight(
+  tie: Pick<UndergroundRelationship, "trust" | "grudge"> | undefined,
+): number {
+  if (tie === undefined) {
+    return PEER_BASE_WEIGHT;
+  }
+
+  const warmth = Math.max(0, tie.trust);
+  const discount = Math.floor((warmth * PEER_WARMTH_DISCOUNT_PERCENT) / 100);
+
+  return Math.max(
+    PEER_MIN_WEIGHT,
+    PEER_BASE_WEIGHT + tie.grudge * PEER_GRUDGE_WEIGHT - discount,
+  );
+}
+
+function peerTie(
+  world: WorldState,
+  fromId: string,
+  toId: string,
+): UndergroundRelationship | undefined {
+  return world.underground.relationships.find(
+    (entry) => entry.fromId === fromId && entry.toId === toId,
+  );
+}
+
+/** The index a weighted draw lands on, for a unit draw in `[0, 1)`. */
+function weightedIndex(weights: readonly number[], unit: number): number {
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let cursor = Math.floor(unit * total);
+
+  for (let index = 0; index < weights.length; index += 1) {
+    const weight = weights[index]!;
+
+    if (cursor < weight) {
+      return index;
+    }
+
+    cursor -= weight;
+  }
+
+  return weights.length - 1;
+}
+
+/**
+ * The counterpart an actor picks this tick. The draw is the same hash stream as
+ * before, so a canonical world, and any world with no peer ties, picks exactly
+ * as it always did. Exported so tests can read the draw across many ticks
+ * without running the whole ecosystem.
+ */
+export function pickCounterpart(
+  world: WorldState,
+  actor: UndergroundActor,
+  others: readonly UndergroundActor[],
+  tickIndex: number,
+): UndergroundActor {
+  const unit = hashUnit(world.underground.seed, "pick", tickIndex, actor.id);
+
+  if (!peerTiesDecide(world)) {
+    return others[Math.floor(unit * others.length)]!;
+  }
+
+  const weights = others.map((other) =>
+    peerPickWeight(peerTie(world, actor.id, other.id)),
+  );
+
+  return others[weightedIndex(weights, unit)]!;
+}
+
+/**
+ * The target an issuer offers a contract on. Generated issuers lean toward the
+ * infrastructure of owners they hold a grudge against, so a rival's operation
+ * becomes someone else's contract.
+ */
+export function pickOfferTarget(
+  world: WorldState,
+  issuer: UndergroundActor,
+  targets: readonly TargetState[],
+  tickIndex: number,
+): TargetState {
+  const unit = hashUnit(world.underground.seed, "offer-target", tickIndex, issuer.id);
+
+  if (!peerTiesDecide(world)) {
+    return targets[Math.floor(unit * targets.length)]!;
+  }
+
+  const weights = targets.map((candidate) => {
+    const owner = world.underground.actors.find(
+      (actor) => actor.targetId === candidate.id,
+    );
+
+    return owner === undefined
+      ? PEER_BASE_WEIGHT
+      : peerPickWeight(peerTie(world, issuer.id, owner.id));
+  });
+
+  return targets[weightedIndex(weights, unit)]!;
 }
 
 function adjustRelationship(
@@ -421,10 +545,7 @@ function runActorTick(
     return [];
   }
 
-  const counterpart =
-    others[
-      Math.floor(hashUnit(seed, "pick", tickIndex, actor.id) * others.length)
-    ];
+  const counterpart = pickCounterpart(world, actor, others, tickIndex);
 
   const noise =
     hashUnit(seed, "roll", tickIndex, actor.id) * SUCCESS_NOISE_SPREAD -
@@ -657,13 +778,7 @@ function offerContracts(
       continue;
     }
 
-    const target =
-      targets[
-        Math.floor(
-          hashUnit(seed, "offer-target", tickIndex, issuer.id) *
-            targets.length,
-        )
-      ];
+    const target = pickOfferTarget(world, issuer, targets, tickIndex);
     const objective =
       CONTRACT_OBJECTIVES[
         Math.floor(
