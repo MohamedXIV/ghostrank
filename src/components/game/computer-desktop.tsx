@@ -1943,6 +1943,10 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   contract={{
                     id,
                     issuerHandle: String(entry.issuerHandle ?? "unknown"),
+                    issuerOrganization:
+                      entry.issuerOrganization === undefined
+                        ? undefined
+                        : String(entry.issuerOrganization),
                     targetId,
                     targetHandle: String(entry.targetHandle ?? "unknown"),
                     objective: String(entry.objective ?? ""),

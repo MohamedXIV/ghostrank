@@ -72,7 +72,12 @@ export function createSliceWorldState(
 
   const people =
     scenario === "canonical"
-      ? { actors: authored.actors, targets: authored.targets, relationships: null }
+      ? {
+          actors: authored.actors,
+          targets: authored.targets,
+          relationships: null,
+          organizations: null,
+        }
       : generateScenarioContent({
           seed,
           scenario,
@@ -105,6 +110,8 @@ export function createSliceWorldState(
       // A generated scene supplies its own starting ties, the player's included.
       // The canonical path leaves this out, so the default ties are unchanged.
       ...(people.relationships ? { relationships: people.relationships } : {}),
+      // Generated scenes carry their organizations; the canonical roster has none (D066).
+      ...(people.organizations ? { organizations: people.organizations } : {}),
     },
     targets: people.targets,
   });

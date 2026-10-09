@@ -439,6 +439,8 @@ export interface VisibleInbox {
 export interface VisibleContract {
   id: string;
   issuerHandle: string;
+  /** The public name of the issuer's organization, when it has one (D066). */
+  issuerOrganization?: string;
   targetId: string;
   targetHandle: string;
   objective: ContractObjectiveKind;
@@ -860,15 +862,32 @@ function projectUnderground(
     state.targets.map((target) => [target.id, target.handle]),
   );
   const contracts: VisibleContract[] = [];
+  // An issuer's organization is shown by its public name only. Motive, agenda
+  // and rivalries are hidden truth and never leave the simulation (D066).
+  const organizationNames = new Map(
+    (underground.organizations ?? []).map((org) => [org.id, org.name]),
+  );
+  const issuerOrganizations = new Map(
+    underground.actors.flatMap((actor) => {
+      const name =
+        actor.organizationId === undefined
+          ? undefined
+          : organizationNames.get(actor.organizationId);
+      return name === undefined ? [] : [[actor.id, name] as const];
+    }),
+  );
 
   for (const contract of [...underground.contracts].reverse()) {
     if (contract.status === "declined") {
       continue;
     }
 
+    const issuerOrganization = issuerOrganizations.get(contract.issuerId);
+
     contracts.push({
       id: contract.id,
       issuerHandle: handles.get(contract.issuerId) ?? contract.issuerId,
+      ...(issuerOrganization === undefined ? {} : { issuerOrganization }),
       targetId: contract.targetId,
       targetHandle:
         targetHandles.get(contract.targetId) ?? contract.targetId,

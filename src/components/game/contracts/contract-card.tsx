@@ -35,6 +35,8 @@ export function describeContract(
 export interface ContractData {
   id: string;
   issuerHandle?: string;
+  /** Public name of the issuer's organization, when it has one (D066). */
+  issuerOrganization?: string;
   targetId?: string;
   targetHandle?: string;
   objective?: string;
@@ -109,7 +111,10 @@ export function ContractCard({
         <div className="contract-meta-row">
           <span className="contract-meta-label">TARGET:</span>
           <strong className="contract-target-name">{String(contract.targetHandle ?? "UNKNOWN")}</strong>
-          <span className="contract-issuer-tag">from {String(contract.issuerHandle ?? "UNKNOWN")}</span>
+          <span className="contract-issuer-tag">
+            from {String(contract.issuerHandle ?? "UNKNOWN")}
+            {contract.issuerOrganization ? ` // ${contract.issuerOrganization}` : null}
+          </span>
         </div>
 
         <p className="contract-description-text">

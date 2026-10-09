@@ -7,6 +7,12 @@ import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
 import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import {
+  defenseBonusOf,
+  offerRateBonus,
+  offerableTargetsFor,
+  rivalTargetsFor,
+} from "@/game/simulation/systems/organizations";
+import {
   PLAYER_ACTOR_ID,
   type ForumPost,
   type ForumSubjectKind,
@@ -445,6 +451,7 @@ function runActorTick(
   // "miss a pattern" as a failure mode). No model is again exactly { 0, 0 }.
   const defense =
     counterpart.defense +
+    defenseBonusOf(world, counterpart) +
     npcAssistDeltas(
       seed,
       tickIndex,
@@ -642,26 +649,32 @@ function offerContracts(
       continue;
     }
 
-    const targets = world.targets.filter(
-      (candidate) => candidate.id !== issuer.targetId,
-    );
+    const targets = offerableTargetsFor(issuer, world.targets);
 
     if (targets.length === 0) {
       continue;
     }
 
+    const issuerOfferPercent = Math.min(
+      100,
+      offerPercent + offerRateBonus(world, issuer),
+    );
+
     if (
       hashUnit(seed, "offer", tickIndex, issuer.id) * 100 >=
-      offerPercent
+      issuerOfferPercent
     ) {
       continue;
     }
 
+    // An undercut issuer works against its rivals when it can; otherwise it
+    // draws from the general pool, exactly as before organizations existed.
+    const rivals = rivalTargetsFor(world, issuer, targets);
+    const pool = rivals.length > 0 ? rivals : targets;
     const target =
-      targets[
+      pool[
         Math.floor(
-          hashUnit(seed, "offer-target", tickIndex, issuer.id) *
-            targets.length,
+          hashUnit(seed, "offer-target", tickIndex, issuer.id) * pool.length,
         )
       ];
     const objective =

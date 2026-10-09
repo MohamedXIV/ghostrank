@@ -889,3 +889,28 @@ Until G2 every run opened as `CobaltXZ`. The handle is the one identity the play
 **Alternatives rejected.** A scene chosen by rank tier would make rank a power level, which AGENTS.md forbids. An organization entity now would widen the simulation before any system needs one. Storing only the seed and regenerating on load would let a generator change reshape saved runs.
 
 **Not decided.** The canonical default is a product choice to revisit after playtest. Scene-specific balance is untuned. High Pressure varies people, networks and tie density, but not intel windows: §4's shorter intel windows are not built. Generated actors have no assistants. Peer-tie systems (rumour, alliance, rivalry) are not built. The human playtest gates stay NOT RUN.
+
+## D066 — Organizations are hidden entities that own infrastructure and press an agenda (Game-First G2, #78)
+
+**Supersedes the sponsor tag in D065.** Generated targets no longer carry a `hidden.sponsorId`. An organization is now a simulation entity: `UndergroundOrganization` in `src/game/simulation/state/world-state.ts`, with a public `name` and `kind` and hidden `motive`, `agenda` and `rivalIds`. `GAME_FIRST_REBOOT.md` §4 asks for organization identities, and this is the first version the simulation reads.
+
+**Ownership.** Each owner and its target belong to one organization, and every organization holds at least one target. The first owners seed the organizations, so none is empty. A broker belongs to an organization half the time and works alone otherwise. Membership is stored on the actor (`organizationId`) and on the target (`organizationId`). Canonical and pre-G2 worlds have neither, and the optional fields are never written for them.
+
+**Generation.** Each scene names its organization count (three for Fresh Scene, two for High Pressure). A name is a public head and a kind-specific tail, such as "Ferrous Syndicate", and names are unique. The motive is weighted (profit 40, revenge 35, control 25), and the agenda is drawn from that motive's table. Each pair of organizations is a rival with a seeded 50% chance, and an organization with no rival is paired with the next. Rivalries are symmetric and never self-referential.
+
+**Decisions the simulation reads.** Only three agendas change behaviour, all in `src/game/simulation/systems/organizations.ts`:
+- `expand`: members' contract offer rate rises by 15 percentage points, capped at 100.
+- `undercut`: a member offers work against its rivals' infrastructure whenever a rival target exists, and draws from the general pool otherwise.
+- `defend`: a member's defence rises by 10 points when a rival's actor intrudes on it.
+
+Every member, whatever its agenda, is never offered work against its own organization's infrastructure.
+
+**Player-safe.** The only organization fact the player sees is the public name, and only on a contract a member issues ("from HANDLE // ORG"). Motive, agenda, rivalries, membership and ownership are never projected. A test checks that the projected world carries none of those keys.
+
+**Rank.** No organization rule reads rank.
+
+**Canonical and legacy.** The authored roster has no organizations, so every helper returns its neutral value and the offer and defence arithmetic is unchanged. `canonical-golden.test.ts` pins a hash of a canonical fortnight's full state and events, recorded on `main` before this slice, and it still matches. Pre-G2 saves parse with no organizations.
+
+**Alternatives rejected.** Projecting motive or agenda, even as flavour, would tell the player hidden truth. Letting an organization's size or kind change outcomes would make a bigger organization a power level, which AGENTS.md forbids. Agendas that changed the simulation for canonical worlds would break the golden fingerprint, so the roster is left unchanged.
+
+**Not decided.** The offer bonus and defence bonus are untuned. Organizations are static: no agenda changes over a run, and `kind` has no mechanical effect beyond its name. Intrusion and contract targeting by ties and rivalries come next, in the same generated-only rule (D067).
