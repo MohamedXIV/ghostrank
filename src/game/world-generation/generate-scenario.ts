@@ -1,4 +1,5 @@
 import {
+  BROKER_TEMPERAMENTS,
   GENERATED_SCENARIO_SPECS,
   MACHINE_TEMPLATES,
   NAME_PREFIXES,
@@ -20,7 +21,7 @@ import {
   planOrganizations,
   type OwnerRef,
 } from "@/game/world-generation/organizations";
-import { draw, percent, range } from "@/game/world-generation/draw";
+import { draw, percent, pickWeighted, range } from "@/game/world-generation/draw";
 import {
   PLAYER_ACTOR_ID,
   STARTING_NETWORK_TRUST,
@@ -276,7 +277,15 @@ function buildCandidate(
   for (let owner = 0; owner < spec.owners; owner += 1) {
     const id = ownerRefs[owner]!.id;
     const org = organizationOf.get(id)!;
-    const profile = OWNER_PROFILES[owner % OWNER_PROFILES.length]!;
+    // The archetype and the disposition are weighted draws on their own named
+    // streams, so changing one never reshuffles the other or anything else.
+    const profile = OWNER_PROFILES[
+      pickWeighted(spec.profileWeights, draw(seed, attempt, "profile", owner))
+    ];
+    const temperament = pickWeighted(
+      profile.temperaments,
+      draw(seed, attempt, "temperament", owner),
+    );
     const rank = range(seed, spec.rank, attempt, "rank", owner);
     const skill = range(seed, spec.skill, attempt, "skill", owner);
 
@@ -293,6 +302,7 @@ function buildCandidate(
       activity: range(seed, spec.activity, attempt, "activity", owner),
       targetId: id,
       organizationId: org.id,
+      temperament,
     };
 
     const target: TargetState = {
@@ -326,6 +336,10 @@ function buildCandidate(
         defense: range(seed, spec.defense, attempt, "defense", "broker", broker),
         discretion: range(seed, spec.discretion, attempt, "discretion", "broker", broker),
         activity: range(seed, spec.activity, attempt, "activity", "broker", broker),
+        temperament: pickWeighted(
+          BROKER_TEMPERAMENTS,
+          draw(seed, attempt, "temperament", "broker", broker),
+        ),
       },
     });
   }

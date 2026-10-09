@@ -394,6 +394,19 @@ export const PLAYER_ACTOR_ID = "player";
 export type UndergroundNetwork = "white" | "black";
 
 /**
+ * A hidden behavioural disposition (Game-First G2 P2, D068). It shapes how an
+ * actor acts: how often, how privately, whom it picks, and how it retaliates.
+ * Canonical actors have none and act exactly as before.
+ */
+export const ACTOR_TEMPERAMENTS = [
+  "careful",
+  "reckless",
+  "grudge-holder",
+  "opportunist",
+] as const;
+export type ActorTemperament = (typeof ACTOR_TEMPERAMENTS)[number];
+
+/**
  * Why an organization exists and what it is doing now (Game-First G2, #78;
  * GAME_FIRST_REBOOT §4). Both are hidden truth: nothing projects them yet.
  * They are closed vocabularies so the save schema can check them.
@@ -444,6 +457,8 @@ export interface UndergroundActor {
    * `UndergroundOrganization.memberIds`; both sides are validated together.
    */
   organizationId?: string;
+  /** Hidden disposition (G2 P2, D068). Undefined for authored and pre-G2 actors. */
+  temperament?: ActorTemperament;
 }
 
 /**

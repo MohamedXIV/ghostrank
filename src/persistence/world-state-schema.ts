@@ -6,6 +6,7 @@ import {
   RUN_SCENARIOS,
 } from "@/game/simulation/state/run-scenario";
 import {
+  ACTOR_TEMPERAMENTS,
   ORGANIZATION_AGENDAS,
   ORGANIZATION_MOTIVES,
 } from "@/game/simulation/state/world-state";
@@ -94,6 +95,8 @@ const undergroundActorSchema = z.object({
   targetId: z.string().min(1).optional(),
   // G2 (organizations): a pre-G2 or canonical actor belongs to none.
   organizationId: z.string().min(1).optional(),
+  // G2 (D068): and has no hidden disposition.
+  temperament: z.enum(ACTOR_TEMPERAMENTS).optional(),
 });
 
 const undergroundOrganizationSchema = z.object({

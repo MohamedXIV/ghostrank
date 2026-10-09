@@ -53,6 +53,14 @@ function setTie(
   });
 }
 
+/**
+ * Clears an actor's temperament, so the test reads plain standing. Temperaments
+ * reshape standing and are covered in g2-archetypes.test.ts.
+ */
+function plainStanding(actor: UndergroundActor): void {
+  delete actor.temperament;
+}
+
 /** Removes every peer tie `from` holds, so only the ties a test sets are read. */
 function clearPeerTies(world: WorldState, fromId: string): void {
   world.underground.relationships = world.underground.relationships.filter(
@@ -100,6 +108,7 @@ describe("rivals are picked more, and allies less, in generated scenes (Game-Fir
     const others = world.underground.actors.filter((entry) => entry.id !== actor!.id);
     const rival = others[0]!;
 
+    plainStanding(actor!);
     clearPeerTies(world, actor!.id);
     setTie(world, actor!.id, rival.id, { trust: -20, grudge: 40 });
 
@@ -121,6 +130,7 @@ describe("rivals are picked more, and allies less, in generated scenes (Game-Fir
     const others = world.underground.actors.filter((entry) => entry.id !== actor!.id);
     const ally = others[0]!;
 
+    plainStanding(actor!);
     clearPeerTies(world, actor!.id);
     setTie(world, actor!.id, ally.id, { trust: 40, grudge: 0 });
 
@@ -137,6 +147,7 @@ describe("rivals are picked more, and allies less, in generated scenes (Game-Fir
       (entry) => entry.targetId !== undefined && entry.id !== issuer.id,
     )!;
 
+    plainStanding(issuer);
     clearPeerTies(world, issuer.id);
     setTie(world, issuer.id, rivalOwner.id, { trust: -20, grudge: 40 });
 

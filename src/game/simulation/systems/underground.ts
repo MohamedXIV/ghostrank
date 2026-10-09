@@ -9,6 +9,7 @@ import { physicalRetaliationTick } from "@/game/simulation/systems/physical-reta
 import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import {
   PLAYER_ACTOR_ID,
+  type ActorTemperament,
   type ForumPost,
   type ForumSubjectKind,
   type ContractObjectiveKind,
@@ -124,6 +125,61 @@ function peerTiesDecide(world: WorldState): boolean {
   return world.scenario !== undefined && world.scenario !== DEFAULT_RUN_SCENARIO;
 }
 
+/**
+ * How a temperament reshapes an actor's behaviour (G2 P2, D068). Each table is
+ * percent-scaled, so 100 is the untouched baseline. An actor with no temperament
+ * (every canonical and pre-G2 actor) takes the baseline in every table.
+ */
+const TEMPERAMENT_ACTIVITY_PERCENT: Record<ActorTemperament, number> = {
+  careful: 70,
+  reckless: 140,
+  "grudge-holder": 100,
+  opportunist: 100,
+};
+const TEMPERAMENT_DISCRETION_DELTA: Record<ActorTemperament, number> = {
+  careful: 12,
+  reckless: -12,
+  "grudge-holder": 0,
+  opportunist: 0,
+};
+const TEMPERAMENT_SMEAR_PERCENT: Record<ActorTemperament, number> = {
+  careful: 50,
+  reckless: 150,
+  "grudge-holder": 200,
+  opportunist: 100,
+};
+/** An opportunist scores a counterpart by how soft it is: 150 minus its defense. */
+const OPPORTUNIST_SOFTNESS_BASE = 150;
+
+/** Chance per tick, in percent, that this actor acts. Untempered actors are unchanged. */
+export function temperamentActivity(actor: UndergroundActor): number {
+  if (actor.temperament === undefined) {
+    return actor.activity;
+  }
+
+  return clamp(
+    Math.round((actor.activity * TEMPERAMENT_ACTIVITY_PERCENT[actor.temperament]) / 100),
+    0,
+    100,
+  );
+}
+
+/** Added to the discretion an incident is judged by. Untempered actors add nothing. */
+export function temperamentDiscretionDelta(actor: UndergroundActor): number {
+  return actor.temperament === undefined
+    ? 0
+    : TEMPERAMENT_DISCRETION_DELTA[actor.temperament];
+}
+
+/** Percent chance that an unmasking-free smear fires for this actor. */
+export function smearPercent(actor: UndergroundActor): number {
+  if (actor.temperament === undefined) {
+    return SMEAR_PERCENT;
+  }
+
+  return Math.round((SMEAR_PERCENT * TEMPERAMENT_SMEAR_PERCENT[actor.temperament]) / 100);
+}
+
 /** A stranger has no tie, so it carries the neutral weight of a plain uniform pick. */
 const PEER_BASE_WEIGHT = 100;
 /** Each point of grudge pulls a pick toward the holder's rival. */
@@ -182,6 +238,44 @@ function weightedIndex(weights: readonly number[], unit: number): number {
 }
 
 /**
+ * How much an actor wants one specific peer as its counterpart. Standing is the
+ * default; a temperament reads it differently (D068): a reckless actor ignores
+ * standing, a careful one discounts grudges, a grudge-holder amplifies them, and
+ * an opportunist scores only how soft the counterpart is.
+ */
+export function counterpartWeight(
+  world: WorldState,
+  actor: UndergroundActor,
+  other: UndergroundActor,
+): number {
+  const tie = peerTie(world, actor.id, other.id);
+
+  switch (actor.temperament) {
+    case "reckless":
+      return PEER_BASE_WEIGHT;
+    case "opportunist":
+      return clamp(
+        OPPORTUNIST_SOFTNESS_BASE - other.defense,
+        PEER_MIN_WEIGHT,
+        OPPORTUNIST_SOFTNESS_BASE,
+      );
+    case "careful":
+      return peerPickWeight(
+        tie && { trust: tie.trust, grudge: Math.floor(tie.grudge / 2) },
+      );
+    case "grudge-holder":
+      return peerPickWeight(
+        tie && {
+          trust: tie.trust,
+          grudge: Math.min(100, Math.floor((tie.grudge * 3) / 2)),
+        },
+      );
+    default:
+      return peerPickWeight(tie);
+  }
+}
+
+/**
  * The counterpart an actor picks this tick. The draw is the same hash stream as
  * before, so a canonical world, and any world with no peer ties, picks exactly
  * as it always did. Exported so tests can read the draw across many ticks
@@ -199,9 +293,7 @@ export function pickCounterpart(
     return others[Math.floor(unit * others.length)]!;
   }
 
-  const weights = others.map((other) =>
-    peerPickWeight(peerTie(world, actor.id, other.id)),
-  );
+  const weights = others.map((other) => counterpartWeight(world, actor, other));
 
   return others[weightedIndex(weights, unit)]!;
 }
@@ -533,7 +625,7 @@ function runActorTick(
 
   const actRoll = hashUnit(seed, "act", tickIndex, actor.id) * 100;
 
-  if (actRoll >= actor.activity) {
+  if (actRoll >= temperamentActivity(actor)) {
     return [];
   }
 
@@ -580,7 +672,8 @@ function runActorTick(
   // unassisted incident stays byte-identical.
   const discretion =
     (succeeded ? counterpart.discretion : actor.discretion) +
-    assist.discretionDelta;
+    assist.discretionDelta +
+    temperamentDiscretionDelta(actor);
   const isPublic =
     hashUnit(seed, "pub", tickIndex, actor.id) * 100 >= discretion;
 
@@ -1034,7 +1127,7 @@ function retaliate(
       hashUnit(seed, "unmask", tickIndex, actor.id) * 100 < UNMASK_PERCENT;
     const smears =
       !unmasks &&
-      hashUnit(seed, "smear", tickIndex, actor.id) * 100 < SMEAR_PERCENT;
+      hashUnit(seed, "smear", tickIndex, actor.id) * 100 < smearPercent(actor);
 
     if (!unmasks && !smears) {
       continue;

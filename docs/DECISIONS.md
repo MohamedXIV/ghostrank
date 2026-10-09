@@ -927,3 +927,27 @@ Until G2 every run opened as `CobaltXZ`. The handle is the one identity the play
 **Measured.** Each pick was measured across 2,000 tick indices. A rival with grudge 40 and trust −20 was picked at the weight formula's share, within 0.05. An ally was picked below the uniform share. A generated issuer picked its rival's target at least 1.8 times as often as a uniform draw. Disabling peer decisions makes all three behaviour tests fail. Over 30 days, six seeds per generated scene stayed inside their bounds: no ending, no rank change from NPC feuds, and incident counts in the 190–415 range.
 
 **Not decided.** Peer grudges never decay, so some feuds reach the 100 cap within a month. Fear is recorded but not read. Alliances do not form during play; they exist only as generated ties. Rival organizations do not yet start contracts against each other. These are follow-ups, and slices 3 and 4 may take some of them.
+
+## D068 — Owners are dealt by weighted archetype and carry a hidden temperament that changes how they act (Game-First G2 P2, #78)
+
+**Choice.** Generated owners are no longer cycled through six archetypes. Each scene weights the six (`profileWeights` in `src/content/world-scenarios.ts`), and each owner draws one. An archetype also weights its people's temperaments. A temperament is one of four hidden dispositions (`ACTOR_TEMPERAMENTS` in `src/game/simulation/state/world-state.ts`): `careful`, `reckless`, `grudge-holder` or `opportunist`. Brokers draw from a neutral table.
+
+**What a temperament changes.** Each change is a percent-scaled table in `src/game/simulation/systems/underground.ts`, so 100 is the baseline:
+- *Activity:* careful acts at 70% of its base rate, reckless at 140%.
+- *Discretion:* careful adds 12 to the discretion an incident is judged by, reckless takes 12 away. This makes a reckless actor's incidents more often public.
+- *Counterpart:* a careful actor halves the grudge it weighs. A grudge-holder multiplies it by 1.5. A reckless actor ignores standing and picks uniformly. An opportunist scores its counterpart by softness, 150 minus that counterpart's defense, and ignores standing.
+- *Smears:* the chance per tick that an eligible actor smears the player is 6% for careful, 12% for opportunist, 18% for reckless and 24% for grudge-holder, against the baseline 12%.
+
+**Canonical and legacy stay at baseline.** Authored actors and pre-G2 actors have no temperament. Every table then returns exactly the old value: activity is unchanged, discretion gets a delta of 0, the smear chance is 12, and the counterpart keeps its pre-existing draw. The canonical golden trace (four starting worlds, 30 days, every command result, every daily snapshot, final state) matches `main` exactly. A test checks that an untempered actor reads as baseline.
+
+**Measured.** Across 40 seeds per scene, a high-pressure owner is a grudge-holder about 38% of the time, against 22% in fresh-scene. Over 6 fresh-scene worlds, two days each (the test's setup), reckless incidents are public about 71% of the time against 40% for careful, from 117 reckless incidents against 55. A wider sweep of 12 worlds, one day each, gives 69% against 29%, from 101 against 42, so reckless actors produce more than twice as many incidents in that sweep and about twice as many in the test. Over 20 worlds, grudge-holders smear 128 times against 29 for careful. Disabling the counterpart reading fails the three temperament-pick tests, so the tests bite.
+
+**Rank is never an input.** No temperament reads rank.
+
+**Player-safe.** The temperament is not projected. A test checks that neither the field name nor any of the four values appears in the projected world. The player can infer a temperament only from behaviour they observe, such as how often an actor's incidents are public or how often a smear lands.
+
+**Persistence.** `temperament` is an optional field on a stored actor. A pre-temperament generated save reads as untempered, so it keeps the baseline behaviour rather than a retroactive one.
+
+**Alternatives rejected.** Keeping the cycle would leave the archetype weights out of the world, which is the gap this slice closes. A temperament shown to the player would turn a hidden disposition into a label, so behaviour should carry the signal instead.
+
+**Not decided.** The weights are editorial and untuned by play. Temperaments do not drift over a run. Only the opportunist reading of counterparts is distinct; temperaments do not yet change contract offers. Temperament has no visible voice yet, so the player cannot read a disposition except through behaviour.

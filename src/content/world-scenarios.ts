@@ -1,6 +1,7 @@
 import type { WorldActorArchetype, WorldTargetArchetype } from "@/content/world-content";
 import type { RunScenario } from "@/game/simulation/state/run-scenario";
 import type {
+  ActorTemperament,
   OrganizationAgenda,
   OrganizationMotive,
 } from "@/game/simulation/state/world-state";
@@ -60,6 +61,8 @@ export interface ScenarioSpec {
   /** Relative weights for an organization's motive and agenda. Zero excludes a value. */
   motiveWeights: Record<OrganizationMotive, number>;
   agendaWeights: Record<OrganizationAgenda, number>;
+  /** Relative weights for which owner archetype a scene deals (G2 P2, D068). */
+  profileWeights: Record<OwnerProfileId, number>;
   /** Percent chance of a peer-to-peer tie for each ordered pair of actors. */
   linkPercent: number;
 }
@@ -78,6 +81,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     rivalryPercent: 35,
     motiveWeights: { profit: 4, leverage: 3, retribution: 1, prestige: 2 },
     agendaWeights: { "undercut-rivals": 2, "collect-favours": 3, "watch-the-board": 3, recruit: 2 },
+    profileWeights: { scam: 3, extortion: 2, market: 2, corporate: 2, rival: 2, elite: 1 },
     linkPercent: 25,
   },
   "high-pressure": {
@@ -93,6 +97,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     rivalryPercent: 70,
     motiveWeights: { profit: 1, leverage: 2, retribution: 4, prestige: 2 },
     agendaWeights: { "undercut-rivals": 4, "collect-favours": 1, "watch-the-board": 2, recruit: 2 },
+    profileWeights: { scam: 1, extortion: 4, market: 1, corporate: 1, rival: 4, elite: 2 },
     linkPercent: 40,
   },
 };
@@ -122,21 +127,67 @@ export const ORGANIZATION_NAME_TAILS = [
   "Exchange", "Syndicate", "Collective", "Works", "Concern", "Guild",
 ] as const;
 
+export type OwnerProfileId = "scam" | "extortion" | "market" | "corporate" | "rival" | "elite";
+
 /**
- * Owner profiles, cycled by owner index. Each actor archetype is paired with the
- * target archetype its infrastructure reads as. Editorial metadata only.
+ * An owner archetype: the actor it deals, the target its infrastructure reads
+ * as, and how its people tend to behave (G2 P2, D068). Each profile is drawn by
+ * its scene's `profileWeights`, and each owner's temperament by its profile's
+ * `temperaments`. Weights are editorial, not rules.
  */
-export const OWNER_PROFILES: ReadonlyArray<{
+export interface OwnerProfile {
+  id: OwnerProfileId;
   actor: WorldActorArchetype;
   target: WorldTargetArchetype;
-}> = [
-  { actor: "scam-operator", target: "scam-network" },
-  { actor: "extortion-operator", target: "extortion-crew" },
-  { actor: "market-predator", target: "predatory-market" },
-  { actor: "corporate-operator", target: "corporate-infrastructure" },
-  { actor: "rival-operator", target: "rival-infrastructure" },
-  { actor: "automation-specialist", target: "elite-underground-operator" },
-];
+  temperaments: Record<ActorTemperament, number>;
+}
+
+export const OWNER_PROFILES: Record<OwnerProfileId, OwnerProfile> = {
+  scam: {
+    id: "scam",
+    actor: "scam-operator",
+    target: "scam-network",
+    temperaments: { careful: 3, reckless: 2, "grudge-holder": 1, opportunist: 4 },
+  },
+  extortion: {
+    id: "extortion",
+    actor: "extortion-operator",
+    target: "extortion-crew",
+    temperaments: { careful: 1, reckless: 2, "grudge-holder": 4, opportunist: 1 },
+  },
+  market: {
+    id: "market",
+    actor: "market-predator",
+    target: "predatory-market",
+    temperaments: { careful: 2, reckless: 1, "grudge-holder": 1, opportunist: 4 },
+  },
+  corporate: {
+    id: "corporate",
+    actor: "corporate-operator",
+    target: "corporate-infrastructure",
+    temperaments: { careful: 5, reckless: 0, "grudge-holder": 0, opportunist: 1 },
+  },
+  rival: {
+    id: "rival",
+    actor: "rival-operator",
+    target: "rival-infrastructure",
+    temperaments: { careful: 2, reckless: 1, "grudge-holder": 4, opportunist: 0 },
+  },
+  elite: {
+    id: "elite",
+    actor: "automation-specialist",
+    target: "elite-underground-operator",
+    temperaments: { careful: 3, reckless: 1, "grudge-holder": 1, opportunist: 2 },
+  },
+};
+
+/** Brokers are independent intermediaries, so their dispositions lean neutral. */
+export const BROKER_TEMPERAMENTS: Record<ActorTemperament, number> = {
+  careful: 2,
+  reckless: 1,
+  "grudge-holder": 1,
+  opportunist: 2,
+};
 
 export const MACHINE_TEMPLATES: ReadonlyArray<{ role: string; label: string }> = [
   { role: "relay", label: "Outer Relay" },
