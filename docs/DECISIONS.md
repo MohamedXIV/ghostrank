@@ -978,3 +978,34 @@ A `fixer` deals with the player from zero trust, as a contact and as an issuer (
 - A `tinkerer`'s assistant helps only through the existing assist rules, so its archetype adds no new behaviour of its own.
 
 **Not decided.** The archetype weights and temperament ranges are editorial data and are untuned by any playtest. They are not balance-approved, and the human G0/G1 playtest gates are NOT RUN.
+
+## D069 — A generated run opens with work on offer, and its scene and greed shape what is offered (Game-First G2, #78)
+
+**Before.** A generated run started with an empty contract board. Every offer drew one of four objectives uniformly, whatever the scene, so a volatile scene offered no more intrusions than a quiet one. Greed changed how often an issuer offered work (D068), never what it offered.
+
+**Rule.** Three parts, all in generated scenes only:
+- **Opening offers.** Each generated start holds `openingContracts` recon-report offers from distinct white brokers, at minute zero: 1 in Fresh Scene, 2 in High Pressure. A broker never offers work against its own organization's infrastructure. An `undercut` broker's offer goes to a rival when one exists, as live offers do. Each offer expires after the standard 24-hour window.
+- **Scene mix.** Each scene weights the four objectives (`OBJECTIVE_WEIGHTS` in `src/content/world-scenarios.ts`). Fresh Scene: recon-report 40, infrastructure-map 25, quiet-recon 20, intrusion 15. High Pressure: 20, 20, 20, 40.
+- **Greed.** A greedy issuer adds `greed / 5` to its intrusion weight, which is 0 to 19 points. Intrusion pays the most (260 against 80–180), so greed now changes what is offered.
+
+Canonical scenes and saves with no scene keep the uniform objective draw and start with no offers, so the canonical golden fingerprint (D066) still holds.
+
+**Solvable and reachable.** An opening offer is a one-service recon. A player with the starting kit completes it with accept, observe, open an operation, survey, and inspect a discovered machine. The survey discovers the machines the rig can reach, and a single successful inspection meets a one-service report. `generated-opportunities.test.ts` plays every opening offer this way for seeds 1–120 in both scenes, and each one completes. The generator also rejects any seed whose opening offer asks for a service its target lacks online, and any offer that is not from a white broker.
+
+**Measured** over 40 seeds and 30 days. Intrusion is 24% of offers in Fresh Scene and 45% in High Pressure. Greedy issuers (greed ≥ 70) offer intrusions 26% and 48% of the time, against 22% and 43% for frugal issuers (greed ≤ 30). The greed lean is +4.8 points in Fresh Scene and +4.6 in High Pressure. The test asserts a 2-point margin. Opening offers number exactly 1 per Fresh Scene start and 2 per High Pressure start.
+
+**Player-safe.** An opening offer shows what any offer shows: the issuer's public organization name and the target's handle. Greed, archetype, agenda and motive stay hidden, and the projection test covers them.
+
+**Rank.** No objective weight, opening offer or greed term reads rank.
+
+**Alternatives rejected.**
+- A fixed scripted first job per scene. Rejected: the target and broker come from the seed, so the start differs from run to run.
+- Opening offers from fixers only. Rejected: every generated scene has white brokers, so the rule can be the simpler one.
+- Opening offers that emit `ContractOffered` at minute zero. Rejected: the offers already exist when the run begins. The board shows them, and no notice fires.
+
+**Observed, not yet tuned.**
+- The greed lean is modest, about 5 points. It is bounded by the open-contract cap (`MAX_OPEN_CONTRACTS = 3`): greed changes which job fills a slot, and the cap sets how many slots there are. A stronger greed weight was not tried.
+- Only recon-report opens a run. The other objectives come from the normal offer cadence.
+- Scene weights and opening counts are editorial data and are not playtest-tuned.
+
+**Not decided.** Whether High Pressure's opening offers should expire sooner. Whether an opening offer should be an infrastructure-map or a quiet-recon once the player has a rig that can meet it.

@@ -24,10 +24,12 @@ import {
 } from "@/content/world-content";
 import { checkPlayerHandleShape } from "@/game/identity/player-handle";
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
+import { OFFER_WINDOW_MINUTES } from "@/game/simulation/systems/underground";
 import {
   PLAYER_ACTOR_ID,
   STARTING_NETWORK_TRUST,
   type HackerArchetype,
+  type UndergroundContract,
   type MachineState,
   type OrganizationKind,
   type Temperament,
@@ -72,6 +74,8 @@ export interface GeneratedScenarioContent {
   relationships: UndergroundRelationship[];
   /** Organizations that hold infrastructure and employ owners (D066). */
   organizations: UndergroundOrganization[];
+  /** Recon-report offers from white brokers, waiting at the start of the run (D069). */
+  contracts: UndergroundContract[];
 }
 
 /** Chance that two organizations start as rivals; any organization left without one is given one. */
@@ -404,6 +408,73 @@ function buildRelationships(
   return relationships;
 }
 
+/**
+ * Recon-report offers from white brokers that the player already holds at the
+ * start (D069). A one-service report is solvable with the starting kit: one
+ * survey and one inspection (the playthrough test proves it for every seed). A
+ * broker never offers work against its own organization's infrastructure, and
+ * an `undercut` broker's offer goes to a rival when one exists, as live offers do.
+ */
+function buildOpeningContracts(
+  seed: number,
+  attempt: number,
+  count: number,
+  actors: WorldActorContent[],
+  targets: WorldTargetContent[],
+  organizations: UndergroundOrganization[],
+): UndergroundContract[] {
+  const brokers = actors
+    .map(({ actor }) => actor)
+    .filter((actor) => actor.targetId === undefined && actor.network === "white");
+  const contracts: UndergroundContract[] = [];
+  const used = new Set<string>();
+
+  for (let index = 0; index < count; index += 1) {
+    const free = brokers.filter((actor) => !used.has(actor.id));
+
+    if (free.length === 0) {
+      break;
+    }
+
+    const broker = free[range(seed, [0, free.length - 1], attempt, "opening-broker", index)]!;
+    used.add(broker.id);
+
+    const eligible = targets
+      .map(({ target }) => target)
+      .filter((target) => target.organizationId !== broker.organizationId);
+
+    if (eligible.length === 0) {
+      break;
+    }
+
+    const organization = organizations.find((entry) => entry.id === broker.organizationId);
+    const rivals =
+      organization?.agenda === "undercut"
+        ? eligible.filter(
+            (target) =>
+              target.organizationId !== undefined &&
+              organization.rivalIds.includes(target.organizationId),
+          )
+        : [];
+    const pool = rivals.length > 0 ? rivals : eligible;
+
+    const target = pool[range(seed, [0, pool.length - 1], attempt, "opening-target", index)]!;
+
+    contracts.push({
+      id: `contract:${index + 1}`,
+      issuerId: broker.id,
+      targetId: target.id,
+      objective: "recon-report",
+      requiredServices: 1,
+      status: "offered",
+      offeredWorldMinute: 0,
+      expiresWorldMinute: OFFER_WINDOW_MINUTES,
+    });
+  }
+
+  return contracts;
+}
+
 function buildCandidate(
   input: GenerateScenarioInput,
   attempt: number,
@@ -412,6 +483,7 @@ function buildCandidate(
   targets: WorldTargetContent[];
   relationships: UndergroundRelationship[];
   organizations: UndergroundOrganization[];
+  contracts: UndergroundContract[];
 } {
   const { seed, scenario, reservedHandles } = input;
   const spec = GENERATED_SCENARIO_SPECS[scenario];
@@ -501,6 +573,14 @@ function buildCandidate(
     targets,
     relationships: buildRelationships(seed, attempt, spec, actorList),
     organizations,
+    contracts: buildOpeningContracts(
+      seed,
+      attempt,
+      spec.openingContracts,
+      actors,
+      targets,
+      organizations,
+    ),
   };
 }
 
@@ -510,6 +590,7 @@ function firstFailure(
     actors: WorldActorContent[];
     targets: WorldTargetContent[];
     organizations: UndergroundOrganization[];
+    contracts: UndergroundContract[];
   },
   reserved: ReadonlySet<string>,
   seed: number,
@@ -584,6 +665,40 @@ function firstFailure(
     }
   }
 
+  if (candidate.contracts.length !== GENERATED_SCENARIO_SPECS[scenario].openingContracts) {
+    return "the opening offer count does not match its spec";
+  }
+
+  const issuers = new Set<string>();
+
+  for (const contract of candidate.contracts) {
+    const issuer = candidate.actors.find(({ actor }) => actor.id === contract.issuerId)?.actor;
+    const target = candidate.targets.find(({ target }) => target.id === contract.targetId)?.target;
+
+    if (issuer === undefined || issuer.targetId !== undefined || issuer.network !== "white") {
+      return `opening offer ${contract.id} is not from a white broker`;
+    }
+
+    if (target === undefined || target.organizationId === issuer.organizationId) {
+      return `opening offer ${contract.id} asks for its own organization's infrastructure`;
+    }
+
+    if (issuers.has(issuer.id)) {
+      return `broker ${issuer.id} makes two opening offers`;
+    }
+
+    issuers.add(issuer.id);
+
+    const services = target.machines.reduce(
+      (sum, machine) => sum + machine.services.filter((service) => service.state === "online").length,
+      0,
+    );
+
+    if ((contract.requiredServices ?? 0) < 1 || (contract.requiredServices ?? 0) > services) {
+      return `opening offer ${contract.id} asks for more services than its target has online`;
+    }
+  }
+
   for (const organization of candidate.organizations) {
     const ownsInfrastructure = candidate.actors.some(
       ({ actor }) => actor.organizationId === organization.id && actor.targetId !== undefined,
@@ -634,6 +749,7 @@ export function generateScenarioContent(
         targets: candidate.targets.map((entry) => entry.target),
         relationships: candidate.relationships,
         organizations: candidate.organizations,
+        contracts: candidate.contracts,
       };
     }
 

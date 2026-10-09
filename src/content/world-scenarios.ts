@@ -1,5 +1,6 @@
 import type { WorldActorArchetype, WorldTargetArchetype } from "@/content/world-content";
 import type {
+  ContractObjectiveKind,
   HackerArchetype,
   OrganizationAgenda,
   OrganizationKind,
@@ -55,6 +56,8 @@ export interface ScenarioSpec {
   organizations: number;
   /** Percent chance of a peer-to-peer tie for each ordered pair of actors. */
   linkPercent: number;
+  /** Recon-report offers from white brokers already waiting at the start (D069). */
+  openingContracts: number;
 }
 
 export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec> = {
@@ -69,6 +72,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     rank: [2_000, 90_000],
     organizations: 3,
     linkPercent: 25,
+    openingContracts: 1,
   },
   "high-pressure": {
     owners: 7,
@@ -81,6 +85,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     rank: [800, 40_000],
     organizations: 2,
     linkPercent: 40,
+    openingContracts: 2,
   },
 };
 
@@ -149,6 +154,30 @@ export const MOTIVE_AGENDAS: Record<
   control: [
     { value: "defend", weight: 60 },
     { value: "undercut", weight: 40 },
+  ],
+};
+
+/**
+ * Contract objectives and their weights per scene (D069). An intrusion pays the
+ * most, so the volatile scene offers it most often. The draw is seeded, and a
+ * greedy issuer adds weight to intrusion on top of its scene's weight (D069).
+ * Canonical scenes keep the uniform draw and never read this table.
+ */
+export const OBJECTIVE_WEIGHTS: Record<
+  GeneratedRunScenario,
+  ReadonlyArray<{ value: ContractObjectiveKind; weight: number }>
+> = {
+  "fresh-scene": [
+    { value: "recon-report", weight: 40 },
+    { value: "infrastructure-map", weight: 25 },
+    { value: "quiet-recon", weight: 20 },
+    { value: "intrusion", weight: 15 },
+  ],
+  "high-pressure": [
+    { value: "recon-report", weight: 20 },
+    { value: "infrastructure-map", weight: 20 },
+    { value: "quiet-recon", weight: 20 },
+    { value: "intrusion", weight: 40 },
   ],
 };
 
