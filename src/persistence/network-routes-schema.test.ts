@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { worldStateSchema } from "@/persistence/world-state-schema";
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
+import type { NetworkRouteChallenge } from "@/game/simulation/systems/network-routes";
 
-const route = () => ({
+const route = (): NetworkRouteChallenge => ({
   id: "route:alpha", targetId: "target-1", entryMachineId: "entry", objectiveMachineId: "vault",
   candidates: [
     { id: "c1", label: "Public", carrier: "public", echo: "triangle" },
