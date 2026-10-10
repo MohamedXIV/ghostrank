@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSliceWorldState } from "@/game/runtime/slice-world";
 import { CommandBus } from "@/game/simulation/command-bus";
+import { projectWorld } from "@/game/simulation/projection/project-world";
 import { worldStateSchema } from "@/persistence/world-state-schema";
 import { OFFER_WINDOW_MINUTES } from "@/game/simulation/systems/underground";
 import {
@@ -52,6 +53,30 @@ describe("G2 High Pressure time-limited intelligence (Game-First #114)", () => {
       }
       expect(observed, `no new ${scenario} offers were exercised`).toBeGreaterThan(0);
     }
+  });
+
+  it("shows a genuinely expired High Pressure offer as expired before the next NPC tick", () => {
+    const initial = createSliceWorldState({
+      seed: 19, handle: "Night_Wren", scenario: "high-pressure",
+    });
+    const id = initial.underground.contracts[0]!.id;
+
+    const onDeadline = new CommandBus(initial);
+    onDeadline.execute({ type: "advanceTime", minutes: 720 });
+    expect(projectWorld(onDeadline.snapshot()).underground.contracts
+      .find(c => c.id === id)?.status).toBe("offered");
+    expect(onDeadline.execute({ type: "acceptContract", contractId: id }).ok).toBe(true);
+
+    const tooLate = new CommandBus(initial);
+    tooLate.execute({ type: "advanceTime", minutes: 721 });
+    // The NPC status transition is on a 360-minute boundary. Player-facing
+    // actionability must still agree with CommandBus in between boundaries.
+    expect(tooLate.snapshot().underground.contracts.find(c => c.id === id)?.status).toBe("offered");
+    expect(projectWorld(tooLate.snapshot()).underground.contracts
+      .find(c => c.id === id)?.status).toBe("expired");
+    expect(tooLate.execute({ type: "acceptContract", contractId: id })).toMatchObject({
+      ok: false, error: "CONTRACT_EXPIRED",
+    });
   });
 
   it("does not shorten an accepted contract's work deadline, or rewrite persisted existing offers", () => {
