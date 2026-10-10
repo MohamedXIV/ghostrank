@@ -26,8 +26,16 @@ function scene(seed = 17, scenario: "fresh-scene" | "high-pressure" = "fresh-sce
   organization.agenda = "expand";
   delete organization.organizationResponse;
   // Only the real trusted direction toward the owner grants cooperation.
+  // Isolate the peer whose membership/trust is under test. Generated
+  // rosters can contain OTHER trusted colleagues; moving this particular
+  // helper away must not pretend those remaining allies cease to exist.
+  const potentialHelpers = new Set(world.underground.actors
+    .filter(a => a.id !== defender.id &&
+      a.organizationId === defender.organizationId && a.network === defender.network)
+    .map(a => a.id));
+  potentialHelpers.add(peer.id);
   world.underground.relationships = world.underground.relationships.filter(r =>
-    !(r.fromId === peer.id && r.toId === defender.id));
+    r.toId !== defender.id || !potentialHelpers.has(r.fromId));
   world.underground.relationships.push({
     id: `rel:${peer.id}>${defender.id}`,
     fromId: peer.id, toId: defender.id,
