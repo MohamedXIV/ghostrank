@@ -1,3 +1,7 @@
+import type {
+  SliceClueId,
+  SliceOutcome,
+} from "@/content/nightshade-slice";
 import {
   DEFAULT_RUN_SCENARIO,
   type RunScenario,
@@ -71,6 +75,11 @@ export interface EvidenceRecord {
   confidence: EvidenceConfidence;
   source: "direct-observation" | "legacy-discovery";
   worldMinute: number;
+  /**
+   * Set only when an owner's review rotates a machine off the file (D071). A
+   * retired record no longer counts as knowledge. Absent everywhere else.
+   */
+  retiredWorldMinute?: number;
 }
 
 export interface SimulatedServiceState {
@@ -113,7 +122,8 @@ export interface OperationState {
 
 export type TraceCause =
   | "operation-escalation"
-  | "operation-disengagement";
+  | "operation-disengagement"
+  | "operation-probe";
 
 export type AnalysisConfidence = "low" | "medium" | "high";
 
@@ -700,9 +710,50 @@ export interface EconomyState {
   activeModel: string | null;
 }
 
+/**
+ * The Nightshade briefing (G3, D071): one authored, scripted-by-rules operation
+ * with two routes, a visible trace preview and an owner review on the clock.
+ * Absent in every world except the `nightshade-slice` scenario, so the
+ * canonical rules never read it.
+ */
+export interface NightshadeSliceReview {
+  dueWorldMinute: number;
+  reactionId: string;
+  status: "scheduled" | "ran";
+}
+
+export interface NightshadeSliceLogEntry {
+  worldMinute: number;
+  key: string;
+  footprint: number;
+}
+
+/** A clue the broker has promised, due on a later boundary (the broker answers on the owner's schedule). */
+export interface NightshadeSlicePendingClue {
+  clueId: SliceClueId;
+  dueWorldMinute: number;
+}
+
+export interface NightshadeSliceState {
+  rules: "nightshade-v1";
+  targetId: string;
+  contractId: string;
+  clues: SliceClueId[];
+  pendingClues: NightshadeSlicePendingClue[];
+  review: NightshadeSliceReview | null;
+  outcome: SliceOutcome | null;
+  endedWorldMinute: number | null;
+  log: NightshadeSliceLogEntry[];
+}
+
 export interface WorldState {
   worldMinute: number;
   player: PlayerState;
+  /**
+   * The Nightshade briefing (D071). Absent in every other scenario, including
+   * every save made before G3.
+   */
+  slice?: NightshadeSliceState;
   /**
    * The scenario this run was started under (G2, D065). Absent in saves made
    * before G2, which are canonical.

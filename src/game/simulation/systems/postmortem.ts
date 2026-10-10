@@ -103,6 +103,8 @@ function describeTrace(world: WorldState, trace: OperationTrace): string {
       const article = trace.stage === "intrusive" ? "an" : "a";
       return `you disengaged from ${handle} after ${article} ${trace.stage} operation`;
     }
+    case "operation-probe":
+      return `you probed ${handle} during a ${trace.stage} operation`;
   }
 }
 

@@ -17,6 +17,12 @@ export type SimulationCommand =
     }
   | {
       type: "escalateOperation";
+      /**
+       * The Nightshade briefing asks the player to preview the trace cost before
+       * committing (D071). Ignored everywhere else, so canonical callers that
+       * send no flag behave exactly as before.
+       */
+      confirmed?: boolean;
     }
   | {
       type: "disengageOperation";

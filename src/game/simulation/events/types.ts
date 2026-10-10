@@ -26,6 +26,30 @@ import type {
 
 export type SimulationEvent =
   | {
+      type: "SliceClueGranted";
+      clueId: string;
+      targetId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "SliceReviewScheduled";
+      targetId: string;
+      dueWorldMinute: number;
+      worldMinute: number;
+    }
+  | {
+      type: "SliceReviewRan";
+      targetId: string;
+      retiredMachineIds: string[];
+      worldMinute: number;
+    }
+  | {
+      type: "SliceEnded";
+      targetId: string;
+      outcome: string;
+      worldMinute: number;
+    }
+  | {
       type: "TargetObserved";
       targetId: string;
       worldMinute: number;

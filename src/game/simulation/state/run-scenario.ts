@@ -13,7 +13,15 @@ export const RUN_SCENARIOS = [
   "canonical",
   "fresh-scene",
   "high-pressure",
+  "nightshade-slice",
 ] as const;
+
+/**
+ * The authored roster with the G3 vertical slice on top (D071). It is never
+ * generated: its people are the canonical roster, and its slice state lives
+ * beside the world so the canonical rules are untouched everywhere else.
+ */
+export const SLICE_RUN_SCENARIO = "nightshade-slice" as const;
 
 export type RunScenario = (typeof RUN_SCENARIOS)[number];
 

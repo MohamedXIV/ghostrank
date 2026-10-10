@@ -212,15 +212,26 @@ function parseOperationCommand(args: string[]): TerminalParseResult {
       }));
 
     case "escalate":
-      if (rest.length !== 0) {
-        return { ok: false, error: "INVALID_ARGUMENT" };
+      // `op escalate confirm` commits after the trace preview (D071). Canonical
+      // escalation takes no confirmation, so the word is harmless there.
+      if (rest.length === 0) {
+        return {
+          ok: true,
+          command: {
+            type: "escalateOperation",
+          },
+        };
       }
-      return {
-        ok: true,
-        command: {
-          type: "escalateOperation",
-        },
-      };
+      if (rest.length === 1 && rest[0]?.toLowerCase() === "confirm") {
+        return {
+          ok: true,
+          command: {
+            type: "escalateOperation",
+            confirmed: true,
+          },
+        };
+      }
+      return { ok: false, error: "INVALID_ARGUMENT" };
 
     case "exit":
       if (rest.length !== 0) {

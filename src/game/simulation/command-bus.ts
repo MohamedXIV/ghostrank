@@ -6,6 +6,27 @@ import {
 } from "@/content/hardware-catalog";
 import { transferValue } from "@/game/simulation/systems/economy";
 import { effectiveCapability } from "@/game/simulation/systems/housing";
+import {
+  rigActionMinutesFor,
+  rigDiscoveryScopeFor,
+} from "@/game/simulation/systems/rig-minutes";
+import {
+  canRereadBroker,
+  closeSliceOnDisengage,
+  endSlice,
+  footprintOf,
+  hasLiveEvidence,
+  logSliceStep,
+  machineVisibleToSurvey,
+  promiseClueFromProbe,
+  sliceBoundaryTick,
+  sliceTraceFollowUp,
+  SLICE_TRACE,
+} from "@/game/simulation/systems/nightshade-slice";
+import {
+  RELAY_MACHINE_ID,
+  VAULT_MACHINE_ID,
+} from "@/content/nightshade-slice";
 import { advanceInvestigations } from "@/game/simulation/systems/investigations";
 import { applyActiveOutageToBuild } from "@/game/simulation/systems/physical-retaliation";
 import { compromiseTick } from "@/game/simulation/systems/compromise";
@@ -24,7 +45,6 @@ import {
   retirementReady,
 } from "@/game/simulation/systems/retirement";
 import { relocationMinutes } from "@/game/simulation/systems/location";
-import { combinedActionDurationFactor } from "@/game/simulation/systems/tools";
 import { findHousingItem } from "@/content/housing-catalog";
 import {
   FENCE_COUNTERPARTY,
@@ -61,15 +81,12 @@ import {
 } from "@/game/simulation/scheduler/system-jobs";
 import { contestedModelFactor } from "@/game/simulation/systems/contention";
 import { findWorkflowSpec } from "@/content/workflow-spec-catalog";
-import {
-  actionDuration,
-  type ReconAction,
-} from "@/game/simulation/systems/compute";
-import { discoveryScope } from "@/game/simulation/systems/scale";
+import type { ReconAction } from "@/game/simulation/systems/compute";
 import {
   findSoftwareItem,
 } from "@/content/software-catalog";
 import {
+  DEFENSIVE_WATCH_THRESHOLD,
   advanceUnderground,
   TICK_MINUTES,
   applyProvocation,
@@ -115,7 +132,6 @@ export interface CommandResult {
   error?: string;
 }
 
-const DEFENSIVE_WATCH_THRESHOLD = 5;
 
 /**
  * Longest single `advanceTime` the authority accepts (D054). Every ecosystem
@@ -135,6 +151,21 @@ export const MAX_PUMP_BOUNDARIES = 28;
 export const MAX_PUMP_MINUTES = MAX_PUMP_BOUNDARIES * TICK_MINUTES;
 
 /** Commands that may run while a time job owns the clock. */
+/**
+ * Commands that act on the Nightshade briefing's operation or contract. Once
+ * the briefing has an outcome they refuse, so the record cannot be changed.
+ */
+const SLICE_GATED_COMMANDS: ReadonlySet<string> = new Set([
+  "openOperation",
+  "surveyTarget",
+  "inspectMachine",
+  "escalateOperation",
+  "disengageOperation",
+  "acceptContract",
+  "declineContract",
+  "deliverContract",
+]);
+
 function commandAllowedDuringTimeJob(type: string): boolean {
   return type === "cancelAdvance" || type === "pumpTime";
 }
@@ -155,6 +186,10 @@ export class CommandBus {
   execute(command: SimulationCommand): CommandResult {
     if (this.world.ending) {
       return this.failure("RUN_ENDED");
+    }
+
+    if (this.world.slice?.outcome && SLICE_GATED_COMMANDS.has(command.type)) {
+      return this.failure("SLICE_ENDED");
     }
 
     if (
@@ -185,7 +220,7 @@ export class CommandBus {
         return this.inspectMachine(command.machineId);
 
       case "escalateOperation":
-        return this.escalateOperation();
+        return this.escalateOperation(command.confirmed === true);
 
       case "disengageOperation":
         return this.disengageOperation();
@@ -375,7 +410,11 @@ export class CommandBus {
 
     const scope = this.rigDiscoveryScope();
     const discovered = target.machines
-      .filter((candidate) => !this.hasEvidence("machine-presence", candidate.id))
+      .filter(
+        (candidate) =>
+          !this.hasEvidence("machine-presence", candidate.id) &&
+          machineVisibleToSurvey(this.world, candidate.id),
+      )
       .slice(0, scope);
 
     if (discovered.length === 0) {
@@ -405,6 +444,10 @@ export class CommandBus {
         machineId: machine.id,
         worldMinute: this.world.worldMinute,
       });
+    }
+
+    if (this.world.slice) {
+      events.push(...this.sliceProbeEvents(target.id, "probe-survey"));
     }
 
     return {
@@ -438,8 +481,14 @@ export class CommandBus {
     const discovered = located.machine.services
       .filter((candidate) => !this.hasEvidence("service-presence", candidate.id))
       .slice(0, scope);
+    // After the owner's review the relay's broker can be read again for the
+    // rotated key, even though its services are already on the file (D071).
+    const reread =
+      this.world.slice !== undefined &&
+      located.machine.id === RELAY_MACHINE_ID &&
+      canRereadBroker(this.world);
 
-    if (discovered.length === 0) {
+    if (discovered.length === 0 && !reread) {
       return this.failure("NO_NEW_SERVICE_EVIDENCE");
     }
 
@@ -469,13 +518,27 @@ export class CommandBus {
       });
     }
 
+    if (this.world.slice) {
+      if (reread) {
+        promiseClueFromProbe(this.world, "reread", "");
+        events.push(
+          ...this.sliceProbeEvents(located.target.id, "probe-reread"),
+        );
+      } else {
+        for (const service of discovered) {
+          promiseClueFromProbe(this.world, "read", service.id);
+        }
+        events.push(...this.sliceProbeEvents(located.target.id, "probe-read"));
+      }
+    }
+
     return {
       ok: true,
       events,
     };
   }
 
-  private escalateOperation(): CommandResult {
+  private escalateOperation(confirmed: boolean): CommandResult {
     const operation = this.world.operation;
 
     if (!operation) {
@@ -488,6 +551,11 @@ export class CommandBus {
 
     if (!this.hasKnownServiceForTarget(operation.targetId)) {
       return this.failure("SERVICE_EVIDENCE_REQUIRED");
+    }
+
+    // The Nightshade briefing shows the trace cost before it is paid (D071).
+    if (this.world.slice && !confirmed) {
+      return this.failure("ESCALATION_UNCONFIRMED");
     }
 
     const watched = this.world.reactions.some(
@@ -522,6 +590,16 @@ export class CommandBus {
           this.world.worldMinute,
         )
       : [];
+    const sliceEvents = this.world.slice
+      ? [
+          ...this.revealVaultOnEscalation(operation.targetId),
+          ...this.sliceLogAndFollowUp(
+            operation.targetId,
+            "escalate",
+            reactionEvents,
+          ),
+        ]
+      : [];
 
     return {
       ok: true,
@@ -537,6 +615,7 @@ export class CommandBus {
         traceEvent,
         ...reactionEvents,
         ...provocationEvents,
+        ...sliceEvents,
       ],
     };
   }
@@ -572,6 +651,16 @@ export class CommandBus {
       worldMinute: this.world.worldMinute,
     });
     const reactionEvents = this.evaluateOpponentReaction(operation.targetId);
+    const sliceEvents = this.world.slice
+      ? [
+          ...this.sliceLogAndFollowUp(
+            operation.targetId,
+            stage === "intrusive" ? "disengage-intrusive" : "disengage-recon",
+            reactionEvents,
+          ),
+          ...closeSliceOnDisengage(this.world, operation.targetId),
+        ]
+      : [];
 
     this.world.operation = null;
 
@@ -582,6 +671,7 @@ export class CommandBus {
         event,
         traceEvent,
         ...reactionEvents,
+        ...sliceEvents,
       ],
     };
   }
@@ -668,6 +758,11 @@ export class CommandBus {
     contract.status = "declined";
     contract.resolvedWorldMinute = this.world.worldMinute;
 
+    const sliceEvents =
+      this.world.slice?.contractId === contract.id
+        ? endSlice(this.world, "declined", this.world.worldMinute)
+        : [];
+
     return {
       ok: true,
       events: [
@@ -676,6 +771,7 @@ export class CommandBus {
           contractId: contract.id,
           worldMinute: this.world.worldMinute,
         },
+        ...sliceEvents,
       ],
     };
   }
@@ -711,6 +807,11 @@ export class CommandBus {
     contract.status = "completed";
     contract.resolvedWorldMinute = minute;
 
+    const sliceEvents =
+      this.world.slice?.contractId === contract.id
+        ? endSlice(this.world, "delivered", minute)
+        : [];
+
     return {
       ok: true,
       events: [
@@ -720,6 +821,7 @@ export class CommandBus {
           worldMinute: minute,
         },
         ...rewardContract(this.world, contract, minute),
+        ...sliceEvents,
       ],
     };
   }
@@ -1742,12 +1844,20 @@ export class CommandBus {
 
     const observedMachineIds = new Set(
       this.world.evidence
-        .filter((record) => record.kind === "machine-presence")
+        .filter(
+          (record) =>
+            record.kind === "machine-presence" &&
+            record.retiredWorldMinute === undefined,
+        )
         .map((record) => record.subjectId),
     );
     const observedServiceIds = new Set(
       this.world.evidence
-        .filter((record) => record.kind === "service-presence")
+        .filter(
+          (record) =>
+            record.kind === "service-presence" &&
+            record.retiredWorldMinute === undefined,
+        )
         .map((record) => record.subjectId),
     );
 
@@ -1914,25 +2024,11 @@ export class CommandBus {
   }
 
   private rigActionMinutes(action: ReconAction): number {
-    // Phase 5 P1: the rig's vram/storage pool contends a running local model,
-    // so the duration factor is read against the same derived pool. Phase 5
-    // P3: in-flight builds are tenants of that pool too, and their footprint
-    // taxes the model's delivered shortcut while they run.
-    const capability = effectiveCapability(this.world.economy);
-
-    return actionDuration(
-      action,
-      capability,
-      combinedActionDurationFactor(
-        this.world.economy,
-        capability,
-        this.world.builds,
-      ),
-    );
+    return rigActionMinutesFor(this.world, action);
   }
 
   private rigDiscoveryScope(): number {
-    return discoveryScope(effectiveCapability(this.world.economy).memory);
+    return rigDiscoveryScopeFor(this.world);
   }
 
   /**
@@ -1966,6 +2062,7 @@ export class CommandBus {
     const upkeepEvents: SimulationEvent[] = [];
     const buildEvents: SimulationEvent[] = [];
     const investigationEvents: SimulationEvent[] = [];
+    const sliceEvents: SimulationEvent[] = [];
     const schedule = createScheduleSink();
     let cursor = fromMinute;
 
@@ -1995,6 +2092,8 @@ export class CommandBus {
         // An exact tie waits until after the NPC tick so a physical outage can
         // pause it (D034). `build` is the last phase at a minute.
         dispatchAt(this.world, tickMinute, SYSTEM_PHASE.build, schedule);
+        // The Nightshade briefing's owner review and promised clues (D071).
+        sliceEvents.push(...sliceBoundaryTick(this.world, tickMinute));
       },
     });
 
@@ -2027,6 +2126,7 @@ export class CommandBus {
       ...buildEvents,
       ...investigationEvents,
       ...undergroundEvents,
+      ...sliceEvents,
     ]
       .map((event, index) => ({
         event,
@@ -2037,6 +2137,85 @@ export class CommandBus {
       .map((entry) => entry.event);
 
     return ordered;
+  }
+
+  /**
+   * The briefing's probe cost: one low trace on the target, then whatever the
+   * trace sets in motion. Canonical probes never reach this.
+   */
+  private sliceProbeEvents(
+    targetId: string,
+    logKey: string,
+  ): SimulationEvent[] {
+    const slice = this.world.slice;
+    const stage = this.world.operation?.stage ?? "recon";
+    const traceEvent = this.recordTrace({
+      targetId,
+      cause: "operation-probe",
+      stage,
+      severity: "low",
+      weight: SLICE_TRACE.probe,
+      worldMinute: this.world.worldMinute,
+    });
+    const reactionEvents = this.evaluateOpponentReaction(targetId);
+
+    if (slice) {
+      logSliceStep(slice, logKey, this.world.worldMinute, footprintOf(this.world, targetId));
+    }
+
+    return [
+      traceEvent,
+      ...reactionEvents,
+      ...sliceTraceFollowUp(this.world, targetId, reactionEvents),
+    ];
+  }
+
+  /** Logs a step that has already recorded its trace, then applies the follow-ups. */
+  private sliceLogAndFollowUp(
+    targetId: string,
+    logKey: string,
+    reactionEvents: SimulationEvent[],
+  ): SimulationEvent[] {
+    const slice = this.world.slice;
+
+    if (slice) {
+      logSliceStep(slice, logKey, this.world.worldMinute, footprintOf(this.world, targetId));
+    }
+
+    return sliceTraceFollowUp(this.world, targetId, reactionEvents);
+  }
+
+  /**
+   * Escalation reads the relay's routing table directly, so the vault comes onto
+   * the file here whether or not the broker's routing has been learned (D071).
+   */
+  private revealVaultOnEscalation(targetId: string): SimulationEvent[] {
+    const target = this.world.targets.find((candidate) => candidate.id === targetId);
+    const vault = target?.machines.find(
+      (candidate) => candidate.id === VAULT_MACHINE_ID,
+    );
+
+    if (!vault || this.hasEvidence("machine-presence", vault.id)) {
+      return [];
+    }
+
+    this.recordEvidence({
+      id: `machine-presence:${vault.id}`,
+      kind: "machine-presence",
+      subjectId: vault.id,
+      confidence: "observed",
+      source: "direct-observation",
+      worldMinute: this.world.worldMinute,
+    });
+
+    return [
+      {
+        type: "MachineObserved",
+        targetId,
+        machineId: vault.id,
+        worldMinute: this.world.worldMinute,
+      },
+    ];
   }
 
   private hasKnownServiceForTarget(targetId: string): boolean {
@@ -2056,9 +2235,7 @@ export class CommandBus {
   }
 
   private hasEvidence(kind: EvidenceKind, subjectId: string): boolean {
-    return this.world.evidence.some(
-      (record) => record.kind === kind && record.subjectId === subjectId,
-    );
+    return hasLiveEvidence(this.world, kind, subjectId);
   }
 
   private recordEvidence(record: EvidenceRecord): void {
@@ -2066,8 +2243,17 @@ export class CommandBus {
       (candidate) => candidate.id === record.id,
     );
 
-    if (existing) {
+    if (existing && existing.retiredWorldMinute === undefined) {
       return;
+    }
+
+    // A retired record (D071) is knowledge the owner took away. Seeing the
+    // subject again puts a fresh record in its place, rather than reviving the
+    // old one.
+    if (existing) {
+      this.world.evidence = this.world.evidence.filter(
+        (candidate) => candidate !== existing,
+      );
     }
 
     this.world.evidence.push(record);

@@ -600,6 +600,14 @@ export function syncWorldProjection(
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
     store.setTable("reactions", reactionRows);
+    // The Nightshade briefing (D071) is one JSON cell, read by the briefing
+    // panel. Canonical worlds have no briefing, so the table stays absent.
+    store.setTable(
+      "briefing",
+      projection.slice
+        ? { current: { json: JSON.stringify(projection.slice) } }
+        : {},
+    );
     store.setTable("investigations", investigationRows);
     store.setTable("investigationSignals", signalRows);
     store.setTable("probes", probeRows);

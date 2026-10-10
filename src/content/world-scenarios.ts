@@ -15,7 +15,10 @@ import type { RunScenario } from "@/game/simulation/state/run-scenario";
  * not here.
  */
 
-export type GeneratedRunScenario = Exclude<RunScenario, "canonical">;
+export type GeneratedRunScenario = Exclude<
+  RunScenario,
+  "canonical" | "nightshade-slice"
+>;
 
 export const SCENARIO_PRESENTATION: Record<
   RunScenario,
@@ -35,6 +38,11 @@ export const SCENARIO_PRESENTATION: Record<
     label: "High Pressure",
     preview:
       "A volatile scene: sharper operators, more of them on the black network, and a denser web of rivalries. Harder, never rigged.",
+  },
+  "nightshade-slice": {
+    label: "Nightshade Briefing",
+    preview:
+      "The authored roster with a sealed opening: one broker tip, one contract for the Outer Relay and the Cold Vault, and an owner who reviews what you leave behind. About 25 minutes, two routes, one clock.",
   },
 };
 
