@@ -32,7 +32,9 @@ The same `testNetworkRoute` command drives Recon GUI and `path test <target> <ch
 
 - Main shared-core checkpoint `0c5852c0`: GitHub Actions Node 24 full test/typecheck/lint/build **PASS**: [run 38042841062](https://github.com/MohamedXIV/ghostrank/actions/runs/38042841062).
 - Browser script checkpoint `47473103`: real Chromium **35/35 assertions PASS**, **0 failed**, including two Nightshade viewports, independent generated route, Terminal map and GUI route confirmation: [run 38043217270](https://github.com/MohamedXIV/ghostrank/actions/runs/38043217270).
-- **Final PR head `471c92e56fe2d96d4d7214b61777647cba004f35`: Node 24 CI SUCCESS** (1,204 tests across 138 files, typecheck/lint/build PASS) [run 38043409322](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409322).\n- **Same exact head: real Chromium acceptance SUCCESS** (35/35 assertions, no page JavaScript errors; desktop + 390px Nightshade and independent Fresh Scene) [run 38043409325](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409325). GitHub verifies both workflow runs completed successfully.\n- Squash merge: [PR #108](https://github.com/MohamedXIV/ghostrank/pull/108) → main `ed7bc9acbbb12ac84804a3f57b70fbdb05d5d6ea`. Human acceptance remains separate.
+- **Final PR head `471c92e56fe2d96d4d7214b61777647cba004f35`: Node 24 CI SUCCESS** (1,204 tests across 138 files, typecheck/lint/build PASS) [run 38043409322](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409322).
+- **Same exact head: real Chromium acceptance SUCCESS** (35/35 assertions, no page JavaScript errors; desktop + 390px Nightshade and independent Fresh Scene) [run 38043409325](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409325). GitHub verifies both workflow runs completed successfully.
+- Squash merge: [PR #108](https://github.com/MohamedXIV/ghostrank/pull/108) → main `ed7bc9acbbb12ac84804a3f57b70fbdb05d5d6ea`. Human acceptance remains separate.
 
 ### Historical smoke compatibility
 
