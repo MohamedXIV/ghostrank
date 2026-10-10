@@ -8,7 +8,7 @@ import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-in
 
 const base = {
   targetHandle: "Halo Wick",
-  currentWorldMinute: 2000,
+  currentWorldMinute: 6000,
   incidents: [] as Array<{
     id: string; actorHandle: string; counterpartHandle: string;
     outcome: "succeeded" | "repelled"; worldMinute: number;
@@ -66,15 +66,15 @@ describe("G5 P2 contract Scene Intel: correlate ONLY what a player knows (#125)"
     const result = deriveContractSceneIntel({
       ...base,
       incidents: [
-        publicIncident({ id: "incident:old", worldMinute: 2000 - 72 * 60 - 1 }),
-        publicIncident({ id: "incident:future", worldMinute: 2001 }),
+        publicIncident({ id: "incident:old", worldMinute: 6000 - 72 * 60 - 1 }),
+        publicIncident({ id: "incident:future", worldMinute: 6001 }),
         publicIncident({ id: "incident:other", counterpartHandle: "Other" }),
       ],
       messages: [privateClaim({ read: false })],
     });
     expect(result).toEqual([]);
     expect(deriveContractSceneIntel({
-      ...base, messages: [privateClaim({ read: true, worldMinute: 2000 - 72 * 60 })],
+      ...base, messages: [privateClaim({ read: true, worldMinute: 6000 - 72 * 60 })],
     })).toHaveLength(1);
   });
 
@@ -101,9 +101,9 @@ describe("G5 P2 contract Scene Intel: correlate ONLY what a player knows (#125)"
       contract: {
         id: "contract:13", issuerHandle: "Broker", targetHandle: base.targetHandle,
         objective: "recon-report", status: "offered",
-        expiresWorldMinute: 3000, sceneIntel,
+        expiresWorldMinute: 8000, sceneIntel,
       },
-      currentWorldMinute: 2000,
+      currentWorldMinute: 6000,
       onAction: () => undefined,
     }));
     expect(html).toContain("SCENE INTEL");
