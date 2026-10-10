@@ -77,6 +77,7 @@ export function createSliceWorldState(
           targets: authored.targets,
           relationships: null,
           organizations: null,
+          contracts: null,
         }
       : generateScenarioContent({
           seed,
@@ -112,6 +113,8 @@ export function createSliceWorldState(
       ...(people.relationships ? { relationships: people.relationships } : {}),
       // Generated scenes carry their organizations; the canonical roster has none (D066).
       ...(people.organizations ? { organizations: people.organizations } : {}),
+      // Generated scenes start with their opening offers from white brokers (D069).
+      ...(people.contracts ? { contracts: people.contracts } : {}),
     },
     targets: people.targets,
   });

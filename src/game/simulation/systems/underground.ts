@@ -20,6 +20,10 @@ import {
   usesLivingTies,
 } from "@/game/simulation/systems/living-ties";
 import {
+  generatedSceneOf,
+  objectiveWeightsFor,
+} from "@/game/simulation/systems/opportunities";
+import {
   activityBonus,
   cautionBonus,
   contactTrustThreshold,
@@ -75,7 +79,7 @@ const FOOTPRINT_PEER_TRUST = -5;
 
 const OFFER_PERCENT = 10;
 const MAX_OPEN_CONTRACTS = 3;
-const OFFER_WINDOW_MINUTES = 24 * 60;
+export const OFFER_WINDOW_MINUTES = 24 * 60;
 const RECON_DUE_MINUTES = 2 * 24 * 60;
 const MAP_DUE_MINUTES = 3 * 24 * 60;
 const QUIET_RECON_DUE_MINUTES = 2 * 24 * 60;
@@ -717,13 +721,22 @@ function offerContracts(
           targetPoint,
         )
       : pool[Math.floor(targetPoint * pool.length)]!;
+    // Canonical draws uniformly over the four objectives, as before. A generated
+    // scene weights them by its own mix, and a greedy issuer leans toward
+    // intrusion (D069).
+    const objectivePoint = hashUnit(seed, "offer-objective", tickIndex, issuer.id);
+    const scene = generatedSceneOf(world);
+    const sceneWeights =
+      scene === undefined ? undefined : objectiveWeightsFor(scene, issuer);
     const objective =
-      CONTRACT_OBJECTIVES[
-        Math.floor(
-          hashUnit(seed, "offer-objective", tickIndex, issuer.id) *
-            CONTRACT_OBJECTIVES.length,
-        )
-      ] ?? "recon-report";
+      sceneWeights === undefined
+        ? CONTRACT_OBJECTIVES[Math.floor(objectivePoint * CONTRACT_OBJECTIVES.length)] ??
+          "recon-report"
+        : pickWeighted(
+            sceneWeights.map((entry) => entry.value),
+            sceneWeights.map((entry) => entry.weight),
+            objectivePoint,
+          );
     const serviceCount = target.machines.reduce(
       (sum, machine) => sum + machine.services.length,
       0,
