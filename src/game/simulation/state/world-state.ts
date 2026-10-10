@@ -11,6 +11,8 @@ import {
   type JobQueueState,
 } from "@/game/simulation/scheduler/job-queue";
 
+import type { NetworkRouteChallenge } from "@/game/simulation/systems/network-routes";
+
 export interface PlayerState {
   handle: string;
   rank: number;
@@ -747,6 +749,8 @@ export interface NightshadeSliceState {
 }
 
 export interface WorldState {
+  /** Optional generic route challenges; absent in canonical and legacy worlds. */
+  networkChallenges?: NetworkRouteChallenge[];
   worldMinute: number;
   player: PlayerState;
   /**
@@ -824,6 +828,7 @@ export interface InitialTargetState
 }
 
 export interface InitialWorldState {
+  networkChallenges?: NetworkRouteChallenge[];
   worldMinute?: number;
   /** How the starting world was made. Absent means canonical (G2, D065). */
   scenario?: RunScenario;
@@ -949,6 +954,9 @@ export function createInitialWorldState(
   }
 
   return {
+    ...(initial.networkChallenges === undefined ? {} : {
+      networkChallenges: structuredClone(initial.networkChallenges),
+    }),
     worldMinute,
     player: initial.player ?? {
       handle: "unknown",
