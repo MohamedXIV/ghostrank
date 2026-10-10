@@ -19,6 +19,7 @@ import {
   hasLiveEvidence,
   logSliceStep,
   machineVisibleToSurvey,
+  nightshadeV2IntrusiveSignal,
   promiseClueFromProbe,
   sliceBoundaryTick,
   sliceTraceFollowUp,
@@ -667,9 +668,13 @@ export class CommandBus {
           this.world.worldMinute,
         )
       : [];
+    if (this.world.slice?.rules === "nightshade-v2") {
+      nightshadeV2IntrusiveSignal(this.world);
+    }
     const sliceEvents = this.world.slice
       ? [
-          ...this.revealVaultOnEscalation(operation.targetId),
+          ...(this.world.slice.rules === "nightshade-v1"
+            ? this.revealVaultOnEscalation(operation.targetId) : []),
           ...this.sliceLogAndFollowUp(
             operation.targetId,
             "escalate",
