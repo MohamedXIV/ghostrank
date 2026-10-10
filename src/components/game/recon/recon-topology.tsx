@@ -4,6 +4,7 @@ import { useRow, useTable } from "tinybase/ui-react";
 import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
+import { NetworkRouteWorkspace } from "@/components/game/recon/network-route-workspace";
 import {
   machineRoleMeta,
   type MachineRoleMeta,
@@ -206,6 +207,8 @@ export function ReconTopology({
             )}
           </div>
         )}
+
+        <NetworkRouteWorkspace targetId={targetId} runtime={runtime} />
 
         {/* Inferred Structure: Assistant Analytical Claims */}
         {targetClaims.length > 0 && (
