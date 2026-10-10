@@ -65,6 +65,8 @@ Generator steps: seed -> archetypes -> actors+org identities -> ownership graph 
 
 ## 5. Make hacking feel like player skill (#79, #83)
 
+**Architectural correction D073:** mini-games must be reusable mechanics with no Nightshade-specific solver. Scenario adapters provide fiction, clues, topology and objectives; all authoritative route tests, consequences and player-safe projections are general. The first Network Mapping mechanic must prove itself on Nightshade and a second non-Nightshade target before being considered portable. The revised written specification is proposed in `docs/superpowers/specs/2026-10-10-g3-reusable-hacking-mechanics-design.md` (PR #106), pending its own approval. No implementation is implied.
+
 Operations are *spaces to reason in*, not buttons to execute. Fictional systems may include:
 - Layered network exploration: map segments, identify visible assumptions, decide where to probe or bypass, respond to defenses.
 - Evidence puzzles: connect inconsistent timestamps, message fragments, service observations and organization patterns.

@@ -29,6 +29,12 @@ Names and exact semantics are fictionalized and data-driven.
 
 A consequential operation is built from capabilities, not a generic success roll.
 
+## Shared hacking gameplay capabilities (D073)
+
+Network mapping, traffic analysis, log forensics, access/trust, sandbox triage and camera investigation are reusable **world capabilities**, not scripted mini-games owned by a mission. Authored encounters and generated targets supply topology, evidence, goals and consequences, but the common simulation decides route hypotheses, cost and results. A mechanic is not considered agnostic until the same authority works against a separate, genuinely different target. Nightshade is a teaching scenario, not the system's owner or a required gate.
+
+Current design proposal: `docs/superpowers/specs/2026-10-10-g3-reusable-hacking-mechanics-design.md` (#105 / PR #106). No new gameplay shipped; human approval is still required for the detailed specification and implementation plan.
+
 ## One system, many interfaces
 
 The same capability may be invoked from:
