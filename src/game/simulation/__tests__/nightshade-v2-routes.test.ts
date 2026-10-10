@@ -5,6 +5,8 @@ import { NIGHTSHADE_TARGET_ID, RELAY_MACHINE_ID, VAULT_MACHINE_ID, SLICE_CONTRAC
 import { worldStateSchema } from "@/persistence/world-state-schema";
 import { projectWorld } from "@/game/simulation/projection/project-world";
 import { SLICE_RUN_SCENARIO } from "@/game/simulation/state/run-scenario";
+import { rotateNetworkRoute } from "@/game/simulation/systems/network-routes";
+import { nightshadeV2IntrusiveSignal } from "@/game/simulation/systems/nightshade-slice";
 
 function start() {
   const bus = new CommandBus(createSliceWorldState({
@@ -129,6 +131,20 @@ describe("Nightshade v2 uses general Network Mapping (v1 unchanged)", () => {
     expect(bus.snapshot().traces).toEqual(before.traces);
     expect(presence(bus)).toBe(false);
     expect(bus.snapshot().slice?.outcome).toBeNull();
+  });
+
+  it("uses the live rotated echo for an intrusive clue, never the old one", () => {
+    const world = createSliceWorldState({
+      scenario: SLICE_RUN_SCENARIO, nightshadeRules: "nightshade-v2",
+    });
+    const challenge = world.networkChallenges![0]!;
+    rotateNetworkRoute(challenge, "circle");
+
+    nightshadeV2IntrusiveSignal(world);
+    expect(challenge.observations.filter(observation =>
+      observation.kind === "echo" && observation.epoch === challenge.epoch,
+    )).toEqual([expect.objectContaining({ value: "circle" })]);
+    expect(worldStateSchema.safeParse(world).success).toBe(true);
   });
 
   it("serializes and resumes v2 while keeping the legacy v1 gate without generic challenges", () => {
