@@ -45,6 +45,7 @@ import {
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
+import { renderNetworkRouteQuery } from "@/game/computer/terminal/network-route-view";
 import { projectWorld } from "@/game/simulation/projection/project-world";
 import {
   briefingBriefLines,
@@ -633,14 +634,16 @@ function TerminalApp({
       setItems((current) => [
         ...current,
         { id: promptId, type: "prompt", text: raw },
-        { id: `help-${Date.now()}`, type: "table", text: TERMINAL_HELP_TABLE },
+        { id: `help-${Date.now()}`, type: "table", text: TERMINAL_HELP_TABLE + "\nNETWORK ROUTES: path map <target>  |  help path" },
       ]);
       return;
     }
 
     if (raw.toLowerCase().startsWith("help ")) {
       const topic = raw.slice(5).trim();
-      const detailed = formatDetailedHelp(topic);
+      const detailed = topic.toLowerCase() === "path"
+        ? "path map <target> | path inspect <target> <challenge> <route> | path preview <target> <challenge> <route> | path test <target> <challenge> <route>"
+        : formatDetailedHelp(topic);
       setItems((current) => [
         ...current,
         { id: promptId, type: "prompt", text: raw },
@@ -651,6 +654,17 @@ function TerminalApp({
             detailed ??
             `Unknown command '${topic}'. Type 'help' to review the command directory.`,
         },
+      ]);
+      return;
+    }
+
+    // Generic read-only network queries use the same player-safe data as Recon.
+    const routeRead = renderNetworkRouteQuery(raw, projectWorld(runtime.snapshot()).networkRoutes);
+    if (routeRead !== null) {
+      setItems(current => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        { id: `path-${Date.now()}`, type: "table", text: routeRead },
       ]);
       return;
     }
