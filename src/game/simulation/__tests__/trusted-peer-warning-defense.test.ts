@@ -17,7 +17,8 @@ function scene(seed = 17, scenario: "fresh-scene" | "high-pressure" = "fresh-sce
   const organization = world.underground.organizations!.find(o => o.id === defender.organizationId)!;
   const attacker = world.underground.actors.find(a => a.id !== defender.id &&
     a.organizationId && organization.rivalIds.includes(a.organizationId))!;
-  const peer = world.underground.actors.find(a => a.id !== attacker.id && a.id !== defender.id)!;
+  const peer = world.underground.actors.find(a =>
+    a.id !== attacker.id && a.id !== defender.id && a.targetId === undefined)!;
   peer.organizationId = defender.organizationId;
   peer.network = defender.network;
   peer.defense = 80;
