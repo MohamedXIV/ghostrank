@@ -927,6 +927,116 @@ textarea:focus-visible,
   opacity: 0.65;
 }
 
+/* Nightshade briefing (G3, D071). Same tokens as the operation panel; the
+   consequences and the trace cost read as text, not as colour alone. */
+.briefing-panel {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 18px;
+  border: 1px solid var(--line-hot);
+  background: var(--input-background);
+  padding: 12px;
+}
+
+.briefing-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.briefing-header strong {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.briefing-window {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.briefing-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.briefing-stats > div {
+  border: 1px solid var(--line);
+  background: var(--card-background);
+  padding: 6px 8px;
+}
+
+.briefing-stats strong {
+  display: block;
+  font-size: 12px;
+}
+
+.briefing-line,
+.briefing-notice,
+.briefing-outcome {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.briefing-line strong,
+.briefing-notice strong,
+.briefing-outcome strong {
+  color: var(--foreground, inherit);
+}
+
+.briefing-notice {
+  border-left: 2px solid var(--accent);
+  padding: 4px 8px;
+  color: inherit;
+}
+
+.briefing-outcome {
+  border: 1px solid var(--line);
+  padding: 8px;
+}
+
+.briefing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.briefing-confirm {
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.briefing-confirm > p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.briefing-preview,
+.briefing-clues,
+.briefing-record {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .briefing-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .briefing-actions .recon-inline-action {
+    flex: 1 1 auto;
+  }
+}
+
 .recon-infrastructure {
   margin-top: 22px;
 }

@@ -1037,3 +1037,49 @@ Two checks deliberately keep fewer seeds. `generated-archetypes.test.ts` measure
 **Not decided.** Whether to extend the sweep to 1000 seeds in CI. That would need a runtime budget, so it waits for a decision on test time.
 
 **Human gates.** The G0 and G1 playtest gates remain NOT RUN. This sweep proves structural and deterministic properties. It does not establish that the scenes are fun, fair or readable to a player.
+
+## D071 — The Nightshade briefing is the first interactive slice: two routes, a visible trace cost, and an owner who reviews what you leave behind (Game-First G3, #79)
+
+**Before.** The hacking loop was atomic. Survey, inspect and escalate each returned at once. A missing prerequisite was a raw code such as `MACHINE_NOT_OBSERVED`. Escalation had no preview, so its trace was learned only afterwards. Disengaging produced fifteen events and no story (`GAME_FIRST_VERTICAL_SLICE.md` §2–3).
+
+**Rule.** A run started in the Nightshade Briefing scene (`nightshade-slice`) is the authored roster with one offered contract from a white broker: an infrastructure map of Nightshade, which needs the relay and the vault on the file. Its state lives in `world.slice`. Every slice rule is gated on that field, so canonical worlds never reach it.
+- A survey or an inspection costs one footprint on the target. Reading the broker promises the routing at the next 360-minute boundary. A survey finds the vault only once that routing is known.
+- Escalation costs three high trace and a base five minutes. It needs a read service, and it reveals the vault directly. It needs explicit confirmation (`op escalate confirm`, or CONFIRM ESCALATION). Without it the bus refuses with `ESCALATION_UNCONFIRMED`.
+- The owner watches from footprint five, the canonical defensive threshold. The watch schedules a review at the next boundary. At that boundary the owner rotates the vault off the map. The player may re-read the relay's broker once. The rotated routing arrives at the following boundary.
+- Leaving costs one footprint from recon and two from intrusive. It ends the briefing as burned at eight or more, as locked out after the review, or as retreated while watched or at five or more. Otherwise the briefing stays open. A complete map delivered ends it as delivered. The window closes at minute 1440 as expired. Declining ends it as declined.
+- Each act that costs trace shows its cost before it is paid, in `op preview` and in the desktop's confirmation panel. The preview and the recorded trace use the same numbers, and a test checks that they match.
+- A refused prerequisite gives an in-world reason with the code kept as an identifier, for example `reason // no_new_machine_evidence`. The reason is chosen by what the player has learned.
+
+**Rank.** No rule reads rank. A test runs the same route at rank 1 and at rank 100,256 and gets the same outcome, footprint and record.
+
+**Player-safe.** The projection adds one `slice` view, and it holds only what the player can see: clues, the map as two booleans, footprint, watch, review, preview and record. Trace, reaction and evidence identifiers stay out. A test shows the vault is absent until the broker routes it.
+
+**Measured.** Headless tests (Node 24) and the production Chromium smoke agree on each route:
+- Quiet: delivered at footprint 3, with no watch.
+- Intrusive: delivered at footprint 5, under watch, before the review.
+- Burn: leaving at footprint 8 ends the briefing as burned.
+- Retreat: leaving at footprint 7 while watched ends it as retreated.
+- Lock-out: the review at minute 360 rotates the vault. Leaving at footprint 7 after it ends the briefing as locked out.
+- Response: after the review, the broker is re-read, the rotated routing arrives at the next boundary, and the vault is recovered. Delivered at footprint 7.
+- Browser: the five routes ran through the UI on a 1280 px desktop and at 390 px, 180 checks in all, with no page or console errors.
+
+**Alternatives rejected.**
+- A single hack button with a success percentage. Rejected by AGENTS.md. The outcome follows from the footprint and from what the player has learned.
+- Escalation as a yes or no prompt with no preview. Rejected. The preview is the decision the brief asks for.
+- An owner response on a timer that ignores the trace. Rejected. The review follows the player's footprint, so the cause stays visible.
+- Briefings for generated scenes. Rejected for this slice. The authored roster keeps the first playtest's clues fixed, and generated scenes are not covered.
+
+**Observed, not yet tuned.** The trace weights (probe 1, escalate 3, leave 1 or 2), the watch threshold of five, the burn line of eight, the 360-minute review boundary and the base minutes. The quiet route waits up to six game hours. Whether a novice finishes inside the brief's 20–30 minutes is unknown.
+
+**Gaps, not hidden.**
+- The opening clue is a clue shown when the run starts. The brief suggested a message or forum post.
+- The owner's response is a watch and one review rotation. Rumour and changed-login responses are not surfaced in the briefing, and there is no sustained-probing trigger beyond the footprint.
+- There is no partial-success ending. A briefing with an incomplete map stays open.
+- The inline confirmation does not pause the clock. The G1 modal hold does not cover it, so the clock runs while a preview is read.
+- Only the slice's own prerequisite codes have in-world clues. Other codes, such as `OPERATION_TARGET_MISMATCH` and `MACHINE_NOT_FOUND`, still show the raw code.
+- Some read-only readers, such as the balance telemetry, have not been checked for retired evidence.
+- The briefing's record does not yet feed the run's postmortem or Run History.
+
+**Not decided.** Whether the owner's review should stay on a fixed boundary or scale with rig speed. Whether a partial outcome should end the briefing.
+
+**Human gates.** The G0 and G1 playtest gates remain NOT RUN. The G3 gate in `GAME_FIRST_VERTICAL_SLICE.md` §6 needs at least one human playtester to complete the slice unaided. That has NOT been run. The browser smoke shows that the routes work through the UI. It does not show that they are fun, readable or fair.

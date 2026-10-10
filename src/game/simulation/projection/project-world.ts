@@ -1,5 +1,19 @@
 import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
 import {
+  SLICE_CLUES,
+  SLICE_LOG_TEXT,
+  SLICE_WINDOW_END_MINUTE,
+  type SliceClueId,
+  type SliceOutcome,
+} from "@/content/nightshade-slice";
+import {
+  footprintOf,
+  previewSliceActions,
+  sliceMapStatus,
+  watchActive,
+  type SlicePreview,
+} from "@/game/simulation/systems/nightshade-slice";
+import {
   isInterruptibleKind,
   type TimeJobKind,
 } from "@/game/simulation/systems/time-jobs";
@@ -750,6 +764,11 @@ export interface WorldProjection {
   /** Phase 7 P2: player-controlled wind-down/cooling plan, null when idle. */
   retirement: VisibleRetirement | null;
   /**
+   * The Nightshade briefing (G3, D071). Present only in that scenario, so every
+   * other projection keeps exactly the shape it had before G3.
+   */
+  slice?: VisibleNightshadeBriefing;
+  /**
    * Phase 7 P5: coarse player-safe veteran pressure. Numeric bonuses remain
    * simulation internals; the surface gets only the band and the history
    * categories that caused it.
@@ -1021,9 +1040,81 @@ function evidenceSubjects(
 ): Set<string> {
   return new Set(
     state.evidence
-      .filter((record) => record.kind === kind)
+      .filter(
+        (record) =>
+          record.kind === kind && record.retiredWorldMinute === undefined,
+      )
       .map((record) => record.subjectId),
   );
+}
+
+/**
+ * The Nightshade briefing as the player may read it (D071). Clue and log text
+ * come from authored content by key. The preview carries only rules the player
+ * can reason about: minutes, weights, thresholds and what leaving would end
+ * with. The owner's stored state beyond its schedule never leaves the simulation.
+ */
+export interface VisibleNightshadeBriefing {
+  rules: "nightshade-v1";
+  targetId: string;
+  targetHandle: string;
+  outcome: SliceOutcome | null;
+  endedWorldMinute: number | null;
+  windowEndWorldMinute: number;
+  contract: { id: string; status: string } | null;
+  clues: { id: SliceClueId; title: string; text: string }[];
+  pendingClues: { clueId: SliceClueId; title: string; dueWorldMinute: number }[];
+  map: { known: number; needed: number; relayOnMap: boolean; vaultOnMap: boolean };
+  footprint: number;
+  watched: boolean;
+  review: { dueWorldMinute: number; status: "scheduled" | "ran" } | null;
+  preview: SlicePreview | null;
+  log: { worldMinute: number; text: string; footprint: number }[];
+}
+
+function projectNightshadeBriefing(state: WorldState): VisibleNightshadeBriefing {
+  const slice = state.slice;
+
+  if (!slice) {
+    throw new RangeError("No Nightshade briefing on this world.");
+  }
+
+  const target = state.targets.find((candidate) => candidate.id === slice.targetId);
+  const contract = state.underground.contracts.find(
+    (candidate) => candidate.id === slice.contractId,
+  );
+
+  return {
+    rules: slice.rules,
+    targetId: slice.targetId,
+    targetHandle: target?.handle ?? slice.targetId,
+    outcome: slice.outcome,
+    endedWorldMinute: slice.endedWorldMinute,
+    windowEndWorldMinute: SLICE_WINDOW_END_MINUTE,
+    contract: contract ? { id: contract.id, status: contract.status } : null,
+    clues: slice.clues.map((clueId) => ({
+      id: clueId,
+      title: SLICE_CLUES[clueId].title,
+      text: SLICE_CLUES[clueId].text,
+    })),
+    pendingClues: slice.pendingClues.map((pending) => ({
+      clueId: pending.clueId,
+      title: SLICE_CLUES[pending.clueId].title,
+      dueWorldMinute: pending.dueWorldMinute,
+    })),
+    map: sliceMapStatus(state),
+    footprint: footprintOf(state, slice.targetId),
+    watched: watchActive(state, slice.targetId),
+    review: slice.review
+      ? { dueWorldMinute: slice.review.dueWorldMinute, status: slice.review.status }
+      : null,
+    preview: slice.outcome === null ? previewSliceActions(state) : null,
+    log: slice.log.map((entry) => ({
+      worldMinute: entry.worldMinute,
+      text: SLICE_LOG_TEXT[entry.key] ?? entry.key,
+      footprint: entry.footprint,
+    })),
+  };
 }
 
 function footprintLevel(score: number): FootprintLevel {
@@ -1674,5 +1765,6 @@ export function projectWorld(state: WorldState): WorldProjection {
     underground: projectUnderground(state, knownTargets),
     economy: projectEconomy(state, handles),
     presence: derivePresence(state.economy.housing),
+    ...(state.slice ? { slice: projectNightshadeBriefing(state) } : {}),
   };
 }

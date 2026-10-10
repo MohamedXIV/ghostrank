@@ -48,6 +48,12 @@ import {
 /** The ecosystem acts on fixed world-time boundaries (6 in-game hours). */
 export const TICK_MINUTES = 360;
 
+/**
+ * The footprint at which a target starts watching the player (Phase 6, D048).
+ * Shared by the canonical reaction and the Nightshade briefing (D071).
+ */
+export const DEFENSIVE_WATCH_THRESHOLD = 5;
+
 export interface UndergroundAdvanceHooks {
   /** Advance deadline systems to this tick before NPC actions at the same minute. */
   beforeTick?: (worldMinute: number) => void;
@@ -827,7 +833,11 @@ export function isObjectiveMet(
 
   const knownMachines = new Set(
     world.evidence
-      .filter((record) => record.kind === "machine-presence")
+      .filter(
+        (record) =>
+          record.kind === "machine-presence" &&
+          record.retiredWorldMinute === undefined,
+      )
       .map((record) => record.subjectId),
   );
 
@@ -856,7 +866,11 @@ export function isObjectiveMet(
 
   const knownServices = new Set(
     world.evidence
-      .filter((record) => record.kind === "service-presence")
+      .filter(
+        (record) =>
+          record.kind === "service-presence" &&
+          record.retiredWorldMinute === undefined,
+      )
       .map((record) => record.subjectId),
   );
   const count = target.machines.reduce(

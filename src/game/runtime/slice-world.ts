@@ -4,10 +4,18 @@ import {
   type InstantiatedWorldContent,
 } from "@/content/world-content";
 import { validatePlayerHandle } from "@/game/identity/player-handle";
+import {
+  NIGHTSHADE_TARGET_ID,
+  SLICE_CONTRACT_ID,
+  SLICE_MAP_MACHINES,
+  SLICE_WINDOW_END_MINUTE,
+} from "@/content/nightshade-slice";
+import { createNightshadeSliceState } from "@/game/simulation/systems/nightshade-slice";
 import { generateScenarioContent } from "@/game/world-generation/generate-scenario";
 import { generateRunSeed } from "@/game/simulation/rng/seeded-rng";
 import {
   DEFAULT_RUN_SCENARIO,
+  SLICE_RUN_SCENARIO,
   type RunScenario,
 } from "@/game/simulation/state/run-scenario";
 import {
@@ -71,7 +79,7 @@ export function createSliceWorldState(
   }
 
   const people =
-    scenario === "canonical"
+    scenario === "canonical" || scenario === SLICE_RUN_SCENARIO
       ? {
           actors: authored.actors,
           targets: authored.targets,
@@ -85,7 +93,7 @@ export function createSliceWorldState(
           reservedHandles: [handle.handle, ...rosterHandles(authored)],
         });
 
-  return createInitialWorldState({
+  const world = createInitialWorldState({
     player: {
       handle: handle.handle,
       rank: 100_256,
@@ -118,6 +126,42 @@ export function createSliceWorldState(
     },
     targets: people.targets,
   });
+
+  if (scenario === SLICE_RUN_SCENARIO) {
+    attachNightshadeBriefing(world, authored.actors);
+  }
+
+  return world;
+}
+
+/**
+ * Opens the Nightshade briefing on a world (D071): one contract for the relay
+ * and the vault, offered by a white broker, and the slice record that holds its
+ * clues, owner review and outcome. The canonical rules never read any of it.
+ */
+function attachNightshadeBriefing(
+  world: WorldState,
+  actors: readonly { id: string; network: string; targetId?: string }[],
+): void {
+  const issuer =
+    actors.find((actor) => actor.network === "white" && !actor.targetId) ??
+    actors.find((actor) => actor.network === "white");
+
+  if (!issuer) {
+    throw new RangeError("The Nightshade briefing needs a white broker to offer it.");
+  }
+
+  world.underground.contracts.push({
+    id: SLICE_CONTRACT_ID,
+    issuerId: issuer.id,
+    targetId: NIGHTSHADE_TARGET_ID,
+    objective: "infrastructure-map",
+    requiredMachines: SLICE_MAP_MACHINES,
+    status: "offered",
+    offeredWorldMinute: 0,
+    expiresWorldMinute: SLICE_WINDOW_END_MINUTE,
+  });
+  world.slice = createNightshadeSliceState({ contractId: SLICE_CONTRACT_ID });
 }
 
 /**

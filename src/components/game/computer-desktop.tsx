@@ -45,6 +45,20 @@ import {
 import { readMessageFromGui } from "@/game/computer/apps/message-actions";
 import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
+import { projectWorld } from "@/game/simulation/projection/project-world";
+import {
+  briefingBriefLines,
+  briefingEventNotices,
+  briefingFailureText,
+  briefingPreviewLines,
+} from "@/components/game/briefing/briefing-copy";
+import { previewSliceActions } from "@/game/simulation/systems/nightshade-slice";
+import {
+  BriefingProvider,
+  useBriefing,
+} from "@/components/game/briefing/briefing-context";
+import { NightshadeBriefingPanel } from "@/components/game/briefing/nightshade-briefing-panel";
+import { parseBriefingView } from "@/components/game/briefing/briefing-copy";
 import { parsePlaybackCommand } from "@/game/runtime/playback-command";
 import { useClockControl } from "@/components/game/clock-context";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
@@ -641,6 +655,45 @@ function TerminalApp({
       return;
     }
 
+    // The Nightshade briefing's own read-only verbs (D071). Canonical runs have
+    // no briefing, so for them these words fall through to the parser as before.
+    const briefingWorld = runtime.snapshot();
+    const briefingView = briefingWorld.slice
+      ? projectWorld(briefingWorld).slice
+      : undefined;
+
+    if (briefingView && raw.toLowerCase() === "brief") {
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `brief-${Date.now()}`,
+          type: "table",
+          text: [
+            ...briefingBriefLines(briefingView),
+            "Commands: op preview // op escalate confirm // op exit",
+          ].join("\n"),
+        },
+      ]);
+      return;
+    }
+
+    if (briefingView && raw.toLowerCase() === "op preview") {
+      const preview = previewSliceActions(briefingWorld);
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `preview-${Date.now()}`,
+          type: "table",
+          text: preview
+            ? briefingPreviewLines(preview).join("\n")
+            : "No briefing is open for a preview.",
+        },
+      ]);
+      return;
+    }
+
     if (raw.toLowerCase() === "legend") {
       setItems((current) => [
         ...current,
@@ -893,7 +946,12 @@ function TerminalApp({
     const parsed = parseTerminalCommand(raw);
 
     if (!parsed.ok) {
-      const err = formatRichError(parsed.error);
+      const err = {
+        ...formatRichError(parsed.error),
+        text:
+          briefingFailureText(parsed.error, runtime.snapshot()) ??
+          formatRichError(parsed.error).text,
+      };
       setItems((current) => [
         ...current,
         { id: promptId, type: "prompt", text: raw },
@@ -912,6 +970,7 @@ function TerminalApp({
 
     if (result.ok) {
       const rich = formatRichCommandResult(parsed.command.type);
+      const notices = briefingEventNotices(result.events);
       setItems((current) => [
         ...current,
         { id: promptId, type: "prompt", text: raw },
@@ -922,9 +981,21 @@ function TerminalApp({
           glyph: rich.glyph,
           text: rich.text,
         },
+        ...notices.map((notice, index) => ({
+          id: `briefing-${Date.now()}-${index}`,
+          type: "result" as const,
+          badge: notice.badge,
+          glyph: notice.glyph,
+          text: notice.text,
+        })),
       ]);
     } else {
-      const err = formatRichError(result.error ?? "COMMAND_FAILED");
+      const err = {
+        ...formatRichError(result.error ?? "COMMAND_FAILED"),
+        text:
+          briefingFailureText(result.error ?? "COMMAND_FAILED", runtime.snapshot()) ??
+          formatRichError(result.error ?? "COMMAND_FAILED").text,
+      };
       setItems((current) => [
         ...current,
         { id: promptId, type: "prompt", text: raw },
@@ -1052,6 +1123,21 @@ function MachineRenameRow({
 }
 
 function ReconApp({ runtime }: { runtime: GameRuntime }) {
+  const briefingJson = useCell("briefing", "current", "json", runtime.projection);
+  const briefingView = useMemo(
+    () => parseBriefingView(briefingJson),
+    [briefingJson],
+  );
+
+  return (
+    <BriefingProvider runtime={runtime} view={briefingView}>
+      <ReconAppBody runtime={runtime} />
+    </BriefingProvider>
+  );
+}
+
+function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
+  const briefing = useBriefing();
   const [targetId, setTargetId] = useState("nightshade");
   const targetIds = useRowIds("targets", runtime.projection);
   const machineIds = useRowIds("machines", runtime.projection);
@@ -1072,7 +1158,12 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
       return;
     }
 
-    runtime.execute(observeTargetFromGui(normalized));
+    const command = observeTargetFromGui(normalized);
+    if (briefing) {
+      briefing.run(command);
+    } else {
+      runtime.execute(command);
+    }
   };
 
   return (
@@ -1109,6 +1200,8 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
         </Button>
       </div>
 
+      {briefing ? <NightshadeBriefingPanel /> : null}
+
       <div className="operation-panel">
         <span className="panel-label">OPERATION SESSION</span>
         <ContextualHint
@@ -1131,13 +1224,23 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
                 <button
                   className="recon-inline-action"
                   type="button"
-                  disabled={!canEscalate}
-                  title={
-                    canEscalate
-                      ? "Escalate the current fictional operation"
-                      : "Discover service evidence before escalation"
+                  disabled={
+                    briefing
+                      ? Boolean(briefing.view.preview?.escalate.blockedBy)
+                      : !canEscalate
                   }
-                  onClick={() => runtime.execute(escalateOperationFromGui())}
+                  title={
+                    briefing
+                      ? "Preview the trace cost, then confirm"
+                      : canEscalate
+                        ? "Escalate the current fictional operation"
+                        : "Discover service evidence before escalation"
+                  }
+                  onClick={() =>
+                    briefing
+                      ? briefing.request("escalate")
+                      : runtime.execute(escalateOperationFromGui())
+                  }
                 >
                   ESCALATE
                 </button>
@@ -1145,7 +1248,11 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
               <button
                 className="recon-inline-action"
                 type="button"
-                onClick={() => runtime.execute(disengageOperationFromGui())}
+                onClick={() =>
+                  briefing
+                    ? briefing.request("disengage")
+                    : runtime.execute(disengageOperationFromGui())
+                }
               >
                 DISENGAGE
               </button>
@@ -1282,6 +1389,7 @@ function ReconTarget({
   targetId: string;
   runtime: GameRuntime;
 }) {
+  const briefing = useBriefing();
   const target = useRow("targets", targetId, runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
   const operationTargetId = String(operation.targetId ?? "");
@@ -1290,11 +1398,15 @@ function ReconTarget({
     operationTargetId.length > 0 && !isActiveTarget;
 
   const act = () => {
-    runtime.execute(
-      isActiveTarget
-        ? surveyTargetFromGui(targetId)
-        : openOperationFromGui(targetId),
-    );
+    const command = isActiveTarget
+      ? surveyTargetFromGui(targetId)
+      : openOperationFromGui(targetId);
+
+    if (briefing) {
+      briefing.run(command);
+    } else {
+      runtime.execute(command);
+    }
   };
 
   return (
@@ -1347,6 +1459,7 @@ function ReconMachine({
   machineId: string;
   runtime: GameRuntime;
 }) {
+  const briefing = useBriefing();
   const machine = useRow("machines", machineId, runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
@@ -1371,7 +1484,14 @@ function ReconMachine({
             className="recon-inline-action"
             type="button"
             disabled={!canInspect}
-            onClick={() => runtime.execute(inspectMachineFromGui(machineId))}
+            onClick={() => {
+              const command = inspectMachineFromGui(machineId);
+              if (briefing) {
+                briefing.run(command);
+              } else {
+                runtime.execute(command);
+              }
+            }}
           >
             INSPECT
           </button>

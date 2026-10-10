@@ -1,7 +1,7 @@
 # Game-First G0 — Game-Feel Audit and Vertical-Slice Brief
 
 **Issue:** #76 (G0), parent #75.
-**Status:** audit and design brief. The brief is a proposal for the G3 build, not a shipped feature.
+**Status:** audit and design brief. The G3 build of §5 and §6 is implemented as the Nightshade briefing (D071, §10). The human playtest gate in §5 and §6 is NOT RUN.
 **Decision gate:** the north-star slice below is **not validated** until a human playtester completes it. A passing test suite does not satisfy this gate.
 
 ## 1. Method and limits
@@ -137,3 +137,29 @@ Uplink and Hacknet are also relevant references for mission-based hacking and in
 - Is a 20–30 minute session the right length for the first slice?
 - Does the preview-before-escalation design remove too much uncertainty?
 - Which route do novice players choose first, and does it fail for a reason they can name?
+
+## 10. G3 build status (D071)
+
+The build is the Nightshade briefing. It runs in the scene `nightshade-slice` and is gated on `world.slice`, so canonical runs keep their rules. Terminal and desktop both call the same commands. The rules live in `src/game/simulation/systems/nightshade-slice.ts`.
+
+Checked against §5 and §6:
+
+| Requirement | Status |
+|---|---|
+| Two routes, each completable through the command model | Built and tested. Quiet (recon, broker routing at the boundary, delivered at footprint 3) and intrusive (escalate with the vault revealed, delivered under watch at footprint 5). Both are tested headlessly and played through the UI in the browser smoke. |
+| At least three decision points with distinct consequences | Route choice after the broker read, preview or commit with cancel and confirmation, and waiting for the boundary or acting now. Each changes footprint, watch or the outcome. |
+| Preview or commit before escalation | Built. The preview shows the cost the player can reason about: trace, minutes, footprint after, and watch and review timing. It never shows hidden state. |
+| NPC countermove observable in the projection | Built. The watch shows from footprint five. The review rotates the vault off the map, with a notice and the map reduced to one machine. The player can re-read the broker to answer it. |
+| Loss state from a visible chain of causes | Built. Burn at footprint eight, retreat while watched, lock-out after the review, and expiry at the window's end. Each outcome is recorded with its cause. |
+| Diegetic clue for each prerequisite failure | Built for the slice's own prerequisites (`SLICE_FAILURE_CLUES`). Other codes still show the raw code. |
+| Escalation preview matches the recorded trace | Built and tested on both routes. |
+| Terminal and GUI invoke the same commands and produce the same world time | Built. Both go through `CommandBus.execute`. The browser smoke runs `brief`, `op preview`, `op escalate` and `op escalate confirm` in the terminal and checks the result on the desktop. |
+| At least one human playtester completes the slice unaided | **NOT RUN.** This is the open gate. |
+
+Gaps the playtest should look at, in priority order:
+- Route tuning. The trace weights, the watch threshold, the burn line and the 360-minute review boundary are untuned. The quiet route waits up to six game hours, which may not fit a 20–30 minute session.
+- The opening clue is a clue at run start, not a message or forum post as §5 suggests.
+- The owner's response is a watch and one review rotation. Rumour and changed-login responses are not shown in the briefing.
+- The confirmation panel does not pause the clock.
+- There is no partial-success ending. A briefing with an incomplete map stays open.
+- Generated scenes have no briefing.

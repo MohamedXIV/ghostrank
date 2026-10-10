@@ -4,7 +4,12 @@ import { isStoredPlayerHandle } from "@/game/identity/player-handle";
 import {
   DEFAULT_RUN_SCENARIO,
   RUN_SCENARIOS,
+  SLICE_RUN_SCENARIO,
 } from "@/game/simulation/state/run-scenario";
+import {
+  SLICE_CLUE_IDS,
+  SLICE_OUTCOMES,
+} from "@/content/nightshade-slice";
 
 const evidenceSchema = z.object({
   id: z.string().min(1),
@@ -17,6 +22,8 @@ const evidenceSchema = z.object({
   confidence: z.literal("observed"),
   source: z.enum(["direct-observation", "legacy-discovery"]),
   worldMinute: z.number().int().nonnegative(),
+  // D071: only an owner's review sets this. Absent in every other save.
+  retiredWorldMinute: z.number().int().nonnegative().optional(),
 });
 
 const serviceSchema = z.object({
@@ -56,6 +63,7 @@ const traceSchema = z.object({
   cause: z.enum([
     "operation-escalation",
     "operation-disengagement",
+    "operation-probe",
   ]),
   stage: z.enum(["recon", "intrusive"]),
   severity: z.enum(["low", "elevated", "high"]),
@@ -410,8 +418,42 @@ const retirementPlanSchema = z.discriminatedUnion("stage", [
   }),
 ]);
 
+/**
+ * The Nightshade briefing (G3, D071). Optional: a save without one is any
+ * other scenario, including every save made before G3.
+ */
+const nightshadeSliceSchema = z.object({
+  rules: z.literal("nightshade-v1"),
+  targetId: z.string().min(1),
+  contractId: z.string().min(1),
+  clues: z.array(z.enum(SLICE_CLUE_IDS)),
+  pendingClues: z.array(
+    z.object({
+      clueId: z.enum(SLICE_CLUE_IDS),
+      dueWorldMinute: z.number().int().nonnegative(),
+    }),
+  ),
+  review: z
+    .object({
+      dueWorldMinute: z.number().int().nonnegative(),
+      reactionId: z.string().min(1),
+      status: z.enum(["scheduled", "ran"]),
+    })
+    .nullable(),
+  outcome: z.enum(SLICE_OUTCOMES).nullable(),
+  endedWorldMinute: z.number().int().nonnegative().nullable(),
+  log: z.array(
+    z.object({
+      worldMinute: z.number().int().nonnegative(),
+      key: z.string().min(1).max(64),
+      footprint: z.number().int().nonnegative(),
+    }),
+  ),
+});
+
 const storedWorldStateSchema = z.object({
   worldMinute: z.number().int().nonnegative(),
+  slice: nightshadeSliceSchema.optional(),
   // G2 (D065): a save from before G2 has no scenario and is canonical.
   scenario: z.enum(RUN_SCENARIOS).optional(),
   player: z.object({
@@ -477,7 +519,31 @@ const storedWorldStateSchema = z.object({
     .default({ nextSequence: 0, jobs: [] }),
 });
 
-export const worldStateSchema = storedWorldStateSchema.transform((state) => {
+/**
+ * A briefing scenario and its state must come together. Either one without the
+ * other is a corrupt save, and it is refused rather than guessed at.
+ */
+const checkedWorldStateSchema = storedWorldStateSchema.superRefine((state, ctx) => {
+  const briefing = state.scenario === SLICE_RUN_SCENARIO;
+
+  if (briefing && !state.slice) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "a Nightshade briefing save must carry its briefing state",
+      path: ["slice"],
+    });
+  }
+
+  if (state.slice && !briefing) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "a briefing state needs the Nightshade briefing scenario",
+      path: ["scenario"],
+    });
+  }
+});
+
+export const worldStateSchema = checkedWorldStateSchema.transform((state) => {
   const evidence = state.evidence ? [...state.evidence] : [];
 
   for (const targetId of state.knownTargetIds) {
