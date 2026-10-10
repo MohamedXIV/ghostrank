@@ -125,7 +125,8 @@ export interface OperationState {
 export type TraceCause =
   | "operation-escalation"
   | "operation-disengagement"
-  | "operation-probe";
+  | "operation-probe"
+  | "network-route-test";
 
 export type AnalysisConfidence = "low" | "medium" | "high";
 
