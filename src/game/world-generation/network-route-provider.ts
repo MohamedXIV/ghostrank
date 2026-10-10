@@ -9,7 +9,8 @@ import { recordNetworkObservation, seededNetworkRouteOrder } from "@/game/simula
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 
 export function attachGeneratedRouteChallenge(world: WorldState, seed: number): void {
-  if (world.scenario !== "fresh-scene" || world.networkChallenges !== undefined) return;
+  if ((world.scenario !== "fresh-scene" && world.scenario !== "high-pressure") ||
+      world.networkChallenges !== undefined) return;
   const target = world.targets.find(candidate =>
     candidate.machines.length >= 2 && candidate.machines[0]!.services.length > 0);
   if (!target) return;
@@ -44,7 +45,7 @@ export function generatedRouteSurveyObservation(
   targetId: string,
   discoveredMachineIds: readonly string[],
 ): void {
-  if (world.scenario !== "fresh-scene") return;
+  if (world.scenario !== "fresh-scene" && world.scenario !== "high-pressure") return;
   for (const challenge of world.networkChallenges ?? []) {
     if (challenge.targetId !== targetId ||
         !discoveredMachineIds.includes(challenge.entryMachineId) ||
@@ -64,7 +65,7 @@ export function generatedRouteInspectObservation(
   machineId: string,
   discoveredServiceIds: readonly string[],
 ): void {
-  if (world.scenario !== "fresh-scene") return;
+  if (world.scenario !== "fresh-scene" && world.scenario !== "high-pressure") return;
   for (const challenge of world.networkChallenges ?? []) {
     if (challenge.entryMachineId !== machineId ||
         challenge.observations.some(o => o.kind === "echo" && o.epoch === challenge.epoch)) continue;

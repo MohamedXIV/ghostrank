@@ -44,7 +44,7 @@ export interface CreateSliceWorldOptions {
   scenario?: RunScenario;
   /** Opt-in v2 learning adapter; omitted deliberately retains v1 compatibility. */
   nightshadeRules?: "nightshade-v1" | "nightshade-v2";
-  /** Opt-in distinct generated consumer without changing existing generated baselines. */
+  /** Opt-in shared route provider for generated scenarios, preserving plain fixture worlds. */
   networkMappingDemo?: boolean;
 }
 
@@ -139,7 +139,8 @@ export function createSliceWorldState(
   if (scenario === SLICE_RUN_SCENARIO) {
     attachNightshadeBriefing(world, authored.actors, options.nightshadeRules ?? "nightshade-v1", seed);
   }
-  if (scenario === "fresh-scene" && options.networkMappingDemo === true) {
+  if ((scenario === "fresh-scene" || scenario === "high-pressure") &&
+      options.networkMappingDemo === true) {
     attachGeneratedRouteChallenge(world, seed);
   }
 
@@ -211,6 +212,6 @@ export function createNewRunWorldState(
     nightshadeRules: options.nightshadeRules ??
       (options.scenario === SLICE_RUN_SCENARIO ? "nightshade-v2" : undefined),
     networkMappingDemo: options.networkMappingDemo ??
-      options.scenario === "fresh-scene",
+      (options.scenario === "fresh-scene" || options.scenario === "high-pressure"),
   });
 }
