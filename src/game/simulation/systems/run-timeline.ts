@@ -133,20 +133,42 @@ export function deriveRunTimeline(world: WorldState): RunTimelineBeat[] {
   for (const trace of world.traces) {
     if (trace.worldMinute > endingMinute) continue;
     const target = targetName(world, trace.targetId);
-    if (trace.cause === "operation-escalation") {
-      pending.push({
-        kind: "escalation",
-        worldMinute: trace.worldMinute,
-        text: `You escalated an operation against ${target}.`,
-        orderKey: trace.id,
-      });
-    } else {
-      pending.push({
-        kind: "action",
-        worldMinute: trace.worldMinute,
-        text: `You disengaged from ${target} after a ${trace.stage} operation.`,
-        orderKey: trace.id,
-      });
+    // A trace is a footprint, not an implicit disengagement. Narrating a
+    // paid probe or Network Mapping test as an exit falsifies the run history.
+    // The trace records no route verdict: never infer confirmation/refutation.
+    switch (trace.cause) {
+      case "operation-escalation":
+        pending.push({
+          kind: "escalation",
+          worldMinute: trace.worldMinute,
+          text: `You escalated an operation against ${target}.`,
+          orderKey: trace.id,
+        });
+        break;
+      case "operation-disengagement":
+        pending.push({
+          kind: "action",
+          worldMinute: trace.worldMinute,
+          text: `You disengaged from ${target} after a ${trace.stage} operation.`,
+          orderKey: trace.id,
+        });
+        break;
+      case "operation-probe":
+        pending.push({
+          kind: "action",
+          worldMinute: trace.worldMinute,
+          text: `You ran a probe against ${target} during a ${trace.stage} operation.`,
+          orderKey: trace.id,
+        });
+        break;
+      case "network-route-test":
+        pending.push({
+          kind: "action",
+          worldMinute: trace.worldMinute,
+          text: `You tested a network route toward ${target}.`,
+          orderKey: trace.id,
+        });
+        break;
     }
   }
 
