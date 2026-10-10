@@ -599,6 +599,13 @@ export function syncWorldProjection(
     store.setTable("targets", targetRows);
     store.setTable("machines", machineRows);
     store.setTable("services", serviceRows);
+    // Only player-safe inferred/observed graph data reaches TinyBase.
+    store.setTable("networkRoutes", Object.fromEntries(
+      (projection.networkRoutes ?? []).map(route => [
+        route.id,
+        { targetId: route.targetId, json: JSON.stringify(route) },
+      ]),
+    ));
     store.setTable("reactions", reactionRows);
     // The Nightshade briefing (D071) is one JSON cell, read by the briefing
     // panel. Canonical worlds have no briefing, so the table stays absent.
