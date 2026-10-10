@@ -38,6 +38,8 @@ const targetSchema = z.object({
   handle: z.string().min(1),
   rank: z.number().int().positive(),
   machines: z.array(machineSchema).default([]),
+  // D066: absent for every target of the authored roster and every pre-G2 save.
+  organizationId: z.string().min(1).optional(),
   hidden: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -88,6 +90,17 @@ const undergroundActorSchema = z.object({
   // actor works without AI. Optional so legacy saves load as unassisted.
   modelId: z.string().min(1).optional(),
   targetId: z.string().min(1).optional(),
+  // D066: absent for independent actors and for every pre-G2 save.
+  organizationId: z.string().min(1).optional(),
+});
+
+const undergroundOrganizationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  kind: z.enum(["crew", "syndicate", "exchange"]),
+  motive: z.enum(["profit", "revenge", "control"]),
+  agenda: z.enum(["undercut", "expand", "defend"]),
+  rivalIds: z.array(z.string().min(1)),
 });
 
 const undergroundRelationshipSchema = z.object({
@@ -177,6 +190,7 @@ const undergroundSchema = z.object({
   lastTickMinute: z.number().int().nonnegative(),
   playerNetwork: networkSchema.nullable().default(null),
   actors: z.array(undergroundActorSchema).default([]),
+  organizations: z.array(undergroundOrganizationSchema).optional(),
   relationships: z.array(undergroundRelationshipSchema).default([]),
   incidents: z.array(undergroundIncidentSchema).default([]),
   rumors: z.array(undergroundRumorSchema).default([]),

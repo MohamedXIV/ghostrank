@@ -40,6 +40,19 @@ describe("run scenario persistence (Game-First G2, #78; D065)", () => {
     );
   });
 
+  it("round-trips a generated scene's organizations, and a canonical save has none", () => {
+    const generated = createSliceWorldState({ seed: 11, handle: "Night_Wren", scenario: "high-pressure" });
+    const parsed = worldStateSchema.parse(savedJson(generated));
+
+    expect(parsed.underground.organizations).toEqual(generated.underground.organizations);
+    expect(parsed.underground.organizations?.length).toBeGreaterThan(0);
+
+    const canonical = worldStateSchema.parse(
+      savedJson(createSliceWorldState({ seed: 11, handle: "Night_Wren", scenario: "canonical" })),
+    );
+    expect(canonical.underground.organizations).toBeUndefined();
+  });
+
   it("refuses a scene the game does not know", () => {
     const saved = savedJson(createSliceWorldState({ seed: 42 })) as Record<string, unknown>;
 

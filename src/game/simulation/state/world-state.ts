@@ -92,6 +92,13 @@ export interface TargetState {
   handle: string;
   rank: number;
   machines: MachineState[];
+  /**
+   * The organization this infrastructure belongs to (D066). Absent for the
+   * authored roster, whose targets have no organizations. Hidden truth: the
+   * projection never sends it, only the owning organization's public name on a
+   * contract its members issue.
+   */
+  organizationId?: string;
   hidden?: Record<string, unknown>;
 }
 
@@ -417,6 +424,35 @@ export interface UndergroundActor {
   modelId?: string;
   /** Operation target this actor owns; rank is kept in sync with it. */
   targetId?: string;
+  /**
+   * The organization this actor belongs to (D066). Absent for independent
+   * actors and for the whole authored roster. Hidden truth.
+   */
+  organizationId?: string;
+}
+
+export type OrganizationKind = "crew" | "syndicate" | "exchange";
+
+/** Why an organization acts. Hidden truth; no system reads it directly. */
+export type OrganizationMotive = "profit" | "revenge" | "control";
+
+/**
+ * What an organization presses for. Each agenda is read by the simulation:
+ * `undercut` commissions work against rival infrastructure, `expand` offers
+ * more contracts from its members, and `defend` hardens its members' defence.
+ */
+export type OrganizationAgenda = "undercut" | "expand" | "defend";
+
+export interface UndergroundOrganization {
+  id: string;
+  /** Public identity. A member's contract names it; nothing else about it is shown. */
+  name: string;
+  kind: OrganizationKind;
+  /** Hidden truth from here on. */
+  motive: OrganizationMotive;
+  agenda: OrganizationAgenda;
+  /** Organizations at odds with this one. Symmetric, never this organization. */
+  rivalIds: string[];
 }
 
 export interface UndergroundRelationship {
@@ -523,6 +559,8 @@ export interface UndergroundState {
   lastTickMinute: number;
   playerNetwork: UndergroundNetwork | null;
   actors: UndergroundActor[];
+  /** Generated scenes only (D066). Absent means no organizations, as in the authored roster. */
+  organizations?: UndergroundOrganization[];
   relationships: UndergroundRelationship[];
   incidents: UndergroundIncident[];
   rumors: UndergroundRumor[];
@@ -765,6 +803,11 @@ function createInitialUnderground(
     lastTickMinute: initial?.lastTickMinute ?? worldMinute,
     playerNetwork,
     actors,
+    // Written only when a generated scene supplies organizations, so canonical
+    // and pre-G2 worlds keep exactly the shape they had (D066).
+    ...(initial?.organizations
+      ? { organizations: structuredClone(initial.organizations) }
+      : {}),
     relationships,
     incidents: initial?.incidents ? structuredClone(initial.incidents) : [],
     rumors: initial?.rumors ? structuredClone(initial.rumors) : [],

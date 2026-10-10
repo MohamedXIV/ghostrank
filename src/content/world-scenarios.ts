@@ -1,4 +1,9 @@
 import type { WorldActorArchetype, WorldTargetArchetype } from "@/content/world-content";
+import type {
+  OrganizationAgenda,
+  OrganizationKind,
+  OrganizationMotive,
+} from "@/game/simulation/state/world-state";
 import type { RunScenario } from "@/game/simulation/state/run-scenario";
 
 /**
@@ -45,8 +50,8 @@ export interface ScenarioSpec {
   activity: readonly [number, number];
   /** Inclusive display-rank range. Rank is presentation only; no system reads it for outcomes. */
   rank: readonly [number, number];
-  /** Hidden sponsor identities that owners are attached to. */
-  sponsors: number;
+  /** Organizations that own infrastructure and employ owners and brokers (D066). */
+  organizations: number;
   /** Percent chance of a peer-to-peer tie for each ordered pair of actors. */
   linkPercent: number;
 }
@@ -61,7 +66,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     discretion: [25, 70],
     activity: [12, 30],
     rank: [2_000, 90_000],
-    sponsors: 3,
+    organizations: 3,
     linkPercent: 25,
   },
   "high-pressure": {
@@ -73,7 +78,7 @@ export const GENERATED_SCENARIO_SPECS: Record<GeneratedRunScenario, ScenarioSpec
     discretion: [40, 85],
     activity: [25, 45],
     rank: [800, 40_000],
-    sponsors: 2,
+    organizations: 2,
     linkPercent: 40,
   },
 };
@@ -105,6 +110,46 @@ export const OWNER_PROFILES: ReadonlyArray<{
   { actor: "rival-operator", target: "rival-infrastructure" },
   { actor: "automation-specialist", target: "elite-underground-operator" },
 ];
+
+/** Organization names are a public head and a kind-specific tail (D066). */
+export const ORGANIZATION_HEADS = [
+  "Brine", "Cinder", "Ferrous", "Halcyon", "Ledgerline", "Marrow",
+  "Nightjar", "Oriel", "Pallid", "Quarry", "Rowan", "Sablewing",
+] as const;
+
+export const ORGANIZATION_KIND_TAILS: Record<OrganizationKind, readonly [string, string]> = {
+  crew: ["Crew", "Collective"],
+  syndicate: ["Syndicate", "Concern"],
+  exchange: ["Exchange", "Works"],
+};
+
+export const ORGANIZATION_KINDS: readonly OrganizationKind[] = ["crew", "syndicate", "exchange"];
+
+/** Weights for an organization's hidden motive. */
+export const ORGANIZATION_MOTIVES: ReadonlyArray<{ value: OrganizationMotive; weight: number }> = [
+  { value: "profit", weight: 40 },
+  { value: "revenge", weight: 35 },
+  { value: "control", weight: 25 },
+];
+
+/** Weights for an agenda given the motive behind it. Each motive can press for more than one thing. */
+export const MOTIVE_AGENDAS: Record<
+  OrganizationMotive,
+  ReadonlyArray<{ value: OrganizationAgenda; weight: number }>
+> = {
+  profit: [
+    { value: "expand", weight: 60 },
+    { value: "defend", weight: 40 },
+  ],
+  revenge: [
+    { value: "undercut", weight: 70 },
+    { value: "expand", weight: 30 },
+  ],
+  control: [
+    { value: "defend", weight: 60 },
+    { value: "undercut", weight: 40 },
+  ],
+};
 
 export const MACHINE_TEMPLATES: ReadonlyArray<{ role: string; label: string }> = [
   { role: "relay", label: "Outer Relay" },

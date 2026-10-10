@@ -262,6 +262,9 @@ export function syncWorldProjection(
       contract.id,
       {
         issuerHandle: contract.issuerHandle,
+        ...(contract.issuerOrganization === undefined
+          ? {}
+          : { issuerOrganization: contract.issuerOrganization }),
         targetId: contract.targetId,
         targetHandle: contract.targetHandle,
         objective: contract.objective,

@@ -1,8 +1,13 @@
 import {
   GENERATED_SCENARIO_SPECS,
   MACHINE_TEMPLATES,
+  MOTIVE_AGENDAS,
   NAME_PREFIXES,
   NAME_SUFFIXES,
+  ORGANIZATION_HEADS,
+  ORGANIZATION_KIND_TAILS,
+  ORGANIZATION_KINDS,
+  ORGANIZATION_MOTIVES,
   OWNER_PROFILES,
   SERVICE_TEMPLATES,
   type GeneratedRunScenario,
@@ -20,8 +25,10 @@ import {
   PLAYER_ACTOR_ID,
   STARTING_NETWORK_TRUST,
   type MachineState,
+  type OrganizationKind,
   type TargetState,
   type UndergroundActor,
+  type UndergroundOrganization,
   type UndergroundRelationship,
 } from "@/game/simulation/state/world-state";
 
@@ -58,7 +65,14 @@ export interface GeneratedScenarioContent {
   targets: TargetState[];
   /** The player's starting ties, plus any peer-to-peer ties the generator drew. */
   relationships: UndergroundRelationship[];
+  /** Organizations that hold infrastructure and employ owners (D066). */
+  organizations: UndergroundOrganization[];
 }
+
+/** Chance that two organizations start as rivals; any organization left without one is given one. */
+const RIVAL_PERCENT = 50;
+/** Chance that a broker belongs to an organization rather than working alone. */
+const BROKER_MEMBER_PERCENT = 50;
 
 const NAME_POOL: readonly string[] = NAME_PREFIXES.flatMap((prefix) =>
   NAME_SUFFIXES.map((suffix) => `${prefix}${suffix}`),
@@ -117,6 +131,121 @@ function pickNames(
   }
 
   return names;
+}
+
+/** Picks a value with probability proportional to its weight, from one seeded draw. */
+function pickWeighted<T>(
+  seed: number,
+  table: ReadonlyArray<{ value: T; weight: number }>,
+  ...parts: Array<string | number>
+): T {
+  const total = table.reduce((sum, entry) => sum + entry.weight, 0);
+  let point = draw(seed, ...parts) * total;
+
+  for (const entry of table) {
+    if (point < entry.weight) {
+      return entry.value;
+    }
+
+    point -= entry.weight;
+  }
+
+  return table[table.length - 1]!.value;
+}
+
+/**
+ * Public identities for `count` organizations: a kind and a name made of a head
+ * and that kind's tail. Each organization starts at a seeded point and walks
+ * forward past any name already used, so the same inputs pick the same names.
+ */
+function pickOrganizationIdentities(
+  seed: number,
+  attempt: number,
+  count: number,
+): Array<{ name: string; kind: OrganizationKind }> {
+  const taken = new Set<string>();
+  const headCount = ORGANIZATION_HEADS.length;
+
+  return Array.from({ length: count }, (_, index) => {
+    const kind =
+      ORGANIZATION_KINDS[
+        range(seed, [0, ORGANIZATION_KINDS.length - 1], attempt, "org-kind", index)
+      ]!;
+    const tails = ORGANIZATION_KIND_TAILS[kind];
+    const start = Math.floor(draw(seed, attempt, "org-name", index) * headCount * tails.length);
+
+    for (let step = 0; step < headCount * tails.length; step += 1) {
+      const combination = (start + step) % (headCount * tails.length);
+      const head = ORGANIZATION_HEADS[combination % headCount]!;
+      const tail = tails[Math.floor(combination / headCount) % tails.length]!;
+      const name = `${head} ${tail}`;
+
+      if (!taken.has(name.toLowerCase())) {
+        taken.add(name.toLowerCase());
+        return { name, kind };
+      }
+    }
+
+    throw new Error("Organization name pool is exhausted");
+  });
+}
+
+/** Organizations with a hidden motive and the agenda that motive presses for. Rivals come later. */
+function buildOrganizations(
+  seed: number,
+  attempt: number,
+  count: number,
+): UndergroundOrganization[] {
+  return pickOrganizationIdentities(seed, attempt, count).map((identity, index) => {
+    const motive = pickWeighted(seed, ORGANIZATION_MOTIVES, attempt, "motive", index);
+    const agenda = pickWeighted(seed, MOTIVE_AGENDAS[motive], attempt, "agenda", index);
+
+    return {
+      id: `org-${index + 1}`,
+      name: identity.name,
+      kind: identity.kind,
+      motive,
+      agenda,
+      rivalIds: [],
+    };
+  });
+}
+
+/**
+ * Symmetric rivalries. Each pair is a rivalry with a seeded chance, then any
+ * organization with no rival is paired with the next one, so no organization
+ * stands alone when there is another to fight.
+ */
+function assignRivalries(
+  seed: number,
+  attempt: number,
+  organizations: UndergroundOrganization[],
+): void {
+  const link = (left: UndergroundOrganization, right: UndergroundOrganization) => {
+    if (!left.rivalIds.includes(right.id)) {
+      left.rivalIds.push(right.id);
+    }
+
+    if (!right.rivalIds.includes(left.id)) {
+      right.rivalIds.push(left.id);
+    }
+  };
+
+  for (let left = 0; left < organizations.length; left += 1) {
+    for (let right = left + 1; right < organizations.length; right += 1) {
+      if (percent(seed, attempt, "rival", left, right) < RIVAL_PERCENT) {
+        link(organizations[left]!, organizations[right]!);
+      }
+    }
+  }
+
+  if (organizations.length >= 2) {
+    organizations.forEach((organization, index) => {
+      if (organization.rivalIds.length === 0) {
+        link(organization, organizations[(index + 1) % organizations.length]!);
+      }
+    });
+  }
 }
 
 function buildMachines(
@@ -223,12 +352,14 @@ function buildCandidate(
   actors: WorldActorContent[];
   targets: WorldTargetContent[];
   relationships: UndergroundRelationship[];
+  organizations: UndergroundOrganization[];
 } {
   const { seed, scenario, reservedHandles } = input;
   const spec = GENERATED_SCENARIO_SPECS[scenario];
   const reserved = new Set(reservedHandles.map((handle) => handle.toLowerCase()));
   const names = pickNames(seed, attempt, spec.owners + spec.brokers, reserved);
-  const sponsorIds = Array.from({ length: spec.sponsors }, (_, index) => `sponsor-${index + 1}`);
+  const organizations = buildOrganizations(seed, attempt, spec.organizations);
+  assignRivalries(seed, attempt, organizations);
 
   const actors: WorldActorContent[] = [];
   const targets: WorldTargetContent[] = [];
@@ -241,6 +372,12 @@ function buildCandidate(
     const rank = range(seed, spec.rank, attempt, "rank", owner);
     const skill = range(seed, spec.skill, attempt, "skill", owner);
 
+    // Each organization gets one owner first, so none is empty; the rest are drawn.
+    const home =
+      owner < organizations.length
+        ? organizations[owner]!
+        : organizations[range(seed, [0, organizations.length - 1], attempt, "member", owner)]!;
+
     const actor: UndergroundActor = {
       id,
       handle: names[owner]!,
@@ -251,6 +388,7 @@ function buildCandidate(
       discretion: range(seed, spec.discretion, attempt, "discretion", owner),
       activity: range(seed, spec.activity, attempt, "activity", owner),
       targetId: id,
+      organizationId: home.id,
     };
 
     const target: TargetState = {
@@ -258,9 +396,9 @@ function buildCandidate(
       handle: actor.handle,
       rank,
       machines: buildMachines(seed, attempt, id, owner),
+      organizationId: home.id,
       hidden: {
         operationalSkill: skill,
-        sponsorId: sponsorIds[range(seed, [0, sponsorIds.length - 1], attempt, "sponsor", owner)],
         note: "Generated authority truth; infrastructure stays hidden until supported by evidence.",
       },
     };
@@ -271,6 +409,12 @@ function buildCandidate(
 
   for (let broker = 0; broker < spec.brokers; broker += 1) {
     const index = spec.owners + broker;
+
+    // A broker may belong to an organization, or work alone.
+    const member =
+      percent(seed, attempt, "broker-member", broker) < BROKER_MEMBER_PERCENT
+        ? organizations[range(seed, [0, organizations.length - 1], attempt, "broker-org", broker)]
+        : undefined;
 
     actors.push({
       archetype: "broker",
@@ -283,6 +427,7 @@ function buildCandidate(
         defense: range(seed, spec.defense, attempt, "defense", "broker", broker),
         discretion: range(seed, spec.discretion, attempt, "discretion", "broker", broker),
         activity: range(seed, spec.activity, attempt, "activity", "broker", broker),
+        ...(member === undefined ? {} : { organizationId: member.id }),
       },
     });
   }
@@ -293,12 +438,17 @@ function buildCandidate(
     actors,
     targets,
     relationships: buildRelationships(seed, attempt, spec, actorList),
+    organizations,
   };
 }
 
 /** The first rule a candidate breaks, or null when it satisfies every rule. */
 function firstFailure(
-  candidate: { actors: WorldActorContent[]; targets: WorldTargetContent[] },
+  candidate: {
+    actors: WorldActorContent[];
+    targets: WorldTargetContent[];
+    organizations: UndergroundOrganization[];
+  },
   reserved: ReadonlySet<string>,
   seed: number,
   scenario: GeneratedRunScenario,
@@ -352,6 +502,52 @@ function firstFailure(
     }
   }
 
+  const organizationIds = new Set(candidate.organizations.map((entry) => entry.id));
+
+  if (candidate.organizations.length !== GENERATED_SCENARIO_SPECS[scenario].organizations) {
+    return "the organization count does not match its spec";
+  }
+
+  for (const { actor } of candidate.actors) {
+    if (actor.organizationId !== undefined && !organizationIds.has(actor.organizationId)) {
+      return `actor ${actor.id} belongs to a missing organization`;
+    }
+  }
+
+  for (const { target } of candidate.targets) {
+    const owner = candidate.actors.find(({ actor }) => actor.targetId === target.id)?.actor;
+
+    if (owner === undefined || target.organizationId !== owner.organizationId) {
+      return `target ${target.id} is not held by its owner's organization`;
+    }
+  }
+
+  for (const organization of candidate.organizations) {
+    const ownsInfrastructure = candidate.actors.some(
+      ({ actor }) => actor.organizationId === organization.id && actor.targetId !== undefined,
+    );
+
+    if (!ownsInfrastructure) {
+      return `organization ${organization.id} holds no infrastructure`;
+    }
+
+    if (candidate.organizations.length >= 2 && organization.rivalIds.length === 0) {
+      return `organization ${organization.id} has no rival`;
+    }
+
+    for (const rivalId of organization.rivalIds) {
+      const rival = candidate.organizations.find((entry) => entry.id === rivalId);
+
+      if (rival === undefined || rival.id === organization.id) {
+        return `organization ${organization.id} names an invalid rival`;
+      }
+
+      if (!rival.rivalIds.includes(organization.id)) {
+        return `rivalry between ${organization.id} and ${rival.id} is not symmetric`;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -375,6 +571,7 @@ export function generateScenarioContent(
         actors: candidate.actors.map((entry) => entry.actor),
         targets: candidate.targets.map((entry) => entry.target),
         relationships: candidate.relationships,
+        organizations: candidate.organizations,
       };
     }
 
