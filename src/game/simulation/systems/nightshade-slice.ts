@@ -67,7 +67,12 @@ function addV2Observation(
 }
 
 export function nightshadeV2IntrusiveSignal(world: WorldState): void {
-  addV2Observation(world, "echo", "triangle", BROKER_SERVICE_ID);
+  // The defender can rotate the route after a review. The intrusive clue is
+  // sourced from the current challenge, never from a hardcoded old epoch.
+  const challenge = world.networkChallenges?.find(c =>
+    c.targetId === world.slice?.targetId && c.entryMachineId === RELAY_MACHINE_ID);
+  if (!challenge) return;
+  addV2Observation(world, "echo", challenge.requiredEcho, BROKER_SERVICE_ID);
 }
 
 /**
