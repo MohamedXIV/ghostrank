@@ -125,6 +125,41 @@ describe("G5 P4: faction counter-commissions after PUBLIC contract fallout (#129
     }
   });
 
+  it("naturally generated opening commissions can trigger a counter-commission without editing rosters", () => {
+    for (const scenario of ["fresh-scene", "high-pressure"] as const) {
+      let naturallyReachable = 0;
+      for (let seed = 1; seed <= 120; seed++) {
+        const world = createSliceWorldState({ seed, scenario });
+        for (const opening of world.underground.contracts) {
+          const publisher = world.underground.actors.find(a => a.id === opening.issuerId);
+          const owner = world.underground.actors.find(a => a.targetId === opening.targetId);
+          const faction = world.underground.organizations?.find(o => o.id === owner?.organizationId);
+          if (!publisher?.organizationId || !owner || !faction ||
+              owner.network !== publisher.network ||
+              !faction.rivalIds.includes(publisher.organizationId)) continue;
+          const member = world.underground.actors.find(a =>
+            a.organizationId === faction.id && a.network === publisher.network &&
+            world.underground.relationships.some(t =>
+              t.fromId === a.id && t.toId === "player" && t.trust >= 10) &&
+            world.targets.some(t =>
+              t.organizationId === publisher.organizationId && t.id !== a.targetId));
+          if (!member) continue;
+          // An existing issued opening offer completed by player. Its delivery
+          // path is independently verified in G5 P3's real CommandBus test.
+          opening.status = "completed";
+          opening.acceptedWorldMinute = 0;
+          opening.resolvedWorldMinute = 360;
+          rewardContract(world, opening, 360);
+          expect([...factionCounterCommissionTargets(world, member, 720)])
+            .toContain(publisher.organizationId);
+          naturallyReachable++;
+          break;
+        }
+      }
+      expect(naturallyReachable, scenario).toBeGreaterThan(0);
+    }
+  });
+
   it("causes actual generated world offers to change, not just a dead helper value", () => {
     for (const scenario of ["fresh-scene", "high-pressure"] as const) {
       let extraOffers = 0;
