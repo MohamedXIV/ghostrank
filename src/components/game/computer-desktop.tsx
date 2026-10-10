@@ -71,6 +71,7 @@ import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
 import { RelationshipBadge } from "@/components/game/social/relationship-badge";
 import { ContractCard } from "@/components/game/contracts/contract-card";
+import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-intel";
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
 import { RunTimeline } from "@/components/game/history/run-timeline";
 import {
@@ -2091,6 +2092,29 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                     requiredServices: entry.requiredServices ? Number(entry.requiredServices) : undefined,
                     currentKnownMachines,
                     currentKnownServices,
+                    sceneIntel: deriveContractSceneIntel({
+                      targetHandle: String(entry.targetHandle ?? ""),
+                      currentWorldMinute,
+                      // These are TinyBase copies of the PUBLIC feed and player
+                      // inbox; we never access raw incidents, NPC factions, or
+                      // hidden rumor truth from this player-facing component.
+                      incidents: incidents.map(([sourceId, row]) => ({
+                        id: sourceId,
+                        actorHandle: String(row.actorHandle ?? ""),
+                        counterpartHandle: String(row.counterpartHandle ?? ""),
+                        outcome: String(row.outcome ?? ""),
+                        worldMinute: Number(row.worldMinute ?? 0),
+                      })),
+                      messages: messages.map(([sourceId, row]) => ({
+                        id: sourceId,
+                        fromHandle: String(row.fromHandle ?? ""),
+                        claimActorHandle: String(row.claimActorHandle ?? ""),
+                        claimCounterpartHandle: String(row.claimCounterpartHandle ?? ""),
+                        claimOutcome: String(row.claimOutcome ?? ""),
+                        worldMinute: Number(row.worldMinute ?? 0),
+                        read: row.read === true,
+                      })),
+                    }),
                   }}
                   currentWorldMinute={currentWorldMinute}
                   onAction={(verb, contractId) =>

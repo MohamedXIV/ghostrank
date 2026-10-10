@@ -7,6 +7,7 @@ import {
   deriveDeadlineUrgency,
 } from "@/components/ui/semantic-state";
 import type { ContractVerb } from "@/game/computer/apps/contract-actions";
+import type { ContractSceneSignal } from "@/game/computer/apps/contract-scene-intel";
 
 export function describeContract(
   objective: string,
@@ -47,6 +48,8 @@ export interface ContractData {
   requiredServices?: number;
   currentKnownMachines?: number;
   currentKnownServices?: number;
+  /** Player-known public records and separately labeled read contact claims. */
+  sceneIntel?: readonly ContractSceneSignal[];
 }
 
 interface ContractCardProps {
@@ -126,6 +129,39 @@ export function ContractCard({
           )}
         </p>
       </div>
+
+      {contract.sceneIntel && contract.sceneIntel.length > 0 && (
+        <aside
+          className="contract-requirements-box"
+          aria-label={`Scene Intel for ${contract.targetHandle ?? "target"}`}
+        >
+          <div className="req-header">
+            <span>SCENE INTEL // RECENT TARGET ACTIVITY</span>
+          </div>
+          <p className="underground-note">
+            Cross-referenced public reports and messages you marked read.
+            Past activity is not proof of current security or faction intent.
+          </p>
+          <ul className="underground-feed">
+            {contract.sceneIntel.map((signal) => (
+              <li key={`${signal.source}:${signal.id}`}>
+                <span className="underground-time">
+                  {signal.source === "public-incident"
+                    ? "PUBLIC REPORT"
+                    : "UNVERIFIED CONTACT CLAIM"}
+                  {" · "}{formatWorldTime(signal.worldMinute)}
+                  {" · "}{signal.id}
+                </span>
+                <span>
+                  {signal.fromHandle ? `From ${signal.fromHandle}: ` : ""}
+                  {signal.actorHandle} → {signal.counterpartHandle}
+                  {" · "}{signal.outcome === "succeeded" ? "reported breach" : "reported repelled"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
 
       {/* Visual Requirements Progress Bar */}
       {(hasMachineReq || hasServiceReq) && status === "accepted" && (
