@@ -1,4 +1,5 @@
 import type { CommandResult } from "@/game/simulation/command-bus";
+import type { SimulationEvent } from "@/game/simulation/events/types";
 
 /**
  * Convert the observed outcome of a player's own network-route action to
@@ -27,10 +28,11 @@ export function formatNetworkRouteFeedback(
     }
   }
 
-  const verdict = result.events.find(event =>
-    event.type === "NetworkRouteTested" &&
-    event.challengeId === challengeId &&
-    event.routeId === routeId
+  const verdict = result.events.find(
+    (event): event is Extract<SimulationEvent, { type: "NetworkRouteTested" }> =>
+      event.type === "NetworkRouteTested" &&
+      event.challengeId === challengeId &&
+      event.routeId === routeId,
   );
 
   if (!verdict) {
