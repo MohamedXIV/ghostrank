@@ -40,7 +40,7 @@ describe("G3 route tests communicate actual outcomes rather than generic success
       routeId: "route-b", result: "refuted", epoch: 0, worldMinute: 364,
     });
     expect(formatNetworkRouteFeedback(other, "challenge-1", "route-a")).toMatch(/confirmed/i);
-    expect(formatNetworkRouteFeedback(other, "unknown", "unknown")).toMatch(/interrupted|no verdict|could not/i);
+    expect(formatNetworkRouteFeedback(other, "unknown", "unknown")).toMatch(/interrupted|no (route )?verdict|could not/i);
   });
 
   it("does not claim verification when the run ends during the action", () => {
