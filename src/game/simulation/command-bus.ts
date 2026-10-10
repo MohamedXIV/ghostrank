@@ -692,7 +692,7 @@ export class CommandBus {
             ? this.revealVaultOnEscalation(operation.targetId) : []),
           ...this.sliceLogAndFollowUp(
             operation.targetId,
-            "escalate",
+            this.world.slice.rules === "nightshade-v2" ? "escalate-v2" : "escalate",
             reactionEvents,
           ),
         ]
