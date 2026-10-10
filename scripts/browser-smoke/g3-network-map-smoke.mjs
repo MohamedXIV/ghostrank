@@ -106,6 +106,27 @@ async function proveRoute(page, scope, target, previousEvidenceForbidden) {
     const text = await page.locator(".recon-infrastructure").innerText();
     check(scope, "hidden destination remains unobserved before proof", !text.includes(previousEvidenceForbidden), text.slice(-220));
   }
+  // An incorrect but valid hypothesis must leave usable feedback, not a
+  // generic success banner. Only exercise this detour in the desktop run.
+  if (scope === "nightshade-desktop") {
+    const wrong = workspace.locator(".network-route-candidate")
+      .filter({ hasText: "Carrier: public" });
+    check(scope, "one visibly incompatible candidate", await wrong.count() === 1);
+    await wrong.click();
+    await workspace.getByRole("button", { name: "TEST SELECTED ROUTE" }).click();
+    const wrongConfirm = workspace.getByRole("group", { name: "Confirm route verification" });
+    await wrongConfirm.getByRole("button", { name: "CONFIRM ROUTE TEST" }).click();
+    const wrongStatus = await workspace.getByRole("status").innerText();
+    check(scope, "wrong route explains the refuted hypothesis", /route refuted/i.test(wrongStatus), wrongStatus);
+    check(scope, "refuted route visibly persists as partial progress",
+      /Status: REFUTED/i.test(await wrong.innerText()));
+    if (previousEvidenceForbidden) {
+      const evidence = await page.locator(".recon-infrastructure").innerText();
+      check(scope, "wrong route cannot reveal the destination",
+        !evidence.includes(previousEvidenceForbidden));
+    }
+  }
+
   await candidate.click();
   await workspace.getByRole("button", { name: "TEST SELECTED ROUTE" }).click();
   const confirm = workspace.getByRole("group", { name: "Confirm route verification" });
@@ -114,7 +135,7 @@ async function proveRoute(page, scope, target, previousEvidenceForbidden) {
   await confirm.getByRole("button", { name: "CONFIRM ROUTE TEST" }).click();
   const status = workspace.getByRole("status");
   await status.waitFor();
-  check(scope, "route action accepted", (await status.innerText()).includes("Route test recorded."));
+  check(scope, "route outcome communicates confirmation", /route confirmed/i.test(await status.innerText()));
 }
 
 async function runNightshade(page, scope) {
