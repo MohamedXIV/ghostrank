@@ -106,6 +106,31 @@ describe("Nightshade v2 uses general Network Mapping (v1 unchanged)", () => {
     expect(presence(bus)).toBe(true);
   });
 
+  it("resolves a route verification crossing owner review as stale without a trace double charge", () => {
+    const { bus, run } = start();
+    const challenge = bus.snapshot().networkChallenges![0]!;
+    run({ type: "escalateOperation", confirmed: true });
+    const current = bus.snapshot().worldMinute;
+    run({ type: "advanceTime", minutes: 359 - current });
+    const before = bus.snapshot();
+    const chosen = challenge.candidates.find(x =>
+      x.carrier === "sealed" && x.echo === "triangle")!.id;
+    const result = run({
+      type: "testNetworkRoute", targetId: NIGHTSHADE_TARGET_ID,
+      challengeId: challenge.id, routeId: chosen,
+    });
+    expect(bus.snapshot().worldMinute).toBe(363);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: "SliceReviewRan", worldMinute: 360,
+    }));
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: "NetworkRouteTested", result: "stale", routeId: chosen,
+    }));
+    expect(bus.snapshot().traces).toEqual(before.traces);
+    expect(presence(bus)).toBe(false);
+    expect(bus.snapshot().slice?.outcome).toBeNull();
+  });
+
   it("serializes and resumes v2 while keeping the legacy v1 gate without generic challenges", () => {
     const { bus } = start();
     const before = bus.snapshot();
