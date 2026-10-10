@@ -101,6 +101,18 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "build":
       return parseBuildCommand(args);
 
+    case "path":
+      if (args.length === 4 && args[0]?.toLowerCase() === "test" &&
+          args.slice(1).every(arg => arg.length > 0)) {
+        return {
+          ok: true,
+          command: { type: "testNetworkRoute",
+            targetId: args[1]!, challengeId: args[2]!, routeId: args[3]! },
+        };
+      }
+      return { ok: false, error: args[0]?.toLowerCase() === "map"
+        ? "UNKNOWN_COMMAND" : "INVALID_ARGUMENT" };
+
     case "op":
       return parseOperationCommand(args);
 
