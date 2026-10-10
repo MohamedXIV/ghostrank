@@ -934,7 +934,12 @@ function projectUnderground(
       objective: contract.objective,
       requiredServices: contract.requiredServices,
       requiredMachines: contract.requiredMachines,
-      status: contract.status,
+      // Offer actionability is exact to the world minute, while the durable
+      // ContractExpired event remains on the next NPC tick. Never show an
+      // ACCEPT button for a command the authoritative bus already rejects.
+      status: contract.status === "offered" &&
+        state.worldMinute > contract.expiresWorldMinute
+        ? "expired" : contract.status,
       expiresWorldMinute: contract.expiresWorldMinute,
       ...(contract.dueWorldMinute === undefined
         ? {}

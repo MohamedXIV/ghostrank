@@ -2,6 +2,7 @@ import {
   OBJECTIVE_WEIGHTS,
   type GeneratedRunScenario,
 } from "@/content/world-scenarios";
+import type { RunScenario } from "@/game/simulation/state/run-scenario";
 import type {
   ContractObjectiveKind,
   UndergroundActor,
@@ -19,6 +20,17 @@ import type {
  * an actor with no temperament adds nothing, so their offers are unchanged.
  * Rank is never read here.
  */
+
+/** How long an unsolicited offer remains actionable, by the selected scene. */
+export const DEFAULT_OFFER_WINDOW_MINUTES = 24 * 60;
+export const HIGH_PRESSURE_OFFER_WINDOW_MINUTES = 12 * 60;
+
+/** Scenario variation changes only *new* offers, never accepted due dates or saved expiry. */
+export function offerWindowMinutesFor(scenario: RunScenario | undefined): number {
+  return scenario === "high-pressure"
+    ? HIGH_PRESSURE_OFFER_WINDOW_MINUTES
+    : DEFAULT_OFFER_WINDOW_MINUTES;
+}
 
 /** Greed points per unit of intrusion weight: greed 100 adds 20 weight. */
 export const GREED_INTRUSION_DIVISOR = 5;
