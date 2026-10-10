@@ -14,7 +14,7 @@ import type { WorldState } from "@/game/simulation/state/world-state";
 const DAY = 24 * 60;
 const HANDLE = "Night_Wren";
 const GENERATED = ["fresh-scene", "high-pressure"] as const;
-const SEEDS = Array.from({ length: 12 }, (_, index) => index + 1);
+const SEEDS = Array.from({ length: 120 }, (_, index) => index + 1);
 
 function generatedWorld(
   seed: number,
