@@ -31,6 +31,66 @@ export const RIVAL_WEIGHT = 20;
 /** Additional *NPC intrusion* focus against rivals under an active undercut agenda. */
 export const UNDERCUT_RIVAL_RAID_WEIGHT = 60;
 
+/**
+ * Public faction grievance can affect new commissions for 72 in-game hours.
+ * This is history of an actual broker's published, completed contract, not
+ * private incident truth or an omniscient faction mood meter.
+ */
+export const COUNTER_COMMISSION_MEMORY_MINUTES = 72 * 60;
+export const COUNTER_COMMISSION_OFFER_BONUS_PERCENT = 20;
+export const COUNTER_COMMISSION_TARGET_WEIGHT = 40;
+
+/**
+ * Organizations a broker's faction has a publicly evidenced reason to target.
+ *
+ * Only same-board authored posts with their real stored completed contract
+ * count. The owner whose assets were commissioned must have actually seen
+ * that post (same network) and now grudge the named publishing broker.
+ * The contract issuer can share this source because they, too, are on the
+ * same board AND in the victim owner's organization. No secret channels.
+ *
+ * Past the bounded memory window the existing personal grudge still exists,
+ * but it is no longer a shared *fresh counter-commission* opportunity.
+ */
+export function factionCounterCommissionTargets(
+  world: WorldState,
+  issuer: UndergroundActor,
+  worldMinute: number,
+): ReadonlySet<string> {
+  const victimOrg = organizationOfActor(world, issuer);
+  const result = new Set<string>();
+  if (!victimOrg || !Number.isInteger(worldMinute) || worldMinute < 0) return result;
+
+  const posts = world.underground.forumPosts;
+  for (let i = posts.length - 1; i >= 0; i--) {
+    const post = posts[i]!;
+    if (post.worldMinute > worldMinute) continue;
+    if (worldMinute - post.worldMinute > COUNTER_COMMISSION_MEMORY_MINUTES) break;
+    if (post.subject.kind !== "contract" || post.board !== issuer.network) continue;
+
+    const contract = world.underground.contracts.find(c =>
+      c.id === post.subject.id && c.status === "completed" &&
+      c.resolvedWorldMinute === post.worldMinute);
+    if (!contract) continue;
+
+    const commissioned = world.targets.find(t => t.id === contract.targetId);
+    if (!commissioned || commissioned.organizationId !== victimOrg.id) continue;
+    const harmedOwner = ownerOfTarget(world, commissioned);
+    if (!harmedOwner || harmedOwner.network !== post.board ||
+        harmedOwner.organizationId !== victimOrg.id) continue;
+
+    const publisher = world.underground.actors.find(a => a.id === post.authorId);
+    if (!publisher || publisher.id !== contract.issuerId ||
+        !publisher.organizationId ||
+        !victimOrg.rivalIds.includes(publisher.organizationId)) continue;
+    if (grudgeBetween(world, harmedOwner.id, publisher.id) <= 0) continue;
+
+    result.add(publisher.organizationId);
+  }
+  return result;
+}
+
+
 /** Generated scenes use the living rules. A save with no scene is canonical (D065). */
 export function usesLivingTies(world: WorldState): boolean {
   return (world.scenario ?? DEFAULT_RUN_SCENARIO) !== "canonical";
@@ -86,11 +146,14 @@ export function offerTargetWeight(
   issuer: UndergroundActor,
   target: TargetState,
   owner: UndergroundActor | undefined,
+  publicCounterTargets: ReadonlySet<string> = new Set<string>(),
 ): number {
   return (
     BASE_STANDING_WEIGHT +
     (owner === undefined ? 0 : grudgeBetween(world, issuer.id, owner.id)) +
-    (rivalOf(world, issuer, target.organizationId) ? RIVAL_WEIGHT : 0)
+    (rivalOf(world, issuer, target.organizationId) ? RIVAL_WEIGHT : 0) +
+    (target.organizationId !== undefined && publicCounterTargets.has(target.organizationId)
+      ? COUNTER_COMMISSION_TARGET_WEIGHT : 0)
   );
 }
 
