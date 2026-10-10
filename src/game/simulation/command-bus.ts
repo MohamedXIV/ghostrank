@@ -606,9 +606,17 @@ export class CommandBus {
     if (this.world.slice) {
       if (reread) {
         promiseClueFromProbe(this.world, "reread", "");
-        events.push(
-          ...this.sliceProbeEvents(located.target.id, "probe-reread"),
-        );
+        if (this.world.slice?.rules === "nightshade-v2") {
+          // Quiet re-reading costs world time, but adds no second probe trace.
+          // Otherwise, a valid first proof + review + re-read + second proof
+          // reaches D071's burn line before recovery can be demonstrated.
+          logSliceStep(
+            this.world.slice, "probe-reread", this.world.worldMinute,
+            footprintOf(this.world, located.target.id),
+          );
+        } else {
+          events.push(...this.sliceProbeEvents(located.target.id, "probe-reread"));
+        }
       } else {
         for (const service of discovered) {
           promiseClueFromProbe(this.world, "read", service.id);
