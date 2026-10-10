@@ -122,8 +122,8 @@ Don't remove precise information for aesthetics. Accessible keyboard paths, touc
 | G7 | #83 | research-selected procedural mechanics/content breadth |
 | G8 | #84 | observed playtest proof, balance, deterministic/stress and game-ready sign-off |
 
-**Execution order:** G0 then G1/G2 foundation; prove a focused G3 slice early; G4/G5 deepen its world; G6 delivers game feel as proven by that slice; G7 expands only reusable systems; G8 evaluates actual players and may reopen earlier gates. Parallel work allowed only with non-overlapping ownership and dependency tests.
+**G3 P1 reusable Network Mapping:** two consumers (Nightshade v2 + independent G2 Fresh Scene), shared CommandBus/Recon/terminal, deterministic saves and browser evidence are tracked at `docs/G3_NETWORK_MAPPING_ACCEPTANCE.md`. Engineering checks do **not** close the unfamiliar-human playtest gate.\n\n**Execution order:** G0 then G1/G2 foundation; prove a focused G3 slice early; G4/G5 deepen its world; G6 delivers game feel as proven by that slice; G7 expands only reusable systems; G8 evaluates actual players and may reopen earlier gates. Parallel work allowed only with non-overlapping ownership and dependency tests.
 
 **Stop condition:** a passing test suite and pretty UX do **not** imply a fun completed game. Until G8, describe Ghostrank accurately as *technically web-beta-capable, gameplay under active development*. Desktop host #19 remains deferred even though Phase 9 is complete.
 
-**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve historical saves and public rank rule; do not spend GitHub Actions minutes unless strictly needed.
+**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve historical saves and public rank rule. GitHub Actions CI is allowed for the public repository, including real Node 24 checks and targeted Chromium acceptance (user approval 2026-10-10).

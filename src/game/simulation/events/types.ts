@@ -26,6 +26,15 @@ import type {
 
 export type SimulationEvent =
   | {
+      type: "NetworkRouteTested";
+      targetId: string;
+      challengeId: string;
+      routeId: string;
+      epoch: number;
+      result: "confirmed" | "refuted" | "stale";
+      worldMinute: number;
+    }
+  | {
       type: "SliceClueGranted";
       clueId: string;
       targetId: string;

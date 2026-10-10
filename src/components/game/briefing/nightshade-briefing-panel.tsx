@@ -49,6 +49,15 @@ export function NightshadeBriefingPanel() {
         </span>
       </header>
 
+      {view.rules === "nightshade-v2" && !ended ? (
+        <p className="briefing-line">
+          SIGNAL PATH: Survey the Outer Relay and inspect its broker. In the
+          Network Mapping workspace below, compare the known carrier and echo
+          marks and test one route deliberately. A broker hint or escalation
+          alone does not discover the Vault. Every route test costs time and trace.
+        </p>
+      ) : null}
+
       <div className="briefing-stats">
         <div>
           <span className="panel-label">FOOTPRINT</span>

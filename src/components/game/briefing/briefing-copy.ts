@@ -46,6 +46,11 @@ export function briefingBriefLines(slice: VisibleNightshadeBriefing): string[] {
     `Footprint ${slice.footprint} // watch ${slice.watched ? "active" : "not yet"} // map ${slice.map.known}/${slice.map.needed} (relay ${yesNo(slice.map.relayOnMap)}, vault ${yesNo(slice.map.vaultOnMap)})`,
   );
   lines.push(`Briefing window closes ${formatWorldTime(slice.windowEndWorldMinute)}`);
+  if (slice.rules === "nightshade-v2") {
+    lines.push("Network Mapping: survey the relay, inspect its broker, then combine the known carrier and current echo mark.");
+    lines.push("Use: path map nightshade | path inspect nightshade <challenge> <route> | path test nightshade <challenge> <route>");
+    lines.push("Broker intelligence is a clue, not automatic Vault evidence.");
+  }
 
   if (slice.review) {
     lines.push(

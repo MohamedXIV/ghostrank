@@ -116,6 +116,7 @@ export async function createSqliteRunPersistence(): Promise<RunPersistence> {
 
 function eventWorldMinute(event: SimulationEvent): number {
   switch (event.type) {
+    case "NetworkRouteTested":
     case "SliceClueGranted":
     case "SliceReviewScheduled":
     case "SliceReviewRan":

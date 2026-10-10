@@ -1,4 +1,6 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
+import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   MARKET_COUNTERPARTY,
@@ -18,6 +20,7 @@ import {
   hasLiveEvidence,
   logSliceStep,
   machineVisibleToSurvey,
+  nightshadeV2IntrusiveSignal,
   promiseClueFromProbe,
   sliceBoundaryTick,
   sliceTraceFollowUp,
@@ -158,6 +161,7 @@ export const MAX_PUMP_MINUTES = MAX_PUMP_BOUNDARIES * TICK_MINUTES;
 const SLICE_GATED_COMMANDS: ReadonlySet<string> = new Set([
   "openOperation",
   "surveyTarget",
+  "testNetworkRoute",
   "inspectMachine",
   "escalateOperation",
   "disengageOperation",
@@ -212,6 +216,9 @@ export class CommandBus {
 
       case "openOperation":
         return this.openOperation(command.targetId);
+
+      case "testNetworkRoute":
+        return this.testNetworkRoute(command.targetId, command.challengeId, command.routeId);
 
       case "surveyTarget":
         return this.surveyTarget(command.targetId);
@@ -385,6 +392,78 @@ export class CommandBus {
     };
   }
 
+  /** A world mechanic: no target names or Nightshade route rules here. */
+  private testNetworkRoute(
+    targetId: string,
+    challengeId: string,
+    routeId: string,
+  ): CommandResult {
+    const preview = previewNetworkRoute(this.world, targetId, challengeId, routeId);
+    if (!preview.ok) return this.failure(preview.error);
+
+    const challenge = this.world.networkChallenges!.find(
+      entry => entry.id === challengeId && entry.targetId === targetId,
+    )!;
+    const initialEpoch = challenge.epoch;
+    const events = this.advanceWorldTime(preview.minutes);
+    if (this.world.ending) return { ok: true, events };
+
+    const current = this.world.networkChallenges?.find(
+      entry => entry.id === challengeId && entry.targetId === targetId,
+    );
+    if (!current || current.epoch !== initialEpoch ||
+        this.world.operation?.targetId !== targetId || this.world.slice?.outcome) {
+      events.push({
+        type: "NetworkRouteTested", targetId, challengeId, routeId,
+        epoch: initialEpoch, result: "stale", worldMinute: this.world.worldMinute,
+      });
+      return { ok: true, events };
+    }
+
+    const correct = matchingNetworkRoute(current, routeId);
+    current.tests.push({
+      routeId, epoch: initialEpoch,
+      result: correct ? "confirmed" : "refuted",
+      worldMinute: this.world.worldMinute,
+    });
+    events.push(this.recordTrace({
+      targetId,
+      cause: "network-route-test",
+      stage: this.world.operation.stage,
+      severity: "low",
+      weight: preview.traceWeight,
+      worldMinute: this.world.worldMinute,
+    }));
+    const reactions = this.evaluateOpponentReaction(targetId);
+    events.push(...reactions);
+    if (this.world.slice) {
+      events.push(...sliceTraceFollowUp(this.world, targetId, reactions));
+    }
+    if (correct && !this.world.slice?.outcome && !this.world.ending) {
+      this.recordEvidence({
+        id: `machine-presence:${current.objectiveMachineId}`,
+        kind: "machine-presence",
+        subjectId: current.objectiveMachineId,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+      events.push({
+        type: "MachineObserved",
+        targetId,
+        machineId: current.objectiveMachineId,
+        worldMinute: this.world.worldMinute,
+      });
+    }
+    events.push({
+      type: "NetworkRouteTested",
+      targetId, challengeId, routeId, epoch: initialEpoch,
+      result: correct ? "confirmed" : "refuted",
+      worldMinute: this.world.worldMinute,
+    });
+    return { ok: true, events };
+  }
+
   private surveyTarget(targetId: string): CommandResult {
     const operation = this.world.operation;
 
@@ -413,7 +492,12 @@ export class CommandBus {
       .filter(
         (candidate) =>
           !this.hasEvidence("machine-presence", candidate.id) &&
-          machineVisibleToSurvey(this.world, candidate.id),
+          machineVisibleToSurvey(this.world, candidate.id) &&
+          // A visible candidate route is not proof of its destination. This
+          // generic rule applies equally to authored and generated consumers.
+          !this.world.networkChallenges?.some(challenge =>
+            challenge.targetId === targetId &&
+            challenge.objectiveMachineId === candidate.id),
       )
       .slice(0, scope);
 
@@ -446,6 +530,9 @@ export class CommandBus {
       });
     }
 
+    generatedRouteSurveyObservation(
+      this.world, target.id, discovered.map(machine => machine.id),
+    );
     if (this.world.slice) {
       events.push(...this.sliceProbeEvents(target.id, "probe-survey"));
     }
@@ -518,12 +605,23 @@ export class CommandBus {
       });
     }
 
+    generatedRouteInspectObservation(
+      this.world, located.machine.id, discovered.map(service => service.id),
+    );
     if (this.world.slice) {
       if (reread) {
         promiseClueFromProbe(this.world, "reread", "");
-        events.push(
-          ...this.sliceProbeEvents(located.target.id, "probe-reread"),
-        );
+        if (this.world.slice?.rules === "nightshade-v2") {
+          // Quiet re-reading costs world time, but adds no second probe trace.
+          // Otherwise, a valid first proof + review + re-read + second proof
+          // reaches D071's burn line before recovery can be demonstrated.
+          logSliceStep(
+            this.world.slice, "probe-reread", this.world.worldMinute,
+            footprintOf(this.world, located.target.id),
+          );
+        } else {
+          events.push(...this.sliceProbeEvents(located.target.id, "probe-reread"));
+        }
       } else {
         for (const service of discovered) {
           promiseClueFromProbe(this.world, "read", service.id);
@@ -590,12 +688,16 @@ export class CommandBus {
           this.world.worldMinute,
         )
       : [];
+    if (this.world.slice?.rules === "nightshade-v2") {
+      nightshadeV2IntrusiveSignal(this.world);
+    }
     const sliceEvents = this.world.slice
       ? [
-          ...this.revealVaultOnEscalation(operation.targetId),
+          ...(this.world.slice.rules === "nightshade-v1"
+            ? this.revealVaultOnEscalation(operation.targetId) : []),
           ...this.sliceLogAndFollowUp(
             operation.targetId,
-            "escalate",
+            this.world.slice.rules === "nightshade-v2" ? "escalate-v2" : "escalate",
             reactionEvents,
           ),
         ]

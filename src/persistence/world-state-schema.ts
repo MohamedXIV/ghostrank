@@ -64,6 +64,7 @@ const traceSchema = z.object({
     "operation-escalation",
     "operation-disengagement",
     "operation-probe",
+    "network-route-test",
   ]),
   stage: z.enum(["recon", "intrusive"]),
   severity: z.enum(["low", "elevated", "high"]),
@@ -423,7 +424,7 @@ const retirementPlanSchema = z.discriminatedUnion("stage", [
  * other scenario, including every save made before G3.
  */
 const nightshadeSliceSchema = z.object({
-  rules: z.literal("nightshade-v1"),
+  rules: z.enum(["nightshade-v1", "nightshade-v2"]),
   targetId: z.string().min(1),
   contractId: z.string().min(1),
   clues: z.array(z.enum(SLICE_CLUE_IDS)),
@@ -451,7 +452,35 @@ const nightshadeSliceSchema = z.object({
   ),
 });
 
+const routeCandidateSchema = z.object({
+  id: z.string().min(1), label: z.string().min(1),
+  carrier: z.enum(["public", "sealed"]), echo: z.enum(["circle", "triangle"]),
+});
+const routeObservationSchema = z.discriminatedUnion("kind", [
+  z.object({ id: z.string().min(1), kind: z.literal("carrier"),
+    value: z.enum(["public", "sealed"]), sourceId: z.string().min(1),
+    epoch: z.number().int().nonnegative(), worldMinute: z.number().int().nonnegative() }),
+  z.object({ id: z.string().min(1), kind: z.literal("echo"),
+    value: z.enum(["circle", "triangle"]), sourceId: z.string().min(1),
+    epoch: z.number().int().nonnegative(), worldMinute: z.number().int().nonnegative() }),
+]);
+const routeChallengeSchema = z.object({
+  id: z.string().min(1), targetId: z.string().min(1),
+  entryMachineId: z.string().min(1), objectiveMachineId: z.string().min(1),
+  candidates: z.array(routeCandidateSchema).min(2),
+  requiredCarrier: z.enum(["public", "sealed"]),
+  requiredEcho: z.enum(["circle", "triangle"]),
+  epoch: z.number().int().nonnegative(),
+  baseMinutes: z.number().int().positive(), traceWeight: z.number().int().positive(),
+  observations: z.array(routeObservationSchema), tests: z.array(z.object({
+    routeId: z.string().min(1), epoch: z.number().int().nonnegative(),
+    result: z.enum(["confirmed", "refuted"]),
+    worldMinute: z.number().int().nonnegative(),
+  })),
+});
+
 const storedWorldStateSchema = z.object({
+  networkChallenges: z.array(routeChallengeSchema).optional(),
   worldMinute: z.number().int().nonnegative(),
   slice: nightshadeSliceSchema.optional(),
   // G2 (D065): a save from before G2 has no scenario and is canonical.
@@ -524,6 +553,56 @@ const storedWorldStateSchema = z.object({
  * other is a corrupt save, and it is refused rather than guessed at.
  */
 const checkedWorldStateSchema = storedWorldStateSchema.superRefine((state, ctx) => {
+  const challengeIds = new Set<string>();
+  for (const [index, challenge] of (state.networkChallenges ?? []).entries()) {
+    const fail = (field: string, message: string) => ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["networkChallenges", index, field],
+      message,
+    });
+    if (challengeIds.has(challenge.id)) fail("id", "duplicate challenge");
+    challengeIds.add(challenge.id);
+    const target = state.targets.find(t => t.id === challenge.targetId);
+    if (!target) { fail("targetId", "unknown target"); continue; }
+    const machineIds = new Set(target.machines.map(m => m.id));
+    const sources = new Set(target.machines.flatMap(m =>
+      [m.id, ...m.services.map(service => service.id)]));
+    if (!machineIds.has(challenge.entryMachineId) ||
+        !machineIds.has(challenge.objectiveMachineId) ||
+        challenge.entryMachineId === challenge.objectiveMachineId) {
+      fail("entryMachineId", "invalid distinct endpoint machines");
+    }
+    const ids = new Set<string>();
+    for (const candidate of challenge.candidates) {
+      if (ids.has(candidate.id)) fail("candidates", "duplicate route candidate");
+      ids.add(candidate.id);
+    }
+    if (challenge.candidates.filter(c =>
+      c.carrier === challenge.requiredCarrier &&
+      c.echo === challenge.requiredEcho).length !== 1) {
+      fail("candidates", "network route must have exactly one solution");
+    }
+    const observationIds = new Set<string>();
+    for (const observation of challenge.observations) {
+      if (observationIds.has(observation.id)) fail("observations", "duplicate observation");
+      observationIds.add(observation.id);
+      if (!sources.has(observation.sourceId) ||
+          observation.epoch > challenge.epoch ||
+          observation.worldMinute > state.worldMinute) {
+        fail("observations", "unknown source or future observation");
+      }
+    }
+    const tested = new Set<string>();
+    for (const attempt of challenge.tests) {
+      const key = attempt.epoch + ":" + attempt.routeId;
+      if (tested.has(key)) fail("tests", "duplicate test in route epoch");
+      tested.add(key);
+      if (!ids.has(attempt.routeId) || attempt.epoch > challenge.epoch ||
+          attempt.worldMinute > state.worldMinute) {
+        fail("tests", "invalid route test reference or time");
+      }
+    }
+  }
   const briefing = state.scenario === SLICE_RUN_SCENARIO;
 
   if (briefing && !state.slice) {

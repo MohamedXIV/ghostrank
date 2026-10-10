@@ -105,6 +105,8 @@ function describeTrace(world: WorldState, trace: OperationTrace): string {
     }
     case "operation-probe":
       return `you probed ${handle} during a ${trace.stage} operation`;
+    case "network-route-test":
+      return `you tested a network route toward ${handle}`;
   }
 }
 

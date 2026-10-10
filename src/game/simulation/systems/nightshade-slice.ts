@@ -11,6 +11,7 @@
  * `slice` on the world first.
  */
 
+import { recordNetworkObservation, rotateNetworkRoute } from "@/game/simulation/systems/network-routes";
 import {
   ARCHIVE_SERVICE_ID,
   BROKER_SERVICE_ID,
@@ -36,6 +37,38 @@ import type {
   OperationStage,
   WorldState,
 } from "@/game/simulation/state/world-state";
+
+/** Scenario data, never a Nightshade-only path solver. */
+function addV2Observation(
+  world: WorldState,
+  kind: "carrier" | "echo",
+  value: "sealed" | "triangle" | "circle",
+  sourceId: string,
+  minute = world.worldMinute,
+): void {
+  if (world.slice?.rules !== "nightshade-v2") return;
+  const challenge = world.networkChallenges?.find(c =>
+    c.targetId === world.slice?.targetId && c.entryMachineId === RELAY_MACHINE_ID);
+  if (!challenge) return;
+  if (challenge.observations.some(o => o.epoch === challenge.epoch && o.kind === kind)) return;
+  if (kind === "carrier") {
+    if (value !== "sealed") throw new RangeError("Invalid carrier");
+    recordNetworkObservation(challenge, {
+      id: `nightshade-carrier:${challenge.epoch}`,
+      kind, value, sourceId, epoch: challenge.epoch, worldMinute: minute,
+    });
+  } else {
+    if (value === "sealed") throw new RangeError("Invalid echo");
+    recordNetworkObservation(challenge, {
+      id: `nightshade-echo:${challenge.epoch}`,
+      kind, value, sourceId, epoch: challenge.epoch, worldMinute: minute,
+    });
+  }
+}
+
+export function nightshadeV2IntrusiveSignal(world: WorldState): void {
+  addV2Observation(world, "echo", "triangle", BROKER_SERVICE_ID);
+}
 
 /**
  * Trace each action adds to the target's footprint while the briefing is live.
@@ -111,7 +144,8 @@ export function machineVisibleToSurvey(world: WorldState, machineId: string): bo
   }
 
   if (machineId === VAULT_MACHINE_ID) {
-    return vaultVisibleToSurvey(world.slice);
+    return world.slice.rules === "nightshade-v1" &&
+      vaultVisibleToSurvey(world.slice);
   }
 
   return true;
@@ -259,9 +293,10 @@ export function logSliceStep(
 
 export function createNightshadeSliceState(input: {
   contractId: string;
+  rules?: "nightshade-v1" | "nightshade-v2";
 }): NightshadeSliceState {
   const slice: NightshadeSliceState = {
-    rules: "nightshade-v1",
+    rules: input.rules ?? "nightshade-v1",
     targetId: NIGHTSHADE_TARGET_ID,
     contractId: input.contractId,
     clues: ["opening-broker-note"],
@@ -315,11 +350,13 @@ export function promiseClueFromProbe(
   }
 
   if (probe === "reread") {
+    addV2Observation(world, "carrier", "sealed", RELAY_MACHINE_ID);
     promiseClue(slice, "rotated-routing", world.worldMinute);
     return;
   }
 
   if (serviceId === BROKER_SERVICE_ID) {
+    addV2Observation(world, "carrier", "sealed", RELAY_MACHINE_ID);
     promiseClue(slice, "broker-routing", world.worldMinute);
   }
 }
@@ -453,6 +490,13 @@ export function sliceBoundaryTick(
         tickMinute,
         footprintOf(world, slice.targetId),
       );
+      if (slice.rules === "nightshade-v2") {
+        if (pending.clueId === "broker-routing" && !reviewRan(slice)) {
+          addV2Observation(world, "echo", "triangle", BROKER_SERVICE_ID, tickMinute);
+        } else if (pending.clueId === "rotated-routing") {
+          addV2Observation(world, "echo", "circle", BROKER_SERVICE_ID, tickMinute);
+        }
+      }
       events.push({
         type: "SliceClueGranted",
         clueId: pending.clueId,
@@ -467,6 +511,11 @@ export function sliceBoundaryTick(
     tickMinute >= slice.review.dueWorldMinute
   ) {
     slice.review.status = "ran";
+    if (slice.rules === "nightshade-v2") {
+      const challenge = world.networkChallenges?.find(c =>
+        c.targetId === slice.targetId && c.entryMachineId === RELAY_MACHINE_ID);
+      if (challenge) rotateNetworkRoute(challenge, "circle");
+    }
 
     for (const record of world.evidence) {
       if (
