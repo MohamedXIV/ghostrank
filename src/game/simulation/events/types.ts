@@ -17,6 +17,7 @@ import type {
   RivalProbeArtifactKind,
   RivalProbeSubject,
   UndergroundNetwork,
+  OrganizationAgenda,
   UndergroundIncidentOutcome,
   UndergroundRumorKind,
   OperationStage,
@@ -110,6 +111,16 @@ export type SimulationEvent =
       kind: OpponentReactionKind;
       sourceTraceIds: string[];
       footprintScore: number;
+      worldMinute: number;
+    }
+  | {
+      /** Authority event only: an NPC's internal priorities are not public evidence. */
+      type: "OrganizationAgendaShifted";
+      organizationId: string;
+      from: OrganizationAgenda;
+      to: OrganizationAgenda;
+      reason: "rival-breach" | "quiet-recovery";
+      causeIncidentId: string;
       worldMinute: number;
     }
   | {

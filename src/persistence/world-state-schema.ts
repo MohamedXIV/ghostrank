@@ -121,6 +121,12 @@ const undergroundOrganizationSchema = z.object({
   motive: z.enum(["profit", "revenge", "control"]),
   agenda: z.enum(["undercut", "expand", "defend"]),
   rivalIds: z.array(z.string().min(1)),
+  organizationResponse: z.object({
+    previousAgenda: z.enum(["undercut", "expand"]),
+    triggeredWorldMinute: z.number().int().nonnegative(),
+    lastBreachWorldMinute: z.number().int().nonnegative(),
+    causeIncidentId: z.string().min(1),
+  }).optional(),
 });
 
 const undergroundRelationshipSchema = z.object({
