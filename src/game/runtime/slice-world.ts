@@ -203,5 +203,14 @@ export function createNewRunWorldState(
   options: CreateSliceWorldOptions = {},
 ): WorldState {
   const seed = options.seed ?? generateRunSeed();
-  return createSliceWorldState({ ...options, seed });
+  return createSliceWorldState({
+    ...options,
+    seed,
+    // New interactive runs opt in to the shared mechanic; fixture factories
+    // and all restored nightshade-v1 saves retain their original semantics.
+    nightshadeRules: options.nightshadeRules ??
+      (options.scenario === SLICE_RUN_SCENARIO ? "nightshade-v2" : undefined),
+    networkMappingDemo: options.networkMappingDemo ??
+      options.scenario === "fresh-scene",
+  });
 }
