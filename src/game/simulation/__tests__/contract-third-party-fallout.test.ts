@@ -57,6 +57,7 @@ describe("G5 P3 public contract commission creates third-party consequences (#12
   it("public rival contract delivery turns a posted broker claim into target-owner grudge and future NPC targeting", () => {
     const { world, owner, issuer, contract, target } = setup();
     const priorWeight = counterpartWeight(world, owner, issuer);
+    const priorPlayerStanding = structuredClone(relation(world, owner.id, "player"));
     const events = rewardContract(world, contract, 0);
 
     const forumPost = events.find(e => e.type === "ForumPosted" && e.subjectId === contract.id);
