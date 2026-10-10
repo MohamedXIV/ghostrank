@@ -1,3 +1,6 @@
+import { hashUnit } from "@/game/simulation/rng/stateless-hash";
+import type { WorldState } from "@/game/simulation/state/world-state";
+
 /**
  * Fictional Network Mapping rule primitives (G3).
  * No mission, GUI, terminal, NPC or host-network dependencies.
@@ -148,4 +151,66 @@ export function rotateNetworkRoute(
   }
   challenge.requiredEcho = nextEcho;
   challenge.epoch += 1;
+}
+
+/** Changes only presentation order; never mutates network truth or NPC RNG. */
+export function seededNetworkRouteOrder(
+  seed: number,
+  challenge: NetworkRouteChallenge,
+): NetworkRouteCandidate[] {
+  const weight = (id: string) =>
+    hashUnit(seed, "g3-network-route", challenge.targetId, challenge.id, id);
+  return [...challenge.candidates].sort(
+    (a, b) => weight(a.id) - weight(b.id) || a.id.localeCompare(b.id),
+  );
+}
+
+export type NetworkRoutePreview =
+  | { ok: true; minutes: number; traceWeight: number; footprintAfter: number }
+  | { ok: false; error:
+      | "RUN_ENDED"
+      | "NO_ACTIVE_OPERATION"
+      | "OPERATION_TARGET_MISMATCH"
+      | "CHALLENGE_UNKNOWN"
+      | "ENTRY_UNOBSERVED"
+      | "ROUTE_UNKNOWN"
+      | "ROUTE_ALREADY_TESTED"
+      | "CLUES_INCOMPLETE" };
+
+/**
+ * Authoritative cost preview; intentional rejection before truth evaluation.
+ * An incorrect candidate previews exactly the same charge as a correct one.
+ */
+export function previewNetworkRoute(
+  world: WorldState,
+  targetId: string,
+  challengeId: string,
+  routeId: string,
+): NetworkRoutePreview {
+  if (world.ending !== null) return { ok: false, error: "RUN_ENDED" };
+  if (!world.operation) return { ok: false, error: "NO_ACTIVE_OPERATION" };
+  if (world.operation.targetId !== targetId) {
+    return { ok: false, error: "OPERATION_TARGET_MISMATCH" };
+  }
+  const challenge = world.networkChallenges?.find(
+    candidate => candidate.id === challengeId && candidate.targetId === targetId,
+  );
+  if (!challenge) return { ok: false, error: "CHALLENGE_UNKNOWN" };
+  if (!world.evidence.some(record =>
+    record.kind === "machine-presence" &&
+    record.subjectId === challenge.entryMachineId &&
+    record.retiredWorldMinute === undefined)) {
+    return { ok: false, error: "ENTRY_UNOBSERVED" };
+  }
+  const eligibility = assessNetworkRoute(challenge, routeId);
+  if (!eligibility.ok) return eligibility;
+  const footprint = world.traces
+    .filter(trace => trace.targetId === targetId)
+    .reduce((sum, trace) => sum + trace.weight, 0);
+  return {
+    ok: true,
+    minutes: challenge.baseMinutes,
+    traceWeight: challenge.traceWeight,
+    footprintAfter: footprint + challenge.traceWeight,
+  };
 }
