@@ -2,7 +2,7 @@
 /**
  * Actual Chromium smoke of the reusable G3 Network Mapping UI.
  * Covers two DIFFERENT content providers using the same command and GUI:
- * Nightshade v2 (authored) and a seeded G2 Fresh Scene target (generated).
+ * Nightshade v2 (authored) and seeded G2 Fresh Scene / High Pressure targets (generated).
  * Browser automation is NOT a human playtest.
  *
  * npm run build && npm run smoke:browser:network
@@ -21,6 +21,8 @@ const VIEWS = [
   { name: "nightshade-desktop", width: 1280, height: 800, scenario: "nightshade-slice" },
   { name: "nightshade-phone", width: 390, height: 844, scenario: "nightshade-slice" },
   { name: "fresh-scene-desktop", width: 1280, height: 800, scenario: "fresh-scene" },
+  { name: "high-pressure-desktop", width: 1280, height: 800, scenario: "high-pressure" },
+  { name: "high-pressure-phone", width: 390, height: 844, scenario: "high-pressure" },
 ];
 const results = [];
 
@@ -158,7 +160,7 @@ async function runNightshade(page, scope) {
   check(scope, "briefing delivery", (await panel.innerText()).includes("DELIVERED"));
 }
 
-async function runFreshScene(page, scope) {
+async function runGeneratedScene(page, scope) {
   // No authored names, contract or Nightshade adapters are used by this path.
   for (const command of ["observe gen-1", "op open gen-1", "survey gen-1", "inspect gen-1-m1"]) {
     const out = await terminal(page, command);
@@ -181,7 +183,7 @@ async function runView(browser, spec) {
   try {
     await bootstrap(page, scope, spec.scenario);
     if (spec.scenario === "nightshade-slice") await runNightshade(page, scope);
-    else await runFreshScene(page, scope);
+    else await runGeneratedScene(page, scope);
     check(scope, "no JavaScript page errors", errors.length === 0, errors.join("; ").slice(0, 260));
   } catch (e) {
     const dest = join(ROOT, ".smoke", `g3-${scope}.png`);
