@@ -1,0 +1,41 @@
+name: G3 Browser Acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'src/game/**'
+      - 'src/components/game/**'
+      - 'src/stores/projection/**'
+      - 'src/content/nightshade-slice.ts'
+      - 'scripts/browser-smoke/g3-network-map-smoke.mjs'
+      - '.github/workflows/g3-browser-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Network Mapping (real Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install locked project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install matching Chromium browser
+        run: npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Build static game
+        run: npm run build
+      - name: Test two independent G3 content providers (desktop + phone)
+        run: npm run smoke:browser:network
+      - name: Preserve smoke report and failure screenshots
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: g3-network-browser-report
+          path: .smoke/
+          if-no-files-found: ignore
