@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useTable } from "tinybase/ui-react";
-import { Button } from "@/components/ui/button";
 import { useClockHold } from "@/components/game/clock-context";
 import { testNetworkRouteFromGui } from "@/game/computer/apps/target-actions";
 import { formatNetworkRouteFeedback } from "@/components/game/recon/network-route-feedback";
+import { buildNetworkRouteWorkbench } from "@/components/game/recon/network-route-workbench-model";
+import { NetworkRouteWorkbench } from "@/components/game/recon/network-route-workbench";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { VisibleNetworkRouteChallenge } from "@/game/simulation/projection/project-world";
 
@@ -55,71 +56,29 @@ function NetworkRouteChallengeView({
   const [notice, setNotice] = useState("");
   // The same G1 hold used by other blocking confirmations: no clock drift while reading.
   useClockHold(confirming);
-  const candidate = challenge.candidates.find(route => route.id === selected);
-  const alreadyTested = candidate?.status === "refuted" || candidate?.status === "confirmed";
-  const canCommit = challenge.preview !== null && candidate !== undefined && !alreadyTested;
+  const model = buildNetworkRouteWorkbench(challenge, selected);
 
   return (
-    <div className="network-route-challenge" data-challenge-id={challenge.id}>
-      <div className="network-route-clues">
-        <span>Carrier clue: <strong>{challenge.known.carrier ?? "UNRESOLVED"}</strong></span>
-        <span>Echo clue: <strong>{challenge.known.echo ?? "UNRESOLVED"}</strong></span>
-      </div>
-      <p className="network-route-caveat">
-        Candidate links are hypotheses, not observed destination machines.
-      </p>
-      <div className="network-route-candidates" role="group" aria-label="Route candidates">
-        {challenge.candidates.map(route => (
-          <button
-            type="button"
-            key={route.id}
-            className="network-route-candidate"
-            aria-pressed={selected === route.id}
-            onClick={() => {
-              setSelected(route.id);
-              setConfirming(false);
-              setNotice("");
-            }}
-          >
-            <strong>{route.label}</strong>
-            <span>Carrier: {route.carrier} · Echo: {route.echo}</span>
-            <span className="network-route-status">Status: {route.status.toUpperCase()}</span>
-          </button>
-        ))}
-      </div>
-      <div className="network-route-actions">
-        <p>
-          {challenge.preview
-            ? `Route verification costs ${challenge.preview.minutes} world minutes and +${challenge.preview.traceWeight} trace.`
-            : "Route verification unavailable: gather the current sourced clues."}
-        </p>
-        {confirming && canCommit && candidate ? (
-          <div role="group" aria-label="Confirm route verification">
-            <p>Test {candidate.label}? The clock and trace cost are real even if this link is wrong.</p>
-            <Button size="sm" onClick={() => {
-              const result = runtime.execute(
-                testNetworkRouteFromGui(challenge.targetId, challenge.id, candidate.id),
-              );
-              setNotice(formatNetworkRouteFeedback(result, challenge.id, candidate.id));
-              setConfirming(false);
-            }}>
-              CONFIRM ROUTE TEST
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-              CANCEL
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size="sm"
-            disabled={!canCommit}
-            onClick={() => setConfirming(true)}
-          >
-            TEST SELECTED ROUTE
-          </Button>
-        )}
-        {notice && <p role="status">{notice}</p>}
-      </div>
-    </div>
+    <NetworkRouteWorkbench
+      model={model}
+      confirming={confirming}
+      notice={notice}
+      onSelect={routeId => {
+        setSelected(routeId);
+        setConfirming(false);
+        setNotice("");
+      }}
+      onRequestTest={() => setConfirming(true)}
+      onConfirm={() => {
+        const candidate = model.selected;
+        if (!candidate) return;
+        const result = runtime.execute(
+          testNetworkRouteFromGui(challenge.targetId, challenge.id, candidate.id),
+        );
+        setNotice(formatNetworkRouteFeedback(result, challenge.id, candidate.id));
+        setConfirming(false);
+      }}
+      onCancel={() => setConfirming(false)}
+    />
   );
 }

@@ -4978,7 +4978,7 @@ textarea:focus-visible,
 }
 
 
-/* G3 shared route hypotheses: readable, compact and touch/keyboard friendly. */
+/* G6 Network Mapping workbench: signal lanes, visible state and touch-first hit areas. */
 .network-route-workspace {
   display: grid;
   gap: 0.75rem;
@@ -4986,9 +4986,9 @@ textarea:focus-visible,
   padding: 0.9rem;
   border: 1px solid var(--border);
   border-radius: 0.65rem;
-  background: color-mix(in srgb, currentColor 3%, transparent);
 }
-.network-route-heading p, .network-route-caveat, .network-route-actions p {
+.network-route-heading p, .network-route-caveat, .network-route-actions p,
+.network-route-inspector p {
   margin: 0.4rem 0;
   font-size: 0.82rem;
   line-height: 1.5;
@@ -4999,39 +4999,109 @@ textarea:focus-visible,
   gap: 0.75rem;
   align-items: center;
 }
-.network-route-clues span { font-size: 0.85rem; }
+.network-route-clue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-control);
+  font-size: 0.85rem;
+}
+.network-route-clue[data-resolved="true"] {
+  border-style: solid;
+  border-color: var(--border-emphasis);
+}
+.network-route-clue-glyph { width: 28px; height: 12px; overflow: visible; }
+.network-route-clue-glyph .lane-line { stroke: var(--foreground); stroke-width: 2; fill: none; }
+.network-route-clue-glyph .lane-echo { fill: none; stroke: var(--foreground); stroke-width: 2; }
 .network-route-candidates {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: 0.55rem;
   margin: 0.65rem 0;
 }
 .network-route-candidate {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-start;
-  padding: 0.8rem;
+  display: grid;
+  gap: 0.3rem;
+  align-items: start;
+  min-height: 44px;
+  padding: 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 0.45rem;
-  background: var(--background);
-  color: inherit;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--foreground);
   text-align: left;
   cursor: pointer;
-  min-height: 5.75rem;
+  transition: border-color var(--motion-fast) ease, opacity var(--motion-fast) ease;
 }
-.network-route-candidate:hover,
+.network-route-candidate:hover { border-color: var(--border-emphasis); }
 .network-route-candidate[aria-pressed="true"] {
-  border-color: currentColor;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .network-route-candidate:focus-visible {
-  outline: 3px solid currentColor;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+.network-route-candidate[data-status="refuted"] { opacity: 0.6; }
+.network-route-candidate[data-status="confirmed"] { border-color: var(--success); }
 .network-route-candidate span { font-size: 0.77rem; }
-.network-route-status {
+.network-route-status { font-weight: 700; letter-spacing: 0.03em; }
+.network-route-endpoint { color: var(--foreground-muted); font-weight: 600; }
+
+.network-route-lane { display: block; width: 100%; height: 40px; overflow: visible; }
+.network-route-lane .lane-entry { fill: var(--accent); }
+.network-route-lane .lane-line {
+  stroke: var(--foreground-muted);
+  stroke-width: 2;
+  fill: none;
+  transition: stroke var(--motion-normal), opacity var(--motion-normal);
+}
+.network-route-lane .lane-line[data-line-style="dashed"] { stroke-dasharray: 6 4; }
+.network-route-lane .lane-line[data-line-style="unknown"] { stroke-dasharray: 1 3; opacity: 0.6; }
+.network-route-lane .lane-echo { fill: none; stroke: var(--foreground); stroke-width: 2; }
+.network-route-lane .lane-end-node {
+  fill: var(--surface-raised);
+  stroke: var(--foreground-muted);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+.network-route-lane .lane-mark {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 2;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+}
+.network-route-lane[data-lane-state="candidate"] .lane-line { stroke: var(--foreground); }
+.network-route-lane[data-lane-state="refuted"] .lane-line {
+  opacity: 0.35;
+  stroke-dasharray: 2 4;
+}
+.network-route-lane[data-lane-state="refuted"] .lane-end-node,
+.network-route-lane[data-lane-state="refuted"] .lane-mark { stroke: var(--danger); }
+.network-route-lane[data-lane-state="confirmed"] .lane-line { stroke: var(--success); stroke-width: 3; }
+.network-route-lane[data-lane-state="confirmed"] .lane-end-node { stroke: var(--success); stroke-dasharray: none; }
+.network-route-lane[data-lane-state="confirmed"] .lane-mark { stroke: var(--success); }
+.network-route-lane[data-lane-state="stale"] .lane-line { stroke-dasharray: 1 3; opacity: 0.75; }
+.network-route-lane[data-lane-state="stale"] .lane-end-node,
+.network-route-lane[data-lane-state="stale"] .lane-mark { stroke: var(--warning); }
+.network-route-candidate[aria-pressed="true"] .network-route-lane .lane-line { stroke-width: 3; }
+
+.network-route-inspector {
+  display: grid;
+  gap: 0.2rem;
+  min-height: 4.5rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+.network-route-cost { color: var(--warning); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .network-route-candidate,
+  .network-route-lane .lane-line { transition: none; }
 }
 @media (max-width: 390px) {
   .network-route-workspace { padding: 0.6rem; }

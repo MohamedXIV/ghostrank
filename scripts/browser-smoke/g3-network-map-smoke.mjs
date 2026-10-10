@@ -16,6 +16,10 @@ import { chromium } from "playwright-core";
 const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const OUT = join(ROOT, "out");
 const PORT = Number(process.env.GHOSTRANK_G3_BROWSER_PORT ?? "3174");
+const SANDBOX_CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const CHROMIUM =
+  process.env.GHOSTRANK_SMOKE_CHROMIUM ??
+  (existsSync(SANDBOX_CHROMIUM) ? SANDBOX_CHROMIUM : undefined);
 const REPORT = join(ROOT, ".smoke", "g3-network-map.json");
 const VIEWS = [
   { name: "nightshade-desktop", width: 1280, height: 800, scenario: "nightshade-slice" },
@@ -95,6 +99,33 @@ async function routeWorkspace(page) {
   return { workspace, carrier };
 }
 
+/** G6 workbench: lanes, cost before commit, keyboard selection and phone fit. */
+async function assertWorkbench(page, scope, workspace) {
+  const lanes = workspace.locator(".network-route-candidate");
+  const count = await lanes.count();
+  const svgCount = await workspace.locator("svg.network-route-lane").count();
+  check(scope, "one signal lane per hypothesis", count >= 2 && svgCount === count, `hypotheses=${count} lanes=${svgCount}`);
+  const hidden = await workspace.locator("svg.network-route-lane").first().getAttribute("aria-hidden");
+  check(scope, "decorative lanes hidden from assistive tech", hidden === "true");
+  check(scope, "no verified link shown before a verdict", !(await workspace.innerText()).includes("VERIFIED LINK"));
+  await lanes.first().click();
+  const inspector = await workspace.locator(".network-route-inspector").innerText();
+  check(scope, "selected hypothesis states its real cost", /Testing costs \d+ world minutes and \+\d+ trace/.test(inspector), inspector.slice(0, 160));
+  check(scope, "selected hypothesis is pressed", (await lanes.first().getAttribute("aria-pressed")) === "true");
+  if (scope === "nightshade-desktop") {
+    await lanes.nth(1).focus();
+    await page.keyboard.press("Enter");
+    check(scope, "keyboard selects a hypothesis", (await lanes.nth(1).getAttribute("aria-pressed")) === "true");
+    await lanes.first().click();
+  }
+  if (scope.endsWith("-phone")) {
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    check(scope, "no horizontal page overflow at 390px", overflow <= 1, `overflow=${overflow}`);
+    const box = await workspace.locator("svg.network-route-lane").first().boundingBox();
+    check(scope, "signal lane fits the phone viewport", Boolean(box) && box.x >= 0 && box.width <= 390, JSON.stringify(box));
+  }
+}
+
 async function proveRoute(page, scope, target, previousEvidenceForbidden) {
   const { workspace, carrier } = await routeWorkspace(page);
   check(scope, "two current observations shown", /Carrier clue: sealed/i.test(carrier) && /Echo clue: (circle|triangle)/i.test(carrier), carrier);
@@ -108,6 +139,7 @@ async function proveRoute(page, scope, target, previousEvidenceForbidden) {
     const text = await page.locator(".recon-infrastructure").innerText();
     check(scope, "hidden destination remains unobserved before proof", !text.includes(previousEvidenceForbidden), text.slice(-220));
   }
+  await assertWorkbench(page, scope, workspace);
   // An incorrect but valid hypothesis must leave usable feedback, not a
   // generic success banner. Only exercise this detour in the desktop run.
   if (scope === "nightshade-desktop") {
@@ -122,6 +154,7 @@ async function proveRoute(page, scope, target, previousEvidenceForbidden) {
     check(scope, "wrong route explains the refuted hypothesis", /route refuted/i.test(wrongStatus), wrongStatus);
     check(scope, "refuted route visibly persists as partial progress",
       /Status: REFUTED/i.test(await wrong.innerText()));
+    check(scope, "refuted lane is drawn as refuted", (await workspace.locator('svg.network-route-lane[data-lane-state="refuted"]').count()) >= 1);
     if (previousEvidenceForbidden) {
       const evidence = await page.locator(".recon-infrastructure").innerText();
       check(scope, "wrong route cannot reveal the destination",
@@ -138,6 +171,7 @@ async function proveRoute(page, scope, target, previousEvidenceForbidden) {
   const status = workspace.getByRole("status");
   await status.waitFor();
   check(scope, "route outcome communicates confirmation", /route confirmed/i.test(await status.innerText()));
+  check(scope, "confirmed lane becomes the verified link", (await workspace.locator('svg.network-route-lane[data-lane-state="confirmed"]').count()) === 1 && (await workspace.innerText()).includes("VERIFIED LINK"));
 }
 
 async function runNightshade(page, scope) {
@@ -202,7 +236,10 @@ async function main() {
     server.once("error", no);
     server.listen(PORT, "127.0.0.1", yes);
   });
-  const browser = await chromium.launch({ args: ["--no-sandbox", "--use-gl=swiftshader"] });
+  const browser = await chromium.launch({
+    ...(CHROMIUM ? { executablePath: CHROMIUM } : {}),
+    args: ["--no-sandbox", "--use-gl=swiftshader"],
+  });
   try {
     for (const spec of VIEWS) {
       try { await runView(browser, spec); }
