@@ -424,7 +424,7 @@ const retirementPlanSchema = z.discriminatedUnion("stage", [
  * other scenario, including every save made before G3.
  */
 const nightshadeSliceSchema = z.object({
-  rules: z.literal("nightshade-v1"),
+  rules: z.enum(["nightshade-v1", "nightshade-v2"]),
   targetId: z.string().min(1),
   contractId: z.string().min(1),
   clues: z.array(z.enum(SLICE_CLUE_IDS)),
