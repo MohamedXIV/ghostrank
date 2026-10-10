@@ -58,6 +58,9 @@ describe("G5 P3 public contract commission creates third-party consequences (#12
     const { world, owner, issuer, contract, target } = setup();
     const priorWeight = counterpartWeight(world, owner, issuer);
     const priorPlayerStanding = structuredClone(relation(world, owner.id, "player"));
+    // Publication resolves forum contract subjects by ID. A legitimate
+    // completed contract is present in authority storage before rewardContract.
+    world.underground.contracts.push(contract);
     const events = rewardContract(world, contract, 0);
 
     const forumPost = events.find(e => e.type === "ForumPosted" && e.subjectId === contract.id);
