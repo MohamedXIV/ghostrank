@@ -1,8 +1,8 @@
 # G3 P1 — Reusable Network Mapping: Engineering Acceptance
 
 **Issues:** #105 (P1), #79 (G3), #75 (Game-First parent).  
-**Canonical implementation:** PR #108, `feat/g3-105-network-routes-core`.  
-**Status:** engineering validation under review; **unfamiliar human playtest NOT RUN**. A browser script is never counted as human gameplay acceptance.
+**Canonical implementation:** merged PR #108, main commit `ed7bc9acbbb12ac84804a3f57b70fbdb05d5d6ea`.  
+**Status:** engineering validation **MERGED** after exact-head CI/Chromium success; **unfamiliar human playtest NOT RUN**. A browser script is never counted as human gameplay acceptance. Playtest procedure: `docs/G3_HUMAN_PLAYTEST_PROTOCOL.md`.
 
 ## What is shipped by this candidate
 
@@ -32,7 +32,7 @@ The same `testNetworkRoute` command drives Recon GUI and `path test <target> <ch
 
 - Main shared-core checkpoint `0c5852c0`: GitHub Actions Node 24 full test/typecheck/lint/build **PASS**: [run 38042841062](https://github.com/MohamedXIV/ghostrank/actions/runs/38042841062).
 - Browser script checkpoint `47473103`: real Chromium **35/35 assertions PASS**, **0 failed**, including two Nightshade viewports, independent generated route, Terminal map and GUI route confirmation: [run 38043217270](https://github.com/MohamedXIV/ghostrank/actions/runs/38043217270).
-- The **latest PR HEAD must still have both jobs green after any further edits**. Do not reuse intermediate-run evidence to claim final acceptance.
+- **Final PR head `471c92e56fe2d96d4d7214b61777647cba004f35`: Node 24 CI SUCCESS** (1,204 tests across 138 files, typecheck/lint/build PASS) [run 38043409322](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409322).\n- **Same exact head: real Chromium acceptance SUCCESS** (35/35 assertions, no page JavaScript errors; desktop + 390px Nightshade and independent Fresh Scene) [run 38043409325](https://github.com/MohamedXIV/ghostrank/actions/runs/38043409325). GitHub verifies both workflow runs completed successfully.\n- Squash merge: [PR #108](https://github.com/MohamedXIV/ghostrank/pull/108) → main `ed7bc9acbbb12ac84804a3f57b70fbdb05d5d6ea`. Human acceptance remains separate.
 
 ### Historical smoke compatibility
 
