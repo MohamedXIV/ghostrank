@@ -738,7 +738,7 @@ export interface NightshadeSlicePendingClue {
 }
 
 export interface NightshadeSliceState {
-  rules: "nightshade-v1";
+  rules: "nightshade-v1" | "nightshade-v2";
   targetId: string;
   contractId: string;
   clues: SliceClueId[];
