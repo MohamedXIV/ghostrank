@@ -60,6 +60,19 @@ export const SLICE_CLUES: Record<SliceClueId, { title: string; text: string }> =
   },
 };
 
+/** The v2 teaching story names puzzle clues, without controlling their rules. */
+export const SLICE_CLUES_V2: typeof SLICE_CLUES = {
+  ...SLICE_CLUES,
+  "broker-routing": {
+    title: "Signal Broker routing hint",
+    text: "The current echo mark is TRIANGLE. Open Network Mapping in Recon to compare it with sealed-carrier candidates; the Vault is not on your map yet.",
+  },
+  "rotated-routing": {
+    title: "Rotated Signal Broker hint",
+    text: "The owner rotated the echo mark to CIRCLE. Recheck the sealed-carrier routes in Network Mapping; an old verified path is now stale.",
+  },
+};
+
 /**
  * In-world reasons for failures. A key may have variants; the rules choose the
  * variant that matches what the player has actually learned.
@@ -140,6 +153,7 @@ export const SLICE_LOG_TEXT: Record<string, string> = {
   "clue-broker-routing": "The broker's routing is on file: the Cold Vault exists.",
   "clue-rotated-routing": "The broker's rotated routing is on file.",
   escalate: "Escalated to intrusive. The vault answered directly.",
+  "escalate-v2": "Escalated to intrusive. A spectral routing hint appeared; the Vault still needs proof.",
   "disengage-recon": "Disengaged from recon.",
   "disengage-intrusive": "Disengaged from an intrusive stage.",
   "watch-started": "The owner started watching Nightshade.",
