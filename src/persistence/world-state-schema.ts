@@ -591,6 +591,14 @@ const checkedWorldStateSchema = storedWorldStateSchema.superRefine((state, ctx) 
           observation.worldMinute > state.worldMinute) {
         fail("observations", "unknown source or future observation");
       }
+      // Old clues can truthfully describe previous routes. Only current-epoch
+      // authoritative clues must agree with today's route truth.
+      if (observation.epoch === challenge.epoch &&
+          (observation.kind === "carrier"
+            ? observation.value !== challenge.requiredCarrier
+            : observation.value !== challenge.requiredEcho)) {
+        fail("observations", "current route clue contradicts live route truth");
+      }
     }
     const tested = new Set<string>();
     for (const attempt of challenge.tests) {
@@ -600,6 +608,14 @@ const checkedWorldStateSchema = storedWorldStateSchema.superRefine((state, ctx) 
       if (!ids.has(attempt.routeId) || attempt.epoch > challenge.epoch ||
           attempt.worldMinute > state.worldMinute) {
         fail("tests", "invalid route test reference or time");
+      }
+      const candidate = challenge.candidates.find(c => c.id === attempt.routeId);
+      if (attempt.epoch === challenge.epoch && candidate) {
+        const isCorrect = candidate.carrier === challenge.requiredCarrier &&
+          candidate.echo === challenge.requiredEcho;
+        if ((attempt.result === "confirmed") !== isCorrect) {
+          fail("tests", "current route result contradicts live route truth");
+        }
       }
     }
   }

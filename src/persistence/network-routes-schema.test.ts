@@ -80,6 +80,70 @@ describe("G3 optional generic network route persistence", () => {
     }).success).toBe(false);
   });
 
+  it("rejects contradictory current-epoch sourced carrier and echo clues", () => {
+    const wrongCarrier = route();
+    wrongCarrier.observations[0]!.value = "public";
+    expect(worldStateSchema.safeParse({
+      ...base(), networkChallenges: [wrongCarrier],
+    }).success).toBe(false);
+
+    const wrongEcho = route();
+    wrongEcho.observations.push({
+      id: "echo:wrong", kind: "echo", value: "circle",
+      sourceId: "entry", epoch: 0, worldMinute: 3,
+    });
+    expect(worldStateSchema.safeParse({
+      ...base(), networkChallenges: [wrongEcho],
+    }).success).toBe(false);
+  });
+
+  it("rejects impossible current-epoch recorded test results", () => {
+    const impossibleConfirmed = route();
+    impossibleConfirmed.tests = [
+      { routeId: "c1", epoch: 0, result: "confirmed", worldMinute: 5 },
+    ];
+    const impossibleRefuted = route();
+    impossibleRefuted.tests = [
+      { routeId: "c3", epoch: 0, result: "refuted", worldMinute: 5 },
+    ];
+    for (const challenge of [impossibleConfirmed, impossibleRefuted]) {
+      expect(worldStateSchema.safeParse({
+        ...base(), networkChallenges: [challenge],
+      }).success).toBe(false);
+    }
+
+    const valid = route();
+    valid.tests = [
+      { routeId: "c1", epoch: 0, result: "refuted", worldMinute: 5 },
+      { routeId: "c3", epoch: 0, result: "confirmed", worldMinute: 6 },
+    ];
+    expect(worldStateSchema.safeParse({
+      ...base(), networkChallenges: [valid],
+    }).success).toBe(true);
+  });
+
+  it("preserves historical observations and outcomes across defender rotation", () => {
+    const rotated = route();
+    rotated.epoch = 1;
+    rotated.requiredEcho = "circle";
+    rotated.observations.push(
+      { id: "echo:old", kind: "echo", value: "triangle",
+        sourceId: "entry", epoch: 0, worldMinute: 3 },
+      { id: "carrier:new", kind: "carrier", value: "sealed",
+        sourceId: "entry", epoch: 1, worldMinute: 5 },
+      { id: "echo:new", kind: "echo", value: "circle",
+        sourceId: "entry", epoch: 1, worldMinute: 5 },
+    );
+    rotated.tests = [
+      { routeId: "c3", epoch: 0, result: "confirmed", worldMinute: 4 },
+      { routeId: "c3", epoch: 1, result: "refuted", worldMinute: 6 },
+      { routeId: "c2", epoch: 1, result: "confirmed", worldMinute: 7 },
+    ];
+    expect(worldStateSchema.safeParse({
+      ...base(), networkChallenges: [rotated],
+    }).success).toBe(true);
+  });
+
   it("rejects impossible or ambiguous solutions and malformed epoch/provenance", () => {
     const variants = [
       { requiredCarrier: "public", requiredEcho: "circle" },
