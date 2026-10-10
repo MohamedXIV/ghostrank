@@ -5,6 +5,7 @@ import { useTable } from "tinybase/ui-react";
 import { Button } from "@/components/ui/button";
 import { useClockHold } from "@/components/game/clock-context";
 import { testNetworkRouteFromGui } from "@/game/computer/apps/target-actions";
+import { formatNetworkRouteFeedback } from "@/components/game/recon/network-route-feedback";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { VisibleNetworkRouteChallenge } from "@/game/simulation/projection/project-world";
 
@@ -99,9 +100,7 @@ function NetworkRouteChallengeView({
               const result = runtime.execute(
                 testNetworkRouteFromGui(challenge.targetId, challenge.id, candidate.id),
               );
-              setNotice(result.ok
-                ? "Route test recorded. Review your network evidence and trace."
-                : `Route refused: ${result.error ?? "unknown error"}`);
+              setNotice(formatNetworkRouteFeedback(result, challenge.id, candidate.id));
               setConfirming(false);
             }}>
               CONFIRM ROUTE TEST
