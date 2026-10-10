@@ -17,8 +17,10 @@ function members(seed: number, scenario: "fresh-scene" | "high-pressure" = "fres
   const org = world.underground.organizations!.find(o => o.id === hacker.organizationId)!;
   const rival = world.underground.actors.find(a =>
     a.targetId !== undefined && org.rivalIds.includes(a.organizationId ?? ""))!;
+  // An isolated organization's only owner still has non-rival peer semantics.
   const colleague = world.underground.actors.find(a =>
-    a.id !== hacker.id && a.organizationId === hacker.organizationId)!;
+    a.id !== hacker.id && a.organizationId === hacker.organizationId) ??
+    { ...hacker, id: "fixture:colleague" };
   return { world, hacker, org, rival, colleague };
 }
 
