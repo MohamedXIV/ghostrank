@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CommandBus } from "@/game/simulation/command-bus";
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
-import type { NetworkRouteChallenge, WorldState } from "@/game/simulation/state/world-state";
+import type { WorldState } from "@/game/simulation/state/world-state";
+import type { NetworkRouteChallenge } from "../systems/network-routes";
 
 function route(): NetworkRouteChallenge {
   return {
