@@ -18,6 +18,8 @@ import {
   counterpartWeight,
   offerTargetWeight,
   ownerOfTarget,
+  factionCounterCommissionTargets,
+  COUNTER_COMMISSION_OFFER_BONUS_PERCENT,
   pickWeighted,
   usesLivingTies,
 } from "@/game/simulation/systems/living-ties";
@@ -697,9 +699,17 @@ function offerContracts(
       continue;
     }
 
+    // Public commissions can motivate members of the wronged faction to
+    // counter-commission rival infrastructure. Eligibility/trust is checked
+    // above; the seeded offer roll, open-contract cap and opportunity windows
+    // remain intact. An unreachable faction target grants no rate bonus.
+    const counterTargets = factionCounterCommissionTargets(world, issuer, worldMinute);
+    const actionableCounterTargets = targets.some(t =>
+      t.organizationId !== undefined && counterTargets.has(t.organizationId));
     const issuerOfferPercent = Math.min(
       100,
-      offerPercent + offerRateBonus(world, issuer) + greedBonus(issuer),
+      offerPercent + offerRateBonus(world, issuer) + greedBonus(issuer) +
+        (actionableCounterTargets ? COUNTER_COMMISSION_OFFER_BONUS_PERCENT : 0),
     );
 
     if (
@@ -726,6 +736,7 @@ function offerContracts(
               issuer,
               candidate,
               ownerOfTarget(world, candidate),
+              counterTargets,
             ),
           ),
           targetPoint,
