@@ -451,7 +451,35 @@ const nightshadeSliceSchema = z.object({
   ),
 });
 
+const routeCandidateSchema = z.object({
+  id: z.string().min(1), label: z.string().min(1),
+  carrier: z.enum(["public", "sealed"]), echo: z.enum(["circle", "triangle"]),
+});
+const routeObservationSchema = z.discriminatedUnion("kind", [
+  z.object({ id: z.string().min(1), kind: z.literal("carrier"),
+    value: z.enum(["public", "sealed"]), sourceId: z.string().min(1),
+    epoch: z.number().int().nonnegative(), worldMinute: z.number().int().nonnegative() }),
+  z.object({ id: z.string().min(1), kind: z.literal("echo"),
+    value: z.enum(["circle", "triangle"]), sourceId: z.string().min(1),
+    epoch: z.number().int().nonnegative(), worldMinute: z.number().int().nonnegative() }),
+]);
+const routeChallengeSchema = z.object({
+  id: z.string().min(1), targetId: z.string().min(1),
+  entryMachineId: z.string().min(1), objectiveMachineId: z.string().min(1),
+  candidates: z.array(routeCandidateSchema).min(2),
+  requiredCarrier: z.enum(["public", "sealed"]),
+  requiredEcho: z.enum(["circle", "triangle"]),
+  epoch: z.number().int().nonnegative(),
+  baseMinutes: z.number().int().positive(), traceWeight: z.number().int().positive(),
+  observations: z.array(routeObservationSchema), tests: z.array(z.object({
+    routeId: z.string().min(1), epoch: z.number().int().nonnegative(),
+    result: z.enum(["confirmed", "refuted"]),
+    worldMinute: z.number().int().nonnegative(),
+  })),
+});
+
 const storedWorldStateSchema = z.object({
+  networkChallenges: z.array(routeChallengeSchema).optional(),
   worldMinute: z.number().int().nonnegative(),
   slice: nightshadeSliceSchema.optional(),
   // G2 (D065): a save from before G2 has no scenario and is canonical.
