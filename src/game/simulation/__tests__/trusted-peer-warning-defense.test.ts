@@ -37,13 +37,15 @@ function scene(seed = 17, scenario: "fresh-scene" | "high-pressure" = "fresh-sce
   world.underground.incidents.push({
     id: "incident:public-warning", kind: "npc-intrusion",
     actorId: attacker.id, counterpartId: defender.id,
-    outcome: "repelled", public: true, worldMinute: 0,
+    outcome: "repelled", public: true, worldMinute: 360,
   });
   world.underground.forumPosts.push({
     id: "forum:public-warning", board: defender.network,
     authorId: peer.id, subject: { kind: "incident", id: "incident:public-warning" },
-    worldMinute: 0,
+    worldMinute: 360,
   });
+  world.worldMinute = 360;
+  world.underground.lastTickMinute = 360;
   return { world, defender, attacker, peer, organization };
 }
 
@@ -51,16 +53,16 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
   it("provides an actual bounded defense bonus sourced to public incident + trusted peer", () => {
     for (const scenario of ["fresh-scene", "high-pressure"] as const) {
       const { world, defender, attacker, peer } = scene(17, scenario);
-      expect(peerWarningDefenseBonus(world, defender, 360)).toBe(8);
-      expect(peerWarningDefenseBonus(world, defender, DAY)).toBe(8);
-      expect(peerWarningDefenseBonus(world, defender, DAY + 1)).toBe(0);
-      const before = peerWarningDefenseBonus(world, defender, 360);
+      expect(peerWarningDefenseBonus(world, defender, 720)).toBe(8);
+      expect(peerWarningDefenseBonus(world, defender, DAY + 360)).toBe(8);
+      expect(peerWarningDefenseBonus(world, defender, DAY + 361)).toBe(0);
+      const before = peerWarningDefenseBonus(world, defender, 720);
       peer.rank = 1; attacker.rank = 999_999; defender.rank = 12; world.player.rank = 1;
-      expect(peerWarningDefenseBonus(world, defender, 360)).toBe(before);
+      expect(peerWarningDefenseBonus(world, defender, 720)).toBe(before);
       peer.defense = 20;
-      expect(peerWarningDefenseBonus(world, defender, 360)).toBe(2);
+      expect(peerWarningDefenseBonus(world, defender, 720)).toBe(2);
       peer.defense = 0;
-      expect(peerWarningDefenseBonus(world, defender, 360)).toBe(0);
+      expect(peerWarningDefenseBonus(world, defender, 720)).toBe(0);
     }
   });
 
@@ -72,7 +74,7 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
         "no-owner", "same-tick", "future", "stale",
       ] as const) {
         const { world, defender, attacker, peer, organization } = scene(23, scenario);
-        let minute = 360;
+        let minute = 720;
         if (forbidden === "incident-private") world.underground.incidents[0]!.public = false;
         if (forbidden === "no-post") world.underground.forumPosts = [];
         if (forbidden === "wrong-incident") world.underground.forumPosts[0]!.subject.id = "incident:wrong";
@@ -84,9 +86,9 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
           world.underground.relationships.find(r => r.fromId === peer.id && r.toId === defender.id)!.trust = 0;
         if (forbidden === "attacker-not-rival") organization.rivalIds = [];
         if (forbidden === "no-owner") delete defender.targetId;
-        if (forbidden === "same-tick") minute = 0;
+        if (forbidden === "same-tick") minute = 360;
         if (forbidden === "future") minute = -1;
-        if (forbidden === "stale") minute = DAY + 1;
+        if (forbidden === "stale") minute = DAY + 361;
         expect(peerWarningDefenseBonus(world, defender, minute),
           `${scenario}: ${forbidden}`).toBe(0);
       }
@@ -116,7 +118,7 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
           fromId: attacker.id, toId: defender.id,
           trust: -10, fear: 0, grudge: 100, updatedWorldMinute: 0,
         });
-        const noise = hashUnit(world.underground.seed, "roll", 1, attacker.id) * 40 - 20;
+        const noise = hashUnit(world.underground.seed, "roll", 2, attacker.id) * 40 - 20;
         attacker.skill = Math.round(defender.defense + defenseBonusOf(world, defender) - noise + 3);
         const unwarned = structuredClone(world);
         unwarned.underground.forumPosts = [];
@@ -127,8 +129,8 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
         expect(withWarning.ok).toBe(true);
         expect(noWarning.ok).toBe(true);
         const updated = active.snapshot(), baseline = quiet.snapshot();
-        const a = updated.underground.incidents.find(i => i.actorId === attacker.id && i.worldMinute === 360);
-        const b = baseline.underground.incidents.find(i => i.actorId === attacker.id && i.worldMinute === 360);
+        const a = updated.underground.incidents.find(i => i.actorId === attacker.id && i.worldMinute === 720);
+        const b = baseline.underground.incidents.find(i => i.actorId === attacker.id && i.worldMinute === 720);
         expect(a?.counterpartId).toBe(b?.counterpartId);
         if (a?.counterpartId !== defender.id) continue;
         expect(b?.outcome).toBe("succeeded");
@@ -148,8 +150,8 @@ describe("G5 P5 trusted same-board peers reinforce a rival target owner (#131)",
     for (const scenario of ["fresh-scene", "high-pressure"] as const) {
       const { world, defender } = scene(43, scenario);
       const saved = worldStateSchema.parse(JSON.parse(JSON.stringify(world))) as WorldState;
-      expect(peerWarningDefenseBonus(saved, saved.underground.actors.find(a => a.id === defender.id)!, 360))
-        .toBe(peerWarningDefenseBonus(world, defender, 360));
+      expect(peerWarningDefenseBonus(saved, saved.underground.actors.find(a => a.id === defender.id)!, 720))
+        .toBe(peerWarningDefenseBonus(world, defender, 720));
       const original = new CommandBus(world);
       const replay = new CommandBus(saved);
       const command = { type: "advanceTime", minutes: 360 * 3 } as const;
