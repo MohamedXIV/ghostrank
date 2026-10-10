@@ -129,28 +129,9 @@ export function peerWarningDefenseBonus(
       !world.targets.some(t =>
         t.id === defender.targetId && t.organizationId === organization.id)) return 0;
 
-  // Require an actual previous public incident AND a corresponding report on
-  // the owner's network. Never turn private authority or a player's rumor into
-  // clairvoyant allied defence.
-  const wasPubliclyWarned = world.underground.forumPosts.some(post => {
-    if (post.subject.kind !== "incident" || post.board !== defender.network ||
-        post.worldMinute >= worldMinute ||
-        worldMinute - post.worldMinute > PEER_WARNING_MEMORY_MINUTES) return false;
-    const author = world.underground.actors.find(a => a.id === post.authorId);
-    if (author?.network !== post.board) return false;
-    const incident = world.underground.incidents.find(i =>
-      i.id === post.subject.id && i.public &&
-      i.worldMinute === post.worldMinute &&
-      i.counterpartId === defender.id);
-    if (!incident) return false;
-    const attacker = world.underground.actors.find(a => a.id === incident.actorId);
-    return attacker?.organizationId !== undefined &&
-      organization.rivalIds.includes(attacker.organizationId);
-  });
-  if (!wasPubliclyWarned) return 0;
-
-  // One strongest qualified helper, so large organizations cannot stack
-  // unbounded group buffs. Trust flows FROM the helper TOWARD the owner.
+  // Cheap eligibility first. Most organizations have no same-board trusted
+  // helper, so avoid rescanning the entire forum during long-run world probes.
+  // One strongest qualified helper prevents unbounded stacking in big crews.
   let bonus = 0;
   for (const peer of world.underground.actors) {
     if (peer.id === defender.id || peer.organizationId !== organization.id ||
@@ -162,5 +143,27 @@ export function peerWarningDefenseBonus(
       PEER_WARNING_DEFENSE_CAP, Math.floor(peer.defense / 10),
     ));
   }
-  return bonus;
+  if (bonus === 0) return 0;
+
+  // Require an actual prior public incident AND a corresponding forum report
+  // on the owner's network. Posts are append-chronological world events:
+  // scan newest-first, stopping at the 24-hour horizon even after a 30d run.
+  const posts = world.underground.forumPosts;
+  for (let index = posts.length - 1; index >= 0; index--) {
+    const post = posts[index]!;
+    if (worldMinute - post.worldMinute > PEER_WARNING_MEMORY_MINUTES) break;
+    if (post.subject.kind !== "incident" || post.board !== defender.network ||
+        post.worldMinute >= worldMinute) continue;
+    const author = world.underground.actors.find(a => a.id === post.authorId);
+    if (author?.network !== post.board) continue;
+    const incident = world.underground.incidents.find(i =>
+      i.id === post.subject.id && i.public &&
+      i.worldMinute === post.worldMinute &&
+      i.counterpartId === defender.id);
+    if (!incident) continue;
+    const attacker = world.underground.actors.find(a => a.id === incident.actorId);
+    if (attacker?.organizationId !== undefined &&
+        organization.rivalIds.includes(attacker.organizationId)) return bonus;
+  }
+  return 0;
 }
