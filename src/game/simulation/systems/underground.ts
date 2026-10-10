@@ -941,7 +941,7 @@ export function rewardContract(
     const issuerOrg = organizationOfActor(world, issuer);
     if (
       owner && owner.id !== issuer.id &&
-      owner.network === publication.board &&
+      owner.network === issuer.network &&
       issuerOrg &&
       owner.organizationId !== undefined &&
       issuerOrg.rivalIds.includes(owner.organizationId)
