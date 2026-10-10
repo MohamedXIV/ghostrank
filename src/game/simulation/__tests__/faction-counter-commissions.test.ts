@@ -163,6 +163,8 @@ describe("G5 P4: faction counter-commissions after PUBLIC contract fallout (#129
   it("causes actual generated world offers to change, not just a dead helper value", () => {
     for (const scenario of ["fresh-scene", "high-pressure"] as const) {
       let extraOffers = 0;
+      let rivalOffersWithPublicGrievance = 0;
+      let rivalOffersWithoutPublication = 0;
       for (let seed = 1; seed <= 80; seed++) {
         const { world, ally, offender } = scene(seed, scenario);
         const quiet = structuredClone(world);
@@ -178,16 +180,26 @@ describe("G5 P4: faction counter-commissions after PUBLIC contract fallout (#129
         const offered = (result: typeof live) => result.events.filter(
           e => e.type === "ContractOffered" && e.issuerId === ally.id
         );
+        const offenderFaction = offender.organizationId;
+        const countOffenderTargetOffers = (bus: CommandBus) => {
+          const snapshot = bus.snapshot();
+          return snapshot.underground.contracts.filter(c =>
+            c.issuerId === ally.id && c.offeredWorldMinute === 360 &&
+            snapshot.targets.some(t =>
+              t.id === c.targetId && t.organizationId === offenderFaction)).length;
+        };
+        rivalOffersWithPublicGrievance += countOffenderTargetOffers(a);
+        rivalOffersWithoutPublication += countOffenderTargetOffers(b);
         if (offered(live).length > offered(neutral).length) {
-          const fresh = a.snapshot().underground.contracts.find(c =>
-            c.issuerId === ally.id && c.offeredWorldMinute === 360);
-          expect(fresh).toBeDefined();
-          const target = a.snapshot().targets.find(t => t.id === fresh!.targetId)!;
-          expect(target.organizationId).toBe(offender.organizationId);
+          // The additional faction weight is a bias, not an impossible
+          // hard targeting rule. An offered job may still target another org.
+          expect(offered(live)).toHaveLength(1);
           extraOffers++;
         }
       }
       expect(extraOffers, scenario).toBeGreaterThan(0);
+      expect(rivalOffersWithPublicGrievance, scenario)
+        .toBeGreaterThan(rivalOffersWithoutPublication);
     }
   });
 });
