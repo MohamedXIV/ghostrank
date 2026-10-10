@@ -492,6 +492,17 @@ export interface UndergroundOrganization {
   agenda: OrganizationAgenda;
   /** Organizations at odds with this one. Symmetric, never this organization. */
   rivalIds: string[];
+  /**
+   * Emergency response to an actual rival breach, not a second hidden
+   * personality. Remember the previous agenda to restore it after quiet.
+   * The entire response is hidden authority, never a player-visible claim.
+   */
+  organizationResponse?: {
+    previousAgenda: Exclude<OrganizationAgenda, "defend">;
+    triggeredWorldMinute: number;
+    lastBreachWorldMinute: number;
+    causeIncidentId: string;
+  };
 }
 
 export interface UndergroundRelationship {

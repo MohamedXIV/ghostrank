@@ -6,6 +6,7 @@ import { findModelItem } from "@/content/model-catalog";
 import { probeCandidates, probeTick } from "@/game/simulation/systems/probes";
 import { physicalRetaliationTick } from "@/game/simulation/systems/physical-retaliation";
 import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
+import { advanceOrganizationAgendas } from "@/game/simulation/systems/organization-agenda-dynamics";
 import {
   defenseBonusOf,
   offerRateBonus,
@@ -1224,6 +1225,10 @@ export function advanceUnderground(
     }
 
     events.push(...retaliate(world, tickIndex, worldMinute));
+    // NPC incidents from this boundary are committed before agenda reactions.
+    // The new posture affects offers now and defence on the NEXT actor tick.
+    // No hidden intentions/incident truth are exposed by projectWorld.
+    events.push(...advanceOrganizationAgendas(world, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge
     // downward, so a cached candidate list would let one big `wait` keep probing
