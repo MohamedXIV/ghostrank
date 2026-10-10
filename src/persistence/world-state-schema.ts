@@ -64,6 +64,7 @@ const traceSchema = z.object({
     "operation-escalation",
     "operation-disengagement",
     "operation-probe",
+    "network-route-test",
   ]),
   stage: z.enum(["recon", "intrusive"]),
   severity: z.enum(["low", "elevated", "high"]),
