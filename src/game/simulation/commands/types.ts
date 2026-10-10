@@ -8,6 +8,12 @@ export type SimulationCommand =
       targetId: string;
     }
   | {
+      type: "testNetworkRoute";
+      targetId: string;
+      challengeId: string;
+      routeId: string;
+    }
+  | {
       type: "surveyTarget";
       targetId: string;
     }
