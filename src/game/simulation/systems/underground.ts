@@ -11,6 +11,7 @@ import {
   defenseBonusOf,
   offerRateBonus,
   offerableTargetsFor,
+  organizationOfActor,
   rivalTargetsFor,
 } from "@/game/simulation/systems/organizations";
 import {
@@ -924,15 +925,41 @@ export function rewardContract(
   );
 
   if (issuer) {
-    events.push(
-      postToForum(
-        world,
-        issuer.network,
-        issuer.id,
-        { kind: "contract", id: contract.id },
-        worldMinute,
-      ),
+    // Publication is the boundary of knowledge. A rival cannot react to a
+    // commission they never saw, and the forum post credits the BROKER, not
+    // the anonymous operator who did the work. No omniscient player grudge.
+    const publication = postToForum(
+      world,
+      issuer.network,
+      issuer.id,
+      { kind: "contract", id: contract.id },
+      worldMinute,
     );
+    events.push(publication);
+    const target = world.targets.find((entry) => entry.id === contract.targetId);
+    const owner = target ? ownerOfTarget(world, target) : undefined;
+    const issuerOrg = organizationOfActor(world, issuer);
+    if (
+      owner && owner.id !== issuer.id &&
+      owner.network === issuer.network &&
+      issuerOrg &&
+      owner.organizationId !== undefined &&
+      issuerOrg.rivalIds.includes(owner.organizationId)
+    ) {
+      // The owner's OWN grudge changes their next NPC-vs-NPC target choices.
+      // Current actor standing, the contract ID and world minute already have
+      // durable provenance; no second schedule or random knowledge roll.
+      events.push(
+        adjustRelationship(
+          world,
+          owner.id,
+          issuer.id,
+          { grudge: 20, trust: -10 },
+          { kind: "contract", id: contract.id },
+          worldMinute,
+        ),
+      );
+    }
   }
 
   events.push(
