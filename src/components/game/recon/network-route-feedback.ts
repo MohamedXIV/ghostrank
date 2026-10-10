@@ -39,7 +39,7 @@ export function formatNetworkRouteFeedback(
     const ended = result.events.some(event => event.type === "RunEnded");
     return ended
       ? "Run ended before a route verdict. Review the final report."
-      : "No route verdict was recorded. Check the operation and its current evidence.";
+      : "Route could not be verified. Check the operation and its current evidence.";
   }
 
   switch (verdict.result) {
