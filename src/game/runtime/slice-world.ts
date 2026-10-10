@@ -16,6 +16,7 @@ import type { NetworkRouteChallenge } from "@/game/simulation/systems/network-ro
 import { RELAY_MACHINE_ID, VAULT_MACHINE_ID } from "@/content/nightshade-slice";
 
 import { generateScenarioContent } from "@/game/world-generation/generate-scenario";
+import { attachGeneratedRouteChallenge } from "@/game/world-generation/network-route-provider";
 import { generateRunSeed } from "@/game/simulation/rng/seeded-rng";
 import {
   DEFAULT_RUN_SCENARIO,
@@ -43,6 +44,8 @@ export interface CreateSliceWorldOptions {
   scenario?: RunScenario;
   /** Opt-in v2 learning adapter; omitted deliberately retains v1 compatibility. */
   nightshadeRules?: "nightshade-v1" | "nightshade-v2";
+  /** Opt-in distinct generated consumer without changing existing generated baselines. */
+  networkMappingDemo?: boolean;
 }
 
 /** Every handle the authored roster already uses. A new run may not take one. */
@@ -135,6 +138,9 @@ export function createSliceWorldState(
 
   if (scenario === SLICE_RUN_SCENARIO) {
     attachNightshadeBriefing(world, authored.actors, options.nightshadeRules ?? "nightshade-v1", seed);
+  }
+  if (scenario === "fresh-scene" && options.networkMappingDemo === true) {
+    attachGeneratedRouteChallenge(world, seed);
   }
 
   return world;
