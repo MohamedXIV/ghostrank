@@ -92,6 +92,17 @@ const undergroundActorSchema = z.object({
   targetId: z.string().min(1).optional(),
   // D066: absent for independent actors and for every pre-G2 save.
   organizationId: z.string().min(1).optional(),
+  // D068: absent for the authored roster and every pre-G2 save.
+  hackerArchetype: z
+    .enum(["opportunist", "ghost", "enforcer", "fixer", "tinkerer"])
+    .optional(),
+  temperament: z
+    .object({
+      aggression: percentSchema,
+      caution: percentSchema,
+      greed: percentSchema,
+    })
+    .optional(),
 });
 
 const undergroundOrganizationSchema = z.object({

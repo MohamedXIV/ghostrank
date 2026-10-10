@@ -20,6 +20,12 @@ import {
   usesLivingTies,
 } from "@/game/simulation/systems/living-ties";
 import {
+  activityBonus,
+  cautionBonus,
+  contactTrustThreshold,
+  greedBonus,
+} from "@/game/simulation/systems/temperament";
+import {
   PLAYER_ACTOR_ID,
   type ForumPost,
   type ForumSubjectKind,
@@ -342,7 +348,10 @@ function leakIncident(
         entry.fromId === contact.id && entry.toId === PLAYER_ACTOR_ID,
     )?.trust;
 
-    if (trust === undefined || trust < CONTACT_TRUST_THRESHOLD) {
+    if (
+      trust === undefined ||
+      trust < contactTrustThreshold(contact, CONTACT_TRUST_THRESHOLD)
+    ) {
       continue;
     }
 
@@ -422,7 +431,8 @@ function runActorTick(
 
   const actRoll = hashUnit(seed, "act", tickIndex, actor.id) * 100;
 
-  if (actRoll >= actor.activity) {
+  // Aggression lifts the chance to act; an actor with no temperament adds 0 (D068).
+  if (actRoll >= actor.activity + activityBonus(actor)) {
     return [];
   }
 
@@ -477,9 +487,11 @@ function runActorTick(
   // victim's when the actor won, the actor's when it lost); an assist mistake
   // only ever *lowers* it, and a no-model assist contributes 0, so an
   // unassisted incident stays byte-identical.
+  // Caution lifts the discretion an incident is judged against (D068).
   const discretion =
     (succeeded ? counterpart.discretion : actor.discretion) +
-    assist.discretionDelta;
+    assist.discretionDelta +
+    cautionBonus(actor);
   const isPublic =
     hashUnit(seed, "pub", tickIndex, actor.id) * 100 >= discretion;
 
@@ -658,7 +670,10 @@ function offerContracts(
         entry.fromId === issuer.id && entry.toId === PLAYER_ACTOR_ID,
     )?.trust;
 
-    if (trust === undefined || trust < CONTACT_TRUST_THRESHOLD) {
+    if (
+      trust === undefined ||
+      trust < contactTrustThreshold(issuer, CONTACT_TRUST_THRESHOLD)
+    ) {
       continue;
     }
 
@@ -670,7 +685,7 @@ function offerContracts(
 
     const issuerOfferPercent = Math.min(
       100,
-      offerPercent + offerRateBonus(world, issuer),
+      offerPercent + offerRateBonus(world, issuer) + greedBonus(issuer),
     );
 
     if (
