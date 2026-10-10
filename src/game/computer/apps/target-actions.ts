@@ -46,3 +46,12 @@ export function disengageOperationFromGui(): SimulationCommand {
     type: "disengageOperation",
   };
 }
+
+/** Shared committed route action; Recon and terminal use the same CommandBus. */
+export function testNetworkRouteFromGui(
+  targetId: string,
+  challengeId: string,
+  routeId: string,
+): SimulationCommand {
+  return { type: "testNetworkRoute", targetId, challengeId, routeId };
+}
