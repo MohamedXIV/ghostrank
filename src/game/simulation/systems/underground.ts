@@ -9,6 +9,7 @@ import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressu
 import { advanceOrganizationAgendas } from "@/game/simulation/systems/organization-agenda-dynamics";
 import {
   defenseBonusOf,
+  peerWarningDefenseBonus,
   offerRateBonus,
   offerableTargetsFor,
   organizationOfActor,
@@ -491,6 +492,9 @@ function runActorTick(
   const defense =
     counterpart.defense +
     defenseBonusOf(world, counterpart) +
+    // G5 P5: same-board PUBLIC prior rival warning enables limited help from
+    // a genuinely trusted colleague. No hidden faction knowledge is invented.
+    peerWarningDefenseBonus(world, counterpart, worldMinute) +
     npcAssistDeltas(
       seed,
       tickIndex,
