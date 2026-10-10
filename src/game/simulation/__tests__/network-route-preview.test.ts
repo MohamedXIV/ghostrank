@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
-import type { NetworkRouteChallenge, WorldState } from "@/game/simulation/state/world-state";
+import type { WorldState } from "@/game/simulation/state/world-state";
+import type { NetworkRouteChallenge } from "../systems/network-routes";
 import { previewNetworkRoute, seededNetworkRouteOrder } from "../systems/network-routes";
 
 function setup(): WorldState {
