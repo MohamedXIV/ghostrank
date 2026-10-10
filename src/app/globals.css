@@ -4977,3 +4977,63 @@ textarea:focus-visible,
   color: var(--danger);
 }
 
+
+/* G3 shared route hypotheses: readable, compact and touch/keyboard friendly. */
+.network-route-workspace {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+.network-route-heading p, .network-route-caveat, .network-route-actions p {
+  margin: 0.4rem 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.network-route-clues, .network-route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.network-route-clues span { font-size: 0.85rem; }
+.network-route-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.55rem;
+  margin: 0.65rem 0;
+}
+.network-route-candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--background);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 5.75rem;
+}
+.network-route-candidate:hover,
+.network-route-candidate[aria-pressed="true"] {
+  border-color: currentColor;
+}
+.network-route-candidate:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+.network-route-candidate span { font-size: 0.77rem; }
+.network-route-status {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+@media (max-width: 390px) {
+  .network-route-workspace { padding: 0.6rem; }
+  .network-route-candidates { grid-template-columns: 1fr; }
+}
