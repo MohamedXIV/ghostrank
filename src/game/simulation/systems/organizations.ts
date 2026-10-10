@@ -103,11 +103,64 @@ export function offerableTargetsFor(
 }
 
 
-/** G5 P5 TDD RED: peer warning support is not implemented yet. */
+/**
+ * G5 P5: the informed defence of a target owner after a verifiable, same-board
+ * public rival incident. Existing directed trust is the collaboration contract:
+ * an ally who trusts the owner may temporarily lend defensive expertise.
+ *
+ * No new AI tick, group health, hidden knowledge transfer or RNG state. A new
+ * public report alone is NOT enough; the owner must see its own network's
+ * earlier forum discussion and have a genuinely trusted co-organizational peer.
+ */
+export const PEER_WARNING_MEMORY_MINUTES = 24 * 60;
+export const PEER_WARNING_TRUST_THRESHOLD = 20;
+export const PEER_WARNING_DEFENSE_CAP = 8;
+
 export function peerWarningDefenseBonus(
-  _world: WorldState,
-  _defender: UndergroundActor,
-  _worldMinute: number,
+  world: WorldState,
+  defender: UndergroundActor,
+  worldMinute: number,
 ): number {
-  return 0;
+  if (world.ending || !Number.isInteger(worldMinute) || worldMinute < 0 ||
+      defender.targetId === undefined || defender.organizationId === undefined) return 0;
+
+  const organization = organizationOfActor(world, defender);
+  if (!organization ||
+      !world.targets.some(t =>
+        t.id === defender.targetId && t.organizationId === organization.id)) return 0;
+
+  // Require an actual previous public incident AND a corresponding report on
+  // the owner's network. Never turn private authority or a player's rumor into
+  // clairvoyant allied defence.
+  const wasPubliclyWarned = world.underground.forumPosts.some(post => {
+    if (post.subject.kind !== "incident" || post.board !== defender.network ||
+        post.worldMinute >= worldMinute ||
+        worldMinute - post.worldMinute > PEER_WARNING_MEMORY_MINUTES) return false;
+    const author = world.underground.actors.find(a => a.id === post.authorId);
+    if (author?.network !== post.board) return false;
+    const incident = world.underground.incidents.find(i =>
+      i.id === post.subject.id && i.public &&
+      i.worldMinute === post.worldMinute &&
+      i.counterpartId === defender.id);
+    if (!incident) return false;
+    const attacker = world.underground.actors.find(a => a.id === incident.actorId);
+    return attacker?.organizationId !== undefined &&
+      organization.rivalIds.includes(attacker.organizationId);
+  });
+  if (!wasPubliclyWarned) return 0;
+
+  // One strongest qualified helper, so large organizations cannot stack
+  // unbounded group buffs. Trust flows FROM the helper TOWARD the owner.
+  let bonus = 0;
+  for (const peer of world.underground.actors) {
+    if (peer.id === defender.id || peer.organizationId !== organization.id ||
+        peer.network !== defender.network) continue;
+    const relationship = world.underground.relationships.find(r =>
+      r.fromId === peer.id && r.toId === defender.id);
+    if ((relationship?.trust ?? 0) < PEER_WARNING_TRUST_THRESHOLD) continue;
+    bonus = Math.max(bonus, Math.min(
+      PEER_WARNING_DEFENSE_CAP, Math.floor(peer.defense / 10),
+    ));
+  }
+  return bonus;
 }
