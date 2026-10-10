@@ -178,7 +178,16 @@ describe("agendas drive decisions, and the player sees only a public name", () =
 
     for (const scenario of SCENES) {
       for (const seed of SEEDS) {
-        const bus = new CommandBus(sceneWorld(seed, scenario));
+        // This test isolates contract targeting *while undercut is active*.
+        // An unrelated successful rival breach can now change the agenda during
+        // a 10-day wait; retroactively judging an old contract using today's
+        // emergency agenda is not a valid causal assertion.
+        const initial = sceneWorld(seed, scenario);
+        for (const actor of initial.underground.actors) {
+          actor.activity = 0;
+          delete actor.temperament;
+        }
+        const bus = new CommandBus(initial);
         bus.execute({ type: "advanceTime", minutes: 10 * DAY });
         const world = bus.snapshot();
         const orgs = world.underground.organizations ?? [];
