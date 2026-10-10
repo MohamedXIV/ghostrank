@@ -137,6 +137,31 @@ describe("G5 P3 public contract commission creates third-party consequences (#12
     expect(relation(bus.snapshot(), owner.id, issuer.id)?.grudge).toBe(20);
   });
 
+  it("is reachable from naturally generated opening offers, without forcing NPC networks or rivalries", () => {
+    for (const scenario of ["fresh-scene", "high-pressure"] as const) {
+      let naturalRivalCommissions = 0;
+      for (let seed = 1; seed <= 120; seed++) {
+        const world = createSliceWorldState({ seed, scenario });
+        for (const contract of world.underground.contracts) {
+          const issuer = world.underground.actors.find(a => a.id === contract.issuerId);
+          const owner = world.underground.actors.find(a => a.targetId === contract.targetId);
+          const org = world.underground.organizations?.find(o => o.id === issuer?.organizationId);
+          if (!issuer || !owner || !org ||
+              owner.network !== issuer.network ||
+              !org.rivalIds.includes(owner.organizationId ?? "")) continue;
+          // This exact offer can be finished by a player without extra
+          // hidden prerequisites or artificially reassigning faction access.
+          contract.status = "completed";
+          const events = rewardContract(world, contract, 360);
+          expect(falloutEvents(events, owner.id, issuer.id)).toHaveLength(1);
+          naturalRivalCommissions++;
+          break;
+        }
+      }
+      expect(naturalRivalCommissions, scenario).toBeGreaterThan(0);
+    }
+  });
+
   it("survives current-run save/restoration and stays rank-independent across two procedural scenarios", () => {
     for (const scenario of ["fresh-scene", "high-pressure"] as const) {
       for (const seed of [1, 2, 3, 17, 41, 87, 120]) {
