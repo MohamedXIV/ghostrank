@@ -1,4 +1,5 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   MARKET_COUNTERPARTY,
@@ -158,6 +159,7 @@ export const MAX_PUMP_MINUTES = MAX_PUMP_BOUNDARIES * TICK_MINUTES;
 const SLICE_GATED_COMMANDS: ReadonlySet<string> = new Set([
   "openOperation",
   "surveyTarget",
+  "testNetworkRoute",
   "inspectMachine",
   "escalateOperation",
   "disengageOperation",
@@ -212,6 +214,9 @@ export class CommandBus {
 
       case "openOperation":
         return this.openOperation(command.targetId);
+
+      case "testNetworkRoute":
+        return this.testNetworkRoute(command.targetId, command.challengeId, command.routeId);
 
       case "surveyTarget":
         return this.surveyTarget(command.targetId);
@@ -383,6 +388,78 @@ export class CommandBus {
         },
       ],
     };
+  }
+
+  /** A world mechanic: no target names or Nightshade route rules here. */
+  private testNetworkRoute(
+    targetId: string,
+    challengeId: string,
+    routeId: string,
+  ): CommandResult {
+    const preview = previewNetworkRoute(this.world, targetId, challengeId, routeId);
+    if (!preview.ok) return this.failure(preview.error);
+
+    const challenge = this.world.networkChallenges!.find(
+      entry => entry.id === challengeId && entry.targetId === targetId,
+    )!;
+    const initialEpoch = challenge.epoch;
+    const events = this.advanceWorldTime(preview.minutes);
+    if (this.world.ending) return { ok: true, events };
+
+    const current = this.world.networkChallenges?.find(
+      entry => entry.id === challengeId && entry.targetId === targetId,
+    );
+    if (!current || current.epoch !== initialEpoch ||
+        this.world.operation?.targetId !== targetId || this.world.slice?.outcome) {
+      events.push({
+        type: "NetworkRouteTested", targetId, challengeId, routeId,
+        epoch: initialEpoch, result: "stale", worldMinute: this.world.worldMinute,
+      });
+      return { ok: true, events };
+    }
+
+    const correct = matchingNetworkRoute(current, routeId);
+    current.tests.push({
+      routeId, epoch: initialEpoch,
+      result: correct ? "confirmed" : "refuted",
+      worldMinute: this.world.worldMinute,
+    });
+    events.push(this.recordTrace({
+      targetId,
+      cause: "network-route-test",
+      stage: this.world.operation.stage,
+      severity: "low",
+      weight: preview.traceWeight,
+      worldMinute: this.world.worldMinute,
+    }));
+    const reactions = this.evaluateOpponentReaction(targetId);
+    events.push(...reactions);
+    if (this.world.slice) {
+      events.push(...sliceTraceFollowUp(this.world, targetId, reactions));
+    }
+    if (correct && !this.world.slice?.outcome && !this.world.ending) {
+      this.recordEvidence({
+        id: `machine-presence:${current.objectiveMachineId}`,
+        kind: "machine-presence",
+        subjectId: current.objectiveMachineId,
+        confidence: "observed",
+        source: "direct-observation",
+        worldMinute: this.world.worldMinute,
+      });
+      events.push({
+        type: "MachineObserved",
+        targetId,
+        machineId: current.objectiveMachineId,
+        worldMinute: this.world.worldMinute,
+      });
+    }
+    events.push({
+      type: "NetworkRouteTested",
+      targetId, challengeId, routeId, epoch: initialEpoch,
+      result: correct ? "confirmed" : "refuted",
+      worldMinute: this.world.worldMinute,
+    });
+    return { ok: true, events };
   }
 
   private surveyTarget(targetId: string): CommandResult {
