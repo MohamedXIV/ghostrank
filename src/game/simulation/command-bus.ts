@@ -1,5 +1,6 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
+import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   MARKET_COUNTERPARTY,
@@ -524,6 +525,9 @@ export class CommandBus {
       });
     }
 
+    generatedRouteSurveyObservation(
+      this.world, target.id, discovered.map(machine => machine.id),
+    );
     if (this.world.slice) {
       events.push(...this.sliceProbeEvents(target.id, "probe-survey"));
     }
@@ -596,6 +600,9 @@ export class CommandBus {
       });
     }
 
+    generatedRouteInspectObservation(
+      this.world, located.machine.id, discovered.map(service => service.id),
+    );
     if (this.world.slice) {
       if (reread) {
         promiseClueFromProbe(this.world, "reread", "");
