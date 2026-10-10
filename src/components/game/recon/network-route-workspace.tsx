@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTable } from "tinybase/ui-react";
 import { Button } from "@/components/ui/button";
+import { useClockHold } from "@/components/game/clock-context";
 import { testNetworkRouteFromGui } from "@/game/computer/apps/target-actions";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { VisibleNetworkRouteChallenge } from "@/game/simulation/projection/project-world";
@@ -51,6 +52,8 @@ function NetworkRouteChallengeView({
   const [selected, setSelected] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState("");
+  // The same G1 hold used by other blocking confirmations: no clock drift while reading.
+  useClockHold(confirming);
   const candidate = challenge.candidates.find(route => route.id === selected);
   const alreadyTested = candidate?.status === "refuted" || candidate?.status === "confirmed";
   const canCommit = challenge.preview !== null && candidate !== undefined && !alreadyTested;
