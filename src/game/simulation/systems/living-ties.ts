@@ -31,6 +31,16 @@ export const RIVAL_WEIGHT = 20;
 /** Additional *NPC intrusion* focus against rivals under an active undercut agenda. */
 export const UNDERCUT_RIVAL_RAID_WEIGHT = 60;
 
+/** G5 P4 TDD RED: generated contracts do not yet inherit public faction grievance. */
+export function factionCounterCommissionTargets(
+  _world: WorldState,
+  _issuer: UndergroundActor,
+  _worldMinute: number,
+): ReadonlySet<string> {
+  return new Set<string>();
+}
+
+
 /** Generated scenes use the living rules. A save with no scene is canonical (D065). */
 export function usesLivingTies(world: WorldState): boolean {
   return (world.scenario ?? DEFAULT_RUN_SCENARIO) !== "canonical";
