@@ -129,6 +129,7 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "OperationDisengaged":
     case "TraceRecorded":
     case "OpponentReactionTriggered":
+    case "OrganizationAgendaShifted":
     case "UndergroundActivity":
     case "ActorRankChanged":
     case "RelationshipChanged":
