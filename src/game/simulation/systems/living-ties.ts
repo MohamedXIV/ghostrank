@@ -13,7 +13,10 @@ import { organizationOfActor } from "@/game/simulation/systems/organizations";
  * uniformly, and ties only recorded the outcome. In a generated scene the same
  * choices are weighted by standing: who an actor holds a grudge against, and
  * which organization is its rival. A victim's grudge therefore becomes work
- * against its attacker, and rivals fight each other more often.
+ * against its attacker, and rivals fight each other more often. Under an
+ * active `undercut` agenda, peers are more likely to raid rival infrastructure.
+ * When the organization reacts to a rival breach by switching to `defend`,
+ * that additional offensive focus ends immediately; recovery reinstates it.
  *
  * The authored canonical roster keeps the uniform choices exactly, so every
  * canonical and pre-G2 save plays as before. Rank is never read here.
@@ -24,6 +27,9 @@ export const BASE_STANDING_WEIGHT = 10;
 
 /** Extra weight for a member of, or infrastructure held by, a rival organization. */
 export const RIVAL_WEIGHT = 20;
+
+/** Additional *NPC intrusion* focus against rivals under an active undercut agenda. */
+export const UNDERCUT_RIVAL_RAID_WEIGHT = 60;
 
 /** Generated scenes use the living rules. A save with no scene is canonical (D065). */
 export function usesLivingTies(world: WorldState): boolean {
@@ -58,10 +64,16 @@ export function counterpartWeight(
   actor: UndergroundActor,
   other: UndergroundActor,
 ): number {
+  const isRival = rivalOf(world, actor, other.organizationId);
+  // Existing hash draw, grudge, and standing remain authoritative.
+  // No separate NPC decision loop or random source: undercut only shifts the
+  // candidate weights, and never blocks a personally motivated non-rival raid.
+  const undercutFocus = isRival && organizationOfActor(world, actor)?.agenda === "undercut";
   return (
     BASE_STANDING_WEIGHT +
     grudgeBetween(world, actor.id, other.id) +
-    (rivalOf(world, actor, other.organizationId) ? RIVAL_WEIGHT : 0)
+    (isRival ? RIVAL_WEIGHT : 0) +
+    (undercutFocus ? UNDERCUT_RIVAL_RAID_WEIGHT : 0)
   );
 }
 
