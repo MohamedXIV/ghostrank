@@ -101,3 +101,69 @@ export function offerableTargetsFor(
         target.organizationId !== issuer.organizationId),
   );
 }
+
+
+/**
+ * G5 P5: the informed defence of a target owner after a verifiable, same-board
+ * public rival incident. Existing directed trust is the collaboration contract:
+ * an ally who trusts the owner may temporarily lend defensive expertise.
+ *
+ * No new AI tick, group health, hidden knowledge transfer or RNG state. A new
+ * public report alone is NOT enough; the owner must see its own network's
+ * earlier forum discussion and have a genuinely trusted co-organizational peer.
+ */
+export const PEER_WARNING_MEMORY_MINUTES = 24 * 60;
+export const PEER_WARNING_TRUST_THRESHOLD = 20;
+export const PEER_WARNING_DEFENSE_CAP = 8;
+
+export function peerWarningDefenseBonus(
+  world: WorldState,
+  defender: UndergroundActor,
+  worldMinute: number,
+): number {
+  if (world.ending || !Number.isInteger(worldMinute) || worldMinute < 0 ||
+      defender.targetId === undefined || defender.organizationId === undefined) return 0;
+
+  const organization = organizationOfActor(world, defender);
+  if (!organization ||
+      !world.targets.some(t =>
+        t.id === defender.targetId && t.organizationId === organization.id)) return 0;
+
+  // Cheap eligibility first. Most organizations have no same-board trusted
+  // helper, so avoid rescanning the entire forum during long-run world probes.
+  // One strongest qualified helper prevents unbounded stacking in big crews.
+  let bonus = 0;
+  for (const peer of world.underground.actors) {
+    if (peer.id === defender.id || peer.organizationId !== organization.id ||
+        peer.network !== defender.network) continue;
+    const relationship = world.underground.relationships.find(r =>
+      r.fromId === peer.id && r.toId === defender.id);
+    if ((relationship?.trust ?? 0) < PEER_WARNING_TRUST_THRESHOLD) continue;
+    bonus = Math.max(bonus, Math.min(
+      PEER_WARNING_DEFENSE_CAP, Math.floor(peer.defense / 10),
+    ));
+  }
+  if (bonus === 0) return 0;
+
+  // Require an actual prior public incident AND a corresponding forum report
+  // on the owner's network. Posts are append-chronological world events:
+  // scan newest-first, stopping at the 24-hour horizon even after a 30d run.
+  const posts = world.underground.forumPosts;
+  for (let index = posts.length - 1; index >= 0; index--) {
+    const post = posts[index]!;
+    if (worldMinute - post.worldMinute > PEER_WARNING_MEMORY_MINUTES) break;
+    if (post.subject.kind !== "incident" || post.board !== defender.network ||
+        post.worldMinute >= worldMinute) continue;
+    const author = world.underground.actors.find(a => a.id === post.authorId);
+    if (author?.network !== post.board) continue;
+    const incident = world.underground.incidents.find(i =>
+      i.id === post.subject.id && i.public &&
+      i.worldMinute === post.worldMinute &&
+      i.counterpartId === defender.id);
+    if (!incident) continue;
+    const attacker = world.underground.actors.find(a => a.id === incident.actorId);
+    if (attacker?.organizationId !== undefined &&
+        organization.rivalIds.includes(attacker.organizationId)) return bonus;
+  }
+  return 0;
+}
