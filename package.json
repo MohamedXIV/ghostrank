@@ -20,7 +20,7 @@
     "telemetry:balance": "vitest run src/game/telemetry/balance-telemetry.test.ts --reporter=verbose",
     "smoke:browser": "node scripts/browser-smoke/g1-clock-smoke.mjs",
     "smoke:browser:identity": "node scripts/browser-smoke/g2-identity-smoke.mjs",
-    "smoke:browser:slice": "node scripts/browser-smoke/g3-slice-smoke.mjs",
+    "smoke:browser:slice": "node scripts/browser-smoke/g3-network-map-smoke.mjs",
     "smoke:browser:network": "node scripts/browser-smoke/g3-network-map-smoke.mjs"
   },
   "dependencies": {
