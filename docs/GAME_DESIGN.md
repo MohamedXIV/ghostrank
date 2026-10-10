@@ -18,6 +18,8 @@ A typical operation is:
 
 The most important expert skill is often deciding not to continue.
 
+**Formal player-experience pillars (D072):** `docs/GAMEPLAY_PILLARS.md` is the gameplay/design contract for cautious handling of untrusted material, a visually inhabited world, morally free but consequential action, rival counter-hacking, and living camera/window scenes. Small fictional-security-inspired mini-games connect these pillars. This is design direction, **not shipped G3 content**; art style and international travel remain uncommitted implementation choices.
+
 
 ## Game-first completion note (2026-10-08)
 

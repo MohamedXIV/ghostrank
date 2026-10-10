@@ -12,6 +12,8 @@
 
 ## 1. Player fantasy and north star
 
+**Player-experience pillars (D072):** `docs/GAMEPLAY_PILLARS.md` records the approved design direction: operational caution and isolation with real tradeoffs; the rig/room and world as an inhabitable place rather than a card dashboard; moral agency without a good/evil meter; counter-hack and coercion with defendable consequences; and dynamic camera/window glimpses of a simulated world. Real-world-relative but **fictional, approachable** mini-games are the interaction layer. Small visual identity assets may arrive before the final art style; full isometric movement, international travel and wide Phaser camera systems are later candidates. No new implementation or playtest is implied by the document.
+
 > You are one anonymous hacker among many autonomous hackers. The world continues to act. You do not win by clicking a ranked target; you win by noticing, understanding, preparing, choosing, improvising and knowing when to disappear.
 
 The play loop is **lead -> investigate -> form hypothesis -> stage an operation -> interact with a fictional network -> extract or retreat -> deal with social/financial/physical consequences -> prepare the next risky choice**.
