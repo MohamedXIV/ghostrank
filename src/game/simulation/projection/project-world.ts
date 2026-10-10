@@ -2,6 +2,7 @@ import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
 import { observedNetworkConstraints, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import {
   SLICE_CLUES,
+  SLICE_CLUES_V2,
   SLICE_LOG_TEXT,
   SLICE_WINDOW_END_MINUTE,
   type SliceClueId,
@@ -1103,6 +1104,7 @@ function projectNightshadeBriefing(state: WorldState): VisibleNightshadeBriefing
   const contract = state.underground.contracts.find(
     (candidate) => candidate.id === slice.contractId,
   );
+  const clueCatalog = slice.rules === "nightshade-v2" ? SLICE_CLUES_V2 : SLICE_CLUES;
 
   return {
     rules: slice.rules,
@@ -1114,12 +1116,12 @@ function projectNightshadeBriefing(state: WorldState): VisibleNightshadeBriefing
     contract: contract ? { id: contract.id, status: contract.status } : null,
     clues: slice.clues.map((clueId) => ({
       id: clueId,
-      title: SLICE_CLUES[clueId].title,
-      text: SLICE_CLUES[clueId].text,
+      title: clueCatalog[clueId].title,
+      text: clueCatalog[clueId].text,
     })),
     pendingClues: slice.pendingClues.map((pending) => ({
       clueId: pending.clueId,
-      title: SLICE_CLUES[pending.clueId].title,
+      title: clueCatalog[pending.clueId].title,
       dueWorldMinute: pending.dueWorldMinute,
     })),
     map: sliceMapStatus(state),
