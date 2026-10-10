@@ -44,6 +44,11 @@ describe("G3 independent G2 Fresh Scene Network Mapping consumer", () => {
     run({ type: "openOperation", targetId: challenge.targetId });
     run({ type: "surveyTarget", targetId: challenge.targetId });
     expect(bus.snapshot().networkChallenges![0]!.observations.map(x => x.kind)).toEqual(["carrier"]);
+    // A route objective is inferred, not handed out by an ordinary broad survey.
+    expect(bus.snapshot().evidence.some(e =>
+      e.kind === "machine-presence" &&
+      e.subjectId === challenge.objectiveMachineId &&
+      e.retiredWorldMinute === undefined)).toBe(false);
     run({ type: "inspectMachine", machineId: challenge.entryMachineId });
     expect(bus.snapshot().networkChallenges![0]!.observations.map(x => x.kind)).toEqual(["carrier", "echo"]);
     const visible = projectWorld(bus.snapshot()).networkRoutes![0]!;
