@@ -1075,7 +1075,7 @@ function evidenceSubjects(
  * with. The owner's stored state beyond its schedule never leaves the simulation.
  */
 export interface VisibleNightshadeBriefing {
-  rules: "nightshade-v1";
+  rules: "nightshade-v1" | "nightshade-v2";
   targetId: string;
   targetHandle: string;
   outcome: SliceOutcome | null;
