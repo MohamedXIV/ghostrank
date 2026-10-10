@@ -1,4 +1,5 @@
 import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
+import { observedNetworkConstraints, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import {
   SLICE_CLUES,
   SLICE_LOG_TEXT,
@@ -723,6 +724,23 @@ export interface VisibleClockJob {
   interruptible: boolean;
 }
 
+export interface VisibleNetworkRouteChallenge {
+  id: string;
+  targetId: string;
+  candidates: Array<{
+    id: string;
+    label: string;
+    carrier: "public" | "sealed";
+    echo: "circle" | "triangle";
+    status: "candidate" | "refuted" | "confirmed" | "stale";
+  }>;
+  known: {
+    carrier?: "public" | "sealed";
+    echo?: "circle" | "triangle";
+  };
+  preview: { minutes: number; traceWeight: number } | null;
+}
+
 export interface WorldProjection {
   worldMinute: number;
   clockJob: VisibleClockJob | null;
@@ -733,6 +751,8 @@ export interface WorldProjection {
   targets: VisibleTarget[];
   machines: VisibleMachine[];
   services: VisibleService[];
+  /** G3 optional, epistemically safe fictional link hypotheses. */
+  networkRoutes?: VisibleNetworkRouteChallenge[];
   /**
    * The assistant's current reads, for known targets only. Empty by default —
    * the pre-Phase-5 projection is untouched when no analysis has been run.
@@ -1662,6 +1682,46 @@ function projectClockJob(state: WorldState): VisibleClockJob | null {
   };
 }
 
+function projectNetworkRoutes(
+  state: WorldState,
+  knownTargets: Set<string>,
+  knownMachines: Set<string>,
+): VisibleNetworkRouteChallenge[] {
+  return (state.networkChallenges ?? [])
+    .filter(challenge =>
+      knownTargets.has(challenge.targetId) &&
+      knownMachines.has(challenge.entryMachineId))
+    .map(challenge => {
+      const known = observedNetworkConstraints(challenge);
+      const candidates = challenge.candidates.map(candidate => {
+        const current = challenge.tests.find(test =>
+          test.routeId === candidate.id && test.epoch === challenge.epoch);
+        const old = challenge.tests.some(test => test.routeId === candidate.id);
+        const status = current
+          ? current.result
+          : old ? "stale" as const : "candidate" as const;
+        return {
+          id: candidate.id, label: candidate.label,
+          carrier: candidate.carrier, echo: candidate.echo, status,
+        };
+      });
+      const untested = challenge.candidates.find(candidate =>
+        !challenge.tests.some(test =>
+          test.routeId === candidate.id && test.epoch === challenge.epoch));
+      const testPreview = untested
+        ? previewNetworkRoute(state, challenge.targetId, challenge.id, untested.id)
+        : null;
+      return {
+        id: challenge.id, targetId: challenge.targetId,
+        candidates,
+        known,
+        preview: testPreview?.ok
+          ? { minutes: testPreview.minutes, traceWeight: testPreview.traceWeight }
+          : null,
+      };
+    });
+}
+
 export function projectWorld(state: WorldState): WorldProjection {
   const knownTargets = evidenceSubjects(state, "target-profile");
   const knownMachines = evidenceSubjects(state, "machine-presence");
@@ -1745,6 +1805,9 @@ export function projectWorld(state: WorldState): WorldProjection {
     targets,
     machines,
     services,
+    ...(projectNetworkRoutes(state, knownTargets, knownMachines).length > 0
+      ? { networkRoutes: projectNetworkRoutes(state, knownTargets, knownMachines) }
+      : {}),
     analysis: projectAnalysis(state, knownTargets),
     operation: state.operation ? structuredClone(state.operation) : null,
     footprint: {
