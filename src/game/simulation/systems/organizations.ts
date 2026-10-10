@@ -101,3 +101,13 @@ export function offerableTargetsFor(
         target.organizationId !== issuer.organizationId),
   );
 }
+
+
+/** G5 P5 TDD RED: peer warning support is not implemented yet. */
+export function peerWarningDefenseBonus(
+  _world: WorldState,
+  _defender: UndergroundActor,
+  _worldMinute: number,
+): number {
+  return 0;
+}
