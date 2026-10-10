@@ -11,6 +11,10 @@ import {
   SLICE_WINDOW_END_MINUTE,
 } from "@/content/nightshade-slice";
 import { createNightshadeSliceState } from "@/game/simulation/systems/nightshade-slice";
+import { seededNetworkRouteOrder } from "@/game/simulation/systems/network-routes";
+import type { NetworkRouteChallenge } from "@/game/simulation/systems/network-routes";
+import { RELAY_MACHINE_ID, VAULT_MACHINE_ID } from "@/content/nightshade-slice";
+
 import { generateScenarioContent } from "@/game/world-generation/generate-scenario";
 import { generateRunSeed } from "@/game/simulation/rng/seeded-rng";
 import {
@@ -37,6 +41,8 @@ export interface CreateSliceWorldOptions {
   handle?: string;
   /** How the starting world is made. Defaults to the authored canonical roster. */
   scenario?: RunScenario;
+  /** Opt-in v2 learning adapter; omitted deliberately retains v1 compatibility. */
+  nightshadeRules?: "nightshade-v1" | "nightshade-v2";
 }
 
 /** Every handle the authored roster already uses. A new run may not take one. */
@@ -128,7 +134,7 @@ export function createSliceWorldState(
   });
 
   if (scenario === SLICE_RUN_SCENARIO) {
-    attachNightshadeBriefing(world, authored.actors);
+    attachNightshadeBriefing(world, authored.actors, options.nightshadeRules ?? "nightshade-v1", seed);
   }
 
   return world;
@@ -142,6 +148,8 @@ export function createSliceWorldState(
 function attachNightshadeBriefing(
   world: WorldState,
   actors: readonly { id: string; network: string; targetId?: string }[],
+  rules: "nightshade-v1" | "nightshade-v2",
+  seed: number,
 ): void {
   const issuer =
     actors.find((actor) => actor.network === "white" && !actor.targetId) ??
@@ -161,7 +169,24 @@ function attachNightshadeBriefing(
     offeredWorldMinute: 0,
     expiresWorldMinute: SLICE_WINDOW_END_MINUTE,
   });
-  world.slice = createNightshadeSliceState({ contractId: SLICE_CONTRACT_ID });
+  world.slice = createNightshadeSliceState({ contractId: SLICE_CONTRACT_ID, rules });
+  if (rules === "nightshade-v2") {
+    // Pure scenario data: the same evaluator operates on every other target.
+    const challenge: NetworkRouteChallenge = {
+      id: "route:nightshade-entry", targetId: NIGHTSHADE_TARGET_ID,
+      entryMachineId: RELAY_MACHINE_ID, objectiveMachineId: VAULT_MACHINE_ID,
+      candidates: [
+        { id: "route-amber", label: "Amber", carrier: "public", echo: "triangle" },
+        { id: "route-cobalt", label: "Cobalt", carrier: "sealed", echo: "circle" },
+        { id: "route-ivory", label: "Ivory", carrier: "sealed", echo: "triangle" },
+      ],
+      requiredCarrier: "sealed", requiredEcho: "triangle",
+      epoch: 0, baseMinutes: 4, traceWeight: 1,
+      observations: [], tests: [],
+    };
+    challenge.candidates = seededNetworkRouteOrder(seed, challenge);
+    world.networkChallenges = [challenge];
+  }
 }
 
 /**
