@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CommandBus } from "@/game/simulation/command-bus";
+import { worldStateSchema } from "@/persistence/world-state-schema";
 import { createInitialWorldState } from "@/game/simulation/state/world-state";
 import type { WorldState } from "@/game/simulation/state/world-state";
 import type { NetworkRouteChallenge } from "../systems/network-routes";
@@ -100,6 +101,43 @@ describe("Network Mapping CommandBus integration", () => {
       expect(bus.execute(request)).toMatchObject({ ok: false, error, events: [] });
       expect(JSON.stringify(bus.snapshot())).toBe(before);
     }
+  });
+
+  it("replays a route proof identically after a Zod-validated save/restore", () => {
+    const original = world();
+    const resumed = worldStateSchema.parse(JSON.parse(JSON.stringify(original)));
+    const left = new CommandBus(original);
+    const right = new CommandBus(resumed);
+    const first = left.execute(command("bad"));
+    const second = right.execute(command("bad"));
+    expect(second).toEqual(first);
+    expect(right.snapshot()).toEqual(left.snapshot());
+    const midSave = worldStateSchema.parse(JSON.parse(JSON.stringify(left.snapshot())));
+    const continued = new CommandBus(midSave);
+    expect(continued.execute(command("correct"))).toEqual(
+      left.execute(command("correct")),
+    );
+    expect(continued.snapshot()).toEqual(left.snapshot());
+  });
+
+  it("never uses public player or target ranks to solve network routes", () => {
+    const highest = world();
+    highest.player.rank = 1;
+    highest.targets[0]!.rank = 1_000_000;
+    const lowest = world();
+    lowest.player.rank = 1_000_000;
+    lowest.targets[0]!.rank = 1;
+    const highBus = new CommandBus(highest);
+    const lowBus = new CommandBus(lowest);
+    const high = highBus.execute(command("correct"));
+    const low = lowBus.execute(command("correct"));
+    expect(high.ok).toBe(true);
+    expect(low.ok).toBe(true);
+    expect(high.events.map(e => e.type)).toEqual(low.events.map(e => e.type));
+    expect(highBus.snapshot().networkChallenges).toEqual(
+      lowBus.snapshot().networkChallenges,
+    );
+    expect(highBus.snapshot().worldMinute).toBe(lowBus.snapshot().worldMinute);
   });
 
   it("does not permit any action after terminal ending", () => {
