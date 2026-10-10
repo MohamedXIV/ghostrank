@@ -914,3 +914,27 @@ Every member, whatever its agenda, is never offered work against its own organiz
 **Alternatives rejected.** Projecting motive or agenda, even as flavour, would tell the player hidden truth. Letting an organization's size or kind change outcomes would make a bigger organization a power level, which AGENTS.md forbids. Agendas that changed the simulation for canonical worlds would break the golden fingerprint, so the roster is left unchanged.
 
 **Not decided.** The offer bonus and defence bonus are untuned. Organizations are static: no agenda changes over a run, and `kind` has no mechanical effect beyond its name. Intrusion and contract targeting by ties and rivalries come next, in the same generated-only rule (D067).
+
+## D067 — Ties and rivalries choose intrusions and commissions in generated scenes (Game-First G2, #78)
+
+**Before.** Until now an actor picked its intrusion counterpart uniformly, and an issuer picked its contract target uniformly. Ties only recorded what happened. A grudge was written and never read by a choice.
+
+**Rule.** In a generated scene (`usesLivingTies`, `src/game/simulation/systems/living-ties.ts`), each choice is a weighted pick, with the same seeded draw as before:
+- An intrusion counterpart weighs 10, plus the grudge the actor holds against it, plus 20 if it belongs to a rival organization.
+- A contract target weighs 10, plus the grudge the issuer holds against the target's owner, plus 20 if the target belongs to a rival organization.
+
+Canonical scenes, and saves with no scene, keep the uniform picks exactly, so the canonical golden fingerprint from D066 still holds.
+
+**Consequence.** A victim's grudge becomes work against the attacker. A successful intrusion adds 20 grudge from the victim toward the attacker, and a repelled one adds 8 from the defender. The victim's next commissions weigh the attacker's infrastructure more heavily. Rivals fight each other more, too. The chain runs from intrusion to standing to contract to player work, and each link is a recorded number.
+
+**Measured.** Over 30 days and seeds 1–12, rival-organization intrusions occur 1.32 times as often as an even pick would give for Fresh Scene, and 1.42 times for High Pressure. The mean grudge toward a commissioned owner is 57.8 against a baseline of 44.9 for Fresh Scene, and 76.1 against 58.1 for High Pressure. The tests assert weaker bounds than these.
+
+**Player-safe.** Grudge, standing and weights stay hidden. The player sees only what an intrusion already publishes (a public incident in the feed) and the contracts it is offered.
+
+**Rank.** No weight reads rank.
+
+**Alternatives rejected.** Making canonical use the weights would change the authored roster's play and break its golden. A threshold that forces commissions above some grudge would be a scripted rule, not a standing that the seed and the history produce.
+
+**Observed, not yet tuned.** Grudges rise quickly and saturate. Over 30 days the typical grudge is 45–75 in both scenes, which flattens the weights toward a common high value. This is the same accumulation canonical play has. Decay, or a cap on how much one incident can add, is the next tuning question. It is not changed here, because it would change canonical behaviour too.
+
+**Not decided.** Standing does not yet change an actor's activity rate, and the player's own ties do not yet feed these picks. Both are later.

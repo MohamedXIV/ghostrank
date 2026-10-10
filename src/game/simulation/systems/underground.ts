@@ -13,6 +13,13 @@ import {
   rivalTargetsFor,
 } from "@/game/simulation/systems/organizations";
 import {
+  counterpartWeight,
+  offerTargetWeight,
+  ownerOfTarget,
+  pickWeighted,
+  usesLivingTies,
+} from "@/game/simulation/systems/living-ties";
+import {
   PLAYER_ACTOR_ID,
   type ForumPost,
   type ForumSubjectKind,
@@ -427,10 +434,16 @@ function runActorTick(
     return [];
   }
 
-  const counterpart =
-    others[
-      Math.floor(hashUnit(seed, "pick", tickIndex, actor.id) * others.length)
-    ];
+  // Canonical picks uniformly, as before. A generated scene weights the pick by
+  // standing: grudges and rival organizations (D067).
+  const pickPoint = hashUnit(seed, "pick", tickIndex, actor.id);
+  const counterpart = usesLivingTies(world)
+    ? pickWeighted(
+        others,
+        others.map((other) => counterpartWeight(world, actor, other)),
+        pickPoint,
+      )
+    : others[Math.floor(pickPoint * others.length)]!;
 
   const noise =
     hashUnit(seed, "roll", tickIndex, actor.id) * SUCCESS_NOISE_SPREAD -
@@ -671,12 +684,24 @@ function offerContracts(
     // draws from the general pool, exactly as before organizations existed.
     const rivals = rivalTargetsFor(world, issuer, targets);
     const pool = rivals.length > 0 ? rivals : targets;
-    const target =
-      pool[
-        Math.floor(
-          hashUnit(seed, "offer-target", tickIndex, issuer.id) * pool.length,
+    const targetPoint = hashUnit(seed, "offer-target", tickIndex, issuer.id);
+    // Canonical draws uniformly. A generated scene weights the draw by the
+    // issuer's grudge toward each owner, so a victim commissions work against
+    // the actor that wronged it (D067).
+    const target = usesLivingTies(world)
+      ? pickWeighted(
+          pool,
+          pool.map((candidate) =>
+            offerTargetWeight(
+              world,
+              issuer,
+              candidate,
+              ownerOfTarget(world, candidate),
+            ),
+          ),
+          targetPoint,
         )
-      ];
+      : pool[Math.floor(targetPoint * pool.length)]!;
     const objective =
       CONTRACT_OBJECTIVES[
         Math.floor(
