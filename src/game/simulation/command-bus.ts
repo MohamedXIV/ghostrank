@@ -492,7 +492,12 @@ export class CommandBus {
       .filter(
         (candidate) =>
           !this.hasEvidence("machine-presence", candidate.id) &&
-          machineVisibleToSurvey(this.world, candidate.id),
+          machineVisibleToSurvey(this.world, candidate.id) &&
+          // A visible candidate route is not proof of its destination. This
+          // generic rule applies equally to authored and generated consumers.
+          !this.world.networkChallenges?.some(challenge =>
+            challenge.targetId === targetId &&
+            challenge.objectiveMachineId === candidate.id),
       )
       .slice(0, scope);
 
