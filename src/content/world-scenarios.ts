@@ -37,7 +37,7 @@ export const SCENARIO_PRESENTATION: Record<
   "high-pressure": {
     label: "High Pressure",
     preview:
-      "A volatile scene: sharper operators, more of them on the black network, and a denser web of rivalries. Harder, never rigged.",
+      "A volatile scene: sharper rivals and denser grudges. New offers expire after 12 world hours rather than 24; accepted jobs keep their full work deadline. Harder, never rigged.",
   },
   "nightshade-slice": {
     label: "Nightshade Briefing",

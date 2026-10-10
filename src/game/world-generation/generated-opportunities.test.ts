@@ -12,8 +12,7 @@ import type {
   UndergroundContract,
   WorldState,
 } from "@/game/simulation/state/world-state";
-import { OFFER_WINDOW_MINUTES } from "@/game/simulation/systems/underground";
-import { objectiveWeightsFor } from "@/game/simulation/systems/opportunities";
+import { objectiveWeightsFor, offerWindowMinutesFor } from "@/game/simulation/systems/opportunities";
 import { worldStateSchema } from "@/persistence/world-state-schema";
 
 /**
@@ -119,7 +118,7 @@ describe("a generated run opens with its scene's offers (D069)", () => {
 
           expect(contract.status).toBe("offered");
           expect(contract.offeredWorldMinute).toBe(0);
-          expect(contract.expiresWorldMinute).toBe(OFFER_WINDOW_MINUTES);
+          expect(contract.expiresWorldMinute).toBe(offerWindowMinutesFor(scenario));
           expect(contract.objective).toBe("recon-report");
           expect(contract.requiredServices).toBe(1);
           expect(issuer.network).toBe("white");

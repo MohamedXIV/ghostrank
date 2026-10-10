@@ -20,8 +20,10 @@ import {
   usesLivingTies,
 } from "@/game/simulation/systems/living-ties";
 import {
+  DEFAULT_OFFER_WINDOW_MINUTES,
   generatedSceneOf,
   objectiveWeightsFor,
+  offerWindowMinutesFor,
 } from "@/game/simulation/systems/opportunities";
 import {
   activityBonus,
@@ -85,7 +87,7 @@ const FOOTPRINT_PEER_TRUST = -5;
 
 const OFFER_PERCENT = 10;
 const MAX_OPEN_CONTRACTS = 3;
-export const OFFER_WINDOW_MINUTES = 24 * 60;
+export const OFFER_WINDOW_MINUTES = DEFAULT_OFFER_WINDOW_MINUTES;
 const RECON_DUE_MINUTES = 2 * 24 * 60;
 const MAP_DUE_MINUTES = 3 * 24 * 60;
 const QUIET_RECON_DUE_MINUTES = 2 * 24 * 60;
@@ -756,7 +758,7 @@ function offerContracts(
       objective,
       status: "offered",
       offeredWorldMinute: worldMinute,
-      expiresWorldMinute: worldMinute + OFFER_WINDOW_MINUTES,
+      expiresWorldMinute: worldMinute + offerWindowMinutesFor(world.scenario),
     };
 
     if (objective === "recon-report") {

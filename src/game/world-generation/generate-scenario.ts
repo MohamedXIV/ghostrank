@@ -24,7 +24,7 @@ import {
 } from "@/content/world-content";
 import { checkPlayerHandleShape } from "@/game/identity/player-handle";
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
-import { OFFER_WINDOW_MINUTES } from "@/game/simulation/systems/underground";
+import { offerWindowMinutesFor } from "@/game/simulation/systems/opportunities";
 import {
   PLAYER_ACTOR_ID,
   STARTING_NETWORK_TRUST,
@@ -422,6 +422,7 @@ function buildOpeningContracts(
   actors: WorldActorContent[],
   targets: WorldTargetContent[],
   organizations: UndergroundOrganization[],
+  scenario: GeneratedRunScenario,
 ): UndergroundContract[] {
   const brokers = actors
     .map(({ actor }) => actor)
@@ -468,7 +469,7 @@ function buildOpeningContracts(
       requiredServices: 1,
       status: "offered",
       offeredWorldMinute: 0,
-      expiresWorldMinute: OFFER_WINDOW_MINUTES,
+      expiresWorldMinute: offerWindowMinutesFor(scenario),
     });
   }
 
@@ -580,6 +581,7 @@ function buildCandidate(
       actors,
       targets,
       organizations,
+      scenario,
     ),
   };
 }
