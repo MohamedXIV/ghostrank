@@ -73,7 +73,7 @@ describe("G5 P3 public contract commission creates third-party consequences (#12
       }),
     ]);
     expect(counterpartWeight(world, owner, issuer)).toBe(priorWeight + 20);
-    expect(relation(world, owner.id, "player")).toBeUndefined();
+    expect(relation(world, owner.id, "player")).toEqual(priorPlayerStanding);
 
     // Only the real board's author + target are projected: not an invented
     // claim that the owner knows the *anonymous player* or a hidden agenda.
