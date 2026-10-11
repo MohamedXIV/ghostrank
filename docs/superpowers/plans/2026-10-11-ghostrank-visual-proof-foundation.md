@@ -222,9 +222,9 @@ No code should depend on the reference harness in production. Concept fixtures a
 **Reviewer now:** inspect this V0 plan together with the approved spec. Confirm whether the visual proof + shadcn foundation scope, hard screenshot gate and deferred app-level plans match the intended full reboot.
 
 **Execution choice after plan approval:**
-- **Native:** GPT coordinator executes scoped test/projection/artifact commits and directs UI edits on an isolated owner branch, with Claude assigned only separate agreed source ownership by the user.
+- **Native:** GPT coordinator implements explicitly assigned tasks in isolated branches. The user separately coordinates Claude for UI-owned files; GPT does not modify Claude's branch or claim to dispatch him.
 - **Subagent-driven:** fresh agent per task with independent review before proceeding; useful for art, shadcn and browser QA separation, but must not run UI file mutations on the same branch/file concurrently.
 
-**Recommended:** **Native with deliberate Claude UI ownership boundaries**, because existing game UI code and `globals.css` are tightly shared; uncontrolled parallel tasks risk undoing each other's work. Treat independent QA/data contracts as separate file lanes; visual approvals block migration.
+**Recommended:** **Native with deliberate, user-coordinated Claude UI ownership boundaries**, because existing game UI code and `globals.css` are tightly shared; uncontrolled parallel edits risk undoing each other's work. Treat independent QA/data contracts as separate file lanes; visual approvals block migration.
 
 **No implementation authority is implied by filing or approving a design/spec PR.** Wait for review of this plan and the explicit execution method before writing implementation code.
