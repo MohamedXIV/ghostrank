@@ -1,6 +1,6 @@
 # Ghostrank Visual Reboot — Design Spec v1
 
-**Status:** Design direction approved by the user on 2026-10-11; **this written spec awaits separate review/approval before implementation planning**.
+**Status:** Written design spec approved by the user on 2026-10-11 for Superpowers implementation planning. **This approval does not authorize implementation code; the execution plan requires separate review/approval.**
 **Scope:** Whole player-facing UI over multiple implementation phases, with an initial visual proof for OS Shell, Recon/Operations, and Market.
 **Reference:** User-provided Market screenshot showing an unillustrated, text-first hardware catalog.
 **Approach:** Superpowers architectural brainstorming. Not authorization to implement or merge UI changes.
@@ -172,6 +172,6 @@ Ownership boundaries:
 - Shell (A-dominant), Recon (B-dominant), Market (A + illustrated C) as the first three visual reference surfaces.
 - The game should look and feel like an inhabited OS, not a plain admin dashboard.
 
-**This spec awaits user's review:** specifically composition hierarchy, asset style, planned full-interface coverage, fallback behavior for data that does not exist yet and migration order. The exact typography/spacing/color numeric tokens and mockups are **design candidates**, to be finalized through reviewed visual proofs.
+**Written-spec review passed (user-approved, 2026-10-11):** composition hierarchy, asset style, planned full-interface coverage, honest fallback for unavailable world data and phased migration order. The exact typography/spacing/color numeric tokens and mockups are **design candidates**, to be finalized through reviewed visual proofs.
 
-**Subsequent gates:** user approval of the committed written spec → Superpowers `writing-plans` implementation plan → user approval of the plan/execution method → implementation work with tests/visual proofs. Opening this docs-only PR is **not** implementation authorization.
+**Subsequent gates:** Superpowers `writing-plans` implementation plan → user approval of the plan/execution method → implementation work with tests/visual proofs. Approval or merge of this docs-only PR is **not** implementation authorization.
