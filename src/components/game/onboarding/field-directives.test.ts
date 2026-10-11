@@ -27,6 +27,44 @@ describe("Field Directives progressive guidance evaluation", () => {
     ]);
   });
 
+  it("never instructs players to observe a fabricated Nightshade lead", () => {
+    const progress = evaluateDirectivesProgress({
+      targetIds: [], machineIds: [], services: {}, contracts: {}, worldMinute: 0,
+    });
+    expect(progress.items[0].commandCue).toBe("Index (Alt+3)");
+    expect(progress.items[0].description).toContain("No actionable public target");
+    expect(progress.items.map(item => item.commandCue).join(" ")).not.toContain("nightshade");
+  });
+
+  it("offers a valid public commission and observed-target sequence", () => {
+    const contracts = {
+      "contract:gen": { status: "offered", targetId: "gen-8",
+        targetHandle: "Duskline", expiresWorldMinute: 1440 },
+    };
+    const start = evaluateDirectivesProgress({
+      targetIds: [], machineIds: [], services: {}, contracts, worldMinute: 0,
+    });
+    expect(start.items[0].commandCue).toBe("observe gen-8");
+    expect(start.items[0].description).toContain("Duskline");
+    expect(start.items[3].commandCue).toBe("contract accept contract:gen");
+    const observed = evaluateDirectivesProgress({
+      targetIds: ["gen-8"], machineIds: ["gen-8-m1"], services: {},
+      contracts, worldMinute: 100,
+    });
+    expect(observed.items[1].commandCue).toBe("op open gen-8");
+    expect(observed.items[2].commandCue).toBe("inspect gen-8-m1");
+    const open = evaluateDirectivesProgress({
+      targetIds: ["gen-8"], machineIds: [], services: {},
+      contracts, worldMinute: 100, activeOperationTargetId: "gen-8",
+    });
+    expect(open.items[1].commandCue).toBe("survey gen-8");
+    const expired = evaluateDirectivesProgress({
+      targetIds: [], machineIds: [], services: {},
+      contracts, worldMinute: 1441,
+    });
+    expect(expired.items[0].commandCue).toBe("Index (Alt+3)");
+  });
+
   it("marks directive 1 complete after observing a target", () => {
     const snapshot: DirectivesProjectionSnapshot = {
       targetIds: ["nightshade"],

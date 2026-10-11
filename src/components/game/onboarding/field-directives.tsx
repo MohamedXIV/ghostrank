@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRowIds, useTable } from "tinybase/ui-react";
+import { useCell, useRowIds, useTable } from "tinybase/ui-react";
+import { deriveOpeningReconCue, type PublicOpeningContract } from "@/game/onboarding/opening-recon-cue";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 import { useOnboardingStore } from "@/stores/ui/use-onboarding-store";
 
@@ -17,7 +18,9 @@ export interface DirectivesProjectionSnapshot {
   targetIds: string[];
   machineIds: string[];
   services: Record<string, unknown>;
-  contracts: Record<string, { status?: string }>;
+  contracts: Record<string, PublicOpeningContract>;
+  worldMinute?: number;
+  activeOperationTargetId?: string;
 }
 
 export function evaluateDirectivesProgress(snapshot: DirectivesProjectionSnapshot): {
@@ -27,6 +30,15 @@ export function evaluateDirectivesProgress(snapshot: DirectivesProjectionSnapsho
   allCompleted: boolean;
 } {
   const hasObservedTarget = snapshot.targetIds.length > 0;
+  const opening = deriveOpeningReconCue({
+    contracts: snapshot.contracts,
+    observedTargetIds: snapshot.targetIds,
+    worldMinute: snapshot.worldMinute ?? 0,
+  });
+  const knownTargetId = snapshot.targetIds[0];
+  const offeredId = opening?.contractId &&
+    snapshot.contracts[opening.contractId]?.status === "offered"
+      ? opening.contractId : null;
   const hasMappedMachine = snapshot.machineIds.length > 0;
   const hasDiscoveredService = Object.keys(snapshot.services).length > 0;
   const hasEngagedContracts = Object.values(snapshot.contracts).some(
@@ -38,29 +50,38 @@ export function evaluateDirectivesProgress(snapshot: DirectivesProjectionSnapsho
     {
       id: "observe-target",
       title: "1. Resolve Target Lead",
-      description: "Perform passive observation on an unresolved handle.",
-      commandCue: "observe nightshade",
+      description: opening
+        ? `Passive observation of ${opening.label}, sourced from ${opening.source === "contract"
+          ? "a visible commission" : "your existing observations"}; never a guessed target.`
+        : "No actionable public target is available yet. Check Underground Index for offers.",
+      commandCue: opening ? `observe ${opening.targetId}` : "Index (Alt+3)",
       isComplete: hasObservedTarget,
     },
     {
       id: "survey-perimeter",
       title: "2. Survey Network Perimeter",
-      description: "Initialize operation and discover gateway machines.",
-      commandCue: "survey nightshade",
+      description: "Open an observed target's operation, then survey its network perimeter.",
+      commandCue: knownTargetId
+        ? snapshot.activeOperationTargetId === knownTargetId
+          ? `survey ${knownTargetId}`
+          : `op open ${knownTargetId}`
+        : "Observe a public target first",
       isComplete: hasMappedMachine,
     },
     {
       id: "inspect-services",
       title: "3. Inspect Host Services",
       description: "Map active ports and service endpoints on a machine.",
-      commandCue: "inspect <machine>",
+      commandCue: snapshot.machineIds[0]
+        ? `inspect ${snapshot.machineIds[0]}` : "inspect <machine>",
       isComplete: hasDiscoveredService,
     },
     {
       id: "contract-syndicate",
       title: "4. Accept Syndicate Contract",
       description: "Accept a commission in Underground that matches the evidence you can gather.",
-      commandCue: "contract accept <id>",
+      commandCue: offeredId
+        ? `contract accept ${offeredId}` : "contract accept <id>",
       isComplete: hasEngagedContracts,
     },
   ];
@@ -82,12 +103,16 @@ export function useDirectivesProgress(runtime: GameRuntime): {
   const machineIds = useRowIds("machines", runtime.projection);
   const services = useTable("services", runtime.projection);
   const contractsTable = useTable("contracts", runtime.projection);
+  const worldMinute = Number(useCell("meta", "world", "worldMinute", runtime.projection) ?? 0);
+  const operation = useTable("operation", runtime.projection);
 
   return evaluateDirectivesProgress({
     targetIds,
     machineIds,
     services,
-    contracts: contractsTable as Record<string, { status?: string }>,
+    contracts: contractsTable as Record<string, PublicOpeningContract>,
+    worldMinute,
+    activeOperationTargetId: String(operation.active?.targetId ?? ""),
   });
 }
 
