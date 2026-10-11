@@ -802,7 +802,9 @@ export function syncWorldProjection(
         },
       });
     } else {
-      store.setTable("operation", {});
+      // TinyBase ignores an empty setTable payload; explicitly remove the old
+      // active row so Recon returns to idle after a successful disengage.
+      store.delTable("operation");
     }
 
     store.setTable("footprint", {
