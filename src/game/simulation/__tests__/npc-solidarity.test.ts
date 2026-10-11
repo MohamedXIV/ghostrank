@@ -45,6 +45,10 @@ function fixture(seed=17, scenario: "fresh-scene" | "high-pressure" = "fresh-sce
     id: `rel:${witness.id}>${defender.id}`, fromId: witness.id,
     toId: defender.id, trust: 50, fear: 0, grudge: 0, updatedWorldMinute: 0,
   });
+  // The witness's prior standing toward this attacker is controlled,
+  // so the observed delta is the causal effect of the public incident.
+  world.underground.relationships = world.underground.relationships.filter(r =>
+    !(r.fromId === witness.id && r.toId === attacker.id));
   const incident = {
     id: "incident:public-ally", kind: "npc-intrusion" as const,
     actorId: attacker.id, counterpartId: defender.id,
@@ -86,8 +90,12 @@ describe("G5 P6 — trusted NPC solidarity has real seeded consequences (#155)",
       const currentTrust=rel.trust, currentGrudge=rel.grudge;
       expect(currentTrust).toBeLessThanOrEqual(0);
       expect(currentGrudge).toBe(SOLIDARITY_GRUDGE);
-      witness.rank=1;defender.rank=999999;attacker.rank=123;world.player.rank=1;
-      expect(npcSolidarityPlans(fixture(17,scenario).world,2*TICK)).toEqual(expected);
+      const altered = fixture(17,scenario);
+      altered.witness.rank=1;
+      altered.defender.rank=999999;
+      altered.attacker.rank=123;
+      altered.world.player.rank=1;
+      expect(npcSolidarityPlans(altered.world,2*TICK)).toEqual(expected);
       expect(SOLIDARITY_TRUST_LOSS).toBe(-4);
     }
   });
@@ -183,7 +191,10 @@ describe("G5 P6 — trusted NPC solidarity has real seeded consequences (#155)",
   it("no NPC solidarity occurs after run terminality", () => {
     const {world}=fixture();
     const end=structuredClone(world);
-    end.ending={...end.ending!,status:"dead",worldMinute:360} as typeof end.ending;
+    end.ending={
+      status:"compromised",causeKind:"investigation",
+      causeId:"test:terminal",worldMinute:360,
+    };
     expect(npcSolidarityPlans(end,720)).toEqual([]);
   });
 });

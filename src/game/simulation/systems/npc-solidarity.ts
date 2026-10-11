@@ -54,7 +54,6 @@ export function npcSolidarityPlans(
     if (post.worldMinute !== previousMinute ||
         post.subject.kind !== "incident" ||
         processed.has(post.subject.id)) continue;
-    processed.add(post.subject.id);
 
     const incident = underground.incidents.find(entry =>
       entry.id === post.subject.id &&
@@ -92,6 +91,7 @@ export function npcSolidarityPlans(
 
     const witness: UndergroundActor | undefined = candidates[0]?.peer;
     if (!witness) continue;
+    processed.add(post.subject.id);
 
     plans.push({
       incidentId: incident.id, witnessId: witness.id,
