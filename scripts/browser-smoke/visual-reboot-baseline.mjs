@@ -88,7 +88,7 @@ async function inspectView(browser, view) {
     await page.getByTitle("Market & Rig (Alt+4)").click();
     const market = page.locator(".os-window-market");
     await market.waitFor();
-    const item = market.getByText("Secondhand Workstation");
+    const item = market.locator(".market-catalog").getByText("Secondhand Workstation", { exact: true }).first();
     await item.waitFor();
     const buy = market.getByRole("button", { name: "BUY", exact: true });
     if ((await buy.count()) < 1) throw new Error("Real Market BUY control missing");
