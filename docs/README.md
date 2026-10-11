@@ -5,6 +5,7 @@ These documents are the canonical design and engineering foundation.
 ## Product
 
 - [VISION.md](VISION.md) — fantasy, audience, pillars, scope, non-goals
+- [GAME_DNA.md](GAME_DNA.md) — systemic hacker-society sandbox principles and game-first invariants
 - [GAME_DESIGN.md](GAME_DESIGN.md) — run structure, reputation, ranking, danger, failure
 - [HACKING_AND_TOOLS.md](HACKING_AND_TOOLS.md) — moment-to-moment computer play, terminal/GUI parity, software market
 - [ECONOMY_PROGRESSION_AND_SKILLS.md](ECONOMY_PROGRESSION_AND_SKILLS.md) — money, hardware, proficiency, player mastery
@@ -18,6 +19,9 @@ These documents are the canonical design and engineering foundation.
 - [DATA_AND_PERSISTENCE.md](DATA_AND_PERSISTENCE.md) — persistence contracts, browser saves, TinyBase, events, snapshots, migrations, deferred SQLite desktop adapter
 - [TESTING_STRATEGY.md](TESTING_STRATEGY.md) — deterministic simulation testing and acceptance
 - [CONTENT_AND_FICTIONALIZATION.md](CONTENT_AND_FICTIONALIZATION.md) — content model and safe fictionalization
+- [SEMANTIC_SANDBOX_ARCHITECTURE.md](SEMANTIC_SANDBOX_ARCHITECTURE.md) — G9 authority, semantic scopes, conditions/effects and narrative boundaries
+- [SEMANTIC_CONTENT_AUTHORING.md](SEMANTIC_CONTENT_AUTHORING.md) — G9 authored content examples and review rules
+- [G9_P0_SEMANTIC_CONTRACT.md](G9_P0_SEMANTIC_CONTRACT.md) — verified code seams, exact legacy objectives, first contract and P1/P3 test plan
 
 ## Delivery
 
