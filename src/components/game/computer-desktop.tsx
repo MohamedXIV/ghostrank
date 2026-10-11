@@ -2750,6 +2750,45 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </div>
       </section>
 
+      {/* Market merchandise takes visual priority over rig telemetry. */}
+      <section aria-label="Catalog" className="hardware-market-section">
+        <div className="hardware-market-heading">
+          <div>
+            <span className="panel-label">EQUIPMENT EXCHANGE</span>
+            <h2>Hardware catalog</h2>
+            <p>Build your rig. Every upgrade changes compute capability, never your rank.</p>
+          </div>
+          <span className="hardware-market-count">{catalog.length} listed</span>
+        </div>
+        {catalog.length === 0 ? (
+          <p className="market-empty">Nothing listed.</p>
+        ) : (
+          <ul className="market-catalog hardware-product-grid">
+            {visibleRecords(catalog, recordPage).map(([id, entry]) => (
+              <HardwareProductCard
+                key={id}
+                item={presentHardwareItem(
+                  id,
+                  {
+                    label: String(entry.label ?? id),
+                    category: String(entry.category ?? ""),
+                    cost: Number(entry.cost ?? 0),
+                    compute: Number(entry.compute ?? 0),
+                    memory: Number(entry.memory ?? 0),
+                    vram: Number(entry.vram ?? 0),
+                    storage: Number(entry.storage ?? 0),
+                    network: Number(entry.network ?? 0),
+                    owned: Number(entry.owned ?? 0),
+                  },
+                  credits,
+                )}
+                onBuy={() => runtime.execute(buyHardwareFromGui(id))}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section aria-label="Rig capability">
         <span className="panel-label">RIG CAPABILITY</span>
         <div className="market-capability-grid">
@@ -2828,44 +2867,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                   {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
                 </span>
               </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-label="Catalog" className="hardware-market-section">
-        <div className="hardware-market-heading">
-          <div>
-            <span className="panel-label">EQUIPMENT EXCHANGE</span>
-            <h2>Hardware catalog</h2>
-            <p>Build your rig. Every upgrade changes compute capability, never your rank.</p>
-          </div>
-          <span className="hardware-market-count">{catalog.length} listed</span>
-        </div>
-        {catalog.length === 0 ? (
-          <p className="market-empty">Nothing listed.</p>
-        ) : (
-          <ul className="market-catalog hardware-product-grid">
-            {visibleRecords(catalog, recordPage).map(([id, entry]) => (
-              <HardwareProductCard
-                key={id}
-                item={presentHardwareItem(
-                  id,
-                  {
-                    label: String(entry.label ?? id),
-                    category: String(entry.category ?? ""),
-                    cost: Number(entry.cost ?? 0),
-                    compute: Number(entry.compute ?? 0),
-                    memory: Number(entry.memory ?? 0),
-                    vram: Number(entry.vram ?? 0),
-                    storage: Number(entry.storage ?? 0),
-                    network: Number(entry.network ?? 0),
-                    owned: Number(entry.owned ?? 0),
-                  },
-                  credits,
-                )}
-                onBuy={() => runtime.execute(buyHardwareFromGui(id))}
-              />
             ))}
           </ul>
         )}
