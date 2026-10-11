@@ -1,12 +1,14 @@
 # Semantic Sandbox & Content Architecture — G9
 
-**Status:** target architecture / design contract; no implementation claimed. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
+**Status:** architectural target with G9 P0–P1 delivered; P2 introduces a narrow opt-in authoritative on-action proof (PR #147). Broader content authoring and playable opportunities are not yet shipped. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
 
 ## 0. Current baseline versus new work
 
 **Exists today:** deterministic WorldState, CommandBus, SimulationEvent union, world-time and 360-minute ecosystem ticks, generated G2 scene presets, actors/organizations/relationships, evidence/traces/probes, authored catalog rosters validated at ingest, exactly four contract objectives evaluated in TypeScript branches, player-safe projections, G3 reusable Network Mapping with Nightshade and a generated scene.
 
-**Not yet present:** a general typed authored fact/scope evaluator; registered content on-actions and whitelisted effect execution; self-initiated world opportunity lifecycle; dedicated institutional/national consequence domain; Ink/inkjs runtime. The design here must not be cited as shipped code or as approval for G3 P2.
+**Implemented to date:** bounded typed fact/scopes and three-valued knowledge lenses (G9 P1 #137); a finite, explicitly activated `ContractAccepted` → world-owned delayed effect proof (G9 P2 #138 / PR #147), with source revalidation, resource checks, save receipts and deterministic scheduler phase. Neither replaces today's four contract objective branches.
+
+**Still not implemented:** a general reusable authored event library or universal rule engine; self-initiated world opportunity lifecycle; institutional/national consequence domain; Ink/inkjs runtime. The design here must not be cited as shipped code or as approval for G3 P2.
 
 ## 1. Ownership and layering
 
@@ -123,9 +125,9 @@ This tree is an **illustrative starting point**, not a mandated file count. Co-l
 
 ## 8. Incremental migration and gates
 
-- **#136 P0:** audit and executable proposal; choose one existing objective.
-- **#137 P1:** typed fact/scope/condition evaluation + belief boundaries.
-- **#138 P2:** validated effect handlers, event hooks and clock ordering.
+- **#136 P0:** complete — concrete code seam audit, first migration contract.
+- **#137 P1:** complete — bounded typed fact/condition evaluator and epistemic lenses.
+- **#138 P2:** first executable opt-in on-action/effect response through authoritative clock, source identity, and current-run receipt (PR #147); not a playable standalone mechanic.
 - **#139 P3:** migrate one existing contract without duplicating a new code path.
 - **#140 P4:** one independent non-broker opportunity plus second genuine event producer; scoped repeats.
 - **#141 P5:** Ink adapter used by real content, not a mock GUI.

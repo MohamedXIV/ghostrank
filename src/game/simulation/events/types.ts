@@ -149,6 +149,7 @@ export type SimulationEvent =
       fear: number;
       grudge: number;
       causeKind:
+        | "content"
         | "incident"
         | "reaction"
         | "rumor"
@@ -209,6 +210,16 @@ export type SimulationEvent =
       type: "ContractExpired";
       contractId: string;
       stage: "offer" | "accepted";
+      worldMinute: number;
+    }
+  | {
+      /** Authority event: a resolved authored reaction, not a player-safe projection. */
+      type: "ContentReactionResolved";
+      reactionId: string;
+      ruleId: string;
+      sourceContractId: string;
+      result: "applied" | "blocked";
+      reason: "applied" | "missing-actor" | "invalid-source" | "insufficient-resource";
       worldMinute: number;
     }
   | {

@@ -23,12 +23,14 @@ import {
  *   pause them again.
  * - the ecosystem tick itself is not a queued job. It is the fixed cadence every
  *   deadline is measured against.
+ * - `content-response` (2) resolves validated authored reactions after the NPC tick.
  * - `build` (3) completes after the tick, so an outage at the exact due minute
  *   still wins the tie (D034).
  */
 export const SYSTEM_PHASE = {
   upkeep: 0,
   "outage-release": 1,
+  "content-response": 2,
   build: 3,
 } as const;
 

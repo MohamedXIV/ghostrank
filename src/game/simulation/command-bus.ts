@@ -1,4 +1,5 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { scheduleContentOnAction } from "@/game/content/on-actions";
 import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
 import type { SimulationEvent } from "@/game/simulation/events/types";
@@ -831,17 +832,15 @@ export class CommandBus {
     contract.acceptedWorldMinute = minute;
     contract.dueWorldMinute = contractDueMinute(contract, minute);
 
-    return {
-      ok: true,
-      events: [
-        {
-          type: "ContractAccepted",
-          contractId: contract.id,
-          dueWorldMinute: contract.dueWorldMinute,
-          worldMinute: minute,
-        },
-      ],
+    const event: Extract<SimulationEvent, { type: "ContractAccepted" }> = {
+      type: "ContractAccepted",
+      contractId: contract.id,
+      dueWorldMinute: contract.dueWorldMinute,
+      worldMinute: minute,
     };
+    // The authoritative command is the producer, never a React or Ink view.
+    scheduleContentOnAction(this.world, event);
+    return { ok: true, events: [event] };
   }
 
   private declineContract(contractId: string): CommandResult {
@@ -2223,19 +2222,38 @@ export class CommandBus {
     // collects its own events, so a stable sort by world minute restores
     // chronology. Events that share a minute keep the subsystem order below,
     // which is the same whether the wait was split or not.
+    const contentMinutes = new Set(schedule.content.map((event) =>
+      (event as { worldMinute?: number }).worldMinute ?? fromMinute,
+    ));
+    // Default worlds retain the pre-P2 tie order byte-for-byte. A content
+    // deadline fired at this minute changes only that minute's tie order to
+    // match the actual scheduler: NPC actions, content phase 2, build phase 3.
+    const contentTiePhase = (event: SimulationEvent): number => {
+      if (event.type === "BuildCompleted") return 3;
+      if (
+        event.type === "ContentReactionResolved" ||
+        (event.type === "RelationshipChanged" && event.causeKind === "content")
+      ) return 2;
+      return 1;
+    };
     const ordered = [
       ...upkeepEvents,
       ...buildEvents,
       ...investigationEvents,
       ...undergroundEvents,
       ...sliceEvents,
+      ...schedule.content,
     ]
       .map((event, index) => ({
         event,
         index,
         minute: (event as { worldMinute?: number }).worldMinute ?? fromMinute,
       }))
-      .sort((a, b) => a.minute - b.minute || a.index - b.index)
+      .sort((a, b) =>
+        a.minute - b.minute ||
+        (contentMinutes.has(a.minute) ? contentTiePhase(a.event) - contentTiePhase(b.event) : 0) ||
+        a.index - b.index,
+      )
       .map((entry) => entry.event);
 
     return ordered;

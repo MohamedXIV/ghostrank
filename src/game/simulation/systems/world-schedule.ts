@@ -1,4 +1,5 @@
 import { findWorkflowSpec } from "@/content/workflow-spec-catalog";
+import { resolveContentReaction } from "@/game/content/on-actions";
 import type { SimulationEvent } from "@/game/simulation/events/types";
 import {
   compareQueuedJobs,
@@ -39,10 +40,11 @@ const DAY_MINUTES = 24 * 60;
 export interface ScheduleSink {
   upkeep: SimulationEvent[];
   builds: SimulationEvent[];
+  content: SimulationEvent[];
 }
 
 export function createScheduleSink(): ScheduleSink {
-  return { upkeep: [], builds: [] };
+  return { upkeep: [], builds: [], content: [] };
 }
 
 function nextDayBoundary(worldMinute: number): number {
@@ -108,6 +110,25 @@ export function reconcileSchedule(world: WorldState): void {
         subjectId: threat.id,
       });
     }
+  }
+
+  // Only the world-owned ledger can authorize content deadlines. Resumes
+  // maintain the same exact minute even when the job queue is reconstructed.
+  const pendingIds = new Set(world.content?.pending.map((entry) => entry.id) ?? []);
+  for (const job of [...queue.jobs]) {
+    if (job.kind === "content-response" && !pendingIds.has(job.id)) {
+      queue = cancelSystemJob(queue, job.id);
+    }
+  }
+  for (const entry of world.content?.pending ?? []) {
+    if (world.content?.resolvedIds.includes(entry.id) || hasQueuedJob(queue, entry.id)) continue;
+    queue = enqueueSystemJob(queue, {
+      id: entry.id,
+      kind: "content-response",
+      dueWorldMinute: entry.dueWorldMinute,
+      startedWorldMinute: entry.sourceWorldMinute,
+      subjectId: entry.id,
+    });
   }
 
   world.jobQueue = queue;
@@ -278,6 +299,10 @@ function runSystemJob(
       return;
     case "outage-release":
       runOutageReleaseJob(world, job);
+      return;
+    case "content-response":
+      world.jobQueue = completeJob(world.jobQueue, job.id);
+      sink.content.push(...resolveContentReaction(world, job.id, job.dueWorldMinute));
       return;
     default:
       throw new Error(`unknown system job kind ${job.kind}`);

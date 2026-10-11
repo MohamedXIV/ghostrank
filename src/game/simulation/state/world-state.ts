@@ -760,6 +760,23 @@ export interface NightshadeSliceState {
   log: NightshadeSliceLogEntry[];
 }
 
+/** G9 P2: durable source refs and exactly-once receipts; absent in default runs. */
+export interface ContentReactionRecord {
+  id: string;
+  ruleId: string;
+  sourceContractId: string;
+  issuerId: string;
+  sourceWorldMinute: number;
+  dueWorldMinute: number;
+}
+
+export interface ContentRuntimeState {
+  /** Opt-in authored pack IDs. Unlisted content cannot run. */
+  activeRuleIds: string[];
+  pending: ContentReactionRecord[];
+  resolvedIds: string[];
+}
+
 export interface WorldState {
   /** Optional generic route challenges; absent in canonical and legacy worlds. */
   networkChallenges?: NetworkRouteChallenge[];
@@ -832,6 +849,8 @@ export interface WorldState {
    * the queue; the clock is the only resource a time job holds.
    */
   jobQueue: JobQueueState;
+  /** Optional authored on-actions, only present for an explicitly enabled pack. */
+  content?: ContentRuntimeState;
 }
 
 export interface InitialTargetState
@@ -861,6 +880,7 @@ export interface InitialWorldState {
   compromises?: CompromiseRecord[];
   ending?: RunEndingRecord | null;
   retirement?: RetirementPlan | null;
+  content?: ContentRuntimeState;
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -1016,5 +1036,8 @@ export function createInitialWorldState(
         ? null
         : structuredClone(initial.retirement),
     jobQueue: createJobQueue(),
+    ...(initial.content === undefined
+      ? {}
+      : { content: structuredClone(initial.content) }),
   };
 }

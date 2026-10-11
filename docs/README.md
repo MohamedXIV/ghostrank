@@ -21,6 +21,8 @@ These documents are the canonical design and engineering foundation.
 - [CONTENT_AND_FICTIONALIZATION.md](CONTENT_AND_FICTIONALIZATION.md) — content model and safe fictionalization
 - [SEMANTIC_SANDBOX_ARCHITECTURE.md](SEMANTIC_SANDBOX_ARCHITECTURE.md) — G9 authority, semantic scopes, conditions/effects and narrative boundaries
 - [SEMANTIC_CONTENT_AUTHORING.md](SEMANTIC_CONTENT_AUTHORING.md) — G9 authored content examples and review rules
+- [G9_P1_CONDITIONS.md](G9_P1_CONDITIONS.md) — shipped finite scoped evaluator and knowledge-lens limits
+- [G9_P2_EFFECTS.md](G9_P2_EFFECTS.md) — authoritative opt-in on-action, scheduled effect, replay/receipt contract
 - [G9_P0_SEMANTIC_CONTRACT.md](G9_P0_SEMANTIC_CONTRACT.md) — verified code seams, exact legacy objectives, first contract and P1/P3 test plan
 
 ## Delivery
