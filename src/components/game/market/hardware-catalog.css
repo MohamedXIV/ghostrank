@@ -1,0 +1,217 @@
+/* Illustrated equipment exchange — presentation-only, scoped to hardware catalog.
+   Existing economy, ledger, housing, machines and forge stay unchanged. */
+.hardware-market-section {
+  container: hardware-market / inline-size;
+  min-width: 0;
+}
+.hardware-market-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 16px;
+}
+.hardware-market-heading h2 {
+  margin: 4px 0 5px;
+  color: var(--foreground);
+  font: 700 clamp(17px, 2vw, 22px)/1.2 var(--font-ui);
+  letter-spacing: -.025em;
+}
+.hardware-market-heading p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 45ch;
+}
+.hardware-market-count {
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 5px 8px;
+  font: 600 11px var(--font-ui);
+  color: var(--foreground-muted);
+}
+.market-catalog.hardware-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.market-catalog.hardware-product-grid > li.hardware-product {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.hardware-product-grid .hardware-product-card {
+  --product-surface: color-mix(in srgb, var(--surface) 80%, var(--surface-raised));
+  display: grid;
+  grid-template-columns: minmax(110px, 33%) minmax(0, 1fr);
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: 0;
+  background: var(--product-surface);
+  color: var(--foreground);
+  box-shadow: 0 5px 15px rgb(0 0 0 / 12%);
+}
+.hardware-product-grid .hardware-product-card:focus-within {
+  border-color: var(--focus);
+}
+.hardware-product-grid .hardware-product-art {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  min-height: 154px;
+  padding: 12px;
+  border-right: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 45% 40%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%),
+    color-mix(in srgb, var(--surface-raised) 78%, var(--background));
+}
+.hardware-product-grid .hardware-product-art img {
+  display: block;
+  width: 100%;
+  max-width: 180px;
+  height: auto;
+  max-height: 152px;
+  object-fit: contain;
+}
+.hardware-product-grid .hardware-product-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 9px;
+  padding: 12px 12px 4px;
+}
+.hardware-product-grid .hardware-product-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.hardware-product-grid .hardware-product-kicker [data-slot="badge"] {
+  max-width: 100%;
+  border-radius: 4px;
+  font: 700 10px/1.35 var(--font-ui);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.hardware-product-grid .hardware-product-kicker [data-slot="badge"]:first-child {
+  border-color: var(--border-emphasis);
+}
+.hardware-product-grid .hardware-product-kicker [data-slot="badge"]:not(:first-child) {
+  color: var(--foreground);
+}
+.hardware-product-grid .hardware-product-name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font: 700 15px/1.35 var(--font-ui);
+  letter-spacing: -.01em;
+}
+.hardware-product-grid .hardware-product-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.hardware-product-grid .hardware-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface-raised);
+  font: 600 11px/1.2 var(--font-mono);
+  color: var(--foreground-muted);
+}
+.hardware-product-grid .hardware-stat strong {
+  color: var(--foreground);
+}
+.hardware-product-grid .hardware-product-footer {
+  grid-column: 2;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px 12px;
+}
+.hardware-product-grid .hardware-product-price {
+  color: var(--accent);
+  font: 750 16px/1.2 var(--font-ui);
+  white-space: nowrap;
+}
+.hardware-product-grid .hardware-buy-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: end;
+}
+.hardware-product-grid .hardware-buy-note {
+  color: var(--foreground-muted);
+  font: 600 11px/1.2 var(--font-ui);
+}
+.market-catalog.hardware-product-grid .hardware-product button[data-slot="button"] {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 74px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font: 700 12px/1.2 var(--font-ui);
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.market-catalog.hardware-product-grid .hardware-product button[data-slot="button"]:hover:not(:disabled) {
+  background: color-mix(in srgb,var(--accent) 80%,var(--surface));
+}
+.market-catalog.hardware-product-grid .hardware-product button[data-slot="button"]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.market-catalog.hardware-product-grid .hardware-product button[data-slot="button"]:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--foreground-muted);
+  background: var(--surface-raised);
+}
+@container hardware-market (min-width: 670px) {
+  .market-catalog.hardware-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hardware-product-grid .hardware-product-card {
+    grid-template-columns: minmax(95px, 35%) minmax(0, 1fr);
+  }
+}
+@container hardware-market (max-width: 340px) {
+  .hardware-product-grid .hardware-product-card {
+    grid-template-columns: 1fr;
+  }
+  .hardware-product-grid .hardware-product-art {
+    grid-row: auto;
+    min-height: 130px;
+    max-height: 155px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .hardware-product-grid .hardware-product-art img { max-height: 120px; }
+  .hardware-product-grid .hardware-product-footer { grid-column: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hardware-product-grid .hardware-product-card,
+  .hardware-product-grid .hardware-product button { transition: none; }
+}
