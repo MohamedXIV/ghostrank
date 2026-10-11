@@ -269,6 +269,18 @@ Systems interpret content; content should not contain unrestricted executable lo
 
 Phase 8 P0 makes this boundary concrete for world population. `src/content/world-content.ts` owns authored peer/target/infrastructure definitions, editorial archetype tags, and structural validation. `slice-world.ts` deep-clones simulation-shaped content and owns only scenario setup such as the seed, player, starting network and starting economy. Archetype metadata never becomes simulation authority, persistence data, projection state, or a content-specific command branch.
 
+## G9 — Semantic content boundary and Paradox-inspired evaluation (D074)
+
+See `docs/GAME_DNA.md`, `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md` and `docs/SEMANTIC_CONTENT_AUTHORING.md`. This is a **target architecture**, not an already-present rules interpreter.
+
+**Authority:** content manifests/catalogs describe typed scopes, knowledge-lens queries, bounded conditions, candidate triggers and a **whitelist** of domain effects. Definitions are validated/compiled at ingestion and cannot eval arbitrary scripts or mutate WorldState. Existing domain functions and CommandBus alone check permissions/clock/cost, commit effects and append provenance. Ink/inkjs is a narrative consumer/intent producer, not a simulation engine. React, terminal and Phaser consume player-safe projections.
+
+**Scheduling:** subscribe content to relevant committed SimulationEvents or existing due world-time pulses; never re-scan all rules per frame or add an alternate clock. Preserve deterministic seeded bindings, namespaced IDs, event order, split/bulk waits, no effects after terminality and source-aware knowledge propagation. Targeted invalidation/aggregation are **conditional future optimizations**, not speculative foundations. Do not instantiate detailed full-AI agents for every anonymous background account.
+
+**Modularity:** one cohesive TypeScript simulation with domain-owned modules; neither one catch-all world-rules file nor hundreds of ten-line files. Incrementally migrate a real contract and a genuinely unbrokered operation before broad content authoring. Current-run schema/replay is mandatory; historical-save migrations are not required automatically. G3 Nightshade v1 compatibility remains a separate explicit promise until deliberately changed.
+
+**Worker/Rust decision:** design a typed host-neutral async command/projection boundary for a possible **single Web Worker**, but defer migration until responsiveness benefit and event/save atomicity can be proven. **No Rust/WASM core rewrite.** Fix content semantics and player decisions first. Initiative #135 / #136–#143.
+
 ## Suggested source layout
 
     src/
