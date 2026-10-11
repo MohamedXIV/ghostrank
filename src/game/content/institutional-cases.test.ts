@@ -35,12 +35,11 @@ function pub(world: WorldState, minute = 360) {
 }
 function make(scope: InstitutionalCase["scope"]): WorldState {
   const world = fixture(7);
-  const source = world.underground.incidents.at(-1)!;
   for (let seed = 1; seed < 500; seed++) {
     world.underground.seed = seed;
     world.institutionalCases = undefined;
     captureInstitutionalCases(world, pub(world), 360);
-    if (world.institutionalCases?.[0]?.scope === scope) return world;
+    if ((world as WorldState).institutionalCases?.[0]?.scope === scope) return world;
   }
   throw Error("no deterministic " + scope + " case within bounded seeded search");
 }
