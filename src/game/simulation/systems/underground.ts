@@ -1,5 +1,6 @@
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
+import { institutionalDefenseBonus } from "@/game/content/institutional-cases";
 import { evaluateContractObjective } from "@/game/content/contract-objectives";
 import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
@@ -62,6 +63,16 @@ export const TICK_MINUTES = 360;
  * availability first; this narrow wrapper does not create a second formula.
  */
 /** Reuse the existing clamped, causally sourced relation mutation. */
+/** Institutional consequences use the original clamped NPC social authority. */
+export function applyInstitutionalRelationship(
+  world: WorldState, actorId: string, caseId: string,
+  delta: { trust?: number; grudge?: number }, worldMinute: number,
+): SimulationEvent | null {
+  if (!world.underground.actors.some(a => a.id === actorId)) return null;
+  return adjustRelationship(world, actorId, PLAYER_ACTOR_ID, delta,
+    { kind: "institution", id: caseId }, worldMinute);
+}
+
 export function applyOpportunityRelationship(
   world: WorldState,
   actorId: string,
@@ -165,6 +176,7 @@ export type RelationshipCause = {
     | "incident"
     | "content"
     | "opportunity"
+    | "institution"
     | "reaction"
     | "rumor"
     | "contract"
@@ -531,6 +543,7 @@ function runActorTick(
   const defense =
     counterpart.defense +
     defenseBonusOf(world, counterpart) +
+    institutionalDefenseBonus(world, counterpart) +
     // G5 P5: same-board PUBLIC prior rival warning enables limited help from
     // a genuinely trusted colleague. No hidden faction knowledge is invented.
     peerWarningDefenseBonus(world, counterpart, worldMinute) +

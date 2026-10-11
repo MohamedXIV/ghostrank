@@ -1615,6 +1615,14 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const inbox = useTable("inbox", runtime.projection);
   const contractTable = useTable("contracts", runtime.projection);
   const leadTable = useTable("leads", runtime.projection);
+  const civicCasesTable = useTable("civicCases", runtime.projection);
+  const [civicFeedback, setCivicFeedback] = useState<string | null>(null);
+  const runCivic = (command: Parameters<GameRuntime["execute"]>[0]) => {
+    const result = runtime.execute(command);
+    setCivicFeedback(result.ok
+      ? "Action accepted. Agency responses continue on the simulation clock."
+      : `Blocked: ${result.error ?? "UNAVAILABLE"}`);
+  };
   const narrativeTable = useTable("narrative", runtime.projection);
   const narrativeChoicesTable = useTable("narrativeChoices", runtime.projection);
   const [narrativeFeedback, setNarrativeFeedback] = useState<string | null>(null);
@@ -2128,6 +2136,53 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           </div>
         )}
         {narrativeFeedback && <p role="status">{narrativeFeedback}</p>}
+      </section>
+
+      <section aria-label="Institutional records cases">
+        <span className="panel-label">CIVIC RECORDS // INSTITUTIONAL CONSEQUENCES</span>
+        <p className="analysis-caveat">
+          Real public NPC archive incidents can trigger a local records inquiry
+          or a federated response across participating offices. The inquiry
+          develops as the world advances, even without your involvement.
+        </p>
+        {!Object.keys(civicCasesTable).length ? (
+          <p className="underground-empty">No public institutional cases yet.</p>
+        ) : (
+          <ul className="underground-feed">
+            {visibleRecords(Object.entries(civicCasesTable), recordPage).map(([id, c]) => {
+              const status = String(c.status ?? "open");
+              return <li key={id}>
+                <p><strong>{String(c.publicBody)}</strong>{" // "}{String(c.scope)}</p>
+                <p>Source: {String(c.sourceHandle)}{" // "}{String(c.responsePhase)}
+                  {" // "}{String(c.publicAttention)} public attention
+                  {" // "}{String(c.affectedOfficeCount)} affected offices</p>
+                <p>{status.toUpperCase()}{" // "}Expires {formatWorldTime(Number(c.expiresWorldMinute ?? 0))}</p>
+                {c.knownTargetHandle && <p>Known host: {String(c.knownTargetHandle)}</p>}
+                <small>Case ID: {id}</small>
+                {(status === "open" || status === "mapped") && (
+                  <div className="underground-lead-actions" role="group"
+                    aria-label={`Case actions for ${id}`}>
+                    {status === "open" && (
+                      <button type="button" onClick={() => runCivic({
+                        type: "mapInstitutionalCase", caseId: id,
+                      })}>MAP EVIDENCE</button>
+                    )}
+                    {(status === "mapped"
+                      ? ["disclose", "handoff", "sell", "suppress", "walk-away"]
+                      : ["walk-away"]).map(choice => (
+                      <button type="button" key={choice}
+                        onClick={() => runCivic({
+                          type: "resolveInstitutionalCase", caseId: id,
+                          choice: choice as "disclose" | "handoff" | "sell" | "suppress" | "walk-away",
+                        })}>{choice.toUpperCase()}</button>
+                    ))}
+                  </div>
+                )}
+              </li>;
+            })}
+          </ul>
+        )}
+        {civicFeedback && <p role="status">{civicFeedback}</p>}
       </section>
 
       <section aria-label="Independent leads">

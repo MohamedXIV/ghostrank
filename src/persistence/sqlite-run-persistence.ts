@@ -144,6 +144,11 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "ContentReactionResolved":
     case "NarrativeOpened":
     case "NarrativeChoiceRecorded":
+    case "InstitutionalCaseOpened":
+    case "InstitutionalResponse":
+    case "InstitutionalCaseMapped":
+    case "InstitutionalCaseExpired":
+    case "InstitutionalCaseResolved":
     case "OpportunityDiscovered":
     case "OpportunityExpired":
     case "OpportunityInvestigated":

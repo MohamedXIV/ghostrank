@@ -630,7 +630,8 @@ export type LedgerCauseKind =
   | "tool"
   | "machine"
   | "model"
-  | "opportunity";
+  | "opportunity"
+  | "institutional-case";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -811,6 +812,30 @@ export interface NarrativeRunState {
   current?: NarrativeSession;
 }
 
+/** G9 P6: a fictional public-service case with cross-office operational response. */
+export type InstitutionalScope = "district" | "national-network";
+export type InstitutionalChoice = "disclose" | "handoff" | "sell" | "suppress" | "walk-away";
+export interface InstitutionalCase {
+  id: string;
+  scope: InstitutionalScope;
+  incidentId: string;
+  targetId: string;
+  ownerId: string;
+  /** Real organization memberships are hidden; the institutional body is distinct. */
+  participatingOrganizationIds: string[];
+  openedWorldMinute: number;
+  expiresWorldMinute: number;
+  status: "open" | "mapped" | "resolved" | "withdrawn" | "expired";
+  disclosure: "unverified" | "public" | "sealed";
+  publicAttention: number;
+  containment: number;
+  /** Each member office must have independently responded to affect defense. */
+  responses: { organizationId: string; worldMinute: number; step: number }[];
+  responseTicks: number;
+  resolution?: InstitutionalChoice;
+  resolvedWorldMinute?: number;
+}
+
 export interface WorldState {
   /** Optional generic route challenges; absent in canonical and legacy worlds. */
   networkChallenges?: NetworkRouteChallenge[];
@@ -889,6 +914,8 @@ export interface WorldState {
   opportunities?: OpportunityLead[];
   /** Only present after a player explicitly starts a versioned conversation. */
   narrative?: NarrativeRunState;
+  /** Generated worlds only; omitted everywhere before a public NPC archive incident. */
+  institutionalCases?: InstitutionalCase[];
 }
 
 export interface InitialTargetState
@@ -921,6 +948,7 @@ export interface InitialWorldState {
   content?: ContentRuntimeState;
   opportunities?: OpportunityLead[];
   narrative?: NarrativeRunState;
+  institutionalCases?: InstitutionalCase[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -1085,5 +1113,8 @@ export function createInitialWorldState(
     ...(initial.narrative === undefined
       ? {}
       : { narrative: structuredClone(initial.narrative) }),
+    ...(initial.institutionalCases === undefined
+      ? {}
+      : { institutionalCases: structuredClone(initial.institutionalCases) }),
   };
 }

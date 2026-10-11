@@ -53,6 +53,20 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
     description: "Select an offered Ink choice via the authoritative CommandBus",
     example: "story choose scene:1 scene:1:choice:0",
   },
+  {
+    category: "underground",
+    syntax: "civic map <case-id>",
+    label: "civic map",
+    description: "Verify real Recon evidence for a fictional public-service archive case",
+    example: "civic map civic:incident:1",
+  },
+  {
+    category: "underground",
+    syntax: "civic disclose|handoff|sell|suppress|walk-away <case-id>",
+    label: "civic resolve",
+    description: "Choose a sourced records-inquiry outcome; institutions continue responding",
+    example: "civic handoff civic:incident:1",
+  },
   // Recon
   {
     category: "recon",

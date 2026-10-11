@@ -151,6 +151,7 @@ export type SimulationEvent =
       causeKind:
         | "content"
         | "opportunity"
+        | "institution"
         | "incident"
         | "reaction"
         | "rumor"
@@ -191,6 +192,34 @@ export type SimulationEvent =
       type: "NarrativeChoiceRecorded";
       sceneId: string;
       choiceIndex: number;
+      worldMinute: number;
+    }
+  | {
+      type: "InstitutionalCaseOpened";
+      caseId: string;
+      scope: "district" | "national-network";
+      worldMinute: number;
+    }
+  | {
+      type: "InstitutionalResponse";
+      caseId: string;
+      responseIndex: number;
+      worldMinute: number;
+    }
+  | {
+      type: "InstitutionalCaseMapped";
+      caseId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "InstitutionalCaseExpired";
+      caseId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "InstitutionalCaseResolved";
+      caseId: string;
+      choice: "disclose" | "handoff" | "sell" | "suppress" | "walk-away";
       worldMinute: number;
     }
   | {

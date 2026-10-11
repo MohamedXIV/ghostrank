@@ -137,6 +137,19 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
       };
       return { ok: false, error: "INVALID_ARGUMENT" };
 
+    case "civic":
+      if (args.length !== 2 || !args[1]) return { ok: false, error: "INVALID_ARGUMENT" };
+      if (args[0] === "map") return {
+        ok: true, command: { type: "mapInstitutionalCase", caseId: args[1] },
+      };
+      if (["disclose", "handoff", "sell", "suppress", "walk-away"].includes(args[0])) {
+        return { ok: true, command: {
+          type: "resolveInstitutionalCase", caseId: args[1],
+          choice: args[0] as "disclose" | "handoff" | "sell" | "suppress" | "walk-away",
+        } };
+      }
+      return { ok: false, error: "INVALID_ARGUMENT" };
+
     case "lead":
       if (args.length !== 2 || !args[1]) return { ok: false, error: "INVALID_ARGUMENT" };
       if (args[0] === "investigate") return {
