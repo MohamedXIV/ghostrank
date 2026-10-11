@@ -70,6 +70,7 @@ import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
+import { OperationPressureDesk } from "@/components/game/operation/operation-pressure-desk";
 import { deriveOpeningReconCue } from "@/game/onboarding/opening-recon-cue";
 import { RelationshipBadge } from "@/components/game/social/relationship-badge";
 import { ContractCard } from "@/components/game/contracts/contract-card";
@@ -1194,13 +1195,34 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
   const reactionIds = useRowIds("reactions", runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
   const services = useTable("services", runtime.projection);
+  const machines = useTable("machines", runtime.projection);
   const footprint = useRow("footprint", "current", runtime.projection);
   const analysisIds = useRowIds("analysisClaims", runtime.projection);
   const operationTargetId = String(operation.targetId ?? "");
   const operationStage = String(operation.stage ?? "");
-  const canEscalate = Object.values(services).some(
+  const operationEvidenceCount = Object.values(services).filter(
     (service) => service.targetId === operationTargetId,
-  );
+  ).length;
+  const operationMachineCount = Object.values(machines).filter(
+    (machine) => machine.targetId === operationTargetId,
+  ).length;
+  const operationSummary = operationTargetId
+    ? {
+        targetId: operationTargetId,
+        stage: operationStage,
+        openedWorldMinute: Number(operation.openedWorldMinute ?? 0),
+        ...(operation.escalatedWorldMinute === undefined
+          ? {}
+          : { escalatedWorldMinute: Number(operation.escalatedWorldMinute) }),
+      }
+    : null;
+  // With the Nightshade briefing the authoritative preview names the blocker;
+  // otherwise the same evidence rule the CommandBus enforces decides it.
+  const escalateBlocker = briefing
+    ? (briefing.view.preview?.escalate.blockedBy ?? null)
+    : operationEvidenceCount > 0
+      ? null
+      : "SERVICE_EVIDENCE_REQUIRED";
 
   const observe = (requestedTarget = targetId) => {
     const normalized = requestedTarget.trim().toLowerCase();
@@ -1264,66 +1286,27 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
 
       {briefing ? <NightshadeBriefingPanel /> : null}
 
-      <div className="operation-panel">
-        <span className="panel-label">OPERATION SESSION</span>
-        <ContextualHint
-          id="hint:recon-operation"
-          title="SAFE OPERATION STAGING"
-          description="The Recon stage gathers intelligence safely without triggering alarms. Survey host machines and inspect services before deciding whether to escalate to intrusive mode."
-        />
-        {operationTargetId ? (
-          <div className="operation-session">
-            <div>
-              <span className="panel-label">TARGET</span>
-              <strong>{operationTargetId}</strong>
-            </div>
-            <div>
-              <span className="panel-label">STAGE</span>
-              <strong>{operationStage.toUpperCase()}</strong>
-            </div>
-            <div className="operation-actions">
-              {operationStage === "recon" && (
-                <button
-                  className="recon-inline-action"
-                  type="button"
-                  disabled={
-                    briefing
-                      ? Boolean(briefing.view.preview?.escalate.blockedBy)
-                      : !canEscalate
-                  }
-                  title={
-                    briefing
-                      ? "Preview the trace cost, then confirm"
-                      : canEscalate
-                        ? "Escalate the current fictional operation"
-                        : "Discover service evidence before escalation"
-                  }
-                  onClick={() =>
-                    briefing
-                      ? briefing.request("escalate")
-                      : runtime.execute(escalateOperationFromGui())
-                  }
-                >
-                  ESCALATE
-                </button>
-              )}
-              <button
-                className="recon-inline-action"
-                type="button"
-                onClick={() =>
-                  briefing
-                    ? briefing.request("disengage")
-                    : runtime.execute(disengageOperationFromGui())
-                }
-              >
-                DISENGAGE
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p>No active operation. Open one from an observed target profile.</p>
-        )}
-      </div>
+      <OperationPressureDesk
+        operation={operationSummary}
+        worldMinute={worldMinute}
+        evidenceCount={operationEvidenceCount}
+        machineCount={operationMachineCount}
+        footprintLevel={String(footprint.level ?? "none")}
+        traceCount={Number(footprint.traceCount ?? 0)}
+        escalateBlocker={escalateBlocker}
+        escalateNeedsConfirmation={Boolean(briefing)}
+        onAct={(action) => {
+          if (briefing) {
+            briefing.request(action);
+            return null;
+          }
+          return runtime.execute(
+            action === "escalate"
+              ? escalateOperationFromGui()
+              : disengageOperationFromGui(),
+          );
+        }}
+      />
 
       <div className="footprint-panel">
         <span className="panel-label">SELF-OBSERVED FOOTPRINT</span>

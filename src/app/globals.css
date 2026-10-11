@@ -927,6 +927,134 @@ textarea:focus-visible,
   opacity: 0.65;
 }
 
+/* G6 Operation Pressure Desk: one instrument for the active operation.
+   Same tokens as the rest of Recon. State is carried by text and glyphs, never
+   by colour alone; the receipt animation is removed under reduced motion. */
+.operation-desk {
+  display: grid;
+  gap: 10px;
+}
+
+.operation-desk-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.operation-desk-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.operation-signal {
+  display: grid;
+  grid-template-columns: auto minmax(40px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  padding: 8px 10px;
+  margin: 0;
+}
+
+.operation-jack {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent);
+  background: transparent;
+}
+
+.operation-jack-filled {
+  background: var(--accent);
+}
+
+.operation-cable {
+  border-top: 2px dashed var(--line-hot);
+}
+
+.operation-cable[data-live="true"] {
+  border-top-style: solid;
+  border-top-color: var(--accent);
+}
+
+.operation-readouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.operation-guidance {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.operation-desk .operation-actions {
+  flex-wrap: wrap;
+}
+
+.operation-action {
+  min-width: 96px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 10px;
+}
+
+.operation-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.operation-receipt {
+  display: grid;
+  gap: 4px;
+}
+
+.operation-receipt-line {
+  margin: 0;
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  animation: operation-receipt-in 260ms ease-out;
+}
+
+.operation-receipt-refused {
+  border-left-color: var(--warning);
+}
+
+.operation-desk[data-reduce-motion="true"] .operation-receipt-line {
+  animation: none;
+}
+
+@keyframes operation-receipt-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operation-receipt-line {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .operation-desk-head,
+  .operation-readouts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Nightshade briefing (G3, D071). Same tokens as the operation panel; the
    consequences and the trace cost read as text, not as colour alone. */
 .briefing-panel {
