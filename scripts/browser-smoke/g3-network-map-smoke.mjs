@@ -218,6 +218,7 @@ async function runGeneratedScene(page, scope) {
   // G9 P4: real UI smoke in generated scenarios; an incident is not guaranteed
   // during this short G3 route run, so assert the accessible lead surface and
   // 390px fit here. Seeded *causal creation and choices* are proven by Vitest.
+  await page.getByTitle("Underground Index (Alt+3)").first().click();
   const leads = page.locator('section[aria-label="Independent leads"]');
   check(scope, "G9 brokerless lead surface is visible", await leads.count() === 1 &&
     await leads.isVisible());
