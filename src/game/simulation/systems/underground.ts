@@ -10,6 +10,9 @@ import { physicalRetaliationTick } from "@/game/simulation/systems/physical-reta
 import { deriveLongRunPressure } from "@/game/simulation/systems/long-run-pressure";
 import { advanceOrganizationAgendas } from "@/game/simulation/systems/organization-agenda-dynamics";
 import {
+  npcSolidarityPlans, SOLIDARITY_GRUDGE, SOLIDARITY_TRUST_LOSS,
+} from "@/game/simulation/systems/npc-solidarity";
+import {
   defenseBonusOf,
   peerWarningDefenseBonus,
   offerRateBonus,
@@ -690,6 +693,25 @@ function expireContracts(
   return events;
 }
 
+/**
+ * One informed, trusted peer may join a real public rival dispute next tick.
+ * Existing directed grudge enters BOTH the intrusion-target and commissioned-
+ * target weighting. The original actor/defender/contract authority is unchanged.
+ */
+export function resolveNpcSolidarity(
+  world: WorldState, minute: number,
+): SimulationEvent[] {
+  const events: SimulationEvent[] = [];
+  for (const plan of npcSolidarityPlans(world, minute)) {
+    events.push(adjustRelationship(
+      world, plan.witnessId, plan.attackerId,
+      { grudge: SOLIDARITY_GRUDGE, trust: SOLIDARITY_TRUST_LOSS },
+      { kind: "incident", id: plan.incidentId }, minute,
+    ));
+  }
+  return events;
+}
+
 export function contractOfferPercent(
   world: WorldState,
   atMinute = world.worldMinute,
@@ -1321,6 +1343,10 @@ export function advanceUnderground(
     // The new posture affects offers now and defence on the NEXT actor tick.
     // No hidden intentions/incident truth are exposed by projectWorld.
     events.push(...advanceOrganizationAgendas(world, worldMinute));
+    // An actual peer who saw LAST tick's published breach may take a side.
+    // Process once before commissions; current-tick forum posts cannot grant
+    // the actor advance knowledge of the incident that just occurred.
+    events.push(...resolveNpcSolidarity(world, worldMinute));
     events.push(...offerContracts(world, tickIndex, worldMinute));
     // Last in the tick, and re-derived per tick: retaliation spends grudge
     // downward, so a cached candidate list would let one big `wait` keep probing
