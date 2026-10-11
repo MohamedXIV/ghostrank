@@ -51,7 +51,10 @@ export function captureWorldOpportunities(
     if (event.type !== "UndergroundActivity" || !event.public) return [];
     const source = sourceOf(world, event.incidentId);
     if (!source || !source.incident.public ||
-        source.incident.worldMinute !== event.worldMinute) return [];
+        source.incident.worldMinute !== event.worldMinute ||
+        source.incident.actorId !== event.actorId ||
+        source.incident.counterpartId !== event.counterpartId ||
+        source.incident.outcome !== event.outcome) return [];
     return insert(world, {
       id: `lead:public:${event.incidentId}`, origin: "public-incident",
       sourceId: event.incidentId, incidentId: event.incidentId,
@@ -96,6 +99,32 @@ export function expireOpportunities(world: WorldState, minute: number): Simulati
   return result;
 }
 
+/**
+ * Authoritative provenance check for resumed or hand-edited saves. A lead ID
+ * can never be repointed to a different real incident or another actor.
+ */
+function sourced(world: WorldState, lead: OpportunityLead): boolean {
+  const source = sourceOf(world, lead.incidentId);
+  if (!source || source.subjectActorId !== lead.subjectActorId ||
+      source.targetId !== lead.targetId ||
+      source.incident.worldMinute > lead.worldMinute) return false;
+  if (lead.origin === "public-incident") {
+    return source.incident.public &&
+      lead.id === `lead:public:${source.incident.id}` &&
+      lead.sourceId === source.incident.id &&
+      lead.worldMinute === source.incident.worldMinute;
+  }
+  const message = world.underground.messages.find((m) => m.id === lead.sourceId);
+  const rumor = world.underground.rumors.find((r) => r.id === message?.rumorId);
+  return Boolean(message?.read && rumor?.claim && !source.incident.public &&
+    lead.id === `lead:report:${message.id}` &&
+    message.worldMinute <= lead.worldMinute &&
+    rumor.worldMinute <= lead.worldMinute &&
+    rumor.kind === "incident-leak" &&
+    rumor.sourceId === lead.incidentId &&
+    rumor.relayId === message.fromId);
+}
+
 /** Earn one actual host observation before acting; it does NOT validate the rumor. */
 export function investigateOpportunity(world: WorldState, id: string): Result {
   if (!enabled(world)) return failure("LEAD_UNAVAILABLE");
@@ -103,6 +132,7 @@ export function investigateOpportunity(world: WorldState, id: string): Result {
   if (!lead) return failure("LEAD_NOT_FOUND");
   if (!actionable(lead, world.worldMinute)) return failure("LEAD_EXPIRED_OR_RESOLVED");
   if (lead.status !== "open") return failure("LEAD_ALREADY_MAPPED");
+  if (!sourced(world, lead)) return failure("LEAD_SOURCE_INVALID");
   const compiled = compileContentCondition({
     op: "fact", fact: {
       kind: "player.known-active-target-machines",
@@ -139,13 +169,7 @@ export function resolveOpportunity(
   if (approach !== "ignore" && lead.status !== "mapped") {
     return failure("LEAD_NEEDS_INVESTIGATION");
   }
-  const source = sourceOf(world, lead.incidentId);
-  if (!source || source.targetId !== lead.targetId ||
-      source.subjectActorId !== lead.subjectActorId ||
-      (lead.origin === "relay-report" &&
-        !world.underground.messages.some((m) => m.id === lead.sourceId && m.read))) {
-    return failure("LEAD_SOURCE_INVALID");
-  }
+  if (!sourced(world, lead)) return failure("LEAD_SOURCE_INVALID");
 
   const events: SimulationEvent[] = [];
   if (approach !== "ignore") {

@@ -212,6 +212,55 @@ describe("G9 P4 — autonomous leads, no broker contracts", () => {
       .toBe("RUN_ENDED");
   });
 
+  it("rejects re-pointed lead identity even when an edited save names a valid incident", () => {
+    const state = publicFixture();
+    seedPublic(state);
+    evidence(state);
+    const lead = leadOf(state);
+    lead.id = "lead:public:forged";
+    const bus = new CommandBus(state);
+    expect(run(bus, { type: "investigateLead", leadId: lead.id }).error)
+      .toBe("LEAD_SOURCE_INVALID");
+    expect(bus.snapshot().economy.credits).toBe(0);
+  });
+
+  it("limits repeat leads per actor, without resetting cooldown for second sources", () => {
+    const state = publicFixture();
+    const first = seedPublic(state);
+    expect(first).toHaveLength(1);
+    const repeated = captureWorldOpportunities(state, [{
+      type: "UndergroundActivity", incidentId: "incident:p4",
+      actorId: state.underground.incidents[0].actorId,
+      counterpartId: state.underground.incidents[0].counterpartId,
+      outcome: "succeeded", public: true, worldMinute: 0,
+    }]);
+    expect(repeated).toEqual([]);
+    state.underground.incidents.push({
+      ...state.underground.incidents[0], id: "incident:p4:second", worldMinute: 360,
+    });
+    const second = captureWorldOpportunities(state, [{
+      type: "UndergroundActivity", incidentId: "incident:p4:second",
+      actorId: state.underground.incidents[0].actorId,
+      counterpartId: state.underground.incidents[0].counterpartId,
+      outcome: "succeeded", public: true, worldMinute: 360,
+    }]);
+    expect(second).toEqual([]);
+  });
+
+  it("varies actual trade value across seeds without changing rank", () => {
+    const values = [1, 7, 19, 36].map((seed) => {
+      const state = publicFixture(seed);
+      seedPublic(state);
+      evidence(state);
+      const bus = new CommandBus(state);
+      const id = leadOf(state).id;
+      run(bus, { type: "investigateLead", leadId: id });
+      expect(run(bus, { type: "resolveLead", leadId: id, approach: "trade" }).ok).toBe(true);
+      return bus.snapshot().economy.credits;
+    });
+    expect(new Set(values).size).toBeGreaterThan(1);
+  });
+
   it("terminal and GUI produce exactly the same command and outcomes", () => {
     const state = publicFixture();
     seedPublic(state);
