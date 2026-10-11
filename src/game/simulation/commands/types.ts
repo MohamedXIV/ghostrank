@@ -38,6 +38,16 @@ export type SimulationCommand =
       messageId: string;
     }
   | {
+      type: "startNarrative";
+      storyId: "g9.npc-relay.v1" | "g9.lead-dilemma.v1";
+      refId: string;
+    }
+  | {
+      type: "chooseNarrative";
+      sceneId: string;
+      choiceId: string;
+    }
+  | {
       type: "investigateLead";
       leadId: string;
     }

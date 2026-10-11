@@ -142,6 +142,8 @@ function eventWorldMinute(event: SimulationEvent): number {
     case "ContractDelivered":
     case "ContractExpired":
     case "ContentReactionResolved":
+    case "NarrativeOpened":
+    case "NarrativeChoiceRecorded":
     case "OpportunityDiscovered":
     case "OpportunityExpired":
     case "OpportunityInvestigated":

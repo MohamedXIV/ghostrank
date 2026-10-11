@@ -119,6 +119,24 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "contract":
       return parseContractCommand(args);
 
+    case "talk":
+      if (args.length !== 1 || !args[0]) return { ok: false, error: "INVALID_ARGUMENT" };
+      return {
+        ok: true,
+        command: { type: "startNarrative", storyId: "g9.npc-relay.v1", refId: args[0] },
+      };
+
+    case "story":
+      if (args[0] === "lead" && args.length === 2 && args[1]) return {
+        ok: true,
+        command: { type: "startNarrative", storyId: "g9.lead-dilemma.v1", refId: args[1] },
+      };
+      if (args[0] === "choose" && args.length === 3 && args[1] && args[2]) return {
+        ok: true,
+        command: { type: "chooseNarrative", sceneId: args[1], choiceId: args[2] },
+      };
+      return { ok: false, error: "INVALID_ARGUMENT" };
+
     case "lead":
       if (args.length !== 2 || !args[1]) return { ok: false, error: "INVALID_ARGUMENT" };
       if (args[0] === "investigate") return {

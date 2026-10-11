@@ -796,6 +796,21 @@ export interface OpportunityLead {
   resolvedWorldMinute?: number;
 }
 
+/** G9 P5: version-pinned authored scene, never a raw Ink state blob. */
+export interface NarrativeSession {
+  id: string;
+  storyId: "g9.npc-relay.v1" | "g9.lead-dilemma.v1";
+  version: 1;
+  refId: string;
+  variant: "npc" | "unmapped" | "mapped";
+  openedWorldMinute: number;
+  selectedIndex?: number;
+}
+export interface NarrativeRunState {
+  nextSequence: number;
+  current?: NarrativeSession;
+}
+
 export interface WorldState {
   /** Optional generic route challenges; absent in canonical and legacy worlds. */
   networkChallenges?: NetworkRouteChallenge[];
@@ -872,6 +887,8 @@ export interface WorldState {
   content?: ContentRuntimeState;
   /** Absent from canonical/legacy worlds until a real G9 P4 cause creates it. */
   opportunities?: OpportunityLead[];
+  /** Only present after a player explicitly starts a versioned conversation. */
+  narrative?: NarrativeRunState;
 }
 
 export interface InitialTargetState
@@ -903,6 +920,7 @@ export interface InitialWorldState {
   retirement?: RetirementPlan | null;
   content?: ContentRuntimeState;
   opportunities?: OpportunityLead[];
+  narrative?: NarrativeRunState;
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -1064,5 +1082,8 @@ export function createInitialWorldState(
     ...(initial.opportunities === undefined
       ? {}
       : { opportunities: structuredClone(initial.opportunities) }),
+    ...(initial.narrative === undefined
+      ? {}
+      : { narrative: structuredClone(initial.narrative) }),
   };
 }

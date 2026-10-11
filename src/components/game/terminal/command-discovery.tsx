@@ -25,6 +25,27 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
     description: "Choose an independent lead outcome, cost and NPC reaction",
     example: "lead disclose lead:public:incident:1",
   },
+  {
+    category: "underground",
+    syntax: "talk <actor-id>",
+    label: "talk",
+    description: "Open a versioned Ink dialogue with a public NPC handle",
+    example: "talk vesper",
+  },
+  {
+    category: "underground",
+    syntax: "story lead <lead-id>",
+    label: "story lead",
+    description: "Open the authored dilemma for a player-discovered non-contract opportunity",
+    example: "story lead lead:public:incident:1",
+  },
+  {
+    category: "underground",
+    syntax: "story choose <scene-id> <choice-id>",
+    label: "story choose",
+    description: "Select an offered Ink choice via the authoritative CommandBus",
+    example: "story choose scene:1 scene:1:choice:0",
+  },
   // Recon
   {
     category: "recon",

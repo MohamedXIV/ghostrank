@@ -183,6 +183,17 @@ export type SimulationEvent =
       worldMinute: number;
     }
   | {
+      type: "NarrativeOpened";
+      sceneId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "NarrativeChoiceRecorded";
+      sceneId: string;
+      choiceIndex: number;
+      worldMinute: number;
+    }
+  | {
       type: "OpportunityDiscovered";
       leadId: string;
       origin: "public-incident" | "relay-report";

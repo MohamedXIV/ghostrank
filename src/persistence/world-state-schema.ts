@@ -537,6 +537,19 @@ const storedWorldStateSchema = z.object({
     })),
     resolvedIds: z.array(z.string().min(1)),
   }).optional(),
+  // G9 P5: a pinned author-story and selection cursor; never save an Ink VM blob.
+  narrative: z.object({
+    nextSequence: z.number().int().min(1),
+    current: z.object({
+      id: z.string().min(1),
+      storyId: z.enum(["g9.npc-relay.v1", "g9.lead-dilemma.v1"]),
+      version: z.literal(1),
+      refId: z.string().min(1),
+      variant: z.enum(["npc", "unmapped", "mapped"]),
+      openedWorldMinute: z.number().int().nonnegative(),
+      selectedIndex: z.number().int().nonnegative().max(8).optional(),
+    }).optional(),
+  }).optional(),
   // G9 P4: absent from canonical/legacy runs, durable within live generated runs.
   opportunities: z.array(z.object({
     id: z.string().min(1),
