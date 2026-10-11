@@ -36,7 +36,7 @@ export function HardwareProductCard({ item, onBuy }: HardwareProductCardProps) {
           <h3 className="hardware-product-name">{item.label}</h3>
           <div className="hardware-product-stats" aria-label="Capability gains">
             {item.stats.length ? item.stats.map((stat) => (
-              <span key={stat.metric} className="hardware-stat">
+              <span key={stat.metric} className="hardware-stat" aria-label={`${stat.metric} +${stat.value}`}>
                 <span>{stat.metric}</span>
                 <strong>+{stat.value}</strong>
               </span>
