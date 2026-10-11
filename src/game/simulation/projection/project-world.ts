@@ -1,4 +1,5 @@
 import { runningJobFor } from "@/game/simulation/scheduler/job-queue";
+import { projectNarrative, type PlayerNarrative } from "@/game/narrative/adapter";
 import { observedNetworkConstraints, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import {
   SLICE_CLUES,
@@ -758,6 +759,8 @@ export interface VisibleNetworkRouteChallenge {
 }
 
 export interface WorldProjection {
+  /** Authored player-only Ink conversation; absent in untouched worlds. */
+  narrative?: PlayerNarrative;
   worldMinute: number;
   clockJob: VisibleClockJob | null;
   player: {
@@ -1883,5 +1886,8 @@ export function projectWorld(state: WorldState): WorldProjection {
     economy: projectEconomy(state, handles),
     presence: derivePresence(state.economy.housing),
     ...(state.slice ? { slice: projectNightshadeBriefing(state) } : {}),
+    ...(state.narrative?.current && projectNarrative(state)
+      ? { narrative: projectNarrative(state)! }
+      : {}),
   };
 }

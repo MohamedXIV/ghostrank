@@ -287,6 +287,25 @@ export function syncWorldProjection(
   );
 
   // G9 P4: only the redacted projection reaches GUI/TinyBase.
+  const narrativeRows: Record<string, Record<string, string | number | boolean>> =
+    projection.narrative ? {
+    current: {
+      id: projection.narrative.id,
+      storyId: projection.narrative.storyId,
+      version: projection.narrative.version,
+      subjectLabel: projection.narrative.subjectLabel,
+      text: projection.narrative.text,
+      finished: projection.narrative.finished,
+    },
+  } : {};
+  const narrativeChoiceRows = Object.fromEntries(
+    (projection.narrative?.choices ?? []).map(choice => [
+      choice.id,
+      { sceneId: projection.narrative!.id, index: choice.index,
+        text: choice.text, costLabel: choice.costLabel },
+    ]),
+  );
+
   const leadRows = Object.fromEntries(
     (projection.underground.leads ?? []).map((lead) => [
       lead.id,
@@ -645,6 +664,8 @@ export function syncWorldProjection(
     store.setTable("inbox", inboxRows);
     store.setTable("contracts", contractRows);
     store.setTable("leads", leadRows);
+    store.setTable("narrative", narrativeRows);
+    store.setTable("narrativeChoices", narrativeChoiceRows);
     store.setTable("retaliations", retaliationRows);
     store.setTable("descriptors", descriptorRows);
     store.setTable("forum", forumRows);

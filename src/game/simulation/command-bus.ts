@@ -1,5 +1,8 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
 import {
+  startNarrative, planNarrativeChoice, commitNarrativeChoice,
+} from "@/game/narrative/adapter";
+import {
   captureWorldOpportunities, discoverReportedOpportunity,
   expireOpportunities, investigateOpportunity, resolveOpportunity,
 } from "@/game/content/opportunities";
@@ -239,6 +242,20 @@ export class CommandBus {
 
       case "readMessage":
         return this.readMessage(command.messageId);
+
+      case "startNarrative":
+        return startNarrative(this.world, command.storyId, command.refId);
+
+      case "chooseNarrative": {
+        const plan = planNarrativeChoice(this.world, command.sceneId, command.choiceId);
+        if ("error" in plan) return this.failure(plan.error);
+        // A story never commits a state mutation. Route its finite typed
+        // intent back through the SAME validated CommandBus surface.
+        const result = plan.intent ? this.execute(plan.intent) : { ok: true, events: [] };
+        if (!result.ok) return result;
+        const event = commitNarrativeChoice(this.world, plan);
+        return { ok: true, events: [...result.events, event] };
+      }
 
       case "investigateLead":
         return investigateOpportunity(this.world, command.leadId);

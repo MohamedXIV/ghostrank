@@ -1,6 +1,6 @@
 # Semantic Sandbox & Content Architecture — G9
 
-**Status:** G9 P0–P3 merged; P4 adds the first broker-free world lead in Fresh Scene/High Pressure (PR #149). Ink and institutional-scale story arcs are not yet shipped. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
+**Status:** G9 P0–P4 merged; P5 PR #150 adds bounded versioned Ink narrative for NPC conversations and brokerless lead decisions. Institutional-scale story arcs are not yet shipped. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
 
 ## 0. Current baseline versus new work
 

@@ -47,6 +47,7 @@ import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import { renderNetworkRouteQuery } from "@/game/computer/terminal/network-route-view";
 import { projectWorld } from "@/game/simulation/projection/project-world";
+import { formatNarrativeTerminalView } from "@/game/narrative/terminal-view";
 import {
   briefingBriefLines,
   briefingEventNotices,
@@ -659,6 +660,20 @@ function TerminalApp({
       return;
     }
 
+    if (raw.toLowerCase() === "story view") {
+      const read = projectWorld(runtime.snapshot()).narrative;
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `story-${Date.now()}`,
+          type: "table",
+          text: formatNarrativeTerminalView(read),
+        },
+      ]);
+      return;
+    }
+
     // Generic read-only network queries use the same player-safe data as Recon.
     const routeRead = renderNetworkRouteQuery(raw, projectWorld(runtime.snapshot()).networkRoutes);
     if (routeRead !== null) {
@@ -996,6 +1011,14 @@ function TerminalApp({
           glyph: rich.glyph,
           text: rich.text,
         },
+        ...(parsed.command.type === "startNarrative" ||
+           parsed.command.type === "chooseNarrative"
+          ? [{
+              id: `story-${Date.now()}`,
+              type: "table" as const,
+              text: formatNarrativeTerminalView(projectWorld(runtime.snapshot()).narrative),
+            }]
+          : []),
         ...notices.map((notice, index) => ({
           id: `briefing-${Date.now()}-${index}`,
           type: "result" as const,
@@ -1592,6 +1615,22 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const inbox = useTable("inbox", runtime.projection);
   const contractTable = useTable("contracts", runtime.projection);
   const leadTable = useTable("leads", runtime.projection);
+  const narrativeTable = useTable("narrative", runtime.projection);
+  const narrativeChoicesTable = useTable("narrativeChoices", runtime.projection);
+  const [narrativeFeedback, setNarrativeFeedback] = useState<string | null>(null);
+  const runNarrative = (command: Parameters<GameRuntime["execute"]>[0]) => {
+    const outcome = runtime.execute(command);
+    if (!outcome.ok) {
+      setNarrativeFeedback(`Action blocked: ${outcome.error ?? "UNAVAILABLE"}`);
+      return;
+    }
+    const credit = outcome.events.find((event) => event.type === "ValueTransferred");
+    const relation = outcome.events.find((event) => event.type === "RelationshipChanged");
+    setNarrativeFeedback(credit && credit.type === "ValueTransferred"
+      ? `Action accepted: +${credit.amount} credits. The subject may react.`
+      : relation ? "Action accepted: the subject relationship changed."
+      : "Choice recorded. No extra world time charged for dialogue.");
+  };
   const retaliationTable = useTable("retaliations", runtime.projection);
   const descriptorTable = useTable("descriptors", runtime.projection);
   const forumTable = useTable("forum", runtime.projection);
@@ -2062,6 +2101,35 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
         )}
       </section>
 
+      <section aria-label="Narrative conversation">
+        <span className="panel-label">INTERCEPTED CONVERSATION // INK</span>
+        {!narrativeTable.current ? (
+          <p className="underground-empty">Choose TALK on a public handle or STORY on an independent lead.</p>
+        ) : (
+          <div aria-live="polite">
+            <p><strong>{String(narrativeTable.current.subjectLabel ?? "")}</strong></p>
+            <p style={{ whiteSpace: "pre-line" }}>{String(narrativeTable.current.text ?? "")}</p>
+            <div className="underground-lead-actions" role="group" aria-label="Narrative choices">
+              {Object.entries(narrativeChoicesTable)
+                .sort(([, a], [, b]) => Number(a.index ?? 0) - Number(b.index ?? 0))
+                .map(([choiceId, choice]) => (
+                  <button key={choiceId} type="button"
+                    title={String(choice.costLabel ?? "No extra time")}
+                    onClick={() => runNarrative({
+                      type: "chooseNarrative",
+                      sceneId: String(narrativeTable.current.id ?? ""),
+                      choiceId,
+                    })}>
+                    {String(choice.text ?? "Select")}
+                  </button>
+                ))}
+            </div>
+            {narrativeTable.current.finished && <p>Conversation concluded.</p>}
+          </div>
+        )}
+        {narrativeFeedback && <p role="status">{narrativeFeedback}</p>}
+      </section>
+
       <section aria-label="Independent leads">
         <span className="panel-label">INDEPENDENT LEADS // NO BROKER REQUIRED</span>
         <p className="analysis-caveat">
@@ -2089,6 +2157,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                       {" // "}<strong>{status.toUpperCase()}</strong>
                     </p>
                     {lead.targetHandle && <p>Mapped host: {String(lead.targetHandle)}</p>}
+                    {(status === "open" || status === "mapped") && (
+                      <button type="button" onClick={() => runNarrative({
+                        type: "startNarrative", storyId: "g9.lead-dilemma.v1", refId: id,
+                      })}>STORY // DECIDE</button>
+                    )}
                     <small>Lead ID: {id}</small>
                     {(status === "open" || status === "mapped") && (
                       <div className="underground-lead-actions">
@@ -2292,6 +2365,13 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
                   />
                 </div>
                 <span>#{Number(entry.rank ?? 0).toLocaleString("en-US")}</span>
+                {!entry.isPlayer && (
+                  <button type="button" aria-label={`Talk to ${handle}`}
+                    onClick={() => runNarrative({
+                      type: "startNarrative",
+                      storyId: "g9.npc-relay.v1", refId: id,
+                    })}>TALK</button>
+                )}
               </li>
             );
           })}
