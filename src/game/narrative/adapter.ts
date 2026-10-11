@@ -75,14 +75,15 @@ function readFrame(scene: NarrativeSession) {
   return renderInkNarrative(scene.storyId, scene.variant, scene.selectedIndex);
 }
 function validateSession(world: Readonly<WorldState>, scene: NarrativeSession): boolean {
-  return NARRATIVE_STORIES[scene.storyId]?.version === scene.version &&
+  return Object.hasOwn(NARRATIVE_STORIES, scene.storyId) &&
+    NARRATIVE_STORIES[scene.storyId]?.version === scene.version &&
     Boolean(authorizedSubject(world, scene.storyId, scene.refId));
 }
 
 export function startNarrative(
   world: WorldState, storyId: NarrativeStoryId, refId: string,
 ): StartResult {
-  if (!NARRATIVE_STORIES[storyId]) return failure("STORY_NOT_FOUND");
+  if (!Object.hasOwn(NARRATIVE_STORIES, storyId)) return failure("STORY_NOT_FOUND");
   const subject = authorizedSubject(world, storyId, refId);
   if (!subject) return failure("STORY_SOURCE_UNAVAILABLE");
   // Never open an author-supplied arbitrary knot or a raw Ink string.
@@ -143,7 +144,8 @@ export function commitNarrativeChoice(
  */
 export function projectNarrative(world: Readonly<WorldState>): PlayerNarrative | null {
   const scene = world.narrative?.current;
-  if (!scene || NARRATIVE_STORIES[scene.storyId]?.version !== scene.version) return null;
+  if (!scene || !Object.hasOwn(NARRATIVE_STORIES, scene.storyId) ||
+      NARRATIVE_STORIES[scene.storyId]?.version !== scene.version) return null;
   // A finished scene remains readable, even if its action resolved the lead.
   const subject = scene.selectedIndex === undefined
     ? authorizedSubject(world, scene.storyId, scene.refId)

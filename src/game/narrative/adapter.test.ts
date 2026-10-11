@@ -90,6 +90,9 @@ describe("G9 P5 inkjs story and authoritative intents", () => {
       type: "startNarrative", storyId: "g9.raw.world-exec.v1" as typeof npcStory,
       refId: actor.id,
     }).error).toBe("STORY_NOT_FOUND");
+    expect(bus.execute({
+      type: "startNarrative", storyId: "__proto__" as typeof npcStory, refId: actor.id,
+    }).error).toBe("STORY_NOT_FOUND");
     expect(JSON.stringify(bus.snapshot())).toBe(original);
     expect(start(bus, npcStory, actor.id).ok).toBe(true);
     const prior = JSON.stringify(bus.snapshot());
