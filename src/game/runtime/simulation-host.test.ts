@@ -23,7 +23,10 @@ describe("G9 P7 Worker-ready local host protocol (NO Worker)", () => {
     for (const [i, response] of results.entries()) {
       const expected = bus.execute(commands[i]!);
       expect(response.requestId).toBe(requests[i]!.requestId);
-      expect(response.result).toEqual(expected);
+      expect(response.result).toEqual({
+        ok: expected.ok, ...(expected.error ? { error: expected.error } : {}),
+      });
+      expect(response.result).not.toHaveProperty("events");
       expect(response.projection).toEqual(projectWorld(bus.snapshot()));
       expect(response.projection).not.toHaveProperty("underground.actors");
       expect(structuredClone(response)).toEqual(response);
@@ -49,9 +52,8 @@ describe("G9 P7 Worker-ready local host protocol (NO Worker)", () => {
     expect(JSON.stringify(response)).not.toContain('"skill"');
     expect(JSON.stringify(response)).not.toContain('"discretion"');
     response.projection.worldMinute = 9999;
-    response.result.events.push({
-      type: "OpportunityExpired", leadId: "invented", worldMinute: 0,
-    });
+    expect(response.result).not.toHaveProperty("events");
+    expect(JSON.stringify(response)).not.toContain('"accurate"');
     expect((await host.snapshotForPersistence()).worldMinute).toBe(0);
   });
 

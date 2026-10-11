@@ -108,6 +108,9 @@ export function diagnoseOpportunity(
     id === "lead:public:" + incident.id;
   const message = world.underground.messages.find(m => m.id === lead.sourceId);
   const rumor = world.underground.rumors.find(r => r.id === message?.rumorId);
+  const ownerMatches = world.underground.actors.some(actor =>
+    actor.id === lead.subjectActorId && actor.targetId === lead.targetId &&
+    world.targets.some(target => target.id === lead.targetId));
   const fromMessage = lead.origin === "relay-report" &&
     message?.read === true && rumor?.kind === "incident-leak" &&
     rumor.sourceId === incident?.id && rumor.relayId === message.fromId &&
@@ -116,7 +119,7 @@ export function diagnoseOpportunity(
     kind: "opportunity", sourceId: lead.id, actorId: lead.subjectActorId,
     status: lead.status, worldMinute: lead.worldMinute,
     evidence: observation(world, lead.targetId),
-    sourceVerified: Boolean((fromPublic || fromMessage) && incident &&
+    sourceVerified: Boolean(ownerMatches && (fromPublic || fromMessage) && incident &&
       incident.worldMinute <= lead.worldMinute),
     blockedBy: commandGuard(world, {
       type: lead.status === "open" ? "investigateLead" : "resolveLead",

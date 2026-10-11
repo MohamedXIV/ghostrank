@@ -16,10 +16,12 @@ export interface SimulationHostRequest {
   kind: "execute";
   command: SimulationCommand;
 }
+/** UI-safe acknowledgement, NEVER a raw event list. Events may contain hidden truth. */
+export type SimulationHostOutcome = Pick<CommandResult, "ok" | "error">;
 export interface SimulationHostResponse {
   requestId: string;
   kind: "result";
-  result: CommandResult;
+  result: SimulationHostOutcome;
   /** Player-safe projection; never the underlying authoritative WorldState. */
   projection: WorldProjection;
 }
@@ -53,7 +55,7 @@ export function createLocalSimulationHost(world: WorldState): SimulationHost {
         return structuredClone({
           requestId: input.requestId,
           kind: "result" as const,
-          result,
+          result: { ok: result.ok, ...(result.error ? { error: result.error } : {}) },
           projection: projectWorld(bus.snapshot()),
         });
       });

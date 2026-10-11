@@ -16,7 +16,7 @@ The harness prints a `[G9 P7 PERF BASELINE node=...]` line in CI containing per-
 
 ## Async, serialized simulation host (no Worker instantiated)
 
-`src/game/runtime/simulation-host.ts` defines a small `SimulationHostRequest/Response` shape and local `createLocalSimulationHost` adapter that dispatches typed `SimulationCommand` through the **existing CommandBus** in a serial Promise queue, returning the player's authorized `WorldProjection` plus domain CommandResult. The privileged `snapshotForPersistence` is a separate host method and is **not** in the UI transport protocol. Requests and outputs are cloned; no React/DOM/TinyBase coupling is imported in the port, and no second authority is introduced.
+`src/game/runtime/simulation-host.ts` defines a small `SimulationHostRequest/Response` shape and local `createLocalSimulationHost` adapter that dispatches typed `SimulationCommand` through the **existing CommandBus** in a serial Promise queue, returning the player's authorized `WorldProjection` and **only** a redacted `{ok,error?}` acknowledgement. Raw `CommandResult.events` may include hidden incident/rumor truth, so they NEVER cross this prospective Worker→UI boundary. The privileged `snapshotForPersistence` is a separate host method and is **not** in the UI transport protocol. Requests and outputs are cloned; no React/DOM/TinyBase coupling is imported in the port, and no second authority is introduced.
 
 The old synchronous `GameRuntime` and production UI are intentionally untouched; no Web Worker, thread migration, Rust or WASM is introduced. Actual worker migration would require a separate measured decision, transport validation/security review, and acceptance tests.
 
