@@ -119,6 +119,20 @@ export function parseTerminalCommand(input: string): TerminalParseResult {
     case "contract":
       return parseContractCommand(args);
 
+    case "lead":
+      if (args.length !== 2 || !args[1]) return { ok: false, error: "INVALID_ARGUMENT" };
+      if (args[0] === "investigate") return {
+        ok: true, command: { type: "investigateLead", leadId: args[1] },
+      };
+      if (["disclose", "trade", "exploit", "ignore"].includes(args[0])) return {
+        ok: true, command: {
+          type: "resolveLead",
+          leadId: args[1],
+          approach: args[0] as "disclose" | "trade" | "exploit" | "ignore",
+        },
+      };
+      return { ok: false, error: "INVALID_ARGUMENT" };
+
     case "retire":
       return parseRetirementCommand(args);
 

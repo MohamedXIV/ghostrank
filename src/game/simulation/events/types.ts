@@ -150,6 +150,7 @@ export type SimulationEvent =
       grudge: number;
       causeKind:
         | "content"
+        | "opportunity"
         | "incident"
         | "reaction"
         | "rumor"
@@ -179,6 +180,28 @@ export type SimulationEvent =
   | {
       type: "MessageRead";
       messageId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "OpportunityDiscovered";
+      leadId: string;
+      origin: "public-incident" | "relay-report";
+      worldMinute: number;
+    }
+  | {
+      type: "OpportunityExpired";
+      leadId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "OpportunityInvestigated";
+      leadId: string;
+      worldMinute: number;
+    }
+  | {
+      type: "OpportunityResolved";
+      leadId: string;
+      approach: "disclose" | "trade" | "exploit" | "ignore";
       worldMinute: number;
     }
   | {

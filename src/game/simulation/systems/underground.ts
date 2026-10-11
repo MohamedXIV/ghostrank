@@ -61,6 +61,19 @@ export const TICK_MINUTES = 360;
  * causal mutation path. The dispatcher checks actor, source and resource
  * availability first; this narrow wrapper does not create a second formula.
  */
+/** Reuse the existing clamped, causally sourced relation mutation. */
+export function applyOpportunityRelationship(
+  world: WorldState,
+  actorId: string,
+  leadId: string,
+  delta: { trust?: number; grudge?: number },
+  worldMinute: number,
+): SimulationEvent | null {
+  if (!world.underground.actors.some((actor) => actor.id === actorId)) return null;
+  return adjustRelationship(world, actorId, PLAYER_ACTOR_ID, delta,
+    { kind: "opportunity", id: leadId }, worldMinute);
+}
+
 export function applyContentRelationshipResponse(
   world: WorldState,
   issuerId: string,
@@ -95,7 +108,7 @@ export interface UndergroundAdvanceHooks {
    */
   afterPhysicalTick?: (worldMinute: number) => SimulationEvent[];
   /** Fold exact-boundary completions after NPC actions at this minute. */
-  afterTick?: (worldMinute: number) => void;
+  afterTick?: (worldMinute: number, committed: readonly SimulationEvent[]) => SimulationEvent[] | void;
 }
 
 const SUCCESS_NOISE_SPREAD = 40;
@@ -151,6 +164,7 @@ export type RelationshipCause = {
   kind:
     | "incident"
     | "content"
+    | "opportunity"
     | "reaction"
     | "rumor"
     | "contract"
@@ -1259,6 +1273,7 @@ export function advanceUnderground(
     tickIndex += 1
   ) {
     const worldMinute = tickIndex * TICK_MINUTES;
+    const tickStart = events.length;
 
     hooks?.beforeTick?.(worldMinute);
     events.push(...expireContracts(world, worldMinute));
@@ -1307,7 +1322,7 @@ export function advanceUnderground(
     events.push(
       ...probeTick(world, tickIndex, worldMinute, probeCandidates(world)),
     );
-    hooks?.afterTick?.(worldMinute);
+    events.push(...(hooks?.afterTick?.(worldMinute, events.slice(tickStart)) ?? []));
   }
 
   underground.lastTickMinute = Math.max(

@@ -1591,6 +1591,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
   const stances = useTable("stances", runtime.projection);
   const inbox = useTable("inbox", runtime.projection);
   const contractTable = useTable("contracts", runtime.projection);
+  const leadTable = useTable("leads", runtime.projection);
   const retaliationTable = useTable("retaliations", runtime.projection);
   const descriptorTable = useTable("descriptors", runtime.projection);
   const forumTable = useTable("forum", runtime.projection);
@@ -1659,6 +1660,14 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
           idB.localeCompare(idA, undefined, { numeric: true }),
       ),
     [contractTable],
+  );
+
+  const leads = useMemo(
+    () => Object.entries(leadTable).sort(
+      ([idA, a], [idB, b]) =>
+        Number(b.worldMinute ?? 0) - Number(a.worldMinute ?? 0) || idB.localeCompare(idA),
+    ),
+    [leadTable],
   );
 
   const heat = useMemo(
@@ -1778,6 +1787,7 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
     postmortems,
     Object.entries(postmortemStepTable),
     contracts,
+    leads,
     messages,
     forumPosts,
     handles,
@@ -2049,6 +2059,58 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
               CANCEL EXIT
             </button>
           </>
+        )}
+      </section>
+
+      <section aria-label="Independent leads">
+        <span className="panel-label">INDEPENDENT LEADS // NO BROKER REQUIRED</span>
+        <p className="analysis-caveat">
+          Incidents and relayed claims can open a lead. Map an involved host with Recon
+          before taking action. A mapped host does not prove a rumored outcome.
+          Leads expire while the world continues.
+        </p>
+        {leads.length === 0 ? (
+          <p className="underground-empty">No independent leads surfaced yet.</p>
+        ) : (
+          <ul className="underground-feed">
+            {visibleRecords(leads, recordPage).map(([id, lead]) => {
+              const status = String(lead.status ?? "open");
+              return (
+                <li key={id}>
+                  <div>
+                    <span className="underground-time">
+                      {String(lead.origin) === "relay-report" ? "UNVERIFIED RELAY" : "PUBLIC INCIDENT"}
+                      {" // "}{formatWorldTime(Number(lead.worldMinute ?? 0))}
+                      {" // EXPIRES "}{formatWorldTime(Number(lead.expiresWorldMinute ?? 0))}
+                    </span>
+                    <p>
+                      {String(lead.actorHandle ?? "?")} vs {String(lead.counterpartHandle ?? "?")}
+                      {" // "}{String(lead.claimOutcome ?? "unknown")}
+                      {" // "}<strong>{status.toUpperCase()}</strong>
+                    </p>
+                    {lead.targetHandle && <p>Mapped host: {String(lead.targetHandle)}</p>}
+                    <small>Lead ID: {id}</small>
+                    {(status === "open" || status === "mapped") && (
+                      <div className="underground-lead-actions">
+                        {status === "open" ? (
+                          <button type="button" onClick={() =>
+                            runtime.execute({ type: "investigateLead", leadId: id })
+                          }>INVESTIGATE</button>
+                        ) : (["disclose", "trade", "exploit"] as const).map((approach) => (
+                          <button key={approach} type="button" onClick={() =>
+                            runtime.execute({ type: "resolveLead", leadId: id, approach })
+                          }>{approach.toUpperCase()}</button>
+                        ))}
+                        <button type="button" onClick={() =>
+                          runtime.execute({ type: "resolveLead", leadId: id, approach: "ignore" })
+                        }>IGNORE</button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

@@ -493,12 +493,27 @@ export interface VisibleForumPost {
   subject: VisibleForumSubject;
 }
 
+export interface VisibleOpportunity {
+  id: string;
+  origin: "public-incident" | "relay-report";
+  actorHandle: string;
+  counterpartHandle: string;
+  claimOutcome: "succeeded" | "repelled";
+  status: "open" | "mapped" | "resolved" | "ignored" | "expired";
+  worldMinute: number;
+  expiresWorldMinute: number;
+  /** Only appears when the player has actually discovered the host. */
+  targetHandle?: string;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
   stances: VisibleStance[];
   inbox: VisibleInbox;
   contracts: VisibleContract[];
+  /** Non-broker leads, only present after a qualifying causal event. */
+  leads?: VisibleOpportunity[];
   retaliations: VisibleRetaliation[];
   forum: VisibleForumPost[];
   /** Phase 5 P4: which peers run which assistant (name + model label only). */
@@ -1048,12 +1063,44 @@ function projectUnderground(
     });
   }
 
+  const leads: VisibleOpportunity[] = (state.opportunities ?? []).flatMap((lead) => {
+    const incident = underground.incidents.find((entry) => entry.id === lead.incidentId);
+    if (!incident) return [];
+    let actors = { actorId: incident.actorId, counterpartId: incident.counterpartId,
+      outcome: incident.outcome };
+    if (lead.origin === "public-incident") {
+      if (!incident.public) return [];
+    } else {
+      const message = underground.messages.find((entry) => entry.id === lead.sourceId);
+      const rumor = underground.rumors.find((entry) => entry.id === message?.rumorId);
+      if (!message?.read || !rumor?.claim || rumor.sourceId !== incident.id ||
+          rumor.relayId !== message.fromId) return [];
+      // These are unverified CLAIM fields; never reveal the incident truth or
+      // rumor.accurate via the opportunity surface.
+      actors = { actorId: rumor.claim.actorId, counterpartId: rumor.claim.counterpartId,
+        outcome: rumor.claim.outcome };
+    }
+    const target = state.targets.find((entry) => entry.id === lead.targetId);
+    return [{
+      id: lead.id, origin: lead.origin,
+      actorHandle: handles.get(actors.actorId) ?? actors.actorId,
+      counterpartHandle: handles.get(actors.counterpartId) ?? actors.counterpartId,
+      claimOutcome: actors.outcome,
+      status: (lead.status === "open" || lead.status === "mapped") &&
+        state.worldMinute > lead.expiresWorldMinute ? "expired" as const : lead.status,
+      worldMinute: lead.worldMinute,
+      expiresWorldMinute: lead.expiresWorldMinute,
+      ...(target && knownTargets.has(target.id) ? { targetHandle: target.handle } : {}),
+    }];
+  });
+
   return {
     board,
     feed,
     stances,
     inbox: { messages: newestFirst, unread },
     contracts,
+    ...(leads.length ? { leads } : {}),
     retaliations,
     forum,
     assistants,
