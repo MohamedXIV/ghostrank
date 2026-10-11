@@ -20,6 +20,8 @@ function fixture(seed = 7): WorldState {
   // An authentic fictional records service in the fixture, not a guessed
   // archive on an unrelated target.
   target.machines[0]!.services[0]!.kind = "archive";
+  world.worldMinute = 360;
+  world.underground.lastTickMinute = 360;
   world.underground.incidents.push({
     id: "incident:civic-fixture", actorId: attacker.id, counterpartId: owner.id,
     kind: "npc-intrusion", public: true, outcome: "succeeded", worldMinute: 360,
@@ -72,6 +74,23 @@ describe("G9 P6 — civic archive, real institutions and reactions", () => {
     expect(b.publicBody).toBe("Federated Public Records Commission");
     expect(a.affectedOfficeCount).toBe(1);
     expect(b.affectedOfficeCount).toBe(2);
+  });
+
+  it("genuine NPC ecosystem activity can originate a case with no player command", () => {
+    let found = false;
+    for (let seed = 1; seed <= 8 && !found; seed++) {
+      const bus = new CommandBus(createSliceWorldState({
+        scenario: "high-pressure", seed, handle: "Observer",
+      }));
+      const events = bus.execute({ type: "advanceTime", minutes: 6 * 1440 }).events;
+      const cases = bus.snapshot().institutionalCases ?? [];
+      if (!cases.length) continue;
+      expect(events.some(e => e.type === "InstitutionalCaseOpened")).toBe(true);
+      expect(events.some(e => e.type === "UndergroundActivity" && e.public)).toBe(true);
+      expect(cases.every(c => witnessCase(bus.snapshot(), c))).toBe(true);
+      found = true;
+    }
+    expect(found).toBe(true);
   });
 
   it("continues as an autonomous NPC/institution world process across ticks", () => {
@@ -236,7 +255,7 @@ describe("G9 P6 — civic archive, real institutions and reactions", () => {
           direction: "credit", amount: a.snapshot().economy.ledger.at(-1)!.amount,
           balanceAfter: a.snapshot().economy.ledger.at(-1)!.balanceAfter,
           causeKind: "institutional-case", causeId: id,
-          counterparty: "fictional-records-service", worldMinute: 0,
+          counterparty: "fictional-records-service", worldMinute: 360,
         }}] : []);
   });
 

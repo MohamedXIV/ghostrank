@@ -110,7 +110,7 @@ export function advanceInstitutionalCases(world: WorldState, minute: number): Si
   for (const c of world.institutionalCases ?? []) {
     if (!witnessCase(world, c) || c.responseTicks >= RESPONSE_STEPS) continue;
     if (minute <= c.openedWorldMinute) continue;
-    if (c.status === "withdrawn") continue;
+    // Walk-away ends the player's intervention, not the public office's response.
     const step = c.responseTicks;
     const orgId = c.participatingOrganizationIds[step % c.participatingOrganizationIds.length];
     if (!orgId) continue;
@@ -159,7 +159,7 @@ function eligible(world: WorldState, id: string) {
 export function mapInstitutionalCase(world: WorldState, id: string) {
   if (!enabled(world)) return failed("CIVIC_UNAVAILABLE");
   const c = eligible(world, id);
-  if (!c) return failed("CIVIC_SOURCE_INVALID");
+  if (!c || world.worldMinute < c.openedWorldMinute) return failed("CIVIC_SOURCE_INVALID");
   if (c.status !== "open" || world.worldMinute > c.expiresWorldMinute) return failed("CIVIC_NOT_OPEN");
   const compiled = compileContentCondition({
     op: "fact", fact: { kind: "player.known-active-target-machines",
@@ -182,7 +182,7 @@ export function resolveInstitutionalCase(
 ) {
   if (!enabled(world)) return failed("CIVIC_UNAVAILABLE");
   const c = eligible(world, id);
-  if (!c) return failed("CIVIC_SOURCE_INVALID");
+  if (!c || world.worldMinute < c.openedWorldMinute) return failed("CIVIC_SOURCE_INVALID");
   if ((c.status !== "open" && c.status !== "mapped") ||
       world.worldMinute > c.expiresWorldMinute) return failed("CIVIC_CLOSED");
   if (choice !== "walk-away" && c.status !== "mapped") return failed("CIVIC_NEEDS_MAPPING");
