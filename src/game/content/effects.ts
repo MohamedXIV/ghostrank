@@ -60,6 +60,7 @@ export function executeContentEffect(
     !contract ||
     contract.issuerId !== input.issuerId ||
     contract.acceptedWorldMinute !== input.sourceWorldMinute ||
+    input.id !== `content:${BROKER_RECONCILIATION_RULE_ID}:${contract.id}:${input.sourceWorldMinute}` ||
     (contract.status !== "accepted" && contract.status !== "completed" && contract.status !== "expired")
   ) {
     return { reason: "invalid-source", events: [] };

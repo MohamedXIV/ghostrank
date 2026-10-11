@@ -2222,6 +2222,20 @@ export class CommandBus {
     // collects its own events, so a stable sort by world minute restores
     // chronology. Events that share a minute keep the subsystem order below,
     // which is the same whether the wait was split or not.
+    const contentMinutes = new Set(schedule.content.map((event) =>
+      (event as { worldMinute?: number }).worldMinute ?? fromMinute,
+    ));
+    // Default worlds retain the pre-P2 tie order byte-for-byte. A content
+    // deadline fired at this minute changes only that minute's tie order to
+    // match the actual scheduler: NPC actions, content phase 2, build phase 3.
+    const contentTiePhase = (event: SimulationEvent): number => {
+      if (event.type === "BuildCompleted") return 3;
+      if (
+        event.type === "ContentReactionResolved" ||
+        (event.type === "RelationshipChanged" && event.causeKind === "content")
+      ) return 2;
+      return 1;
+    };
     const ordered = [
       ...upkeepEvents,
       ...buildEvents,
@@ -2235,7 +2249,11 @@ export class CommandBus {
         index,
         minute: (event as { worldMinute?: number }).worldMinute ?? fromMinute,
       }))
-      .sort((a, b) => a.minute - b.minute || a.index - b.index)
+      .sort((a, b) =>
+        a.minute - b.minute ||
+        (contentMinutes.has(a.minute) ? contentTiePhase(a.event) - contentTiePhase(b.event) : 0) ||
+        a.index - b.index,
+      )
       .map((entry) => entry.event);
 
     return ordered;

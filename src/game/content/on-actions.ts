@@ -74,7 +74,10 @@ export function resolveContentReaction(
   // Jobs cannot be replayed with a forged earlier due minute.
   if (pending.dueWorldMinute !== worldMinute) return [];
 
-  const result = executeContentEffect(world, pending, worldMinute);
+  const result = pending.dueWorldMinute ===
+    pending.sourceWorldMinute + BROKER_RECONCILIATION_RULE.delayMinutes
+    ? executeContentEffect(world, pending, worldMinute)
+    : { reason: "invalid-source" as const, events: [] };
   state.pending.splice(index, 1);
   state.resolvedIds.push(id);
   return [

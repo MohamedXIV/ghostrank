@@ -238,6 +238,45 @@ describe("G9 P2 real sourced and finite content on-action", () => {
     expect(restored.snapshot().worldMinute).toBe(1000);
   });
 
+  it("rejects a tampered receipt identity or shortened due minute", () => {
+    const original = start().snapshot();
+    const mutated = structuredClone(original);
+    const entry = mutated.content?.pending[0];
+    if (!entry) throw new Error("no pending");
+    entry.id = "content:forged";
+    entry.dueWorldMinute = 300;
+    mutated.jobQueue.jobs = mutated.jobQueue.jobs.filter((job) =>
+      job.kind !== "content-response");
+    const forged = new CommandBus(mutated);
+    expect(wait(forged, 500)).toContainEqual(expect.objectContaining({
+      type: "ContentReactionResolved", reason: "invalid-source", worldMinute: 300,
+    }));
+    expect(relation(forged.snapshot())?.grudge).toBe(8);
+  });
+
+  it("returns exact-tick content events before build completion at the same minute", () => {
+    const prepared = new CommandBus(fixture());
+    wait(prepared, 300);
+    prepared.execute({ type: "acceptContract", contractId: "contract:1" });
+    const state = prepared.snapshot();
+    state.builds.push({
+      id: "build:test",
+      specId: "content-test",
+      modelId: "fictional-model",
+      startedWorldMinute: 0,
+      dueWorldMinute: 720,
+      outcome: "clean",
+    });
+    const bus = new CommandBus(state);
+    const events = wait(bus, 420);
+    const contentIndex = events.findIndex((e) => e.type === "ContentReactionResolved");
+    const buildIndex = events.findIndex((e) => e.type === "BuildCompleted");
+    expect(contentIndex).toBeGreaterThan(-1);
+    expect(buildIndex).toBeGreaterThan(contentIndex);
+    expect(events[contentIndex]).toMatchObject({ result: "applied", worldMinute: 720 });
+    expect(events[buildIndex]).toMatchObject({ type: "BuildCompleted", worldMinute: 720 });
+  });
+
   it("resolves exact-tick ties after the ecosystem boundary and before builds", () => {
     const bus = new CommandBus(fixture());
     wait(bus, 300);
