@@ -1,6 +1,6 @@
 # Semantic Sandbox & Content Architecture — G9
 
-**Status:** G9 P0–P5 merged; P6 PR #151 adds a bounded fictional institutional case across one district office or two cooperating offices, with independent world-clock responses. This is **not** a simulated country. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
+**Status:** G9 P0–P6 merged; P7 PR #152 adds privileged content diagnostics, 128-seed replay/performance baselines and a pure asynchronous simulation host seam. No Web Worker/Rust deployment. The fictional federation is **not** a simulated country. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
 
 ## 0. Current baseline versus new work
 
@@ -132,7 +132,7 @@ This tree is an **illustrative starting point**, not a mandated file count. Co-l
 - **#140 P4:** first broker-free lead from public NPC activity OR an actually read NPC rumor; earned host mapping, divergent disclosure/trade/exploit/ignore, cooldown/expiry and player-safe projection (PR #149).
 - **#141 P5:** Ink adapter used by real content, not a mock GUI.
 - **#142 P6:** meaningful multi-party fictional institutional leak arc; add only necessary domains.
-- **#143 P7:** developer why/why-not diagnostics, seeded variation, speed, Worker-ready interface; performance work only when measured.
+- **#143 P7:** developer-only authority/provenance/blocked-reason traces, 128 distinct generated seed/scenario replay pairs with measured Node24 wall-time/heap baseline, and serialized async CommandBus host returning *only* player-safe projection (PR #152). A future Worker requires separate justification.
 
 **Per slice:** failing focused tests first; fixed-seed determinism, forged reference/secret denial, rank independence, replay/save/current-run schema, chronology on system ticks, no actions after ending, GUI/terminal parity where applicable. Node24 full tests/typecheck/lint/build and targeted real Chromium where UI changes. An automated smoke is never a human playtest. Existing G3 P2 #110 and draft PR #116 are NOT approved by this initiative.
 
