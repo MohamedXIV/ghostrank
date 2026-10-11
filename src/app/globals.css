@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--surface-raised);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--surface-raised);
+  --color-muted-foreground: var(--foreground-muted);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--focus);
+}
+
+
 :root {
   color-scheme: dark;
 

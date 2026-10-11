@@ -1,0 +1,137 @@
+#!/usr/bin/env node
+/* Real-game five-distro visual acceptance: 5 × Shell/Market/Recon × desktop/phone.
+ * All screenshots use the real UI and the real OS installer. Never seed hidden
+ * state or substitute screenshot-only markup. Node 24 + playwright-core. */
+import { createServer } from "node:http";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright-core";
+
+const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const OUT = join(ROOT, "out");
+const DEST = join(ROOT, ".smoke", "visual-reboot", "shell-v1");
+const PORT = Number(process.env.GHOSTRANK_V1_PORT ?? 3198);
+const CHROMIUM = process.env.GHOSTRANK_SMOKE_CHROMIUM
+  ?? process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+  ?? (existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+      ? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" : undefined);
+const distros = [
+  ["ghost-os", "Ghost", "topbar-dock"],
+  ["lattice", "Lattice", "compact-rail"],
+  ["velvet", "Velvet", "edge-shelf"],
+  ["daybreak", "Daybreak", "bottom-taskbar"],
+  ["petal", "Petal", "soft-dock"],
+];
+const views = [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "phone-390", width: 390, height: 844, isMobile: true },
+];
+const mime = {".html":"text/html",".js":"text/javascript",".css":"text/css",
+  ".svg":"image/svg+xml",".png":"image/png",".ico":"image/x-icon",
+  ".woff":"font/woff",".woff2":"font/woff2",".webp":"image/webp",".json":"application/json"};
+const captured = [], failures = [];
+
+function server() {
+  return createServer((request, response) => {
+    const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
+    if (pathname === "/favicon.ico") { response.writeHead(204).end(); return; }
+    const path = resolve(OUT, "." + (pathname === "/" ? "/index.html" : pathname));
+    if (!path.startsWith(OUT + "/")) { response.writeHead(403).end(); return; }
+    if (!existsSync(path) || statSync(path).isDirectory()) { response.writeHead(404).end(); return; }
+    response.writeHead(200, { "content-type": mime[extname(path)] ?? "application/octet-stream" });
+    response.end(readFileSync(path));
+  });
+}
+async function startGame(page) {
+  await page.goto("http://127.0.0.1:" + PORT + "/", { waitUntil: "load" });
+  const handle = page.locator('input[name="player-handle"]');
+  await handle.waitFor({ timeout: 30000 });
+  await handle.fill("V1ShellWren");
+  await page.locator('.run-scenario-option[data-scenario="fresh-scene"] input[type="radio"]').check();
+  await page.getByRole("button", { name: /start new operation/i }).click();
+  await handle.waitFor({ state: "detached", timeout: 60000 });
+  for (let i = 0; i < 100; i++) {
+    if (await page.getByTitle("Recon (Alt+2)").count()) break;
+    const workstation = page.getByRole("button", { name: /use workstation/i });
+    if (await workstation.count() && await workstation.first().isVisible()) await workstation.first().click();
+    const enter = page.getByRole("button", { name: /enter system \/\/ start/i });
+    if (await enter.count() && await enter.first().isVisible()) await enter.first().click();
+    await page.waitForTimeout(200);
+  }
+  await page.locator(".desktop-surface").waitFor({ timeout: 15000 });
+  const pause = page.locator(".clock-hud button", { hasText: "Pause" }).first();
+  if (await pause.count()) await pause.click();
+}
+async function activateDistro(page, id, label, mode) {
+  if (id !== "ghost-os") {
+    await page.getByTitle("System & Appearance (Alt+6)").click();
+    const card = page.locator(".distro-card").filter({ hasText: label }).first();
+    await card.getByRole("button", { name: "INSTALL", exact: true }).click();
+    await page.locator(".distro-installer").waitFor({ state: "hidden", timeout: 18000 });
+  }
+  const surface = page.locator('.desktop-surface[data-distro="' + id + '"][data-shell-mode="' + mode + '"]');
+  await surface.waitFor({ timeout: 12000 });
+  const launcher = surface.locator('nav[data-distro-launcher="' + id + '"]');
+  if (await launcher.locator("[data-window-id]").count() !== 6) throw new Error(id + ": six-app contract broken");
+  const goodIcons = await launcher.locator("img.distro-app-icon").evaluateAll(els =>
+    els.length === 6 && els.every(el => el.complete && el.naturalWidth > 0));
+  if (!goodIcons) throw new Error(id + ": missing original app icon");
+}
+async function shot(page, id, viewport, app) {
+  const path = join(DEST, id + "-" + app + "-" + viewport + ".png");
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  const viewportWidth = await page.evaluate(() => innerWidth);
+  if (width > viewportWidth + 1) throw new Error(id + " " + app + ": horizontal overflow " + width + "/" + viewportWidth);
+  await page.screenshot({ path, animations: "disabled", timeout: 30000 });
+  if (!existsSync(path) || statSync(path).size < 1024) throw new Error("Empty screenshot: " + path);
+  captured.push({ id, viewport, app, bytes: statSync(path).size });
+  console.log("CAPTURE", id, viewport, app);
+}
+async function oneView(browser, view) {
+  const context = await browser.newContext({ viewport: { width: view.width, height: view.height },
+    ...(view.isMobile ? { isMobile: true, hasTouch: true } : {}), reducedMotion: "reduce" });
+  const page = await context.newPage();
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("response", response => {
+    if (response.status() >= 400) errors.push("HTTP " + response.status() + " " + response.url());
+  });
+  try {
+    await startGame(page);
+    for (const [id, label, mode] of distros) {
+      await activateDistro(page, id, label, mode);
+      await shot(page, id, view.name, "shell");
+      await page.getByTitle("Market & Rig (Alt+4)").click();
+      await page.locator(".os-window-market").getByText("Secondhand Workstation").first().waitFor();
+      await shot(page, id, view.name, "market");
+      await page.getByTitle("Recon (Alt+2)").click();
+      await page.locator(".os-window-recon").waitFor();
+      await shot(page, id, view.name, "recon");
+    }
+    if (errors.length) throw new Error("Browser errors: " + errors.join(" | "));
+  } finally { await context.close(); }
+}
+if (!existsSync(join(OUT, "index.html"))) throw new Error("Missing static build: npm run build");
+mkdirSync(DEST, { recursive: true });
+const http = server();
+let browser;
+try {
+  await new Promise((resolveReady, reject) => {
+    http.once("error", reject); http.listen(PORT, "127.0.0.1", resolveReady);
+  });
+  browser = await chromium.launch({ ...(CHROMIUM ? { executablePath: CHROMIUM } : {}),
+    headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+  for (const view of views) {
+    try { await oneView(browser, view); }
+    catch (error) { failures.push(view.name + ": " + (error instanceof Error ? error.message : String(error))); }
+  }
+} finally {
+  await browser?.close();
+  await new Promise(ok => http.close(ok));
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 30, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+}
+if (captured.length !== 30 || failures.length) {
+  console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
+  process.exitCode = 1;
+} else console.log("SHELL V1 PASS: 30/30 live Chromium app screenshots");

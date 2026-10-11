@@ -1,0 +1,180 @@
+/* Ghostrank V1: Linux-DE-inspired distro shells.
+   Interaction is shared; only appearance and composition vary.
+   Imported after legacy CSS to permit a small, reversible UI slice. */
+.desktop-surface[data-shell-mode] {
+  --distro-wallpaper: url("/visual-reboot/wallpapers/ghost-os.svg");
+  --distro-dock-bg: var(--chrome-background);
+  --distro-frame-radius: 12px;
+}
+.desktop-surface[data-distro="lattice"] { --distro-wallpaper: url("/visual-reboot/wallpapers/lattice.svg"); --distro-frame-radius: 3px; }
+.desktop-surface[data-distro="velvet"] { --distro-wallpaper: url("/visual-reboot/wallpapers/velvet.svg"); --distro-frame-radius: 16px; }
+.desktop-surface[data-distro="daybreak"] { --distro-wallpaper: url("/visual-reboot/wallpapers/daybreak.svg"); --distro-frame-radius: 7px; }
+.desktop-surface[data-distro="petal"] { --distro-wallpaper: url("/visual-reboot/wallpapers/petal.svg"); --distro-frame-radius: 18px; }
+
+.desktop-surface[data-shell-mode] .desktop-grid {
+  background: linear-gradient(120deg, var(--desktop-vignette), transparent 68%), var(--distro-wallpaper) center center / cover no-repeat;
+  opacity: .92;
+}
+.desktop-surface[data-shell-mode] .os-window {
+  border-radius: var(--distro-frame-radius);
+}
+.desktop-surface[data-shell-mode] .os-bar {
+  border-bottom: 1px solid var(--line);
+}
+.desktop-surface[data-shell-mode] .desktop-launcher.distro-launcher {
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 7px;
+  background: var(--distro-dock-bg);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 31%);
+  backdrop-filter: blur(14px);
+}
+.desktop-surface[data-shell-mode] .distro-launcher button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 70px;
+  min-height: 57px;
+  padding: 5px 2px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--foreground);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.desktop-surface[data-shell-mode] .distro-launcher button:hover,
+.desktop-surface[data-shell-mode] .distro-launcher button[data-focused="true"] {
+  background: color-mix(in srgb,var(--accent) 14%,var(--surface));
+  border-color: color-mix(in srgb,var(--accent) 30%,transparent);
+}
+.desktop-surface[data-shell-mode] .distro-launcher button[data-open="true"] .launcher-glyph:after {
+  content:"";
+  position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
+  width:14px;height:2px;border-radius:3px;background:var(--accent);
+}
+.desktop-surface[data-shell-mode] .distro-launcher .launcher-glyph {
+  position:relative;
+  width:39px;height:39px;display:grid;place-items:center;
+  margin:0;background:transparent;border:0;color:var(--accent);
+}
+.distro-launcher .distro-app-icon { display:block;width:36px;height:36px;object-fit:contain; }
+.desktop-surface[data-shell-mode] .distro-launcher .launcher-app-label {
+  max-width:68px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.desktop-surface[data-shell-mode="topbar-dock"] .distro-launcher {
+  top:auto;left:50%;right:auto;bottom:13px;transform:translateX(-50%);
+}
+.desktop-surface[data-shell-mode="compact-rail"] .distro-launcher {
+  top:50%;left:10px;right:auto;bottom:auto;
+  transform:translateY(-50%);flex-direction:column;
+  border-radius:5px;gap:2px;
+}
+.desktop-surface[data-shell-mode="compact-rail"] .distro-launcher button {
+  width:59px;min-height:57px;border-radius:3px;
+}
+.desktop-surface[data-shell-mode="compact-rail"] .os-window { border-radius:3px; }
+.desktop-surface[data-shell-mode="compact-rail"] .os-window-market {
+  left:16%;top:7%;width:min(67vw,980px);height:min(78vh,680px);
+}
+.desktop-surface[data-shell-mode="edge-shelf"] .distro-launcher {
+  top:50%;left:auto;right:12px;bottom:auto;transform:translateY(-50%);flex-direction:column;
+  border-radius:19px;gap:8px;
+}
+.desktop-surface[data-shell-mode="edge-shelf"] .distro-launcher button {width:62px;border-radius:12px;}
+.desktop-surface[data-shell-mode="edge-shelf"] .os-window-market {
+  left:12%;top:9%;width:min(67vw,900px);height:min(75vh,650px);
+}
+.desktop-surface[data-shell-mode="edge-shelf"] .os-window {
+  box-shadow:0 24px 75px rgb(7 2 9 / 54%),0 0 0 1px rgb(213 154 199 / 9%);
+}
+.desktop-surface[data-shell-mode="bottom-taskbar"] .distro-launcher {
+  top:auto;left:0;right:0;bottom:0;transform:none;
+  width:100%;max-width:100%;
+  border-radius:0;border-left:0;border-right:0;border-bottom:0;
+  justify-content:flex-start;padding:4px 14px;gap:6px;
+  backdrop-filter:none;
+}
+.desktop-surface[data-shell-mode="bottom-taskbar"] .distro-launcher button {
+  flex-direction:row;width:auto;min-width:104px;min-height:41px;
+  padding:4px 10px;border-radius:4px;gap:6px;
+}
+.desktop-surface[data-shell-mode="bottom-taskbar"] .distro-launcher .launcher-glyph {width:29px;height:29px;}
+.desktop-surface[data-shell-mode="bottom-taskbar"] .distro-app-icon {width:27px;height:27px;}
+.desktop-surface[data-shell-mode="soft-dock"] .distro-launcher {
+  top:auto;left:50%;right:auto;bottom:14px;transform:translateX(-50%);
+  padding:9px;border-radius:24px;gap:9px;
+  background: color-mix(in srgb,var(--surface) 89%,transparent);
+}
+.desktop-surface[data-shell-mode="soft-dock"] .distro-launcher button {
+  width:75px;min-height:64px;border-radius:17px;
+}
+.desktop-surface[data-shell-mode="soft-dock"] .distro-launcher .launcher-glyph {width:44px;height:44px;}
+.desktop-surface[data-shell-mode="soft-dock"] .distro-app-icon {width:43px;height:43px;}
+.desktop-surface[data-shell-mode="soft-dock"] .os-window {
+  border-radius:18px;box-shadow:0 18px 50px rgb(45 18 42 / 17%);
+}
+.desktop-surface[data-shell-mode] .distro-launcher button:focus-visible {
+  outline:3px solid var(--focus);outline-offset:1px;
+}
+@media(max-width:700px) {
+  .desktop-surface[data-shell-mode] .desktop-launcher.distro-launcher {
+    top:auto;bottom:0;left:0;right:0;transform:none;
+    flex-direction:row;justify-content:space-around;
+    width:100%;max-width:100%;border-radius:0;padding:4px 2px;gap:0;
+  }
+  .desktop-surface[data-shell-mode] .distro-launcher button {
+    flex:1 1 0;min-width:0;width:auto;min-height:47px;
+    flex-direction:column;padding:2px;border-radius:5px;
+  }
+  .desktop-surface[data-shell-mode] .distro-launcher .launcher-glyph {
+    width:28px;height:28px;
+  }
+  .desktop-surface[data-shell-mode] .distro-app-icon {width:27px;height:27px;}
+  .desktop-surface[data-shell-mode] .distro-launcher .launcher-app-label {
+    font-size:9px;max-width:48px;
+  }
+  .desktop-surface[data-shell-mode="compact-rail"] .desktop-launcher.distro-launcher {
+    top:0;bottom:0;left:0;right:auto;flex-direction:column;
+    width:48px;height:100%;justify-content:center;
+    border-radius:0;gap:2px;
+  }
+  .desktop-surface[data-shell-mode="compact-rail"] .distro-launcher button {
+    min-height:58px;width:46px;flex:0 1 auto;
+  }
+  .desktop-surface[data-shell-mode="compact-rail"] .distro-launcher .launcher-app-label {
+    font-size:8px;max-width:43px;
+  }
+  .desktop-surface[data-shell-mode="compact-rail"] .os-window {max-width:calc(100% - 59px);}
+  .desktop-surface[data-shell-mode="compact-rail"] .os-window-market,
+  .desktop-surface[data-shell-mode="compact-rail"] .os-window-recon {
+    right:7px;left:54px;top:6%;width:auto;height:76%;
+  }
+  .desktop-surface[data-shell-mode="bottom-taskbar"] .desktop-launcher.distro-launcher {
+    background:var(--surface);justify-content:space-around;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .desktop-surface[data-shell-mode] .distro-launcher button {transition:none;}
+}
+.desktop-surface[data-motion-mode="reduce"] .distro-launcher button {transition:none;}
+.desktop-surface[data-transparency="opaque"] .distro-launcher,
+.desktop-surface[data-contrast="high"] .distro-launcher {
+  backdrop-filter:none;background:var(--surface);
+}
+
+/* Windows remain interactive when field guidance overlaps the workspace.
+   Guidance is available behind windows, never an invisible click shield. */
+.desktop-surface[data-shell-mode] .field-directives-panel,
+.desktop-surface[data-shell-mode] .field-directives-minimized {
+  z-index: 4;
+}

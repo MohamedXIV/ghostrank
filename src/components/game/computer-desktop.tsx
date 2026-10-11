@@ -67,6 +67,8 @@ import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import { Button } from "@/components/ui/button";
+import { DesktopLauncher } from "@/components/game/desktop/desktop-launcher";
+import { shellLayoutFor } from "@/presentation/shell-layout";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
@@ -173,6 +175,7 @@ export function ComputerDesktop({
   const densityMode = usePresentationStore((state) => state.densityMode);
   const contrastMode = usePresentationStore((state) => state.contrastMode);
   const distro = DISTRO_PROFILES[distroId];
+  const shellLayout = shellLayoutFor(distroId);
 
   const orientationModalOpen = useOnboardingStore(
     (state) => state.orientationModalOpen,
@@ -273,6 +276,7 @@ export function ComputerDesktop({
     <section
       className="desktop-surface"
       data-distro={distroId}
+      data-shell-mode={shellLayout.mode}
       data-theme={themeId}
       data-text-scale={textScale}
       data-motion-mode={motionMode}
@@ -336,71 +340,13 @@ export function ComputerDesktop({
       </header>
 
       <div className="desktop-workspace">
-        <nav className="desktop-launcher" aria-label="Applications">
-          <button
-            type="button"
-            onClick={() => openWindow("terminal")}
-            aria-keyshortcuts="Alt+1"
-            title="Terminal (Alt+1)"
-          >
-            <span className="launcher-glyph">&gt;_</span>
-            Terminal
-          </button>
-          <button
-            type="button"
-            onClick={() => openWindow("recon")}
-            aria-keyshortcuts="Alt+2"
-            title="Recon (Alt+2)"
-          >
-            <span className="launcher-glyph">◎</span>
-            Recon
-          </button>
-          <button
-            type="button"
-            onClick={() => openWindow("underground")}
-            aria-keyshortcuts="Alt+3"
-            title="Underground Index (Alt+3)"
-          >
-            <span className="launcher-glyph">◈</span>
-            Index
-          </button>
-          <button
-            type="button"
-            onClick={() => openWindow("market")}
-            aria-keyshortcuts="Alt+4"
-            title="Market & Rig (Alt+4)"
-          >
-            <span className="launcher-glyph">⌸</span>
-            Market
-          </button>
-          <button
-            type="button"
-            onClick={() => openWindow("history")}
-            aria-keyshortcuts="Alt+5"
-            title="Run History (Alt+5)"
-          >
-            <span className="launcher-glyph">▤</span>
-            History
-          </button>
-          <button
-            type="button"
-            onClick={() => openWindow("settings")}
-            aria-keyshortcuts="Alt+6"
-            title="System & Appearance (Alt+6)"
-          >
-            <span className="launcher-glyph">✦</span>
-            Appearance
-          </button>
-          <button
-            type="button"
-            onClick={openLegendModal}
-            aria-keyshortcuts="F1"
-            title="System symbols & truth vocabulary glossary (F1)"
-          >
-            <span className="launcher-glyph">?</span>
-            Glossary
-          </button>
-        </nav>
+        <DesktopLauncher
+          distroId={distroId}
+          openWindows={openWindows}
+          focusedWindow={focusedWindow}
+          onOpenWindow={openWindow}
+          onOpenGlossary={openLegendModal}
+        />
 
         <div className="desktop-grid" aria-hidden="true" />
 
