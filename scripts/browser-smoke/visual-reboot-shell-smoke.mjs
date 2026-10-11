@@ -63,7 +63,7 @@ async function startGame(page) {
   const pause = page.locator(".clock-hud button", { hasText: "Pause" }).first();
   if (await pause.count()) await pause.click();
 }
-async function useDistro(page, id, label, mode) {
+async function activateDistro(page, id, label, mode) {
   if (id !== "ghost-os") {
     await page.getByTitle("System & Appearance (Alt+6)").click();
     const card = page.locator(".distro-card").filter({ hasText: label }).first();
@@ -100,7 +100,7 @@ async function oneView(browser, view) {
   try {
     await startGame(page);
     for (const [id, label, mode] of distros) {
-      await useDistro(page, id, label, mode);
+      await activateDistro(page, id, label, mode);
       await shot(page, id, view.name, "shell");
       await page.getByTitle("Market & Rig (Alt+4)").click();
       await page.locator(".os-window-market").getByText("Secondhand Workstation").first().waitFor();
