@@ -2732,11 +2732,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         pageCount={pageCount}
         onPageChange={setRecordPage}
       />
-      <ContextualHint
-        id="hint:market-capacity"
-        title="RIG CAPACITY & UPKEEP"
-        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
-      />
       <section aria-label="Wallet">
         <span className="panel-label">WALLET</span>
         <div className="market-wallet">
@@ -2789,6 +2784,11 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         )}
       </section>
 
+      <ContextualHint
+        id="hint:market-capacity"
+        title="RIG CAPACITY & UPKEEP"
+        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
+      />
       <section aria-label="Rig capability">
         <span className="panel-label">RIG CAPABILITY</span>
         <div className="market-capability-grid">
