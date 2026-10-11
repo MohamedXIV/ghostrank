@@ -1,6 +1,6 @@
 # Semantic Sandbox & Content Architecture — G9
 
-**Status:** G9 P0–P2 merged; P3 migrates the first real contract objective into the bounded semantic evaluator (PR #148). Broker-free world opportunities and Ink are still unshipped. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
+**Status:** G9 P0–P3 merged; P4 adds the first broker-free world lead in Fresh Scene/High Pressure (PR #149). Ink and institutional-scale story arcs are not yet shipped. **Epic:** #135; slices #136–#143. Inspired by Paradox/Clausewitz/Jomini *design patterns*, not a claim of cloning their internal engine.
 
 ## 0. Current baseline versus new work
 
@@ -129,7 +129,7 @@ This tree is an **illustrative starting point**, not a mandated file count. Co-l
 - **#137 P1:** complete — bounded typed fact/condition evaluator and epistemic lenses.
 - **#138 P2:** first executable opt-in on-action/effect response through authoritative clock, source identity, and current-run receipt (PR #147); not a playable standalone mechanic.
 - **#139 P3:** first real `infrastructure-map` objective migrated from specialized branch to validated definition + shared evaluator (PR #148); current rewards, issuance and timing unchanged.
-- **#140 P4:** one independent non-broker opportunity plus second genuine event producer; scoped repeats.
+- **#140 P4:** first broker-free lead from public NPC activity OR an actually read NPC rumor; earned host mapping, divergent disclosure/trade/exploit/ignore, cooldown/expiry and player-safe projection (PR #149).
 - **#141 P5:** Ink adapter used by real content, not a mock GUI.
 - **#142 P6:** meaningful multi-party fictional institutional leak arc; add only necessary domains.
 - **#143 P7:** developer why/why-not diagnostics, seeded variation, speed, Worker-ready interface; performance work only when measured.
