@@ -2152,11 +2152,11 @@ function UndergroundApp({ runtime }: { runtime: GameRuntime }) {
             {visibleRecords(Object.entries(civicCasesTable), recordPage).map(([id, c]) => {
               const status = String(c.status ?? "open");
               return <li key={id}>
-                <p><strong>{String(c.publicBody)}</strong> // {String(c.scope)}</p>
-                <p>Source: {String(c.sourceHandle)} // {String(c.responsePhase)}
+                <p><strong>{String(c.publicBody)}</strong>{" // "}{String(c.scope)}</p>
+                <p>Source: {String(c.sourceHandle)}{" // "}{String(c.responsePhase)}
                   {" // "}{String(c.publicAttention)} public attention
                   {" // "}{String(c.affectedOfficeCount)} affected offices</p>
-                <p>{status.toUpperCase()} // Expires {formatWorldTime(Number(c.expiresWorldMinute ?? 0))}</p>
+                <p>{status.toUpperCase()}{" // "}Expires {formatWorldTime(Number(c.expiresWorldMinute ?? 0))}</p>
                 {c.knownTargetHandle && <p>Known host: {String(c.knownTargetHandle)}</p>}
                 <small>Case ID: {id}</small>
                 {(status === "open" || status === "mapped") && (
