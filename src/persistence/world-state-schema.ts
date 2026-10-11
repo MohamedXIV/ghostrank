@@ -522,6 +522,20 @@ const storedWorldStateSchema = z.object({
   ending: runEndingSchema.nullable().default(null),
   // Phase 7 P2: and have no voluntary exit plan in progress.
   retirement: retirementPlanSchema.nullable().default(null),
+  // G9 P2: absent in regular worlds; preserve opted-in pack source refs and
+  // exactly-once receipts across both browser and desktop save round-trips.
+  content: z.object({
+    activeRuleIds: z.array(z.string().min(1).max(160)),
+    pending: z.array(z.object({
+      id: z.string().min(1),
+      ruleId: z.string().min(1).max(160),
+      sourceContractId: z.string().min(1),
+      issuerId: z.string().min(1),
+      sourceWorldMinute: z.number().int().nonnegative(),
+      dueWorldMinute: z.number().int().nonnegative(),
+    })),
+    resolvedIds: z.array(z.string().min(1)),
+  }).optional(),
   // Game-First G1: and nothing is queued on the clock yet. A save restored
   // mid-job resumes from its persisted minute, applying each boundary once.
   jobQueue: z
@@ -539,6 +553,7 @@ const storedWorldStateSchema = z.object({
               "build",
               "upkeep",
               "outage-release",
+              "content-response",
             ]),
             resource: z.enum(["clock", "rig", "system"]),
             phasePriority: z.number().int().nonnegative(),

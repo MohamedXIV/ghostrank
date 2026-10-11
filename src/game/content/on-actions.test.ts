@@ -9,6 +9,7 @@ import {
   scheduleContentOnAction,
 } from "@/game/content/on-actions";
 import { createInitialWorldState, type WorldState } from "@/game/simulation/state/world-state";
+import { worldStateSchema } from "@/persistence/world-state-schema";
 
 const RULE = BROKER_RECONCILIATION_RULE_ID;
 
@@ -200,6 +201,23 @@ describe("G9 P2 real sourced and finite content on-action", () => {
     wait(many, 59);
     wait(many, 580);
     expect(many.snapshot()).toEqual(one.snapshot());
+  });
+
+  it("persists the content ledger and scheduled job through actual save schema", () => {
+    const bus = start();
+    const original = bus.snapshot();
+    const encoded = JSON.stringify(worldStateSchema.parse(original));
+    const restored = worldStateSchema.parse(JSON.parse(encoded));
+    expect(restored.content).toEqual(original.content);
+    expect(restored.jobQueue.jobs.find((job) => job.kind === "content-response"))
+      .toEqual(original.jobQueue.jobs.find((job) => job.kind === "content-response"));
+    const fromSave = new CommandBus(restored);
+    expect(wait(fromSave, 500)).toContainEqual(expect.objectContaining({
+      type: "ContentReactionResolved", result: "applied", worldMinute: 420,
+    }));
+    const settled = worldStateSchema.parse(fromSave.snapshot());
+    expect(settled.content?.resolvedIds).toHaveLength(1);
+    expect(settled.content?.pending).toHaveLength(0);
   });
 
   it("survives save/reload before the deadline and rebuilds a missing scheduled job", () => {
