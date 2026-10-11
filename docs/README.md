@@ -23,6 +23,7 @@ These documents are the canonical design and engineering foundation.
 - [SEMANTIC_CONTENT_AUTHORING.md](SEMANTIC_CONTENT_AUTHORING.md) — G9 authored content examples and review rules
 - [G9_P1_CONDITIONS.md](G9_P1_CONDITIONS.md) — shipped finite scoped evaluator and knowledge-lens limits
 - [G9_P2_EFFECTS.md](G9_P2_EFFECTS.md) — authoritative opt-in on-action, scheduled effect, replay/receipt contract
+- [G9_P3_CONTRACT_MIGRATION.md](G9_P3_CONTRACT_MIGRATION.md) — migrated infrastructure-map objective, authored variants and regression proof
 - [G9_P0_SEMANTIC_CONTRACT.md](G9_P0_SEMANTIC_CONTRACT.md) — verified code seams, exact legacy objectives, first contract and P1/P3 test plan
 
 ## Delivery

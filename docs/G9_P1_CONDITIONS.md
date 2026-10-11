@@ -13,7 +13,7 @@
 
 ## Deliberately not implemented
 
-No contract migration or change to `isObjectiveMet` yet (reserved for #139), no on-action/effect handlers (#138), broker-free opportunity (#140), incoming NPC belief store, Ink, Web Worker or Rust. This query is trusted server/simulation code; do **not** expose it directly to GUI, terminal or inkjs. Future player-facing condition previews must use a separately authorized/redacted projection.
+The original P1 slice did not migrate contracts or register effects. Subsequently P2 #138 shipped one opt-in authorized on-action and P3 #139 migrates `infrastructure-map` to the P1 evaluator. Broker-free opportunities (#140), incoming NPC belief store, Ink, Web Worker and Rust remain out of scope. This query is trusted server/simulation code; do **not** expose it directly to GUI, terminal or inkjs. Future player-facing condition previews must use a separately authorized/redacted projection.
 
 ## Verification
 
