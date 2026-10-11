@@ -41,6 +41,13 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
   },
   {
     category: "underground",
+    syntax: "story view",
+    label: "story view",
+    description: "Read the current authorized Ink dialogue and offered choice IDs",
+    example: "story view",
+  },
+  {
+    category: "underground",
     syntax: "story choose <scene-id> <choice-id>",
     label: "story choose",
     description: "Select an offered Ink choice via the authoritative CommandBus",

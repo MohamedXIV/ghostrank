@@ -47,6 +47,7 @@ import { retirementActionFromGui } from "@/game/computer/apps/retirement-actions
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import { renderNetworkRouteQuery } from "@/game/computer/terminal/network-route-view";
 import { projectWorld } from "@/game/simulation/projection/project-world";
+import { formatNarrativeTerminalView } from "@/game/narrative/terminal-view";
 import {
   briefingBriefLines,
   briefingEventNotices,
@@ -659,6 +660,20 @@ function TerminalApp({
       return;
     }
 
+    if (raw.toLowerCase() === "story view") {
+      const read = projectWorld(runtime.snapshot()).narrative;
+      setItems((current) => [
+        ...current,
+        { id: promptId, type: "prompt", text: raw },
+        {
+          id: `story-${Date.now()}`,
+          type: "table",
+          text: formatNarrativeTerminalView(read),
+        },
+      ]);
+      return;
+    }
+
     // Generic read-only network queries use the same player-safe data as Recon.
     const routeRead = renderNetworkRouteQuery(raw, projectWorld(runtime.snapshot()).networkRoutes);
     if (routeRead !== null) {
@@ -996,6 +1011,14 @@ function TerminalApp({
           glyph: rich.glyph,
           text: rich.text,
         },
+        ...(parsed.command.type === "startNarrative" ||
+           parsed.command.type === "chooseNarrative"
+          ? [{
+              id: `story-${Date.now()}`,
+              type: "table" as const,
+              text: formatNarrativeTerminalView(projectWorld(runtime.snapshot()).narrative),
+            }]
+          : []),
         ...notices.map((notice, index) => ({
           id: `briefing-${Date.now()}-${index}`,
           type: "result" as const,

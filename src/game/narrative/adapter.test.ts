@@ -4,6 +4,7 @@ import { CommandBus } from "@/game/simulation/command-bus";
 import { captureWorldOpportunities } from "@/game/content/opportunities";
 import { projectWorld } from "@/game/simulation/projection/project-world";
 import { renderInkNarrative } from "@/game/narrative/ink-runtime";
+import { formatNarrativeTerminalView } from "@/game/narrative/terminal-view";
 import { parseTerminalCommand } from "@/game/computer/terminal/parse-command";
 import { worldStateSchema } from "@/persistence/world-state-schema";
 import type { WorldState } from "@/game/simulation/state/world-state";
@@ -205,6 +206,20 @@ describe("G9 P5 inkjs story and authoritative intents", () => {
     const edited = JSON.parse(JSON.stringify(restored.snapshot()));
     edited.narrative.current.version = 2;
     expect(worldStateSchema.safeParse(edited).success).toBe(false);
+  });
+
+  it("terminal can read the very same projected Ink dialogue and available choice IDs", () => {
+    const bus = new CommandBus(publicLeadWorld());
+    const id = bus.snapshot().opportunities![0].id;
+    expect(formatNarrativeTerminalView(undefined)).toContain("NO ACTIVE CONVERSATION");
+    expect(start(bus, leadStory, id).ok).toBe(true);
+    const projected = current(bus);
+    const output = formatNarrativeTerminalView(projected);
+    expect(output).toContain("NARRATIVE // Public incident");
+    expect(output).toContain("story choose " + projected.id + " " + projected.choices[0].id);
+    expect(output).not.toContain(bus.snapshot().opportunities![0].subjectActorId);
+    expect(choose(bus, 1).ok).toBe(true);
+    expect(formatNarrativeTerminalView(current(bus))).toContain("CONVERSATION CONCLUDED");
   });
 
   it("supports terminal commands that equal GUI semantic actions", () => {
