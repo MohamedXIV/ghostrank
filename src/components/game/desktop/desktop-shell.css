@@ -171,3 +171,10 @@
 .desktop-surface[data-contrast="high"] .distro-launcher {
   backdrop-filter:none;background:var(--surface);
 }
+
+/* Windows remain interactive when field guidance overlaps the workspace.
+   Guidance is available behind windows, never an invisible click shield. */
+.desktop-surface[data-shell-mode] .field-directives-panel,
+.desktop-surface[data-shell-mode] .field-directives-minimized {
+  z-index: 4;
+}
