@@ -27,6 +27,7 @@ These documents are the canonical design and engineering foundation.
 - [G9_P4_WORLD_LEADS.md](G9_P4_WORLD_LEADS.md) — NPC-driven brokerless leads, earned investigation, choices, visibility and replay
 - [G9_P5_INK_NARRATIVE.md](G9_P5_INK_NARRATIVE.md) — versioned Ink dialogue/lead choices, CommandBus intents and replay boundary
 - [G9_P6_INSTITUTIONAL_ARC.md](G9_P6_INSTITUTIONAL_ARC.md) — sourced local/federated public-office response, independent multi-tick consequence
+- [G9_P7_DIAGNOSTICS_WORKER_BOUNDARY.md](G9_P7_DIAGNOSTICS_WORKER_BOUNDARY.md) — developer-only provenance, 128-seed baselines, local async Worker-ready host
 - [G9_P0_SEMANTIC_CONTRACT.md](G9_P0_SEMANTIC_CONTRACT.md) — verified code seams, exact legacy objectives, first contract and P1/P3 test plan
 
 ## Delivery
