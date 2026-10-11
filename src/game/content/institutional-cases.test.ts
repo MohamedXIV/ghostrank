@@ -208,6 +208,14 @@ describe("G9 P6 — civic archive, real institutions and reactions", () => {
     expect(v).not.toHaveProperty("knownTargetHandle");
     evidence(world);
     world.knownTargetIds.push(c.targetId);
+    // A legacy known-ID hint is NOT permission to display a target handle.
+    expect(projectWorld(world).underground.civicCases?.[0])
+      .not.toHaveProperty("knownTargetHandle");
+    world.evidence.push({
+      id: "civic:profile-proof", kind: "target-profile",
+      subjectId: c.targetId, source: "direct-observation",
+      confidence: "observed", worldMinute: world.worldMinute,
+    });
     expect(projectWorld(world).underground.civicCases?.[0]).toHaveProperty("knownTargetHandle");
   });
 
