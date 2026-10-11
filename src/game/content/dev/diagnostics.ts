@@ -90,7 +90,10 @@ function chronologicalEvents(
     ("causeId" in event && event.causeId === sourceId)
   ));
   return relevant.slice(-48).map(event => ({
-    kind: event.type, worldMinute: event.worldMinute, sourceId,
+    kind: event.type,
+    worldMinute: "worldMinute" in event && typeof event.worldMinute === "number"
+      ? event.worldMinute : -1,
+    sourceId,
   }));
 }
 
