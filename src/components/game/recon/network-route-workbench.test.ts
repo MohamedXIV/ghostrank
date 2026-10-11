@@ -49,11 +49,17 @@ describe("network route workbench presentation", () => {
     expect(html).toMatch(/<svg[^>]*aria-hidden="true"[^>]*class="network-route-lane"/);
   });
 
-  it("shows the unresolved clue slot and the caveat that candidates are hypotheses", () => {
+  it("shows an unknown echo as unknown, not as a known circular echo", () => {
     const html = render(null);
     expect(html).toContain("Candidate links are hypotheses, not observed destination machines.");
     expect(html).toContain("Echo clue");
     expect(html).toContain("UNRESOLVED");
+    // The text was already correct, but the original glyph falsely drew the
+    // same circle as an observed 'circle' clue. Do not teach a false clue.
+    expect(html).toContain('data-echo-shape="unknown"');
+    expect(html).not.toContain('data-echo-shape="unknown" cx=');
+    expect(html).toMatch(/data-echo-shape="unknown"[^>]*>\?<\/text>/);
+    expect(html).not.toContain('data-echo-shape="circle"');
   });
 
   it("does not label an untested hypothesis as a verified or discovered link", () => {

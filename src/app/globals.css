@@ -5014,7 +5014,10 @@ textarea:focus-visible,
 }
 .network-route-clue-glyph { width: 28px; height: 12px; overflow: visible; }
 .network-route-clue-glyph .lane-line { stroke: var(--foreground); stroke-width: 2; fill: none; }
+.network-route-clue-glyph .lane-line[data-line-style="dashed"] { stroke-dasharray: 6 4; }
+.network-route-clue-glyph .lane-line[data-line-style="unknown"] { stroke-dasharray: 1 3; opacity: 0.6; }
 .network-route-clue-glyph .lane-echo { fill: none; stroke: var(--foreground); stroke-width: 2; }
+.network-route-clue-glyph .lane-unknown { fill: var(--foreground-muted); font-size: 11px; font-weight: 700; }
 .network-route-candidates {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));

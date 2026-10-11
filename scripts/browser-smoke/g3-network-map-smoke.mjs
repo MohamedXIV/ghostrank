@@ -105,6 +105,18 @@ async function assertWorkbench(page, scope, workspace) {
   const count = await lanes.count();
   const svgCount = await workspace.locator("svg.network-route-lane").count();
   check(scope, "one signal lane per hypothesis", count >= 2 && svgCount === count, `hypotheses=${count} lanes=${svgCount}`);
+  // The observed carrier must use the SAME visible dash encoding as the
+  // candidate lanes. A data attribute alone does not style an SVG.
+  const observedCarrier = workspace.locator('.network-route-clue[data-clue="carrier"] svg .lane-line');
+  const carrierEncoding = await observedCarrier.evaluate(el => ({
+    style: el.getAttribute("data-line-style"),
+    computedDash: getComputedStyle(el).strokeDasharray,
+  }));
+  check(scope, "observed sealed carrier actually draws a dashed line",
+    carrierEncoding.style === "dashed" &&
+    Boolean(carrierEncoding.computedDash) &&
+    carrierEncoding.computedDash !== "none",
+    JSON.stringify(carrierEncoding));
   const hidden = await workspace.locator("svg.network-route-lane").first().getAttribute("aria-hidden");
   check(scope, "decorative lanes hidden from assistive tech", hidden === "true");
   check(scope, "no verified link shown before a verdict", !(await workspace.innerText()).includes("VERIFIED LINK"));

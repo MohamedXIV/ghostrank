@@ -102,7 +102,9 @@ function ClueGlyph({ kind, value }: { kind: "carrier" | "echo"; value: string | 
     <svg aria-hidden="true" focusable="false" className="network-route-clue-glyph" viewBox="0 0 28 12">
       {value === "triangle"
         ? <polygon className="lane-echo" points="14,1 20,11 8,11" />
-        : <circle className="lane-echo" data-echo-shape={value ?? "unknown"} cx="14" cy="6" r="5" />}
+        : value === "circle"
+          ? <circle className="lane-echo" data-echo-shape="circle" cx="14" cy="6" r="5" />
+          : <text className="lane-unknown" data-echo-shape="unknown" x="14" y="10" textAnchor="middle">?</text>}
     </svg>
   );
 }
