@@ -31,8 +31,25 @@ describe("G9 P7 seeded determinism + measured baseline", () => {
       expect(b.ok && c.ok, "reload "+seed).toBe(true);
       const result = revived.snapshot();
       expect(result, "seed "+seed+" world").toEqual(bulk.snapshot());
-      expect([...a.events, ...b.events, ...c.events], "seed "+seed+" event timeline")
-        .toEqual(full.events);
+      // WorldTimeAdvanced is an INPUT ENVELOPE: one bulk click logs one
+      // 0→1080 range; three clicks naturally log three smaller ranges.
+      // Compare all causal domain events EXACTLY in order, and assert the
+      // expected envelope distinction explicitly rather than hiding it.
+      const splitEvents = [...a.events, ...b.events, ...c.events];
+      const domain = (items: typeof full.events) =>
+        items.filter(event => event.type !== "WorldTimeAdvanced");
+      expect(domain(splitEvents), "seed "+seed+" causal timeline")
+        .toEqual(domain(full.events));
+      const envelopes = (items: typeof full.events) =>
+        items.filter(event => event.type === "WorldTimeAdvanced");
+      expect(envelopes(full.events), "bulk envelope").toEqual([{
+        type: "WorldTimeAdvanced", fromMinute: 0, toMinute: 1080,
+      }]);
+      expect(envelopes(splitEvents), "split envelopes").toEqual([
+        { type: "WorldTimeAdvanced", fromMinute: 0, toMinute: 360 },
+        { type: "WorldTimeAdvanced", fromMinute: 360, toMinute: 720 },
+        { type: "WorldTimeAdvanced", fromMinute: 720, toMinute: 1080 },
+      ]);
       // No duplicate domain receipts or open-ended issuance after terminality.
       const leadIds = result.opportunities?.map(x => x.id) ?? [];
       const civicIds = result.institutionalCases?.map(x => x.id) ?? [];
