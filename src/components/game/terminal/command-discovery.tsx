@@ -11,6 +11,20 @@ export interface DiscoveredCommand {
 }
 
 export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
+  {
+    category: "underground",
+    syntax: "lead investigate <lead-id>",
+    label: "lead investigate",
+    description: "Investigate a real incident lead after earned Recon host evidence",
+    example: "lead investigate lead:public:incident:1",
+  },
+  {
+    category: "underground",
+    syntax: "lead disclose|trade|exploit|ignore <lead-id>",
+    label: "lead resolve",
+    description: "Choose an independent lead outcome, cost and NPC reaction",
+    example: "lead disclose lead:public:incident:1",
+  },
   // Recon
   {
     category: "recon",

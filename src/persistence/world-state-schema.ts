@@ -236,6 +236,7 @@ const ledgerCauseSchema = z.object({
     "tool",
     "machine",
     "model",
+    "opportunity",
   ]),
   id: z.string().min(1),
 });
@@ -536,6 +537,20 @@ const storedWorldStateSchema = z.object({
     })),
     resolvedIds: z.array(z.string().min(1)),
   }).optional(),
+  // G9 P4: absent from canonical/legacy runs, durable within live generated runs.
+  opportunities: z.array(z.object({
+    id: z.string().min(1),
+    origin: z.enum(["public-incident", "relay-report"]),
+    sourceId: z.string().min(1),
+    incidentId: z.string().min(1),
+    targetId: z.string().min(1),
+    subjectActorId: z.string().min(1),
+    worldMinute: z.number().int().nonnegative(),
+    expiresWorldMinute: z.number().int().nonnegative(),
+    status: z.enum(["open", "mapped", "resolved", "ignored", "expired"]),
+    resolution: z.enum(["disclose", "trade", "exploit"]).optional(),
+    resolvedWorldMinute: z.number().int().nonnegative().optional(),
+  })).max(128).optional(),
   // Game-First G1: and nothing is queued on the clock yet. A save restored
   // mid-job resumes from its persisted minute, applying each boundary once.
   jobQueue: z

@@ -629,7 +629,8 @@ export type LedgerCauseKind =
   | "license"
   | "tool"
   | "machine"
-  | "model";
+  | "model"
+  | "opportunity";
 
 /** A single value transfer. The ledger is the seed of the digital-value graph. */
 export interface ValueLedgerEntry {
@@ -777,6 +778,24 @@ export interface ContentRuntimeState {
   resolvedIds: string[];
 }
 
+/** G9 P4: a sourced lead, never a broker contract or claim of verified truth. */
+export type OpportunityStatus = "open" | "mapped" | "resolved" | "ignored" | "expired";
+export type OpportunityApproach = "disclose" | "trade" | "exploit";
+export interface OpportunityLead {
+  id: string;
+  origin: "public-incident" | "relay-report";
+  sourceId: string;
+  incidentId: string;
+  /** Hidden ownership; projections show this only after earned discovery. */
+  targetId: string;
+  subjectActorId: string;
+  worldMinute: number;
+  expiresWorldMinute: number;
+  status: OpportunityStatus;
+  resolution?: OpportunityApproach;
+  resolvedWorldMinute?: number;
+}
+
 export interface WorldState {
   /** Optional generic route challenges; absent in canonical and legacy worlds. */
   networkChallenges?: NetworkRouteChallenge[];
@@ -851,6 +870,8 @@ export interface WorldState {
   jobQueue: JobQueueState;
   /** Optional authored on-actions, only present for an explicitly enabled pack. */
   content?: ContentRuntimeState;
+  /** Absent from canonical/legacy worlds until a real G9 P4 cause creates it. */
+  opportunities?: OpportunityLead[];
 }
 
 export interface InitialTargetState
@@ -881,6 +902,7 @@ export interface InitialWorldState {
   ending?: RunEndingRecord | null;
   retirement?: RetirementPlan | null;
   content?: ContentRuntimeState;
+  opportunities?: OpportunityLead[];
 }
 
 export const STARTING_NETWORK_TRUST = 20;
@@ -1039,5 +1061,8 @@ export function createInitialWorldState(
     ...(initial.content === undefined
       ? {}
       : { content: structuredClone(initial.content) }),
+    ...(initial.opportunities === undefined
+      ? {}
+      : { opportunities: structuredClone(initial.opportunities) }),
   };
 }

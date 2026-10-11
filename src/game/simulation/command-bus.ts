@@ -1,4 +1,8 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import {
+  captureWorldOpportunities, discoverReportedOpportunity,
+  expireOpportunities, investigateOpportunity, resolveOpportunity,
+} from "@/game/content/opportunities";
 import { scheduleContentOnAction } from "@/game/content/on-actions";
 import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
@@ -235,6 +239,12 @@ export class CommandBus {
 
       case "readMessage":
         return this.readMessage(command.messageId);
+
+      case "investigateLead":
+        return investigateOpportunity(this.world, command.leadId);
+
+      case "resolveLead":
+        return resolveOpportunity(this.world, command.leadId, command.approach);
 
       case "acceptContract":
         return this.acceptContract(command.contractId);
@@ -793,17 +803,12 @@ export class CommandBus {
     }
 
     message.read = true;
-
-    return {
-      ok: true,
-      events: [
-        {
-          type: "MessageRead",
-          messageId: message.id,
-          worldMinute: this.world.worldMinute,
-        },
-      ],
+    const event: Extract<SimulationEvent, { type: "MessageRead" }> = {
+      type: "MessageRead", messageId: message.id, worldMinute: this.world.worldMinute,
     };
+    return { ok: true, events: [
+      event, ...discoverReportedOpportunity(this.world, event),
+    ] };
   }
 
   private acceptContract(contractId: string): CommandResult {
@@ -2189,12 +2194,16 @@ export class CommandBus {
         const endingEvents = forcedEndingTick(this.world, tickMinute);
         return [...compromiseEvents, ...endingEvents];
       },
-      afterTick: (tickMinute) => {
+      afterTick: (tickMinute, committed) => {
         // An exact tie waits until after the NPC tick so a physical outage can
         // pause it (D034). `build` is the last phase at a minute.
         dispatchAt(this.world, tickMinute, SYSTEM_PHASE.build, schedule);
         // The Nightshade briefing's owner review and promised clues (D071).
         sliceEvents.push(...sliceBoundaryTick(this.world, tickMinute));
+        return [
+          ...expireOpportunities(this.world, tickMinute),
+          ...captureWorldOpportunities(this.world, committed),
+        ];
       },
     });
 

@@ -38,6 +38,15 @@ export type SimulationCommand =
       messageId: string;
     }
   | {
+      type: "investigateLead";
+      leadId: string;
+    }
+  | {
+      type: "resolveLead";
+      leadId: string;
+      approach: "disclose" | "trade" | "exploit" | "ignore";
+    }
+  | {
       type: "acceptContract";
       contractId: string;
     }

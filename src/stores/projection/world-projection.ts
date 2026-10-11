@@ -286,6 +286,21 @@ export function syncWorldProjection(
     ]),
   );
 
+  // G9 P4: only the redacted projection reaches GUI/TinyBase.
+  const leadRows = Object.fromEntries(
+    (projection.underground.leads ?? []).map((lead) => [
+      lead.id,
+      {
+        origin: lead.origin, actorHandle: lead.actorHandle,
+        counterpartHandle: lead.counterpartHandle,
+        claimOutcome: lead.claimOutcome,
+        status: lead.status, worldMinute: lead.worldMinute,
+        expiresWorldMinute: lead.expiresWorldMinute,
+        ...(lead.targetHandle ? { targetHandle: lead.targetHandle } : {}),
+      },
+    ]),
+  );
+
   const retaliationRows = Object.fromEntries(
     projection.underground.retaliations.map((entry) => [
       entry.id,
@@ -629,6 +644,7 @@ export function syncWorldProjection(
     store.setTable("stances", stanceRows);
     store.setTable("inbox", inboxRows);
     store.setTable("contracts", contractRows);
+    store.setTable("leads", leadRows);
     store.setTable("retaliations", retaliationRows);
     store.setTable("descriptors", descriptorRows);
     store.setTable("forum", forumRows);

@@ -215,6 +215,19 @@ async function runGeneratedScene(page, scope) {
   await proveRoute(page, scope, "gen-1", "gen-1-m2");
   const map = await terminal(page, "path map gen-1");
   check(scope, "generated route is independent from Nightshade", map.includes("route:gen-1:recon") && !map.includes("nightshade"));
+  // G9 P4: real UI smoke in generated scenarios; an incident is not guaranteed
+  // during this short G3 route run, so assert the accessible lead surface and
+  // 390px fit here. Seeded *causal creation and choices* are proven by Vitest.
+  await page.getByTitle("Underground Index (Alt+3)").first().click();
+  const leads = page.locator('section[aria-label="Independent leads"]');
+  check(scope, "G9 brokerless lead surface is visible", await leads.count() === 1 &&
+    await leads.isVisible());
+  check(scope, "G9 lead controls or honest empty state", (await leads.innerText()).includes("INDEPENDENT LEADS"));
+  if (scope.endsWith("-phone")) {
+    const box = await leads.boundingBox();
+    check(scope, "G9 lead area fits 390px", Boolean(box) && box.x >= -1 &&
+      box.x + box.width <= 391, JSON.stringify(box));
+  }
 }
 
 async function runView(browser, spec) {
