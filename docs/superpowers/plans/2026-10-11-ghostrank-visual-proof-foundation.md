@@ -68,7 +68,7 @@ Every later plan must state exact touched files, preserve respective behavior co
 | `src/components/ui/{button,card,badge,tabs,tooltip,dialog,sheet,scroll-area}.tsx` | Source-owned shadcn primitives and existing Button compatibility (GPT-6 UI lane) |
 | `src/components/ui/button.test.ts` | Button variants, disabled, ref, focus, safe type (GPT-6 QA lane) |
 | `src/components/ui/dialog-a11y.test.tsx` | Accessible dialog contract (GPT QA lane; use browser for actual focus testing) |
-| `src/app/globals.css` | Existing distro semantic tokens and compatibility bridge only; Claude/UI lane |
+| `src/app/globals.css` | Existing distro semantic tokens and compatibility bridge only; GPT-6 sole owner |
 | `src/components/game/market/hardware-item-model.ts` | Pure projected catalog-card presenter; not simulation authority (GPT-6 UI lane) |
 | `src/components/game/market/hardware-item-model.test.ts` | Projection → precise card data tests (GPT-6 QA lane) |
 | `scripts/browser-smoke/visual-reboot-foundation.mjs` | Post-foundation real browser checks, screenshots and JSON report (GPT-6 QA lane) |
@@ -212,7 +212,7 @@ No code should depend on the reference harness in production. Concept fixtures a
 
 1. **Spec coverage map:** V0 satisfies visual direction/proof, foundational shadcn/UI, first asset family, truthful hardware mapping, distro/accessibility bridge and QA. V1–V5 explicitly own migration of Shell, Market, Recon, remaining apps and room. V0 alone does not satisfy full UI acceptance and must not be reported as doing so.
 2. **Interface sanity:** `HardwareCategory`, `ComputerWindowId` and the listed projection fields were verified in the repository. `hardwareArtSrc` and `presentHardwareItem` are produced before consumer use. The presenter never provides buy authority.
-3. **Dependency order:** Task 1 → Task 2 → Task 3 → **human visual approval** → Tasks 4/5/6 (sequential where shared files exist; independent test owners may prepare tests in separate no-conflict branches) → Task 7.
+3. **Dependency order:** Task 1 → Task 2 → Task 3 → **human visual approval** → Tasks 4/5/6 (sequential where shared files exist; all code and test changes are performed sequentially by GPT-6) → Task 7.
 4. **Failure review:** All five cases in `Review Focus` have owner tests/screenshots in Tasks 2–7. Ensure screenshot checks test actual rendered behavior, not hard-coded strings alone.
 5. **Proportionality:** This is the **first independent, testable V0 project**, not a fictitious complete implementation plan for every app. Later phases get their own task-by-task documents after reference art approval; scope remains user-approved from the design spec.
 6. **Not done yet:** Written-plan review, execution-mode selection, visual-reference screenshots, production implementation, browser QA and unfamiliar-human playtesting. All remain unperformed until actually executed.
