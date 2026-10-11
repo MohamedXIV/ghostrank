@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 import "@/components/game/desktop/desktop-shell.css";
+import "@/components/game/market/hardware-catalog.css";
 
 export const metadata: Metadata = {
   title: "Ghostrank",
