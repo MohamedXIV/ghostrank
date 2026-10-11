@@ -14,8 +14,12 @@ const compiled = new Map<NarrativeStoryId, string>();
 function freshStory(id: NarrativeStoryId): Story {
   const source = NARRATIVE_STORIES[id];
   let json = compiled.get(id);
-  if (!json) {
-    json = new Compiler(source.source).Compile().ToJson();
+  if (json === undefined) {
+    const bytecode = new Compiler(source.source).Compile().ToJson();
+    if (typeof bytecode !== "string") {
+      throw new Error("Ink compilation produced no JSON bytecode");
+    }
+    json = bytecode;
     compiled.set(id, json);
   }
   return new Story(json);

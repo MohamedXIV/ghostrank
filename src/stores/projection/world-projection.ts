@@ -287,7 +287,8 @@ export function syncWorldProjection(
   );
 
   // G9 P4: only the redacted projection reaches GUI/TinyBase.
-  const narrativeRows = projection.narrative ? {
+  const narrativeRows: Record<string, Record<string, string | number | boolean>> =
+    projection.narrative ? {
     current: {
       id: projection.narrative.id,
       storyId: projection.narrative.storyId,
