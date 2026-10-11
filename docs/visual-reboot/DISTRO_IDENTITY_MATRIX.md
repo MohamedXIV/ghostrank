@@ -1,6 +1,6 @@
 # Ghostrank — Distro Identity Matrix v1
 
-**Status:** Proposed detailed visual identity contract for user review (2026-10-11). The *principle* of real distro differences is user-approved; the exact styles and layouts below are the authored proposal, not a claim that they ship.
+**Status:** User-approved visual identity contract (2026-10-11). The five distinct shell geometries and distro personalities below are accepted as implementation targets; they are **not yet shipped features**.
 **Owner:** GPT-6 only. No Claude or external implementation agent.
 **Baseline:** Ghostrank Visual Reboot direction = a believable Linux-desktop-inspired fictional OS + grounded tactical Recon + original illustrated assets. Inspired by the user's real Linux desktop examples (Cutefish, Pop-style workstation), **not** copies of their copyrighted icon packs, wallpapers, branding or applications.
 **Governing docs:** `docs/INTERFACE_AND_DISTROS.md`; `docs/superpowers/specs/2026-10-11-ghostrank-visual-reboot-design.md`; `docs/superpowers/plans/2026-10-11-ghostrank-visual-proof-foundation.md`.
@@ -142,7 +142,7 @@ All five preserve the exact existing input/focus semantics, workspaces/windows f
 - Screenshot diffs/visual review must judge actual density and art, not just “all CSS selectors rendered”.
 - No claiming “human usability PASS” from Chromium automation. Unfamiliar-human playtest gate remains separate.
 
-**Hard gate from V0 plan still applies:** the user rejected first generic visual references and requested genuine distro inspiration. Later static/AI mockups are *directional references only*. Do not interpret the supplied approval to define an identity matrix as blanket approval of production implementation for all five profiles.
+**Hard gate from V0 plan still applies:** the user rejected first generic visual references and requested genuine distro inspiration. Later static/AI mockups are *directional references only*. Approval of the five identity profiles permits execution of these designs, but **does not constitute visual acceptance of code-rendered V0 prototypes**; present those actual screenshots before integrating the new production UI.
 
 ## 7. Ownership and sequence
 
@@ -158,4 +158,4 @@ All five preserve the exact existing input/focus semantics, workspaces/windows f
 
 - The *existing* five distro IDs/profiles, swatches, theme choices, install/handover and accessibility hooks already exist.
 - The richer launcher geometry, wallpaper/icon packs and window chrome differences in this document are **targets**, not features already shipped.
-- The user has approved **real visual personality** and Linux-distro-inspired direction; ask whether the **specific five identities and different Shell arrangements** in this matrix match their taste before locking implementation choices.
+- The user has approved **all five specific identities and their different Dock/Taskbar/Launcher placements** on 2026-10-11. Proceed with real, reviewable visual reference screens and the established V0 visual-review gate before production UI migration.
