@@ -8,7 +8,6 @@ import {
 import { resolveNpcSolidarity } from "@/game/simulation/systems/underground";
 import { counterpartWeight, offerTargetWeight } from "@/game/simulation/systems/living-ties";
 import { worldStateSchema } from "@/persistence/world-state-schema";
-import type { WorldState } from "@/game/simulation/state/world-state";
 
 const TICK = 360;
 
