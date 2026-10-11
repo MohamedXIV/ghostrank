@@ -507,6 +507,20 @@ export interface VisibleOpportunity {
   targetHandle?: string;
 }
 
+export interface VisibleCivicCase {
+  id: string;
+  scope: "district" | "national-network";
+  publicBody: string;
+  sourceHandle: string;
+  status: "open" | "mapped" | "resolved" | "withdrawn" | "expired";
+  responsePhase: "unreviewed" | "initial-review" | "coordinated-response";
+  affectedOfficeCount: number;
+  publicAttention: "low" | "elevated" | "high";
+  expiresWorldMinute: number;
+  /** Acquired from real player-known target discovery, never raw topology. */
+  knownTargetHandle?: string;
+}
+
 export interface UndergroundProjection {
   board: VisibleHandle[];
   feed: VisibleIncident[];
@@ -515,6 +529,7 @@ export interface UndergroundProjection {
   contracts: VisibleContract[];
   /** Non-broker leads, only present after a qualifying causal event. */
   leads?: VisibleOpportunity[];
+  civicCases?: VisibleCivicCase[];
   retaliations: VisibleRetaliation[];
   forum: VisibleForumPost[];
   /** Phase 5 P4: which peers run which assistant (name + model label only). */
@@ -1097,6 +1112,28 @@ function projectUnderground(
     }];
   });
 
+  const civicCases: VisibleCivicCase[] = (state.institutionalCases ?? []).flatMap(c => {
+    const origin = underground.incidents.find(i => i.id === c.incidentId && i.public);
+    if (!origin) return [];
+    const target = state.targets.find(t => t.id === c.targetId);
+    return [{
+      id: c.id,
+      scope: c.scope,
+      publicBody: c.scope === "district"
+        ? "District Records Office" : "Federated Public Records Commission",
+      sourceHandle: handles.get(origin.counterpartId) ?? origin.counterpartId,
+      status: (c.status === "open" || c.status === "mapped") &&
+        state.worldMinute > c.expiresWorldMinute ? "expired" as const : c.status,
+      responsePhase: c.responseTicks >= 2 ? "coordinated-response" as const :
+        c.responseTicks ? "initial-review" as const : "unreviewed" as const,
+      affectedOfficeCount: c.participatingOrganizationIds.length,
+      publicAttention: c.publicAttention >= 60 ? "high" as const :
+        c.publicAttention >= 25 ? "elevated" as const : "low" as const,
+      expiresWorldMinute: c.expiresWorldMinute,
+      ...(target && knownTargets.has(target.id) ? { knownTargetHandle: target.handle } : {}),
+    }];
+  });
+
   return {
     board,
     feed,
@@ -1104,6 +1141,7 @@ function projectUnderground(
     inbox: { messages: newestFirst, unread },
     contracts,
     ...(leads.length ? { leads } : {}),
+    ...(civicCases.length ? { civicCases } : {}),
     retaliations,
     forum,
     assistants,

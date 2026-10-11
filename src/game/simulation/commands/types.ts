@@ -48,6 +48,15 @@ export type SimulationCommand =
       choiceId: string;
     }
   | {
+      type: "mapInstitutionalCase";
+      caseId: string;
+    }
+  | {
+      type: "resolveInstitutionalCase";
+      caseId: string;
+      choice: "disclose" | "handoff" | "sell" | "suppress" | "walk-away";
+    }
+  | {
       type: "investigateLead";
       leadId: string;
     }

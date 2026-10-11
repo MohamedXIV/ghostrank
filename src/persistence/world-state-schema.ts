@@ -237,6 +237,7 @@ const ledgerCauseSchema = z.object({
     "machine",
     "model",
     "opportunity",
+    "institutional-case",
   ]),
   id: z.string().min(1),
 });
@@ -550,6 +551,29 @@ const storedWorldStateSchema = z.object({
       selectedIndex: z.number().int().nonnegative().max(8).optional(),
     }).optional(),
   }).optional(),
+  // G9 P6: bounded source-linked public-service cases (not NPC organizations).
+  institutionalCases: z.array(z.object({
+    id: z.string().min(1),
+    scope: z.enum(["district", "national-network"]),
+    incidentId: z.string().min(1),
+    targetId: z.string().min(1),
+    ownerId: z.string().min(1),
+    participatingOrganizationIds: z.array(z.string().min(1)).min(1).max(2),
+    openedWorldMinute: z.number().int().nonnegative(),
+    expiresWorldMinute: z.number().int().nonnegative(),
+    status: z.enum(["open", "mapped", "resolved", "withdrawn", "expired"]),
+    disclosure: z.enum(["unverified", "public", "sealed"]),
+    publicAttention: z.number().int().min(0).max(100),
+    containment: z.number().int().min(0).max(100),
+    responses: z.array(z.object({
+      organizationId: z.string().min(1),
+      worldMinute: z.number().int().nonnegative(),
+      step: z.number().int().min(1).max(4),
+    })).max(4),
+    responseTicks: z.number().int().min(0).max(4),
+    resolution: z.enum(["disclose", "handoff", "sell", "suppress", "walk-away"]).optional(),
+    resolvedWorldMinute: z.number().int().nonnegative().optional(),
+  })).max(48).optional(),
   // G9 P4: absent from canonical/legacy runs, durable within live generated runs.
   opportunities: z.array(z.object({
     id: z.string().min(1),

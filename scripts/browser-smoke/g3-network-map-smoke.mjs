@@ -219,6 +219,15 @@ async function runGeneratedScene(page, scope) {
   // during this short G3 route run, so assert the accessible lead surface and
   // 390px fit here. Seeded *causal creation and choices* are proven by Vitest.
   await page.getByTitle("Underground Index (Alt+3)").first().click();
+  const civic = page.locator('section[aria-label="Institutional records cases"]');
+  check(scope, "G9 fictional institutional case surface is visible",
+    await civic.count() === 1 && await civic.isVisible());
+  if (scope.endsWith("-phone")) {
+    const civicBox = await civic.boundingBox();
+    check(scope, "G9 civic response section fits 390px",
+      Boolean(civicBox) && civicBox.x >= -1 &&
+      civicBox.x + civicBox.width <= 391, JSON.stringify(civicBox));
+  }
   const leads = page.locator('section[aria-label="Independent leads"]');
   check(scope, "G9 brokerless lead surface is visible", await leads.count() === 1 &&
     await leads.isVisible());

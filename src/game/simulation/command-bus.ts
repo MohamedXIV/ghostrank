@@ -7,6 +7,10 @@ import {
   expireOpportunities, investigateOpportunity, resolveOpportunity,
 } from "@/game/content/opportunities";
 import { scheduleContentOnAction } from "@/game/content/on-actions";
+import {
+  captureInstitutionalCases, advanceInstitutionalCases,
+  mapInstitutionalCase, resolveInstitutionalCase,
+} from "@/game/content/institutional-cases";
 import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
 import type { SimulationEvent } from "@/game/simulation/events/types";
@@ -256,6 +260,12 @@ export class CommandBus {
         const event = commitNarrativeChoice(this.world, plan);
         return { ok: true, events: [...result.events, event] };
       }
+
+      case "mapInstitutionalCase":
+        return mapInstitutionalCase(this.world, command.caseId);
+
+      case "resolveInstitutionalCase":
+        return resolveInstitutionalCase(this.world, command.caseId, command.choice);
 
       case "investigateLead":
         return investigateOpportunity(this.world, command.leadId);
@@ -2220,6 +2230,8 @@ export class CommandBus {
         return [
           ...expireOpportunities(this.world, tickMinute),
           ...captureWorldOpportunities(this.world, committed),
+          ...advanceInstitutionalCases(this.world, tickMinute),
+          ...captureInstitutionalCases(this.world, committed, tickMinute),
         ];
       },
     });

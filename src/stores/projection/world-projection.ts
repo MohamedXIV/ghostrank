@@ -306,6 +306,17 @@ export function syncWorldProjection(
     ]),
   );
 
+  const civicCaseRows = Object.fromEntries(
+    (projection.underground.civicCases ?? []).map(c => [c.id, {
+      scope: c.scope, publicBody: c.publicBody, sourceHandle: c.sourceHandle,
+      status: c.status, responsePhase: c.responsePhase,
+      affectedOfficeCount: c.affectedOfficeCount,
+      publicAttention: c.publicAttention,
+      expiresWorldMinute: c.expiresWorldMinute,
+      ...(c.knownTargetHandle ? { knownTargetHandle: c.knownTargetHandle } : {}),
+    }]),
+  );
+
   const leadRows = Object.fromEntries(
     (projection.underground.leads ?? []).map((lead) => [
       lead.id,
@@ -664,6 +675,7 @@ export function syncWorldProjection(
     store.setTable("inbox", inboxRows);
     store.setTable("contracts", contractRows);
     store.setTable("leads", leadRows);
+    store.setTable("civicCases", civicCaseRows);
     store.setTable("narrative", narrativeRows);
     store.setTable("narrativeChoices", narrativeChoiceRows);
     store.setTable("retaliations", retaliationRows);
