@@ -34,6 +34,12 @@ When code and documentation disagree, do not silently invent a third design. Upd
 - Phaser owns the small physical-world presentation. React/Next owns the computer/OS-style UI. Neither owns simulation truth.
 - Durable persistence is accessed only through the persistence boundary. During web-first development the primary durable adapter is IndexedDB in the browser. SQLite/Tauri is deferred to final desktop packaging (#19). TinyBase is a read/query projection and Zustand is ephemeral UI state. Do not blur these roles.
 
+## Systemic content / game DNA (G9 #135)
+
+Read `docs/GAME_DNA.md`, `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md` and `docs/SEMANTIC_CONTENT_AUTHORING.md` before adding operation/story/event machinery. Contracts are one possible discovery channel, not the sole world-activity primitive. Reuse typed scoped predicates, authorized effects, existing event/clock and NPC knowledge provenance before introducing another mission switch branch. Keep world truth, each actor's possibly false belief and the player's earned knowledge distinct. Ink narrates and returns typed intents; only CommandBus/simulation mutates the world.
+
+Refactors may replace unfun prototype paths; protect player-visible fairness and authoritative invariants rather than every historical implementation. Split cohesive code by actual domain ownership: neither god files nor file-per-trivial-helper. Preserve an async, TypeScript Web-Worker-ready interface but do not add Rust/WASM or make Worker adoption a blocker. Current-run save/replay is mandatory; historical-save migration is not an automatic requirement. Existing narrow compatibility promises need an explicit decision before removal.
+
 ## Architecture boundaries
 
 All consequential player actions flow through typed simulation commands.
