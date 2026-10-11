@@ -476,10 +476,35 @@ Exit criteria:
 | G6 | #82 | Embodied game-first UX, evidence board, tactile network tools, diegetic time/feedback | Planned |
 | G7 | #83 | Select and deepen varied, procedural hacking-inspired gameplay mechanics | Planned |
 | G8 | #84 | Human playtest evidence, determinism/solvability checks, balance and gameplay-ready sign-off | Planned |
+| G9 | #135 | Reusable content semantics, non-broker opportunities, Ink and systemic consequences | Design+eight issues #136–#143 recorded; implementation NOT STARTED |
 
 **Hard invariants:** rank is never a capability gate; deterministic fixed-seed/inputs; no hidden knowledge leaks; queued or sleeping world processes every due tick; first-ending-wins; save migrations and Terminal/GUI parity; GitHub Actions permitted on this now-public repository (2026-10-10) when useful for verification.
 
 **Tauri status:** #19 remains **blocked by #75/#84**, even though old #27 is closed. Avoid native host work until the *gameplay* is worth packaging.
+
+## G9 — Semantic Sandbox & Data-Driven World Content Foundation (active design; implementation pending)
+
+**Epic:** [#135](https://github.com/MohamedXIV/ghostrank/issues/135). **DNA:** `docs/GAME_DNA.md`. **Architecture:** `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md`. **Authoring:** `docs/SEMANTIC_CONTENT_AUTHORING.md`. **Decision:** D074.
+
+**Why now:** adding specialized objectives and hardcoded quest scripts would make an already-not-fun prototype bigger rather than more systemic. G9 enables causal opportunities, narrative and consequences through shared mechanics. Refactor/replace existing code when warranted. This does NOT block G5/G6 parallel work or approve G3 P2 (#110 / draft PR #116).
+
+| Slice | Issue | Acceptance proof (not yet claimed) |
+| --- | --- | --- |
+| P0: design and audit | #136 | Catalog/contract/event seam map, minimal vocabulary, genuine migration chosen |
+| P1: scoped conditions | #137 | Truth vs false NPC belief vs player-known evidence, composable deterministic query |
+| P2: authorized effects/on-actions | #138 | Registered effects, sourced event hooks, clock-correct exactly-once response |
+| P3: contract migration | #139 | Existing objective migrated; same semantics and second content-only variation |
+| P4: unbrokered opportunity | #140 | Discoverable choice and world response without issuer; independent NPC producer |
+| P5: Ink adapter | #141 | Safe narrative choice intent, current-save deterministic, CommandBus-revalidated |
+| P6: world-scale content | #142 | Fictional institutional leak with independent NPC action and third-party fallout |
+| P7: diagnostics and Worker boundary | #143 | Why/why-not debug, seed/replay/current-save, async Worker-ready TypeScript |
+
+**Order:** P0 → P1 → P2 → P3 → P4; P5 can advance after P1/P2; P6 composes P4/P5 + G5; P7 cross-cuts and closes last. G9 semantic foundation should precede **large** G7 content expansion. Avoid building a universal DSL/ECS/plugin engine prematurely.
+
+**Engineering:** typed TS/catalog data first, validate external manifests only when useful; cohesive modules with neither god files nor micro-file proliferation. Paradox-inspired scopes/triggers/effects/weighted agendas and event/due-pulse evaluation—not a Clausewitz copy. No Rust. Web Worker is an optional **single TypeScript authority** host after benefits are proven, not G9's opening gate.
+
+**Hard invariants:** offline fictional operations, rank not a capability, deterministic fixed-seed world time, player-safe source-aware knowledge, exactly-once events, GUI/terminal parity, current-run replay/save and first-ending-wins. Historical migrations aren't an automatic blocker; any specific compatibility promise needs an explicit change. G8 #84 human gameplay-ready acceptance remains NOT RUN.
+
 
 ## Phase 10 — Desktop Host / Packaging
 
