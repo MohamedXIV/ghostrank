@@ -230,6 +230,12 @@ Each distro may also define a **sound identity** for install, boot, completion, 
 
 Presentation preferences, installed-distro records, and sound preferences live outside authoritative `WorldState`.
 
+## Visual Reboot — distinct distro identities (2026-10-11)
+
+The user-approved reboot requires **genuinely differentiated desktop environments**, not five recolors of one shell. The proposed per-distro direction — shell geometry, taskbar/dock/launcher placement, wallpaper, icon family, window chrome, type, Market/Recon adaptation, and cross-distro QA — is documented in [Distro Identity Matrix v1](visual-reboot/DISTRO_IDENTITY_MATRIX.md). It is a detailed **proposal pending review**, not a claim that the new shells already ship.
+
+The Linux-distro-inspired reference means *believable workstation behavior and identity*, never copied Linux branding, fake kernel/system information, invented services, or extra gameplay authority. The presentational core and accessibility contract below remain binding.
+
 ## Initial distro family
 
 ### Ghost/OS
