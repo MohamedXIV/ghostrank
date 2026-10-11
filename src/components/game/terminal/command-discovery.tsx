@@ -27,9 +27,9 @@ export const DISCOVERABLE_COMMANDS: DiscoveredCommand[] = [
   },
   {
     category: "underground",
-    syntax: "talk <actor-id>",
+    syntax: "talk <actor-id-or-handle>",
     label: "talk",
-    description: "Open a versioned Ink dialogue with a public NPC handle",
+    description: "Open a versioned Ink dialogue using a public NPC ID or handle",
     example: "talk vesper",
   },
   {

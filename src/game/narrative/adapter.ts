@@ -29,7 +29,12 @@ function authorizedSubject(
   refId: string,
 ): { label: string; variant: NarrativeVariant } | null {
   if (id === "g9.npc-relay.v1") {
-    const actor = world.underground.actors.find((a) => a.id === refId);
+    // CLI accepts either an explicit public actor ID or the visible handle.
+    // Never guess when multiple actors share a display handle.
+    const actorById = world.underground.actors.find((a) => a.id === refId);
+    const byHandle = world.underground.actors.filter((a) =>
+      a.handle.toLowerCase() === refId.toLowerCase());
+    const actor = actorById ?? (byHandle.length === 1 ? byHandle[0] : undefined);
     return actor ? { label: actor.handle, variant: "npc" } : null;
   }
   if (id !== "g9.lead-dilemma.v1") return null;

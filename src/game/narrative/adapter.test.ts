@@ -246,6 +246,14 @@ describe("G9 P5 inkjs story and authoritative intents", () => {
     expect(parseTerminalCommand("talk " + actorId)).toEqual({
       ok: true, command: { type: "startNarrative", storyId: npcStory, refId: actorId },
     });
+    const handle = world.underground.actors[0].handle;
+    const byHandle = new CommandBus(world);
+    const parsedHandle = parseTerminalCommand("talk " + handle.toLowerCase());
+    expect(parsedHandle.ok).toBe(true);
+    if (parsedHandle.ok) {
+      expect(byHandle.execute(parsedHandle.command).ok).toBe(true);
+      expect(current(byHandle).subjectLabel).toBe(handle);
+    }
   });
 
   it("does not expose Ink external write bindings; standalone compilation never mutates simulation", () => {
