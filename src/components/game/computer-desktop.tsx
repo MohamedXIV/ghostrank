@@ -70,6 +70,7 @@ import { Button } from "@/components/ui/button";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
+import { deriveOpeningReconCue } from "@/game/onboarding/opening-recon-cue";
 import { RelationshipBadge } from "@/components/game/social/relationship-badge";
 import { ContractCard } from "@/components/game/contracts/contract-card";
 import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-intel";
@@ -1176,8 +1177,19 @@ function ReconApp({ runtime }: { runtime: GameRuntime }) {
 
 function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
   const briefing = useBriefing();
-  const [targetId, setTargetId] = useState("nightshade");
+  const [manualTargetId, setManualTargetId] = useState<string | null>(null);
+  const [observeFeedback, setObserveFeedback] = useState<string | null>(null);
   const targetIds = useRowIds("targets", runtime.projection);
+  const contractRows = useTable("contracts", runtime.projection);
+  const worldMinute = Number(useCell("meta", "world", "worldMinute", runtime.projection) ?? 0);
+  const opening = deriveOpeningReconCue({
+    contracts: contractRows,
+    observedTargetIds: targetIds,
+    worldMinute,
+  });
+  // A human override stays intact. Otherwise the initial target follows only
+  // live player-visible offers; never a fabricated Nightshade fallback.
+  const targetId = manualTargetId ?? opening?.targetId ?? "";
   const machineIds = useRowIds("machines", runtime.projection);
   const reactionIds = useRowIds("reactions", runtime.projection);
   const operation = useRow("operation", "active", runtime.projection);
@@ -1190,18 +1202,18 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
     (service) => service.targetId === operationTargetId,
   );
 
-  const observe = () => {
-    const normalized = targetId.trim().toLowerCase();
+  const observe = (requestedTarget = targetId) => {
+    const normalized = requestedTarget.trim().toLowerCase();
     if (!normalized) {
+      setObserveFeedback("No target selected. Check the public Index for a current lead.");
       return;
     }
 
     const command = observeTargetFromGui(normalized);
-    if (briefing) {
-      briefing.run(command);
-    } else {
-      runtime.execute(command);
-    }
+    const result = briefing ? briefing.run(command) : runtime.execute(command);
+    setObserveFeedback(result.ok
+      ? `OBSERVED: ${normalized}. Open its operation to survey the perimeter.`
+      : "OBSERVE BLOCKED: this ID is not an accessible target. Check the Index or a known profile.");
   };
 
   return (
@@ -1209,34 +1221,46 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
       <ContextualHint
         id="hint:recon-lead"
         title="PASSIVE RECONNAISSANCE"
-        description="Leads start as unverified profiles. Click OBSERVE or enter 'observe <target>' to resolve the network profile before mounting operations."
-        commandSuggestion="observe nightshade"
+        description={opening
+          ? `Public commission / known profile: ${opening.label}. OBSERVE verifies its profile; it does not prove rumors or unlock the target by rank.`
+          : "No public target is currently available. Check Underground for visible offers before observing; no target ID is assumed."}
+        {...(opening ? { commandSuggestion: `observe ${opening.targetId}` } : {})}
         onRunCommand={(cmd) => {
-          const parts = cmd.split(" ");
-          if (parts[1]) {
-            runtime.execute(observeTargetFromGui(parts[1]));
-          }
+          const parts = cmd.trim().split(" ");
+          if (parts[0] === "observe" && parts[1]) observe(parts[1]);
         }}
       />
 
-      <div className="recon-lead">
+      <div className="recon-lead" aria-label="Public opening Recon lead">
         <div>
-          <span className="panel-label">UNRESOLVED LEAD</span>
-          <strong>nightshade</strong>
+          <span className="panel-label">PLAYER-KNOWN OPENING LEAD</span>
+          <strong>{opening ? opening.label : "No public target yet"}</strong>
+          {opening?.source === "contract" && <small>Commission reference: {opening.contractId}</small>}
         </div>
-        <TruthMark level="unknown" label="UNVERIFIED" />
+        {opening && (
+          targetIds.includes(opening.targetId)
+            ? <TruthMark level="observed" label="OBSERVED PROFILE" />
+            : <TruthMark level="unknown" label="UNVERIFIED" />
+        )}
       </div>
 
       <div className="recon-command">
         <input
           aria-label="Target identifier"
           value={targetId}
-          onChange={(event) => setTargetId(event.target.value)}
+          placeholder={opening ? opening.targetId : "Use a public target ID"}
+          onChange={(event) => {
+            setManualTargetId(event.target.value);
+            setObserveFeedback(null);
+          }}
         />
-        <Button size="sm" onClick={observe}>
+        <Button size="sm" onClick={() => observe()}>
           OBSERVE
         </Button>
       </div>
+      {observeFeedback && (
+        <p role="status" className="analysis-caveat">{observeFeedback}</p>
+      )}
 
       {briefing ? <NightshadeBriefingPanel /> : null}
 
@@ -1335,7 +1359,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
       </div>
 
       <ReconTopology
-        targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "nightshade")}
+        targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "")}
         runtime={runtime}
       />
 

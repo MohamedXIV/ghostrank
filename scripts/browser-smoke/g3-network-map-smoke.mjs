@@ -207,7 +207,30 @@ async function runNightshade(page, scope) {
 }
 
 async function runGeneratedScene(page, scope) {
-  // No authored names, contract or Nightshade adapters are used by this path.
+  // G6 first-minute acceptance: the opening hint must come from a real
+  // player-visible generated target, not the authored Nightshade default.
+  const reconInput = page.getByLabel("Target identifier");
+  const suggested = await reconInput.inputValue();
+  check(scope, "new generated scene never suggests Nightshade",
+    suggested === "" || /^gen-/.test(suggested), suggested);
+  const opening = page.locator('[aria-label="Public opening Recon lead"]');
+  const openingText = await opening.innerText();
+  check(scope, "opening Recon lead is honest",
+    suggested ? openingText.includes("Commission reference:") || openingText.includes("PLAYER-KNOWN")
+      : openingText.includes("No public target yet"), openingText.slice(0,160));
+  await reconInput.fill("nightshade");
+  await page.getByRole("button", { name: "OBSERVE", exact: true }).first().click();
+  const notice = page.locator(".recon-app").getByRole("status");
+  await notice.getByText("OBSERVE BLOCKED", { exact: false }).waitFor();
+  check(scope, "mistyped first lead gets actionable feedback",
+    (await notice.innerText()).includes("Check the Index"));
+  await reconInput.fill(suggested);
+  if (scope.endsWith("-phone")) {
+    const box = await opening.boundingBox();
+    check(scope, "public opening lead fits 390px", Boolean(box) &&
+      box.x >= -1 && box.x + box.width <= 391, JSON.stringify(box));
+  }
+  // Generated Network Mapping then uses the same CommandBus and terminal.
   for (const command of ["observe gen-1", "op open gen-1", "survey gen-1", "inspect gen-1-m1"]) {
     const out = await terminal(page, command);
     check(scope, `command ${command}`, !out.includes("COMMAND_FAILED"), out.slice(-110));
