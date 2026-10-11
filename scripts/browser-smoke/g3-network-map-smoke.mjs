@@ -228,6 +228,29 @@ async function runGeneratedScene(page, scope) {
     check(scope, "G9 lead area fits 390px", Boolean(box) && box.x >= -1 &&
       box.x + box.width <= 391, JSON.stringify(box));
   }
+
+  // G9 P5: open a real authored NPC dialogue in Chromium, and exercise a
+  // keyboard-operable, screen-projected Ink choice (not a JavaScript stub).
+  const index = page.locator('section[aria-label="Public index"]');
+  const firstTalk = index.getByRole("button", { name: /^talk to /i }).first();
+  await firstTalk.waitFor({ timeout: 15000 });
+  await firstTalk.click();
+  const conversation = page.locator('section[aria-label="Narrative conversation"]');
+  await conversation.getByText("Every handle has a story", { exact: false }).waitFor();
+  const choices = conversation.getByRole("group", { name: "Narrative choices" });
+  check(scope, "Ink NPC scene offers real story choices", await choices.getByRole("button").count() === 2);
+  await choices.getByRole("button").first().focus();
+  await page.keyboard.press("Enter");
+  await conversation.getByText("Conversation concluded.").waitFor();
+  check(scope, "keyboard executes Ink choice through CommandBus",
+    (await conversation.innerText()).includes("don't certify rumors"));
+  if (scope.endsWith("-phone")) {
+    const box = await conversation.boundingBox();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    check(scope, "Ink conversation is visible and fits 390px",
+      Boolean(box) && box.x >= -1 && box.x + box.width <= 391 && overflow <= 1,
+      JSON.stringify({ box, overflow }));
+  }
 }
 
 async function runView(browser, spec) {
