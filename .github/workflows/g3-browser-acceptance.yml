@@ -8,6 +8,7 @@ on:
       - 'src/stores/projection/**'
       - 'src/content/nightshade-slice.ts'
       - 'scripts/browser-smoke/g3-network-map-smoke.mjs'
+      - 'scripts/browser-smoke/g6-operation-desk-smoke.mjs'
       - '.github/workflows/g3-browser-acceptance.yml'
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   playwright:
-    name: Network Mapping (real Chromium)
+    name: Network Mapping and Operation Desk (real Chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,6 +33,10 @@ jobs:
         run: npm run build
       - name: Test two independent G3 content providers (desktop + phone)
         run: npm run smoke:browser:network
+      - name: Test integrated G6 Operation Pressure Desk (desktop, phone, reduced motion)
+        run: |
+          node scripts/browser-smoke/g6-operation-desk-smoke.mjs
+          node --input-type=module -e 'import {readFileSync} from "node:fs"; const checks = JSON.parse(readFileSync(".smoke/g6-operation-desk.json", "utf8")); const blocked = checks.filter((check) => check.blocked); if (blocked.length) { console.error(`${blocked.length} G6 known blocker(s) remain:`, blocked); process.exit(1); }'
       - name: Preserve smoke report and failure screenshots
         if: always()
         uses: actions/upload-artifact@v6
