@@ -152,9 +152,9 @@ The physical Phaser room retains its role as an atmospheric location and tension
 7. Conduct complete multi-distro visual QA, accessibility and human acceptance; only then call the UI reboot complete.
 
 Ownership boundaries:
-- **Coordinator/GPT-6:** design system contract, source-of-truth review, simulation/projection safeguards, test/acceptance strategy and integration.
-- **Claude:** game-facing React/CSS/app presentation implementation in his own clearly scoped branches once the reviewed spec and implementation plan assign work.
-- No simultaneous edits to `src/components/game/**` or `src/app/globals.css` by independent agents; partition on agreed file sets, not merely issue titles.
+- **GPT-6 — sole implementation owner (user override 2026-10-11):** visual references, original illustration/logo/icon assets, source-owned shadcn/UI, React/CSS app migration, test and accessibility automation, simulation/projection safeguards, integration and final visual QA.
+- **No Claude or additional implementation agents** participate in this reboot. Changes to `src/components/game/**` and `src/app/globals.css` are performed sequentially by the single owner on isolated branches.
+- The user still reviews the actual three-screen visuals before production migration, and later human usability/playtesting gates remain independent of successful automated tests.
 - Existing G5 simulation and G3 proposal #110 / PR #116 are **out of scope**. This spec does not approve G3 P2 or close Game-First human playtest gates.
 
 ## 9. Explicit non-goals
