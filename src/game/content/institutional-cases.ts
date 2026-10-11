@@ -44,10 +44,14 @@ export function witnessCase(world: WorldState, entry: InstitutionalCase): boolea
       entry.participatingOrganizationIds[0] !== source.org.id ||
       entry.participatingOrganizationIds.length !==
         (entry.scope === "national-network" ? 2 : 1)) return false;
+  const candidate = source.org.rivalIds.find(id =>
+    world.underground.organizations?.some(o => o.id === id));
+  const national = Boolean(candidate &&
+    hashUnit(world.underground.seed, "civic-reach", source.incident.id) < 0.5);
+  if (entry.scope !== (national ? "national-network" : "district")) return false;
   if (entry.scope === "district") return true;
   const partner = entry.participatingOrganizationIds[1];
-  return Boolean(partner && source.org.rivalIds.includes(partner) &&
-    world.underground.organizations?.some(o => o.id === partner));
+  return Boolean(partner && partner === candidate);
 }
 
 /** Real independently emitted public breach -> a causal civic records case. */
@@ -64,7 +68,8 @@ export function captureInstitutionalCases(
         source.incident.counterpartId !== event.counterpartId ||
         source.incident.worldMinute !== minute) continue;
     const cases = world.institutionalCases ?? [];
-    if (cases.some(c => c.incidentId === event.incidentId) ||
+    if (cases.some(c => c.incidentId === event.incidentId ||
+          (c.targetId === source.target.id && minute - c.openedWorldMinute < 2 * 1440)) ||
         cases.length >= MAX_CASES ||
         cases.filter(c => c.status === "open" || c.status === "mapped").length >= MAX_ACTIVE) continue;
     // Seeded public-service escalation check, separate from the NPC incident
@@ -143,10 +148,24 @@ export function advanceInstitutionalCases(world: WorldState, minute: number): Si
 export function institutionalDefenseBonus(world: WorldState, actor: UndergroundActor): number {
   if (!enabled(world) || !actor.organizationId || !actor.targetId) return 0;
   const affected = (world.institutionalCases ?? []).some(c =>
-    c.responses.some(r => r.organizationId === actor.organizationId) &&
+    witnessCase(world, c) &&
+    c.responses.some(r =>
+      r.organizationId === actor.organizationId &&
+      r.step >= 1 && r.step <= c.responseTicks &&
+      r.worldMinute > c.openedWorldMinute) &&
     c.participatingOrganizationIds.includes(actor.organizationId!) &&
     world.targets.some(t => t.id === actor.targetId && t.organizationId === actor.organizationId));
   return affected ? 5 : 0;
+}
+
+/** Earned map evidence has to remain valid at resolution, not just on entry. */
+function hasInstitutionalEvidence(world: WorldState, targetId: string): boolean {
+  const compiled = compileContentCondition({
+    op: "fact", fact: { kind: "player.known-active-target-machines",
+      target: { kind: "target", id: targetId }, min: 1 },
+  });
+  return compiled.ok && evaluateContentCondition(world, compiled.compiled,
+    { kind: "player-known" }).value === true;
 }
 
 const failed = (error: string) => ({ ok: false as const, error, events: [] as SimulationEvent[] });
@@ -161,12 +180,7 @@ export function mapInstitutionalCase(world: WorldState, id: string) {
   const c = eligible(world, id);
   if (!c || world.worldMinute < c.openedWorldMinute) return failed("CIVIC_SOURCE_INVALID");
   if (c.status !== "open" || world.worldMinute > c.expiresWorldMinute) return failed("CIVIC_NOT_OPEN");
-  const compiled = compileContentCondition({
-    op: "fact", fact: { kind: "player.known-active-target-machines",
-      target: { kind: "target", id: c.targetId }, min: 1 },
-  });
-  if (!compiled.ok || evaluateContentCondition(world, compiled.compiled,
-      { kind: "player-known" }).value !== true) return failed("CIVIC_NEEDS_EVIDENCE");
+  if (!hasInstitutionalEvidence(world, c.targetId)) return failed("CIVIC_NEEDS_EVIDENCE");
   c.status = "mapped";
   return { ok: true as const, events: [{
     type: "InstitutionalCaseMapped" as const, caseId: c.id, worldMinute: world.worldMinute,
@@ -186,6 +200,9 @@ export function resolveInstitutionalCase(
   if ((c.status !== "open" && c.status !== "mapped") ||
       world.worldMinute > c.expiresWorldMinute) return failed("CIVIC_CLOSED");
   if (choice !== "walk-away" && c.status !== "mapped") return failed("CIVIC_NEEDS_MAPPING");
+  if (choice !== "walk-away" && !hasInstitutionalEvidence(world, c.targetId)) {
+    return failed("CIVIC_NEEDS_EVIDENCE");
+  }
 
   const source = ownerAndArchive(world, c.incidentId);
   if (!source) return failed("CIVIC_SOURCE_INVALID");

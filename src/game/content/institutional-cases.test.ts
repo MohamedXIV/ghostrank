@@ -183,6 +183,31 @@ describe("G9 P6 — civic archive, real institutions and reactions", () => {
     }
   });
 
+  it("cannot upgrade a district record to a forged national payout", () => {
+    const world = make("district");
+    evidence(world);
+    const record = stateCase(world);
+    record.scope = "national-network";
+    const bus = new CommandBus(world);
+    expect(bus.execute({ type: "mapInstitutionalCase", caseId: record.id }).error)
+      .toBe("CIVIC_SOURCE_INVALID");
+  });
+
+  it("retired evidence cannot be used to monetize a once-mapped case", () => {
+    const world = make("district");
+    evidence(world);
+    const bus = new CommandBus(world);
+    const id = stateCase(world).id;
+    expect(bus.execute({ type: "mapInstitutionalCase", caseId: id }).ok).toBe(true);
+    const altered = bus.snapshot();
+    altered.evidence.find(e => e.id === "civic:observed")!.retiredWorldMinute = altered.worldMinute;
+    const fromSave = new CommandBus(altered);
+    expect(fromSave.execute({
+      type: "resolveInstitutionalCase", caseId: id, choice: "sell",
+    }).error).toBe("CIVIC_NEEDS_EVIDENCE");
+    expect(fromSave.snapshot().economy.credits).toBe(0);
+  });
+
   it("can choose to suppress only when capable of paying its actual debit", () => {
     const world = make("district");
     evidence(world);
