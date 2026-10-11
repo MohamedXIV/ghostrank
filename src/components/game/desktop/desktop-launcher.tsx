@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { BookOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,8 @@ export function DesktopLauncher({
           onClick={() => onOpenWindow(id)}
         >
           <span className="launcher-glyph" aria-hidden="true">
-            <img
+            <Image
+              unoptimized
               className="distro-app-icon"
               src={`/visual-reboot/icons/${distroId}/${id}.svg`}
               width={38}
