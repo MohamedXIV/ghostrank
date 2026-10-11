@@ -103,6 +103,12 @@ Mini-games are the **verbs inside an operation**, not stand-alone arcade popups 
 
 **Anti-patterns:** random Sudoku pasted into a terminal; a minigame mandatory on every contract; a strength check disguised as a puzzle; busywork isolation confirmations; non-interactive art masquerading as gameplay; perfectly truthful risk UI; real-world intrusion instructions; moral-choice buttons whose outcomes differ only in flavor text.
 
+## Systemic storytelling DNA (G9 #135, design addition)
+
+The playable loop is **an option, not a mandatory quest structure**: a rumor may surface because an NPC acted, the player may invent an operation with no issuer, and a valuable lead may expire while everyone pursues other plans. Contracts, opportunities, NPC projects, events and story arcs compose the same authoritative world simulation—not disconnected scripted games.
+
+Paradox-inspired scoped triggers/effects and event/pulse evaluation are explored in G9, with witnessed facts, mistaken beliefs and hidden truth strictly distinguished. Ink can provide negotiations, documents and decision framing but cannot manufacture simulation outcomes. See `docs/GAME_DNA.md` and `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md`. This design does not claim implementation or human playtest success.
+
 ## Connected operation loop
 
 **Lead (message, rumor, person, camera, opportunistic finding)** → **trust triage (inspect / isolate / refuse)** → **investigate (mini-games, visual and textual evidence)** → **form a hypothesis** → **choose routes and prepare rigs/tools/identities** → **act under the shared world clock** → **read defender response** → **extract partly/fully or retreat** → **live with the aftermath (contacts, victims, rivals, law, economy, housing and possible travel)**.

@@ -121,6 +121,10 @@ Don't remove precise information for aesthetics. Accessible keyboard paths, touc
 | G6 | #82 | interactive, embodied UI/UX guided by the vertical slice |
 | G7 | #83 | research-selected procedural mechanics/content breadth |
 | G8 | #84 | observed playtest proof, balance, deterministic/stress and game-ready sign-off |
+| G9 | #135 | semantic content, repeatable opportunities, Ink and systemically consequential world stories |
+
+**G9 systemic content follow-on (2026-10-11):** `docs/GAME_DNA.md` is the new cross-track design compass. [G9 #135](https://github.com/MohamedXIV/ghostrank/issues/135) will build source-aware scoped knowledge/conditions, whitelisted effects/on-actions, non-broker operations, Ink narrative and meaningful institutional/third-party consequences. It strengthens G2/G5 and enables G7 breadth; it does NOT approve G3 P2 Log Forensics. Paradox-inspired concepts do not imply adopting Clausewitz. Refactors are allowed, and Worker-ready TypeScript does not imply an immediate Worker or Rust rewrite. Implementation and human gates remain OPEN.
+
 
 **G3 P1 reusable Network Mapping MERGED (#108):** two consumers (Nightshade v2 + independent G2 Fresh Scene), shared CommandBus/Recon/terminal, deterministic saves and exact-head CI/Chromium evidence are tracked at `docs/G3_NETWORK_MAPPING_ACCEPTANCE.md`. Engineering checks do **not** close the unfamiliar-human playtest gate. See `docs/G3_HUMAN_PLAYTEST_PROTOCOL.md`.
 
@@ -128,4 +132,4 @@ Don't remove precise information for aesthetics. Accessible keyboard paths, touc
 
 **Stop condition:** a passing test suite and pretty UX do **not** imply a fun completed game. Until G8, describe Ghostrank accurately as *technically web-beta-capable, gameplay under active development*. Desktop host #19 remains deferred even though Phase 9 is complete.
 
-**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve historical saves and public rank rule. GitHub Actions CI is allowed for the public repository, including real Node 24 checks and targeted Chromium acceptance (user approval 2026-10-10).
+**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve current-run saves/replay and the public rank rule. Historical-save migrations are not an automatic G9 gate; change any narrow promised compatibility only through an explicit reviewed decision. GitHub Actions CI is allowed for the public repository, including real Node 24 checks and targeted Chromium acceptance (user approval 2026-10-10).

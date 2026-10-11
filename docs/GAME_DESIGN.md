@@ -27,6 +27,20 @@ Phase 9 shipped an architecturally verified Web Beta, not an adequate complete g
 
 The game-first design contract and dependency roadmap are in `docs/GAME_FIRST_REBOOT.md` / parent #75. In particular, **sleep and fast-forward must never silently skip ecosystem ticks**, and the first gameplay goal is a small truly interactive operation with multiple successful strategies.
 
+## Systemic content and emergent stories (G9 / D074, design direction)
+
+The player may **accept a contract, investigate a rumor, independently target an asset, help a victim, sell or disclose evidence, abandon an opportunity or intervene in an NPC project**. A formal mission offer is not a prerequisite for activity. Contracts, world opportunities, self-initiated operations, NPC projects, events and story arcs are distinct entry/lifecycle forms over **shared evidence, command, time, relationship and consequence rules**. One system should not invent its own success flag because another entry point is called a quest.
+
+Content should specify scopes, observable sources, conditions, viable actions and consequences through a finite typed vocabulary; the authoritative simulation verifies actions, charges costs, emits provenance and lets independently informed actors react. World truth, individual NPC beliefs and player-earned knowledge may diverge. Players and NPCs can make consequential wrong inferences; neither narrative nor UI may disclose authoritative truth for free.
+
+Operations can affect an individual, network, organization, institution or multiple **fictional** nations. These describe **impact scale**, not rank locks. A national-scale scandal requires a bounded, actually simulated institution/public-response domain when needed—not just a contract tagged S with bigger numbers. Outcomes can include corroborated disclosure, quiet handoff, sale, suppression, betrayal, investigation, partial success or silence. There is no universal morality meter or prescribed white/black solution.
+
+**Example:** a fictional regime's disputed records may reach the player through a broker, self-discovered trace or competing NPC leak. The player can verify, quietly pass, sell, expose, suppress or walk away. Rivals and institutions react **only when they have legitimately learned** of each event. Public exposure isn't guaranteed, and doing nothing does not pause the independent actor. The same event can play differently in another run.
+
+Use Ink for authored chats, dossiers, reports, negotiations and branching choices, but **not** as world authority: it consumes player-safe context and emits typed intents back to CommandBus. Prefer small reusable mechanics across real targets; Nightshade remains introductory. Allow redesign of prototype systems when it improves choices and replayability.
+
+**Canonical references:** `docs/GAME_DNA.md`, `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md`, `docs/SEMANTIC_CONTENT_AUTHORING.md`; [G9 #135](https://github.com/MohamedXIV/ghostrank/issues/135), #136–#143. These are **planned**, not shipped. Human unfamiliar-player playtests remain NOT RUN.
+
 ## Interface as part of the world
 
 The simulated computer is a place the player inhabits, not a neutral menu wrapper around the simulation.

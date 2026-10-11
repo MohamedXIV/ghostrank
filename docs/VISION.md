@@ -60,6 +60,12 @@ Technical familiarity should provide flavor and intuition but must not be a prer
 - a multiplayer MMO,
 - a realistic implementation of real criminal infrastructure.
 
+## Systemic sandbox DNA (2026-10-11)
+
+The core fantasy is an anonymous operator inside an **autonomous society**, not a hero following mission markers. Contracts are optional; investigations, self-directed operations, emergent opportunities, NPC projects, institutional events and story arcs are equally real ways for things to happen. A player's choices—and their absence—can change the world through causally earned information and relationships. Run variety comes from different incentives, evidence, threats and histories, not cosmetic seed changes.
+
+`docs/GAME_DNA.md` is the expanded game DNA. `docs/SEMANTIC_SANDBOX_ARCHITECTURE.md` captures the Paradox-inspired design contract. Initiative: [G9 #135](https://github.com/MohamedXIV/ghostrank/issues/135). This is an approved design direction, not a claim that gameplay code has shipped.
+
 ## White and Black starts
 
 A new run may begin from a White-side or Black-side starting package.
