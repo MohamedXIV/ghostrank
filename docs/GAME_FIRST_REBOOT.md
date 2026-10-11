@@ -132,4 +132,4 @@ Don't remove precise information for aesthetics. Accessible keyboard paths, touc
 
 **Stop condition:** a passing test suite and pretty UX do **not** imply a fun completed game. Until G8, describe Ghostrank accurately as *technically web-beta-capable, gameplay under active development*. Desktop host #19 remains deferred even though Phase 9 is complete.
 
-**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve historical saves and public rank rule. GitHub Actions CI is allowed for the public repository, including real Node 24 checks and targeted Chromium acceptance (user approval 2026-10-10).
+**Workflow:** use GitHub connector; no competing branches; make tests deterministic; preserve current-run saves/replay and the public rank rule. Historical-save migrations are not an automatic G9 gate; change any narrow promised compatibility only through an explicit reviewed decision. GitHub Actions CI is allowed for the public repository, including real Node 24 checks and targeted Chromium acceptance (user approval 2026-10-10).
