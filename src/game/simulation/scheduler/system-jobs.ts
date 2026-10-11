@@ -29,6 +29,7 @@ import {
 export const SYSTEM_PHASE = {
   upkeep: 0,
   "outage-release": 1,
+  "content-response": 2,
   build: 3,
 } as const;
 

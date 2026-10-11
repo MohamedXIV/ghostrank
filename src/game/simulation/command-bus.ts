@@ -1,4 +1,5 @@
 import type { SimulationCommand } from "@/game/simulation/commands/types";
+import { scheduleContentOnAction } from "@/game/content/on-actions";
 import { matchingNetworkRoute, previewNetworkRoute } from "@/game/simulation/systems/network-routes";
 import { generatedRouteSurveyObservation, generatedRouteInspectObservation } from "@/game/world-generation/network-route-provider";
 import type { SimulationEvent } from "@/game/simulation/events/types";
@@ -831,17 +832,15 @@ export class CommandBus {
     contract.acceptedWorldMinute = minute;
     contract.dueWorldMinute = contractDueMinute(contract, minute);
 
-    return {
-      ok: true,
-      events: [
-        {
-          type: "ContractAccepted",
-          contractId: contract.id,
-          dueWorldMinute: contract.dueWorldMinute,
-          worldMinute: minute,
-        },
-      ],
+    const event: Extract<SimulationEvent, { type: "ContractAccepted" }> = {
+      type: "ContractAccepted",
+      contractId: contract.id,
+      dueWorldMinute: contract.dueWorldMinute,
+      worldMinute: minute,
     };
+    // The authoritative command is the producer, never a React or Ink view.
+    scheduleContentOnAction(this.world, event);
+    return { ok: true, events: [event] };
   }
 
   private declineContract(contractId: string): CommandResult {
@@ -2229,6 +2228,7 @@ export class CommandBus {
       ...investigationEvents,
       ...undergroundEvents,
       ...sliceEvents,
+      ...schedule.content,
     ]
       .map((event, index) => ({
         event,

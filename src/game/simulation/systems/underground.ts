@@ -56,6 +56,29 @@ import {
 export const TICK_MINUTES = 360;
 
 /**
+ * Apply a *validated* authored relationship response through the existing
+ * causal mutation path. The dispatcher checks actor, source and resource
+ * availability first; this narrow wrapper does not create a second formula.
+ */
+export function applyContentRelationshipResponse(
+  world: WorldState,
+  issuerId: string,
+  reactionId: string,
+  spentGrudge: number,
+  gainedTrust: number,
+  minute: number,
+): SimulationEvent {
+  return adjustRelationship(
+    world,
+    issuerId,
+    PLAYER_ACTOR_ID,
+    { grudge: -spentGrudge, trust: gainedTrust },
+    { kind: "content", id: reactionId },
+    minute,
+  );
+}
+
+/**
  * The footprint at which a target starts watching the player (Phase 6, D048).
  * Shared by the canonical reaction and the Nightshade briefing (D071).
  */
@@ -126,6 +149,7 @@ const UNMASK_SYMPATHY_TRUST = 10;
 export type RelationshipCause = {
   kind:
     | "incident"
+    | "content"
     | "reaction"
     | "rumor"
     | "contract"
