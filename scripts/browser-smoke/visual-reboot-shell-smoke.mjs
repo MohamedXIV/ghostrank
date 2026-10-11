@@ -106,7 +106,7 @@ async function oneView(browser, view) {
       const workstation = page.locator('.hardware-product[data-catalog-id="rig-starter"]');
       await workstation.getByText("Secondhand Workstation").waitFor();
       const starterPrice = await workstation.locator(".hardware-product-price").innerText();
-      if (!/\\b0\\s*cr\\b/i.test(starterPrice)) {
+      if (starterPrice.trim().toLowerCase() !== "0 cr") {
         throw new Error(id + ": expected actual 0 CR starter, got " + starterPrice);
       }
       const loadedArt = await workstation.locator("img").evaluate(img =>
