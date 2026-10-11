@@ -1,5 +1,6 @@
 import { hashUnit } from "@/game/simulation/rng/stateless-hash";
 import type { SimulationEvent } from "@/game/simulation/events/types";
+import { evaluateContractObjective } from "@/game/content/contract-objectives";
 import { contractPayout, transferValue } from "@/game/simulation/systems/economy";
 import { npcAssistDeltas } from "@/game/simulation/systems/npc-ai";
 import { findModelItem } from "@/content/model-catalog";
@@ -857,6 +858,11 @@ export function isObjectiveMet(
 ): boolean {
   const acceptedWorldMinute = contract.acceptedWorldMinute ?? 0;
 
+  if (contract.objective === "infrastructure-map") {
+    // G9 P3: a validated authored predicate; no shadow legacy switch path.
+    return evaluateContractObjective(world, contract);
+  }
+
   if (contract.objective === "intrusion") {
     return world.traces.some(
       (trace) =>
@@ -883,14 +889,6 @@ export function isObjectiveMet(
       )
       .map((record) => record.subjectId),
   );
-
-  if (contract.objective === "infrastructure-map") {
-    const count = target.machines.filter((machine) =>
-      knownMachines.has(machine.id),
-    ).length;
-
-    return count >= (contract.requiredMachines ?? 1);
-  }
 
   if (contract.objective === "quiet-recon") {
     const hasKnownMachine = target.machines.some((machine) =>
