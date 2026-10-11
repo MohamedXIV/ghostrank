@@ -15,13 +15,14 @@ export const LAUNCHER_APPS: ReadonlyArray<{
   readonly id: ComputerWindowId;
   readonly label: string;
   readonly shortcut: string;
+  readonly legacyTitle: string;
 }> = [
-  { id: "terminal", label: "Terminal", shortcut: "Alt+1" },
-  { id: "recon", label: "Recon", shortcut: "Alt+2" },
-  { id: "underground", label: "Underground", shortcut: "Alt+3" },
-  { id: "market", label: "Market", shortcut: "Alt+4" },
-  { id: "history", label: "History", shortcut: "Alt+5" },
-  { id: "settings", label: "Appearance", shortcut: "Alt+6" },
+  { id: "terminal", label: "Terminal", shortcut: "Alt+1", legacyTitle: "Terminal (Alt+1)" },
+  { id: "recon", label: "Recon", shortcut: "Alt+2", legacyTitle: "Recon (Alt+2)" },
+  { id: "underground", label: "Underground", shortcut: "Alt+3", legacyTitle: "Underground Index (Alt+3)" },
+  { id: "market", label: "Market", shortcut: "Alt+4", legacyTitle: "Market & Rig (Alt+4)" },
+  { id: "history", label: "History", shortcut: "Alt+5", legacyTitle: "Run History (Alt+5)" },
+  { id: "settings", label: "Appearance", shortcut: "Alt+6", legacyTitle: "System & Appearance (Alt+6)" },
 ];
 
 interface DesktopLauncherProps {
@@ -43,7 +44,7 @@ export function DesktopLauncher({
       data-distro-launcher={distroId}
       data-shell-placement={shell.launcherPlacement}
     >
-      {LAUNCHER_APPS.map(({ id, label, shortcut }) => (
+      {LAUNCHER_APPS.map(({ id, label, shortcut, legacyTitle }) => (
         <Button
           key={id}
           variant="ghost"
@@ -53,7 +54,7 @@ export function DesktopLauncher({
           data-focused={String(focusedWindow === id)}
           aria-label={`Open ${label} (${shortcut})`}
           aria-keyshortcuts={shortcut}
-          title={`${label} (${shortcut})`}
+          title={legacyTitle}
           onClick={() => onOpenWindow(id)}
         >
           <span className="launcher-glyph" aria-hidden="true">
@@ -74,7 +75,7 @@ export function DesktopLauncher({
         data-window-id={undefined}
         aria-label="Open system glossary (F1)"
         aria-keyshortcuts="F1"
-        title="System glossary (F1)"
+        title="System symbols & truth vocabulary glossary (F1)"
         onClick={onOpenGlossary}
       >
         <span className="launcher-glyph" aria-hidden="true"><BookOpen size={22} strokeWidth={1.7} /></span>
