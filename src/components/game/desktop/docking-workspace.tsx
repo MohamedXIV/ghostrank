@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Actions, DockLocation, Layout, type Model, type TabNode } from "flexlayout-react";
 import type { DistroId } from "@/presentation/distros";
 import type { ComputerWindowId } from "@/stores/ui/use-ui-store";
@@ -41,7 +41,7 @@ export function DockingWorkspace({
     } catch { /* No layout persistence is better than interrupting gameplay. */ }
   }, [distroId, model]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const expected = new Set(openWindows);
     for (const id of tabIdsInDock(model)) {
       if (!expected.has(id)) model.doAction(Actions.deleteTab(id));
