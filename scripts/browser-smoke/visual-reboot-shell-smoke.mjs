@@ -166,7 +166,8 @@ async function oneView(browser, view) {
         throw new Error(id + ": mode CSS not genuinely switched: " + JSON.stringify(colors));
       }
       // Keep the original six app identities, actions and window layout.
-      await page.getByRole("button", { name: "Close SYSTEM // APPEARANCE" }).click();
+      // FlexLayout uses its own tab close control, not legacy WindowFrame close markup.
+      // Selecting Market below must activate the real tab and display its live content.
       await shot(page, id, view.name, themeVariant + "-shell");
       await page.getByTitle("Market & Rig (Alt+4)").click();
       await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
