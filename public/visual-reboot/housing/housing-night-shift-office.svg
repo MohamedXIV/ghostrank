@@ -1,8 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 240" role="img" aria-label="Illustrative architectural artwork">
-  <defs><linearGradient id="plate" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#545067" stop-opacity=".38"/><stop offset="1" stop-color="#e0b5a8" stop-opacity=".12"/></linearGradient></defs>
-  <path d="M26 173 189 107 354 174 192 234Z" fill="url(#plate)" stroke="#e0b5a8" stroke-opacity=".25"/>
-  <path d="M28 171 188 235M68 157 230 220M109 140 270 203M150 124 311 187M353 173 189 239M314 156 150 222M275 139 111 205M236 123 72 189" stroke="#e0b5a8" stroke-opacity=".13" fill="none"/>
-  <g stroke="#e0b5a8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="#545067" fill-opacity=".9"><path d="M131 194V58l51-17 67 25v128l-67 24z"/><path d="M182 41v177M131 58l51 19 67-11M148 94l20 7v25l-20-7zm50 8 36-13v27l-36 13zm-50 45 20 7v25l-20-7zm50 5 36-13v27l-36 13z"/></g>
-  <path d="M45 55h40m-40 0v28M336 47h-40m40 0v28" fill="none" stroke="#e0b5a8" stroke-opacity=".56" stroke-width="2"/>
-  <circle cx="322" cy="197" r="3" fill="#e0b5a8" /><circle cx="59" cy="194" r="3" fill="#e0b5a8" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240">
+<defs>
+  <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+    <stop stop-color="#152638"/><stop offset="1" stop-color="#304257"/>
+  </linearGradient>
+  <radialGradient id="light"><stop stop-color="#cc9475" stop-opacity=".34"/><stop offset="1" stop-color="#cc9475" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="400" height="240" rx="12" fill="url(#sky)"/>
+<circle cx="226" cy="110" r="160" fill="url(#light)"/>
+<g stroke="#b6d6d1" stroke-opacity=".13" stroke-width="1">
+  <path d="M0 197h400M0 216h400M0 235h400M0 176h400M36 0v240M80 0v240M124 0v240M168 0v240M212 0v240M256 0v240M300 0v240M344 0v240M388 0v240"/>
+</g>
+<g stroke="#f5c7a8" stroke-linecap="round" stroke-linejoin="round">
+<path d="M130 215V37h135v178z" fill="#344961" stroke-width="4"/>
+<path d="M148 55h30v24h-30zm46 0h30v24h-30zm46 0h9v24h-9zM148 94h30v24h-30zm46 0h30v24h-30zm46 0h9v24h-9zM148 133h30v24h-30zm46 0h30v24h-30zm46 0h9v24h-9zM148 172h30v24h-30zm46 0h30v24h-30zm46 0h9v24h-9z" fill="#d0b49d" stroke-width="2"/>
+<path d="M148 172h30v24h-30zm92-78h9v24h-9z" fill="#6c8793" stroke-width="2"/>
+<path d="M113 214h171m-116 0v-16h56v16M158 38V25h78v13" fill="none" stroke-width="5"/>
+<path d="M87 215V135h40v80m146 0v-92h43v92" fill="#273a50" stroke-width="3"/>
+<circle cx="315" cy="53" r="14" fill="#e8c5b2" stroke="none"/>
+</g>
+<path d="M20 30h35m-35 0v25m360-25h-35m35 0v25" fill="none" stroke="#f5c7a8" stroke-opacity=".45" stroke-width="2"/>
+<circle cx="36" cy="207" r="3" fill="#f5c7a8"/><path d="M46 207h48" stroke="#f5c7a8" stroke-opacity=".6" stroke-width="2"/>
 </svg>
