@@ -7,8 +7,11 @@ describe("Recon visual station: player-known signals only", () => {
   it("renders shadcn badges for observed, never imagined infrastructure", () => {
     const html = renderToStaticMarkup(createElement(ReconStationHeader, {
       observedTargets: 0, knownMachines: 0, activeEvidence: 0, activeOperation: false,
+      onViewTopology: () => {},
     }));
     expect(html).toContain("RECON CONTROL");
+    expect(html).toContain('aria-label="Jump to infrastructure topology"');
+    expect(html).toContain('data-slot="button"');
     expect(html).toContain('data-slot="badge"');
     expect(html).toContain("Observed profiles");
     expect(html).toContain("Known hosts");
@@ -19,6 +22,7 @@ describe("Recon visual station: player-known signals only", () => {
   it("only displays active operation service evidence, without hidden ranks or confidence", () => {
     const html = renderToStaticMarkup(createElement(ReconStationHeader, {
       observedTargets: 2, knownMachines: 3, activeEvidence: 4, activeOperation: true,
+      onViewTopology: () => {},
     }));
     expect(html).toContain("2");
     expect(html).toContain("3");

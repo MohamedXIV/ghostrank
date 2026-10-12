@@ -234,7 +234,22 @@ async function oneView(browser, view) {
         return Boolean(map && operations && map.compareDocumentPosition(operations) & Node.DOCUMENT_POSITION_FOLLOWING);
       });
       if (!visualOrder) throw new Error(id + ": Recon map must precede operation rail in reading order");
+      await page.locator(".os-window-recon .recon-station-heading").scrollIntoViewIfNeeded();
       await shot(page, id, view.name, "recon");
+      // Navigation makes the real topology reachable in the narrow dock, with keyboard focus.
+      const jumpMap=page.getByRole("button", { name: "Jump to infrastructure topology" });
+      await jumpMap.click();
+      const focusedMap=page.locator('.os-window-recon .recon-topology-stage');
+      await focusedMap.locator('.recon-topology-container').waitFor();
+      const mapFocus=await focusedMap.evaluate(el=>({
+        focused: document.activeElement===el,
+        y:el.getBoundingClientRect().top,
+        viewport: window.innerHeight,
+      }));
+      if (!mapFocus.focused || mapFocus.y<0 || mapFocus.y>mapFocus.viewport-120) {
+        throw new Error(id + ": MAP jump failed to focus/scroll topology "+JSON.stringify(mapFocus));
+      }
+      await shot(page, id, view.name, "recon-topology");
       // Explicit in-game Appearance action, not DOM or store injection.
       const oldColors = await page.locator(".desktop-surface").evaluate(el => {
         const style = getComputedStyle(el);
@@ -291,7 +306,11 @@ async function oneView(browser, view) {
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
+      await page.locator(".os-window-recon .recon-station-heading").scrollIntoViewIfNeeded();
       await shot(page, id, view.name, themeVariant + "-recon");
+      await page.getByRole("button", { name: "Jump to infrastructure topology" }).click();
+      await page.locator('.os-window-recon .recon-topology-stage:focus').waitFor();
+      await shot(page, id, view.name, themeVariant + "-recon-topology");
     }
     if (errors.length) throw new Error("Browser errors: " + errors.join(" | "));
   } finally { await context.close(); }
@@ -313,9 +332,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 140, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 160, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 140 || failures.length) {
+if (captured.length !== 160 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 140/140 Chromium screenshots incl. live cloud model RUN/STOP and local requirements");
+} else console.log("DISTRO 10-MODE PASS: 160/160 Chromium screenshots incl. real topology focus/navigation");
