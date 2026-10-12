@@ -85,6 +85,8 @@ import { ContractCard } from "@/components/game/contracts/contract-card";
 import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-intel";
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
 import { HardwareProductCard } from "@/components/game/market/hardware-product-card";
+import { SoftwareLicenseCard } from "@/components/game/market/software-license-card";
+import { presentSoftwareListing } from "@/components/game/market/software-listing-model";
 import { presentHardwareItem } from "@/components/game/market/hardware-item-model";
 import { RunTimeline } from "@/components/game/history/run-timeline";
 import {
@@ -2868,6 +2870,49 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         )}
       </section>
 
+      <section aria-label="Software market" className="software-store">
+        <div className="software-store-heading">
+          <div>
+            <span className="panel-label">LICENSE EXCHANGE / RECURRING</span>
+            <h2>Software library</h2>
+            <p>Activate a license for a daily fee. No software is required to access targets.</p>
+          </div>
+          <span className="software-store-total">{software.length} licenses listed</span>
+        </div>
+        {software.length === 0 ? (
+          <p className="market-empty">No tools listed.</p>
+        ) : (
+          <ul className="market-catalog software-store-grid">
+            {visibleRecords(software, recordPage).map(([id, entry]) => (
+              <SoftwareLicenseCard
+                key={id}
+                item={presentSoftwareListing(id, {
+                  label: String(entry.label ?? id),
+                  dailyCost: Number(entry.dailyCost ?? 0),
+                  active: entry.active === true,
+                  discountFactor: Number(entry.discountFactor ?? 1),
+                  compute: Number(entry.compute ?? 0),
+                  memory: Number(entry.memory ?? 0),
+                  vram: Number(entry.vram ?? 0),
+                  storage: Number(entry.storage ?? 0),
+                  network: Number(entry.network ?? 0),
+                })}
+                onToggle={() => runtime.execute(
+                  entry.active === true ? disableSoftwareFromGui(id) : enableSoftwareFromGui(id),
+                )}
+              />
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          Premium tools make the same rig more productive — wider passes, faster
+          work — for a daily license fee. Running, swapping, or stopping a tool
+          costs nothing; only each world-day boundary bills. A fee you cannot
+          pay just lapses that one license. Tools never unlock or block a
+          target. No debt, no gate.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3044,76 +3089,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           gate. Dwellings marked <em>safehouse</em> contribute no capability at
           all: what they sell is distance, and distance is paid in world time,
           which is also exposure. Moving out of one pays the trip back.
-        </p>
-      </section>
-
-      <section aria-label="Software market">
-        <span className="panel-label">SOFTWARE // RECURRING</span>
-        {software.length === 0 ? (
-          <p className="market-empty">No tools listed.</p>
-        ) : (
-          <ul className="market-catalog">
-            {visibleRecords(software, recordPage).map(([id, entry]) => {
-              const cost = Number(entry.dailyCost ?? 0);
-              const active = entry.active === true;
-              const factor = Number(entry.discountFactor ?? 1);
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-
-              return (
-                <li key={id} className={active ? "is-owned" : undefined}>
-                  <div>
-                    <span className="panel-label">{String(entry.label ?? id)}</span>
-                    <span>
-                      {factor < 1
-                        ? `×${factor} action time`
-                        : stats.length === 0
-                          ? "no capability lift"
-                          : stats
-                              .map(
-                                ([label, value]) =>
-                                  `${label} +${Number(value ?? 0)}`,
-                              )
-                              .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      {cost.toLocaleString("en-US")} cr / day
-                      {active ? " · running" : ""}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    title={
-                      active
-                        ? "Stop this license (fee stops with it)"
-                        : "Run this license (fee starts at the next day)"
-                    }
-                    onClick={() =>
-                      runtime.execute(
-                        active
-                          ? disableSoftwareFromGui(id)
-                          : enableSoftwareFromGui(id),
-                      )
-                    }
-                  >
-                    {active ? "STOP" : "RUN"}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          Premium tools make the same rig more productive — wider passes, faster
-          work — for a daily license fee. Running, swapping, or stopping a tool
-          costs nothing; only each world-day boundary bills. A fee you cannot
-          pay just lapses that one license. Tools never unlock or block a
-          target. No debt, no gate.
         </p>
       </section>
 
