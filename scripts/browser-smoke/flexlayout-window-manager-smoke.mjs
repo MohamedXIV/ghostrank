@@ -59,6 +59,21 @@ async function startGame(page) {
   const pause = page.locator(".clock-hud button", { hasText: "Pause" }).first();
   if (await pause.count()) await pause.click();
 }
+async function resumeAfterRefresh(page) {
+  // A current run resumes from its existing browser save; do not start a fake
+  // new player just to make the layout test pass.
+  await page.reload({ waitUntil: "load" });
+  for (let i = 0; i < 100; i++) {
+    const dock = page.locator(".docking-workspace .flexlayout__layout");
+    if (await dock.count() && await dock.first().isVisible()) break;
+    const workstation = page.getByRole("button", { name: /use workstation/i });
+    if (await workstation.count() && await workstation.first().isVisible()) await workstation.first().click();
+    const enter = page.getByRole("button", { name: /enter system \/\/ start/i });
+    if (await enter.count() && await enter.first().isVisible()) await enter.first().click();
+    await page.waitForTimeout(150);
+  }
+  await page.locator(".docking-workspace .flexlayout__layout").waitFor({ timeout: 30000 });
+}
 async function layoutState(page) {
   return page.evaluate(() => {
     const json = localStorage.getItem("ghostrank:docking:v1:ghost-os");
@@ -177,8 +192,7 @@ async function desktop(browser) {
     await page.waitForTimeout(400);
     const saved = await layoutState(page);
     check("dragged tab persisted in browser storage", findTabset(saved,"terminal")?.id === findTabset(saved,"recon")?.id);
-    await page.reload({waitUntil:"load"});
-    await startGame(page);
+    await resumeAfterRefresh(page);
     const restored = await layoutState(page);
     check("layout arrangement survives browser refresh", findTabset(restored,"terminal")?.id === findTabset(restored,"recon")?.id);
     const dims = await page.locator('.docking-workspace').boundingBox();
