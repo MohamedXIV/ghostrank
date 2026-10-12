@@ -184,7 +184,7 @@ async function oneView(browser, view) {
         return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
       });
       const walletText = await page.locator(".market-wallet strong").first().innerText();
-      const walletCredits = Number(walletText.replace(/[^\\d]/g, ""));
+      const walletCredits = Number(walletText.replace(/[^0-9]/g, ""));
       if (await machine.getByRole("button", { name: "Buy Burner Laptop" }).isEnabled() !== (walletCredits >= 600)) {
         throw new Error(id + ": machine BUY enablement not tied to real wallet");
       }
