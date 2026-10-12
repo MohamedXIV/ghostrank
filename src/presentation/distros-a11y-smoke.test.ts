@@ -22,14 +22,11 @@ describe("All distros accessibility smoke test", () => {
     });
   });
 
-  const distroThemePairs: Array<{ distroId: DistroId; themeId: string }> = [
-    { distroId: "ghost-os", themeId: "ash" },
-    { distroId: "lattice", themeId: "grid" },
-    { distroId: "velvet", themeId: "plum" },
-    { distroId: "daybreak", themeId: "warm" },
-    { distroId: "petal", themeId: "light" },
-    { distroId: "petal", themeId: "night" },
-  ];
+  const distroThemePairs: Array<{ distroId: DistroId; themeId: string }> =
+    DISTRO_IDS.flatMap(id => DISTRO_PROFILES[id].themes.map(theme => ({
+      distroId: id,
+      themeId: theme.id,
+    })));
 
   for (const { distroId, themeId } of distroThemePairs) {
     it(`renders ${distroId} (${themeId}) with accessibility overrides and keyboard landmarks`, async () => {
