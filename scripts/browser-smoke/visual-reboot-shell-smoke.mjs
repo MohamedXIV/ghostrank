@@ -132,6 +132,24 @@ async function oneView(browser, view) {
       const ownedButPurchasable = await workstation.getByRole("button", { name: "Buy Secondhand Workstation" }).isEnabled();
       if (!ownedButPurchasable) throw new Error(id + ": owned free starter unexpectedly blocks BUY");
       await shot(page, id, view.name, "market");
+      const software = page.locator('.os-window-market .software-listing[data-software-id="software-net-monitor"]');
+      await software.scrollIntoViewIfNeeded();
+      await software.getByText("Commercial Monitoring Suite").waitFor();
+      if (!(await software.innerText()).includes("40 cr")
+        || !(await software.innerText()).includes("/ world day")
+        || await software.locator('[data-slot="card"]').count() !== 1) {
+        throw new Error(id + ": real licensed software card/price missing");
+      }
+      await page.waitForFunction(() => {
+        const img = document.querySelector('.software-listing[data-software-id="software-net-monitor"] img');
+        return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+      });
+      const run = software.getByRole("button", { name: "Run Commercial Monitoring Suite" });
+      await run.click();
+      await software.getByRole("button", { name: "Stop Commercial Monitoring Suite" }).waitFor();
+      await software.getByRole("button", { name: "Stop Commercial Monitoring Suite" }).click();
+      await run.waitFor();
+      await shot(page, id, view.name, "software");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       const reconRoot = page.locator(".os-window-recon .recon-workstation");
@@ -187,6 +205,10 @@ async function oneView(browser, view) {
       await page.getByTitle("Market & Rig (Alt+4)").click();
       await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
       await shot(page, id, view.name, themeVariant + "-market");
+      const softwareMode = page.locator('.os-window-market .software-listing[data-software-id="software-net-monitor"]');
+      await softwareMode.scrollIntoViewIfNeeded();
+      await softwareMode.getByRole("button", { name: "Run Commercial Monitoring Suite" }).waitFor();
+      await shot(page, id, view.name, themeVariant + "-software");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -212,9 +234,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 60, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 80, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 60 || failures.length) {
+if (captured.length !== 80 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 60/60 live Chromium app screenshots");
+} else console.log("DISTRO 10-MODE PASS: 80/80 Chromium app screenshots incl. live software licenses");
