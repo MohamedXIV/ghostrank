@@ -60,6 +60,8 @@ async function startGame(page) {
     await page.waitForTimeout(200);
   }
   await page.locator(".desktop-surface").waitFor({ timeout: 15000 });
+  // Do not allow the SSR fallback markup to create false-positive screenshots.
+  await page.locator(".docking-workspace .flexlayout__layout").waitFor({ timeout: 15000 });
   const pause = page.locator(".clock-hud button", { hasText: "Pause" }).first();
   if (await pause.count()) await pause.click();
 }
@@ -99,6 +101,14 @@ async function oneView(browser, view) {
   });
   try {
     await startGame(page);
+    // Real browser evidence that FlexLayout can float panels and reset layout.
+    if (!view.isMobile) {
+      await page.getByRole("button", { name: "Float focused application" }).click();
+      await page.locator(".flexlayout__float_window, .flexlayout__floating_window").first()
+        .waitFor({ timeout: 10000 });
+      await page.getByRole("button", { name: "Reset workspace layout" }).click();
+      await page.locator(".docking-workspace .flexlayout__layout").waitFor();
+    }
     const variants = {
       "ghost-os": ["Dawn", "dawn", "light"],
       lattice: ["Paper", "paper", "light"],
