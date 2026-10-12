@@ -216,6 +216,34 @@ async function oneView(browser, view) {
       await compact.getByRole("button", { name: "Stop Compact Class API" }).click();
       await runCompact.waitFor();
       await shot(page, id, view.name, "models");
+      const authored = page.locator('.os-window-market .authored-tool-listing[data-tool-id="tool-paranoid-scraper"]');
+      await authored.scrollIntoViewIfNeeded();
+      await authored.getByText("Paranoid Scraper").waitFor();
+      if (!(await authored.innerText()).includes("500 cr")
+        || !(await authored.innerText()).includes("nullbyte")
+        || !(await authored.innerText()).includes("NET")
+        || await authored.locator('[data-slot="card"]').count() !== 1) {
+        throw new Error(id + ": projected peer tool provenance, stats or shadcn missing");
+      }
+      await page.waitForFunction(() => {
+        const img=document.querySelector('.authored-tool-listing[data-tool-id="tool-paranoid-scraper"] img');
+        return img instanceof HTMLImageElement && img.complete && img.naturalWidth>0;
+      });
+      const priceWallet=Number((await page.locator('.market-wallet strong').first().innerText()).replace(/[^0-9]/g,""));
+      const authoredBuy=authored.getByRole("button",{name:"Buy Paranoid Scraper"});
+      if (await authoredBuy.isEnabled()!==(priceWallet>=500)) {
+        throw new Error(id + ": tool BUY affordance mismatches authoritative wallet");
+      }
+      // Only exercise real purchase/resale when the scenario has earned enough credits.
+      if (priceWallet>=500) {
+        await authoredBuy.click();
+        const ownedTool=page.locator('.os-window-market .authored-tool-listing[data-owned-tool-id]');
+        const copy=ownedTool.filter({hasText:"Paranoid Scraper"}).first();
+        await copy.getByRole("button",{name:"Sell Paranoid Scraper"}).waitFor();
+        await copy.getByRole("button",{name:"Sell Paranoid Scraper"}).click();
+        await authored.getByRole("button",{name:"Buy Paranoid Scraper"}).waitFor();
+      }
+      await shot(page,id,view.name,"tools");
 
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
@@ -305,6 +333,10 @@ async function oneView(browser, view) {
       await modelMode.scrollIntoViewIfNeeded();
       await modelMode.getByRole("button", { name: "Run Compact Class API" }).waitFor();
       await shot(page, id, view.name, themeVariant + "-models");
+      const toolsMode=page.locator('.os-window-market .authored-tool-listing[data-tool-id="tool-paranoid-scraper"]');
+      await toolsMode.scrollIntoViewIfNeeded();
+      await toolsMode.getByRole("button",{name:"Buy Paranoid Scraper"}).waitFor();
+      await shot(page,id,view.name,themeVariant+"-tools");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -334,9 +366,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 160, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 180, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 160 || failures.length) {
+if (captured.length !== 180 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 160/160 Chromium screenshots incl. real topology focus/navigation");
+} else console.log("DISTRO 10-MODE PASS: 180/180 Chromium screenshots incl. authored tool provenance and affordance");

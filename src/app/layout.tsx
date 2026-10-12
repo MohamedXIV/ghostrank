@@ -11,6 +11,7 @@ import "@/components/game/market/software-market.css";
 import "@/components/game/market/housing-market.css";
 import "@/components/game/market/machine-market.css";
 import "@/components/game/market/model-market.css";
+import "@/components/game/market/authored-tools.css";
 import "@/components/game/recon/recon-workstation.css";
 
 export const metadata: Metadata = {
