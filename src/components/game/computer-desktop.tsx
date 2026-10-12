@@ -2565,9 +2565,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
   const dailyCost = Number(
     useCell("meta", "wallet", "dailyCost", runtime.projection) ?? 0,
   );
-  const currentHousingId = String(
-    useCell("meta", "wallet", "currentHousingId", runtime.projection) ?? "",
-  );
   const rig = useRow("rig", "capability", runtime.projection);
   const actionMinutes = useRow("rig", "actionMinutes", runtime.projection);
   const scale = useRow("rig", "scale", runtime.projection);
