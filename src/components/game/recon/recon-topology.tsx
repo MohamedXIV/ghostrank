@@ -17,6 +17,21 @@ import {
 } from "@/game/computer/apps/target-actions";
 import type { GameRuntime } from "@/game/runtime/game-runtime";
 
+/** Unknown or unobserved ranks are not zero. Never manufacture a ranking for a public lead. */
+export function visibleTopologyRank(value: unknown, observed: boolean): string {
+  return observed && typeof value === "number" && Number.isFinite(value)
+    ? `RANK #${value.toLocaleString("en-US")}`
+    : "RANK UNKNOWN";
+}
+
+/** Empty state must not describe an unobserved lead as an observed profile. */
+export function topologyEmptyCopy(observed: boolean, active: boolean): string {
+  if (!observed) return "Unverified lead. Use OBSERVE to confirm a public profile before mapping any infrastructure.";
+  return active
+    ? "No machine nodes discovered yet. Run SURVEY HOSTS to map perimeter topology."
+    : "Target observed, but machine topology is unmapped. Open an operation and survey to reveal infrastructure.";
+}
+
 interface ReconTopologyProps {
   targetId: string;
   runtime: GameRuntime;
@@ -116,7 +131,7 @@ export function ReconTopology({
                 {String(target.handle ?? targetId)}
               </span>
               <span className="target-rank-pill">
-                RANK #{Number(target.rank ?? 0).toLocaleString("en-US")}
+                {visibleTopologyRank(target.rank, hasTargetRecord)}
               </span>
             </div>
             <div className="node-actions">
@@ -155,9 +170,7 @@ export function ReconTopology({
           <div className="topology-empty-state">
             <span className="topology-empty-glyph">◌</span>
             <p className="topology-empty-text">
-              {isActiveTarget
-                ? "No machine nodes discovered yet. Run SURVEY HOSTS to map perimeter topology."
-                : "Target observed, but machine topology is unmapped. Open an operation and survey to reveal infrastructure."}
+              {topologyEmptyCopy(hasTargetRecord, isActiveTarget)}
             </p>
           </div>
         ) : (

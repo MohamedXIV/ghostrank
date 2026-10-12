@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -1192,6 +1192,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
   const briefing = useBriefing();
   const [manualTargetId, setManualTargetId] = useState<string | null>(null);
   const [observeFeedback, setObserveFeedback] = useState<string | null>(null);
+  const topologyRef = useRef<HTMLDivElement>(null);
   const targetIds = useRowIds("targets", runtime.projection);
   const contractRows = useTable("contracts", runtime.projection);
   const worldMinute = Number(useCell("meta", "world", "worldMinute", runtime.projection) ?? 0);
@@ -1252,24 +1253,15 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
 
   return (
     <div className="recon-app recon-workstation">
-      <ContextualHint
-        id="hint:recon-lead"
-        title="PASSIVE RECONNAISSANCE"
-        description={opening
-          ? `Public commission / known profile: ${opening.label}. OBSERVE verifies its profile; it does not prove rumors or unlock the target by rank.`
-          : "No public target is currently available. Check Underground for visible offers before observing; no target ID is assumed."}
-        {...(opening ? { commandSuggestion: `observe ${opening.targetId}` } : {})}
-        onRunCommand={(cmd) => {
-          const parts = cmd.trim().split(" ");
-          if (parts[0] === "observe" && parts[1]) observe(parts[1]);
-        }}
-      />
-
       <ReconStationHeader
         observedTargets={targetIds.length}
         knownMachines={machineIds.length}
         activeEvidence={operationEvidenceCount}
         activeOperation={operationTargetId.length > 0}
+        onViewTopology={() => {
+          topologyRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+          topologyRef.current?.focus({ preventScroll: true });
+        }}
       />
 
       <Card className="recon-target-card">
@@ -1317,7 +1309,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
       {briefing ? <NightshadeBriefingPanel /> : null}
 
       <div className="recon-tactical-workspace" aria-label="Recon map and operation instruments">
-        <div className="recon-topology-stage">
+        <div className="recon-topology-stage" ref={topologyRef} tabIndex={-1}>
       <ReconTopology
         targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "")}
         runtime={runtime}
@@ -1381,6 +1373,19 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
       </div>
         </aside>
       </div>
+
+      <ContextualHint
+        id="hint:recon-lead"
+        title="PASSIVE RECONNAISSANCE"
+        description={opening
+          ? `Public commission / known profile: ${opening.label}. OBSERVE verifies its profile; it does not prove rumors or unlock the target by rank.`
+          : "No public target is currently available. Check Underground for visible offers before observing; no target ID is assumed."}
+        {...(opening ? { commandSuggestion: `observe ${opening.targetId}` } : {})}
+        onRunCommand={(cmd) => {
+          const parts = cmd.trim().split(" ");
+          if (parts[0] === "observe" && parts[1]) observe(parts[1]);
+        }}
+      />
 
       <div className="recon-intel-archive" aria-label="Additional observed intelligence">
 

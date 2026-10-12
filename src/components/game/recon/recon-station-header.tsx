@@ -1,4 +1,5 @@
 import { Radar, Network, RadioTower } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface ReconStationHeaderProps {
@@ -6,11 +7,12 @@ interface ReconStationHeaderProps {
   knownMachines: number;
   activeEvidence: number;
   activeOperation: boolean;
+  onViewTopology: () => void;
 }
 
 /** All counts are from the player-visible TinyBase projection; never a guess. */
 export function ReconStationHeader({
-  observedTargets, knownMachines, activeEvidence, activeOperation,
+  observedTargets, knownMachines, activeEvidence, activeOperation, onViewTopology,
 }: ReconStationHeaderProps) {
   return (
     <header className="recon-station-heading" aria-label="Recon control overview">
@@ -31,6 +33,10 @@ export function ReconStationHeader({
           <Network size={13} aria-hidden="true" /> Known hosts
           <strong>{knownMachines}</strong>
         </Badge>
+        <Button type="button" size="sm" variant="ghost" className="recon-map-jump"
+          aria-label="Jump to infrastructure topology" onClick={onViewTopology}>
+          <Network size={13} aria-hidden="true" /> VIEW MAP
+        </Button>
         {activeOperation && (
           <Badge variant="secondary" className="recon-known-badge recon-live-badge">
             LIVE OPERATION · Active services <strong>{activeEvidence}</strong>
