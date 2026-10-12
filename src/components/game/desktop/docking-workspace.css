@@ -1,0 +1,101 @@
+/* FlexLayout owns docking and floating; keep its upstream CSS intact.
+   Match in-game distro/shadcn semantic variables, not a separate theme registry. */
+.desktop-surface .docking-workspace {
+  position: absolute;
+  inset: 12px 24px 85px;
+  z-index: 8;
+  min-width: 0;
+  min-height: 0;
+  --flexlayout-color-text: var(--foreground);
+  --flexlayout-color-background: var(--window-background);
+  --flexlayout-color-base: var(--surface);
+  --flexlayout-color-1: var(--surface);
+  --flexlayout-color-2: var(--surface-raised);
+  --flexlayout-color-3: var(--surface-overlay);
+  --flexlayout-color-4: var(--border);
+  --flexlayout-color-5: var(--border-emphasis);
+  --flexlayout-color-tabset-background: var(--surface);
+  --flexlayout-color-tab-selected-background: var(--surface-raised);
+  --flexlayout-color-tab-selected: var(--foreground);
+  --flexlayout-color-tab-unselected: var(--foreground-muted);
+  --flexlayout-color-tab-unselected-background: var(--surface);
+  --flexlayout-color-tab-content: var(--window-background);
+  --flexlayout-color-border: var(--border);
+  --flexlayout-color-splitter: var(--border);
+  --flexlayout-color-splitter-hover: var(--accent);
+  --flexlayout-color-drag-rect-border: var(--accent);
+  --flexlayout-color-drag-rect-background: var(--surface-raised);
+  --flexlayout-color-popup-selected: var(--foreground);
+  --flexlayout-color-popup-selected-background: var(--surface-raised);
+  --flexlayout-color-focus: var(--focus);
+  --flexlayout-color-icon: var(--foreground-muted);
+  --flexlayout-font-family: var(--font-ui);
+  --flexlayout-font-size: var(--text-sm);
+  --flexlayout-splitter-size: 8px;
+}
+.desktop-surface[data-shell-mode="compact-rail"] .docking-workspace { left: 91px; right: 17px; bottom: 34px; }
+.desktop-surface[data-shell-mode="edge-shelf"] .docking-workspace { left: 25px; right: 103px; bottom: 37px; }
+.desktop-surface[data-shell-mode="bottom-taskbar"] .docking-workspace { left: 17px; right: 17px; bottom: 58px; }
+.desktop-surface[data-shell-mode="soft-dock"] .docking-workspace { left: 21px; right: 21px; bottom: 100px; }
+
+.docking-workspace .flexlayout__layout { background: transparent; border-radius: var(--distro-frame-radius); }
+.docking-workspace .flexlayout__tabset { border-radius: var(--distro-frame-radius); overflow: hidden; }
+.docking-workspace .flexlayout__tab_button {
+  min-height: 30px;
+  font-size: var(--text-sm);
+}
+.docking-workspace .os-window.docked-app-window {
+  position: relative !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+}
+.docking-workspace .docked-app-window .window-content {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+.desktop-surface[data-contrast="high"] .docking-workspace { --flexlayout-splitter-size: 12px; }
+.desktop-surface[data-motion-mode="reduce"] .docking-workspace *,
+.desktop-surface[data-motion-mode="reduce"] .docking-workspace *::before,
+.desktop-surface[data-motion-mode="reduce"] .docking-workspace *::after { transition-duration: 0ms !important; }
+@media (max-width: 700px) {
+  .desktop-surface .docking-workspace { inset: 8px 8px 64px; }
+  .desktop-surface[data-shell-mode="compact-rail"] .docking-workspace {
+    inset: 8px 5px 8px 54px;
+  }
+  .desktop-surface[data-shell-mode="edge-shelf"] .docking-workspace,
+  .desktop-surface[data-shell-mode="soft-dock"] .docking-workspace,
+  .desktop-surface[data-shell-mode="bottom-taskbar"] .docking-workspace {
+    left: 7px; right: 7px; bottom: 64px;
+  }
+  .docking-workspace .flexlayout__tab_button { min-height: 38px; }
+}
+
+/* UI toolkit: shadcn Button primitives above the FlexLayout-managed workspace. */
+.docking-workspace .docking-tools {
+  position: absolute; top: 0; left: 0; right: 0; height: 35px;
+  z-index: 20; display: flex; justify-content: flex-end; align-items: center;
+  gap: 7px; padding: 2px 9px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--foreground);
+}
+.docking-workspace .docking-tools button {
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  color: var(--foreground); min-height: 28px; padding: 3px 10px;
+  font-size: var(--text-sm);
+}
+.docking-workspace .docking-tools button:disabled { opacity: .5; }
+.docking-workspace .docking-layout {
+  position: absolute; top: 35px; left: 0; right: 0; bottom: 0;
+  min-width: 0; min-height: 0;
+}
