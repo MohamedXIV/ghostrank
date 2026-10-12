@@ -33,7 +33,7 @@ export function ReconStationHeader({
           <Network size={13} aria-hidden="true" /> Known hosts
           <strong>{knownMachines}</strong>
         </Badge>
-        <Button type="button" size="sm" variant="outline" className="recon-map-jump"
+        <Button type="button" size="sm" variant="ghost" className="recon-map-jump"
           aria-label="Jump to infrastructure topology" onClick={onViewTopology}>
           <Network size={13} aria-hidden="true" /> VIEW MAP
         </Button>
