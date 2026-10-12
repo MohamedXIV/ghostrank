@@ -42,7 +42,7 @@ Applications may have distinct authors and visual styles.
 
 A famous underground tool should not automatically look like the built-in OS settings app.
 
-Use shadcn/ui as implementation primitives, then heavily theme and customize them.
+**shadcn-first rule:** before custom UI, check the official shadcn/ui component, pattern, registry and theme-token solution; customize their source-owned primitives only when a required behavior is missing. Use FlexLayout as the dedicated React docking/floating window manager; shadcn does not supply that role. The contract is [shadcn + FlexLayout](visual-reboot/SHADCN_FLEXLAYOUT_CONTRACT.md). Do not collapse distinct distro/app identities into one generic dashboard.
 
 ## Window system
 

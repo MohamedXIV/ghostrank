@@ -1,6 +1,6 @@
 # Ghostrank — Distro Identity Matrix v1
 
-**Status:** User-approved visual identity contract (2026-10-11). The five distinct shell geometries and distro personalities below are accepted as implementation targets; they are **not yet shipped features**.
+**Status:** User-approved visual identity contract (2026-10-11). Five distinct distro shell geometries, icon sets and original wallpapers shipped via PR #164 on 2026-10-11. Ten Light/Dark modes and FlexLayout docking/floating are **not yet shipped**; see [implementation contract](SHADCN_FLEXLAYOUT_CONTRACT.md) and issues #166 / #167.
 **Owner:** GPT-6 only. No Claude or external implementation agent.
 **Baseline:** Ghostrank Visual Reboot direction = a believable Linux-desktop-inspired fictional OS + grounded tactical Recon + original illustrated assets. Inspired by the user's real Linux desktop examples (Cutefish, Pop-style workstation), **not** copies of their copyrighted icon packs, wallpapers, branding or applications.
 **Governing docs:** `docs/INTERFACE_AND_DISTROS.md`; `docs/superpowers/specs/2026-10-11-ghostrank-visual-reboot-design.md`; `docs/superpowers/plans/2026-10-11-ghostrank-visual-proof-foundation.md`.
