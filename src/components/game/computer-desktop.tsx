@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCell, useRow, useRowIds, useTable } from "tinybase/ui-react";
@@ -114,6 +115,11 @@ import {
   useUiStore,
 } from "@/stores/ui/use-ui-store";
 
+const DockingWorkspace = dynamic(
+  () => import("@/components/game/desktop/docking-workspace").then(m => m.DockingWorkspace),
+  { ssr: false },
+);
+
 const StableTerminalApp = memo(TerminalApp);
 const StableReconApp = memo(ReconApp);
 const StableUndergroundApp = memo(UndergroundApp);
@@ -179,6 +185,28 @@ export function ComputerDesktop({
   const contrastMode = usePresentationStore((state) => state.contrastMode);
   const distro = DISTRO_PROFILES[distroId];
   const shellLayout = shellLayoutFor(distroId);
+  // Server/first hydration keeps the existing accessible window markup;
+  // the real FlexLayout desktop mounts after hydration, not during SSR.
+  const [dockingMounted, setDockingMounted] = useState(false);
+  useEffect(() => { setDockingMounted(true); }, []);
+
+  const renderDockedApp = useCallback((id: ComputerWindowId) => {
+    switch (id) {
+      case "terminal":
+        return <StableTerminalApp runtime={runtime} onStartNewRun={onStartNewRun} />;
+      case "recon":
+        return <StableReconApp runtime={runtime} />;
+      case "underground":
+        return <StableUndergroundApp runtime={runtime} />;
+      case "market":
+        return <StableMarketApp runtime={runtime} />;
+      case "history":
+        return <StableHistoryApp runtime={runtime} />;
+      case "settings":
+        return <StableAppearanceApp />;
+    }
+  }, [runtime, onStartNewRun]);
+
 
   const orientationModalOpen = useOnboardingStore(
     (state) => state.orientationModalOpen,
@@ -358,6 +386,18 @@ export function ComputerDesktop({
         <OrientationModal />
         <SystemLegendModal />
 
+        {dockingMounted ? (
+          <DockingWorkspace
+            key={distroId}
+            distroId={distroId}
+            colorMode={themeModeFor(distroId, themeId)}
+            openWindows={openWindows}
+            focusedWindow={focusedWindow}
+            onFocus={focusWindow}
+            onClose={closeWindow}
+            renderApp={renderDockedApp}
+          />
+        ) : (
         <AnimatePresence initial={false}>
           {openWindows.includes("terminal") && (
             <WindowFrame
@@ -435,6 +475,7 @@ export function ComputerDesktop({
             </WindowFrame>
           )}
         </AnimatePresence>
+        )}
       </div>
 
       <footer className="os-footer">

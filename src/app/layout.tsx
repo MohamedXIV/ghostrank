@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import "flexlayout-react/style/combined.css";
 import "@/components/game/desktop/desktop-shell.css";
+import "@/components/game/desktop/docking-workspace.css";
 import "@/presentation/distro-theme-modes.css";
 import "@/components/game/market/hardware-catalog.css";
 
