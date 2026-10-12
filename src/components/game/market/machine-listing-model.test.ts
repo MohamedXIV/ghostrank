@@ -19,7 +19,7 @@ describe("projection-backed illustrated machine items",()=>{
   expect(presentMachineListing("box-annealing-rack",{...row("box-annealing-rack"),exotic:false},9999).exotic).toBe(false);
  });
  it("uses the owned machine's actually-paid price, projected resale and user label",()=>{
-  const o=presentOwnedMachine("machine:1",{label:"Nightbox",catalogId:"box-burner",paidCost:555,resaleValue:277,acquiredWorldMinute:42,...MACHINE_CATALOG[0].capability});
+  const o=presentOwnedMachine("machine:1",{label:"Nightbox",catalogId:"box-burner",paidCost:555,resaleValue:277,acquiredWorldMinute:42,compute:1,memory:1,vram:0,storage:1,network:1});
   expect(o.label).toBe("Nightbox");expect(o.paidCostCr).toBe(555);expect(o.resaleCr).toBe(277);
   expect(o.acquiredWorldMinute).toBe(42);
  });
