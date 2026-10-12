@@ -88,6 +88,8 @@ import { HardwareProductCard } from "@/components/game/market/hardware-product-c
 import { SoftwareLicenseCard } from "@/components/game/market/software-license-card";
 import { HousingLocationCard } from "@/components/game/market/housing-location-card";
 import { MachineListingCard, OwnedMachineCard } from "@/components/game/market/machine-cards";
+import { ModelLicenseCard } from "@/components/game/market/model-license-card";
+import { presentModelListing } from "@/components/game/market/model-listing-model";
 import { presentMachineListing, presentOwnedMachine } from "@/components/game/market/machine-listing-model";
 import { presentHousingListing } from "@/components/game/market/housing-listing-model";
 import { presentSoftwareListing } from "@/components/game/market/software-listing-model";
@@ -3030,6 +3032,55 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <section aria-label="AI models" className="model-store">
+        <div className="model-store-heading">
+          <div>
+            <span className="panel-label">ASSISTANT EXCHANGE / LOCAL & CLOUD</span>
+            <h2>AI models</h2>
+            <p>Rent compute on the cloud or own local weights. Compare projected speed, real rig load and recurring cost.</p>
+          </div>
+          <span className="model-store-total">{models.length} models listed</span>
+        </div>
+        {models.length === 0 ? (
+          <p className="market-empty">No models listed.</p>
+        ) : (
+          <ul className="market-catalog model-store-grid">
+            {visibleRecords(models, recordPage).map(([id, entry]) => (
+              <ModelLicenseCard
+                key={id}
+                item={presentModelListing(id, {
+                  label: String(entry.label ?? id),
+                  source: String(entry.source ?? ""),
+                  cost: Number(entry.cost ?? 0),
+                  dailyCost: Number(entry.dailyCost ?? 0),
+                  factor: Number(entry.factor ?? 1),
+                  deliveredFactor: Number(entry.deliveredFactor ?? entry.factor ?? 1),
+                  vram: Number(entry.vram ?? 0),
+                  storage: Number(entry.storage ?? 0),
+                  author: String(entry.author ?? ""),
+                  owned: entry.owned === true,
+                  running: entry.running === true,
+                }, credits, {
+                  vram: Number(rig.vram ?? 0),
+                  storage: Number(rig.storage ?? 0),
+                })}
+                onBuy={() => runtime.execute(acquireModelFromGui(id))}
+                onRun={() => runtime.execute(runModelFromGui(id))}
+                onStop={() => runtime.execute(stopModelFromGui())}
+              />
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          Models accelerate the same actions; none unlocks a target or acts as
+          an autopilot. Cloud services charge at each crossed world-day only while
+          running, and unpayable rent stops the assistant without debt. Local models
+          cost credits once and run free afterward, with VRAM/storage contention
+          affecting their delivered shortcut. Current-rig values include other
+          workloads; purchasing a model does not automatically run it.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3232,114 +3283,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           copy carries its author&apos;s handle, so every trade is a named edge in
           the scene&apos;s value graph. Like every other layer, tools are a lift —
           never a gate.
-        </p>
-      </section>
-
-      <section aria-label="AI models">
-        <span className="panel-label">AI MODELS // ASSISTANTS</span>
-        <ul className="market-catalog">
-          {visibleRecords(models, recordPage).map(([id, entry]) => {
-            const cost = Number(entry.cost ?? 0);
-            const perDay = Number(entry.dailyCost ?? 0);
-            const owned = Boolean(entry.owned ?? false);
-            const running = Boolean(entry.running ?? false);
-            const cloud = String(entry.source ?? "cloud") === "cloud";
-            const factor = Number(entry.factor ?? 1);
-            const delivered = Number(entry.deliveredFactor ?? factor);
-            // Contention pulls a local model's delivered shortcut toward ×1;
-            // "starved" means the rig covers less than the model asked for.
-            const starved = !cloud && delivered > factor;
-
-            return (
-              <li key={id} className={running ? "is-owned" : undefined}>
-                <div>
-                  <span className="panel-label">
-                    {String(entry.label ?? id)}
-                  </span>
-                  <span>
-                    analysis ×{factor} action minutes
-                    {starved && (
-                      <>
-                        {" — this rig delivers "}
-                        <strong>×{delivered}</strong>
-                      </>
-                    )}
-                  </span>
-                  {!cloud && (
-                    <span className="market-time">
-                      rig load {Number(entry.vram ?? 0)} vram /{" "}
-                      {Number(entry.storage ?? 0)} storage · your rig{" "}
-                      {Number(rig.vram ?? 0)} / {Number(rig.storage ?? 0)}
-                    </span>
-                  )}
-                  {entry.author && (
-                    // Phase 5 P4 marketplace provenance: an in-fiction peer
-                    // authored this copy and collects for it — like a P5 tool.
-                    <span className="market-time">
-                      by {String(entry.author)} · paid to them directly
-                    </span>
-                  )}
-                  <span className="market-time">
-                    {cloud
-                      ? `${perDay.toLocaleString("en-US")} cr / day while running`
-                      : `${cost.toLocaleString("en-US")} cr one-time · runs free`}
-                    {owned ? " · owned" : ""}
-                    {running ? " · running" : ""}
-                  </span>
-                </div>
-                {running ? (
-                  <button
-                    type="button"
-                    onClick={() => runtime.execute(stopModelFromGui())}
-                    title="Stop this assistant (its shortcut ends)"
-                  >
-                    STOP
-                  </button>
-                ) : owned || cloud ? (
-                  <button
-                    type="button"
-                    onClick={() => runtime.execute(runModelFromGui(id))}
-                    title={
-                      cloud
-                        ? "Start renting this cloud model (bills daily while it runs)"
-                        : starved
-                          ? "Run this owned model — your rig under-provisions it, so it helps less"
-                          : "Run this owned model (costs nothing)"
-                    }
-                  >
-                    RUN
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={credits < cost}
-                    title={
-                      credits >= cost
-                        ? "Buy this local model (one-time, runs free)"
-                        : "Not enough credits"
-                    }
-                    onClick={() => runtime.execute(acquireModelFromGui(id))}
-                  >
-                    BUY
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <p className="market-hint">
-          A model is an assistant, not an autopilot: while one runs it shortens
-          the minutes accelerated actions cost, composed with your licenses and
-          tools under the same one-minute floor. Cloud models rent — starting or
-          stopping moves nothing, the fee lands at each crossed day and an
-          unpayable one simply stops the model; they run on the provider&apos;s
-          hardware, so your rig never contends with them. Local models are
-          property — one purchase, then running them is free forever — but they
-          occupy your VRAM and storage: a rig that covers the footprint gets the
-          full shortcut, one that under-provisions it gets less, never worse
-          than running nothing at all. Buy GPUs and storage to feed a local
-          model, or rent the speed from the cloud instead. No model at all is
-          the baseline, and an assistant never unlocks or blocks a target.
         </p>
       </section>
 

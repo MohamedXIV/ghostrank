@@ -189,6 +189,33 @@ async function oneView(browser, view) {
         throw new Error(id + ": machine BUY enablement not tied to real wallet");
       }
       await shot(page, id, view.name, "machines");
+      const compact = page.locator('.os-window-market .model-listing[data-model-id="model-cloud-compact"]');
+      await compact.scrollIntoViewIfNeeded();
+      await compact.getByText("Compact Class API").waitFor();
+      if (!(await compact.innerText()).includes("40 cr")
+        || !(await compact.innerText()).includes("/ world day while running")
+        || await compact.locator('[data-slot="card"]').count() !== 1) {
+        throw new Error(id + ": projected cloud model rent or shadcn controls missing");
+      }
+      const localModel = page.locator('.os-window-market .model-listing[data-model-id="model-local-workhorse"]');
+      await localModel.scrollIntoViewIfNeeded();
+      if (!(await localModel.innerText()).includes("900 cr")
+        || !(await localModel.innerText()).includes("VRAM load")
+        || await localModel.getByRole("button", { name: "Buy Quantized Workhorse 13B" }).count() !== 1) {
+        throw new Error(id + ": local model purchase/VRAM requirements missing");
+      }
+      await compact.scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => {
+        const img=document.querySelector('.model-listing[data-model-id="model-cloud-compact"] img');
+        return img instanceof HTMLImageElement && img.complete && img.naturalWidth>0;
+      });
+      const runCompact = compact.getByRole("button", { name: "Run Compact Class API" });
+      await runCompact.click();
+      await compact.getByRole("button", { name: "Stop Compact Class API" }).waitFor();
+      await compact.getByText("RUNNING", { exact: true }).waitFor();
+      await compact.getByRole("button", { name: "Stop Compact Class API" }).click();
+      await runCompact.waitFor();
+      await shot(page, id, view.name, "models");
 
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
@@ -257,6 +284,10 @@ async function oneView(browser, view) {
       await machineMode.scrollIntoViewIfNeeded();
       await machineMode.getByRole("button", { name: "Buy Burner Laptop" }).waitFor();
       await shot(page, id, view.name, themeVariant + "-machines");
+      const modelMode=page.locator('.os-window-market .model-listing[data-model-id="model-cloud-compact"]');
+      await modelMode.scrollIntoViewIfNeeded();
+      await modelMode.getByRole("button", { name: "Run Compact Class API" }).waitFor();
+      await shot(page, id, view.name, themeVariant + "-models");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -282,9 +313,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 120, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 140, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 120 || failures.length) {
+if (captured.length !== 140 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 120/120 Chromium screenshots incl. live software, housing and machine listings");
+} else console.log("DISTRO 10-MODE PASS: 140/140 Chromium screenshots incl. live cloud model RUN/STOP and local requirements");
