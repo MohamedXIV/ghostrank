@@ -99,6 +99,13 @@ async function oneView(browser, view) {
   });
   try {
     await startGame(page);
+    const variants = {
+      "ghost-os": ["Dawn", "dawn", "light"],
+      lattice: ["Paper", "paper", "light"],
+      velvet: ["Mist", "mist", "light"],
+      daybreak: ["Dusk", "dusk", "dark"],
+      petal: ["Night", "night", "dark"],
+    };
     for (const [id, label, mode] of distros) {
       await activateDistro(page, id, label, mode);
       await shot(page, id, view.name, "shell");
@@ -118,6 +125,45 @@ async function oneView(browser, view) {
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await shot(page, id, view.name, "recon");
+      // Explicit in-game Appearance action, not DOM or store injection.
+      const oldColors = await page.locator(".desktop-surface").evaluate(el => {
+        const style = getComputedStyle(el);
+        return [style.getPropertyValue("--background").trim(), style.getPropertyValue("--foreground").trim()];
+      });
+      const [labelVariant, themeVariant, colorMode] = variants[id];
+      await page.getByTitle("System & Appearance (Alt+6)").click();
+      const switchMode = page.locator(".theme-picker").getByRole("button", { name: labelVariant, exact: true });
+      await switchMode.click();
+      const activeMode = page.locator(
+        '.desktop-surface[data-distro="' + id + '"][data-theme="' + themeVariant +
+        '"][data-color-mode="' + colorMode + '"]',
+      );
+      await activeMode.waitFor();
+      const colors = await activeMode.evaluate(el => {
+        const style = getComputedStyle(el);
+        return {
+          background: style.getPropertyValue("--background").trim(),
+          foreground: style.getPropertyValue("--foreground").trim(),
+          colorScheme: style.colorScheme,
+          wallpaper: style.getPropertyValue("--distro-wallpaper"),
+        };
+      });
+      if (colors.colorScheme !== colorMode
+        || colors.background === oldColors[0]
+        || colors.foreground === oldColors[1]
+        || !colors.wallpaper.includes(id + "-" + themeVariant + ".svg") && id !== "petal") {
+        // Petal Night already owns its established wallpaper family.
+        throw new Error(id + ": mode CSS not genuinely switched: " + JSON.stringify(colors));
+      }
+      // Keep the original six app identities, actions and window layout.
+      await page.getByRole("button", { name: "Close System & Appearance" }).click();
+      await shot(page, id, view.name, themeVariant + "-shell");
+      await page.getByTitle("Market & Rig (Alt+4)").click();
+      await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
+      await shot(page, id, view.name, themeVariant + "-market");
+      await page.getByTitle("Recon (Alt+2)").click();
+      await page.locator(".os-window-recon").waitFor();
+      await shot(page, id, view.name, themeVariant + "-recon");
     }
     if (errors.length) throw new Error("Browser errors: " + errors.join(" | "));
   } finally { await context.close(); }
@@ -139,9 +185,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 30, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 60, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 30 || failures.length) {
+if (captured.length !== 60 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("SHELL V1 PASS: 30/30 live Chromium app screenshots");
+} else console.log("DISTRO 10-MODE PASS: 60/60 live Chromium app screenshots");
