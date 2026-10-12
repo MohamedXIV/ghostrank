@@ -244,6 +244,38 @@ async function oneView(browser, view) {
         await authored.getByRole("button",{name:"Buy Paranoid Scraper"}).waitFor();
       }
       await shot(page,id,view.name,"tools");
+      // Commission and cancel an actual world-time build using a real running assistant.
+      const spec=page.locator('.os-window-market .forge-spec-listing[data-forge-id="workflow-net-monitor"]');
+      await spec.scrollIntoViewIfNeeded();
+      await spec.getByText("Homegrown Monitoring Loop").waitFor();
+      if (!(await spec.innerText()).includes("Commercial Monitoring Suite")
+        || !(await spec.innerText()).includes("Planned pipeline")
+        || !(await spec.innerText()).includes("VRAM")
+        || await spec.locator('[data-slot="card"]').count()!==1) {
+        throw new Error(id + ": forge projected IR/shadcn missing");
+      }
+      await page.waitForFunction(()=>{
+        const img=document.querySelector('.forge-spec-listing[data-forge-id="workflow-net-monitor"] img');
+        return img instanceof HTMLImageElement&&img.complete&&img.naturalWidth>0;
+      });
+      const disabledBuild=spec.getByRole("button",{name:"Build Homegrown Monitoring Loop"});
+      if(await disabledBuild.isEnabled())throw new Error(id + ": forge BUILD enabled without assistant");
+      await compact.scrollIntoViewIfNeeded();
+      await compact.getByRole("button",{name:"Run Compact Class API"}).click();
+      await spec.scrollIntoViewIfNeeded();
+      await disabledBuild.waitFor({state:"visible"});
+      if(!(await disabledBuild.isEnabled()))throw new Error(id + ": BUILD unavailable after starting assistant");
+      await disabledBuild.click();
+      const queued=page.locator('.os-window-market .forge-queue-listing').filter({hasText:"Homegrown Monitoring Loop"}).first();
+      await queued.getByRole("button",{name:"Abort Homegrown Monitoring Loop"}).waitFor();
+      await queued.getByText("Compact Class API").waitFor();
+      await queued.getByRole("button",{name:"Abort Homegrown Monitoring Loop"}).click();
+      await queued.waitFor({state:"detached"});
+      await compact.scrollIntoViewIfNeeded();
+      await compact.getByRole("button",{name:"Stop Compact Class API"}).click();
+      await compact.getByRole("button",{name:"Run Compact Class API"}).waitFor();
+      await spec.scrollIntoViewIfNeeded();
+      await shot(page,id,view.name,"forge");
 
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
@@ -337,6 +369,10 @@ async function oneView(browser, view) {
       await toolsMode.scrollIntoViewIfNeeded();
       await toolsMode.getByRole("button",{name:"Buy Paranoid Scraper"}).waitFor();
       await shot(page,id,view.name,themeVariant+"-tools");
+      const forgeMode=page.locator('.os-window-market .forge-spec-listing[data-forge-id="workflow-net-monitor"]');
+      await forgeMode.scrollIntoViewIfNeeded();
+      await forgeMode.getByRole("button",{name:"Build Homegrown Monitoring Loop"}).waitFor();
+      await shot(page,id,view.name,themeVariant+"-forge");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -366,9 +402,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 180, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 200, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 180 || failures.length) {
+if (captured.length !== 200 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 180/180 Chromium screenshots incl. authored tool provenance and affordance");
+} else console.log("DISTRO 10-MODE PASS: 200/200 Chromium screenshots incl. real Forge BUILD/ABORT and projected IR");
