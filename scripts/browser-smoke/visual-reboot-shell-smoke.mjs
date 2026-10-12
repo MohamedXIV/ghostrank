@@ -212,7 +212,7 @@ async function oneView(browser, view) {
       const runCompact = compact.getByRole("button", { name: "Run Compact Class API" });
       await runCompact.click();
       await compact.getByRole("button", { name: "Stop Compact Class API" }).waitFor();
-      await compact.getByText("RUNNING").waitFor();
+      await compact.getByText("RUNNING", { exact: true }).waitFor();
       await compact.getByRole("button", { name: "Stop Compact Class API" }).click();
       await runCompact.waitFor();
       await shot(page, id, view.name, "models");
