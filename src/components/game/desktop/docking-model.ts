@@ -28,12 +28,13 @@ export function buildDistroDockModel(
   distroId: DistroId,
   openWindows: readonly ComputerWindowId[],
   focusedWindow: ComputerWindowId | null,
+  compact = false,
 ): Model {
   const ids = [...new Set(openWindows.filter(validApp))];
   const primary: ComputerWindowId[] = ids.filter(id => id === "terminal" || id === "recon");
   const others = ids.filter(id => !primary.includes(id));
   const technical = distroId === "lattice" || distroId === "ghost-os";
-  const first = technical && primary.length ? [primary[0]] : ids.slice(0, 1);
+  const first = compact ? ids : technical && primary.length ? [primary[0]] : ids.slice(0, 1);
   const remaining = ids.filter(id => !first.includes(id));
   const tabset = (id: string, values: ComputerWindowId[], weight: number) => ({
     type: "tabset" as const, id, weight, selected: Math.max(0, values.indexOf(focusedWindow as ComputerWindowId)),
@@ -108,7 +109,10 @@ export function safeRestoredDockModel(
   openWindows: readonly ComputerWindowId[],
   focusedWindow: ComputerWindowId | null,
   serialized?: string | null,
+  compact = false,
 ): Model {
+  // A two-column workstation is unreadable on a phone. Keep one tabset.
+  if (compact) return buildDistroDockModel(distroId, openWindows, focusedWindow, true);
   let model: Model | undefined;
   if (serialized && serialized.length < 50_000) {
     try {
