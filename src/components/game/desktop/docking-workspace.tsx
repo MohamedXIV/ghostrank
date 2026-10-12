@@ -5,8 +5,9 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Actions, DockLocation, Layout, type Model, type TabNode } from "flexlayout-react";
 import type { DistroId } from "@/presentation/distros";
 import type { ComputerWindowId } from "@/stores/ui/use-ui-store";
+import { Button } from "@/components/ui/button";
 import {
-  safeRestoredDockModel, tabIdsInDock, WORKSPACE_APP_IDS, WORKSPACE_TITLES,
+  buildDistroDockModel, safeRestoredDockModel, tabIdsInDock, WORKSPACE_APP_IDS, WORKSPACE_TITLES,
 } from "./docking-model";
 
 const PREFIX = "ghostrank:docking:v1:";
@@ -27,7 +28,7 @@ interface Props {
 export function DockingWorkspace({
   distroId, colorMode, openWindows, focusedWindow, onClose, onFocus, renderApp,
 }: Props) {
-  const [model] = useState<Model>(() => {
+  const [model, setModel] = useState<Model>(() => {
     let stored: string | null = null;
     try {
       if (typeof window !== "undefined") stored = window.localStorage.getItem(PREFIX + distroId);
@@ -78,6 +79,19 @@ export function DockingWorkspace({
       return action;
     }, [onClose, onFocus]);
 
+  const floatFocused = useCallback(() => {
+    if (!focusedWindow || !model.getNodeById(focusedWindow)) return;
+    // Float *inside* the fictional OS. No browser popup permission required.
+    model.doAction(Actions.popoutTab(focusedWindow, "float"));
+    persist();
+  }, [focusedWindow, model, persist]);
+  const resetLayout = useCallback(() => {
+    const next = buildDistroDockModel(distroId, openWindows, focusedWindow);
+    try { window.localStorage.removeItem(PREFIX + distroId); } catch { /* Optional */ }
+    focusSync.current = null;
+    setModel(next);
+  }, [distroId, openWindows, focusedWindow]);
+
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
     if (!isApp(component)) return null;
@@ -98,7 +112,15 @@ export function DockingWorkspace({
       data-docking-workspace={distroId}
       aria-label="Dockable application workspace"
     >
-      <Layout model={model} factory={factory} onAction={handleAction} onModelChange={persist} />
+      <div className="docking-tools" role="toolbar" aria-label="Workspace layout controls">
+        <Button variant="ghost" size="sm" disabled={!focusedWindow} onClick={floatFocused}
+          aria-label="Float focused application">FLOAT</Button>
+        <Button variant="ghost" size="sm" onClick={resetLayout}
+          aria-label="Reset workspace layout">RESET LAYOUT</Button>
+      </div>
+      <div className="docking-layout">
+        <Layout model={model} factory={factory} onAction={handleAction} onModelChange={persist} />
+      </div>
     </div>
   );
 }
