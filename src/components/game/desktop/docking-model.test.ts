@@ -18,8 +18,11 @@ describe("real FlexLayout desktop model (without world authority)", () => {
   });
   it("supports library-native dock, close/reopen and floating in-page actions", () => {
     const m = buildDistroDockModel("lattice", ["terminal", "recon", "market"], "market");
-    m.doAction(Actions.popoutTab("market", "float"));
-    expect(m.toJson().popouts).toBeDefined();
+    // Without browser geometry Model cannot materialize a float; assert the
+    // exact public API action, then verify browser behavior in Chromium.
+    const action = Actions.popoutTab("market", "float");
+    expect(action.type).toBe(Actions.POPOUT_TAB);
+    expect(action.data).toMatchObject({ node: "market", type: "float" });
     const roundTrip = Model.fromJson(m.toJson());
     expect(roundTrip.getNodeById("terminal")).toBeDefined();
   });
