@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -120,6 +120,12 @@ const DockingWorkspace = dynamic(
   { ssr: false },
 );
 
+// SSR and first hydration keep accessible legacy markup identical; React's
+// external-store hydration boundary then switches to FlexLayout on the client.
+const subscribeClientMount = () => () => {};
+const getClientMounted = () => true;
+const getServerMounted = () => false;
+
 const StableTerminalApp = memo(TerminalApp);
 const StableReconApp = memo(ReconApp);
 const StableUndergroundApp = memo(UndergroundApp);
@@ -187,8 +193,11 @@ export function ComputerDesktop({
   const shellLayout = shellLayoutFor(distroId);
   // Server/first hydration keeps the existing accessible window markup;
   // the real FlexLayout desktop mounts after hydration, not during SSR.
-  const [dockingMounted, setDockingMounted] = useState(false);
-  useEffect(() => { setDockingMounted(true); }, []);
+  const dockingMounted = useSyncExternalStore(
+    subscribeClientMount,
+    getClientMounted,
+    getServerMounted,
+  );
 
   const renderDockedApp = useCallback((id: ComputerWindowId) => {
     switch (id) {
