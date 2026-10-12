@@ -241,6 +241,8 @@ async function oneView(browser, view) {
       await jumpMap.click();
       const focusedMap=page.locator('.os-window-recon .recon-topology-stage');
       await focusedMap.locator('.recon-topology-container').waitFor();
+      const falseRank = await focusedMap.getByText("RANK #0", { exact: true }).count();
+      if (falseRank) throw new Error(id + ": topology fabricated rank zero for an unknown public lead");
       const mapFocus=await focusedMap.evaluate(el=>({
         focused: document.activeElement===el,
         y:el.getBoundingClientRect().top,
