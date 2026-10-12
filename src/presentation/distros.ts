@@ -12,6 +12,7 @@ export interface DistroTheme {
   id: string;
   label: string;
   description: string;
+  mode: "light" | "dark";
 }
 
 export interface DistroSoundIdentity {
@@ -51,7 +52,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       {
         id: "ash",
         label: "Ash",
+        mode: "dark",
         description: "Graphite surfaces with a muted green signal.",
+      },
+      {
+        id: "dawn",
+        label: "Dawn",
+        mode: "light",
+        description: "Pale mineral workstation with the same Ghost/OS quiet signal.",
       },
     ],
     swatches: ["#05080b", "#10171c", "#94d1b6"],
@@ -77,7 +85,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       {
         id: "grid",
         label: "Grid",
+        mode: "dark",
         description: "Slate-blue structure, tighter chrome and crisp focus.",
+      },
+      {
+        id: "paper",
+        label: "Paper",
+        mode: "light",
+        description: "Light technical drafting surface with the Lattice grid identity.",
       },
     ],
     swatches: ["#071019", "#10232f", "#79c9ec"],
@@ -103,7 +118,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       {
         id: "plum",
         label: "Plum",
+        mode: "dark",
         description: "Deep charcoal-plum with restrained rose accents.",
+      },
+      {
+        id: "mist",
+        label: "Mist",
+        mode: "light",
+        description: "Light editorial lavender surface retaining Velvet's layered chrome.",
       },
     ],
     swatches: ["#100a12", "#211624", "#d59ac7"],
@@ -129,7 +151,14 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       {
         id: "warm",
         label: "Warm",
+        mode: "light",
         description: "Cream surfaces with teal and muted gold accents.",
+      },
+      {
+        id: "dusk",
+        label: "Dusk",
+        mode: "dark",
+        description: "Night-blue productivity desktop with warm Daybreak highlights.",
       },
     ],
     swatches: ["#f3efe6", "#fffaf0", "#2f7c74"],
@@ -155,11 +184,13 @@ export const DISTRO_PROFILES: Readonly<Record<DistroId, DistroProfile>> = {
       {
         id: "light",
         label: "Light",
+        mode: "light",
         description: "Creamy blush surfaces with lilac, mint and rose notes.",
       },
       {
         id: "night",
         label: "Night",
+        mode: "dark",
         description: "Dark berry surfaces carrying the same pastel identity.",
       },
     ],
@@ -273,6 +304,13 @@ export function themeBelongsToDistro(
     typeof themeId === "string" &&
     DISTRO_PROFILES[distroId].themes.some((theme) => theme.id === themeId)
   );
+}
+
+/** Color mode only; never an input to game commands. */
+export function themeModeFor(distroId: DistroId, themeId: string): "light" | "dark" {
+  const profile = DISTRO_PROFILES[distroId];
+  return (profile.themes.find(theme => theme.id === themeId)
+    ?? profile.themes.find(theme => theme.id === profile.defaultTheme))!.mode;
 }
 
 export function selectionForDistro(distroId: DistroId): PresentationSelection {

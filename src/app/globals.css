@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
 @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--surface-overlay);
+  --color-popover-foreground: var(--foreground);
+  --color-accent: var(--surface-raised);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-card: var(--surface);
   --color-card-foreground: var(--foreground);
   --color-primary: var(--accent);

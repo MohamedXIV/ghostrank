@@ -69,6 +69,7 @@ import type { CompletedRunSummary } from "@/game/simulation/systems/run-history"
 import { Button } from "@/components/ui/button";
 import { DesktopLauncher } from "@/components/game/desktop/desktop-launcher";
 import { shellLayoutFor } from "@/presentation/shell-layout";
+import { themeModeFor } from "@/presentation/distros";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
@@ -280,6 +281,7 @@ export function ComputerDesktop({
       data-distro={distroId}
       data-shell-mode={shellLayout.mode}
       data-theme={themeId}
+      data-color-mode={themeModeFor(distroId, themeId)}
       data-text-scale={textScale}
       data-motion-mode={motionMode}
       data-transparency={transparencyMode}

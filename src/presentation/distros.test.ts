@@ -7,6 +7,7 @@ import {
   normalizePresentationSelection,
   normalizePresentationSettings,
   selectionForDistro,
+  themeModeFor,
 } from "@/presentation/distros";
 
 describe("Phase 9 P1 distro profiles", () => {
@@ -36,6 +37,28 @@ describe("Phase 9 P1 distro profiles", () => {
       "light",
       "night",
     ]);
+  });
+
+
+  it("ships exactly two real light and dark modes for each recognizable distro", () => {
+    for (const id of DISTRO_IDS) {
+      const profile = DISTRO_PROFILES[id];
+      expect(profile.themes).toHaveLength(2);
+      expect(new Set(profile.themes.map(theme => theme.mode))).toEqual(new Set(["light", "dark"]));
+      for (const theme of profile.themes) {
+        expect(themeModeFor(id, theme.id)).toBe(theme.mode);
+        expect(normalizePresentationSelection({ distroId: id, themeId: theme.id }))
+          .toEqual({ distroId: id, themeId: theme.id });
+      }
+    }
+  });
+
+  it("preserves exact legacy theme IDs for existing saves", () => {
+    expect(DISTRO_PROFILES["ghost-os"].defaultTheme).toBe("ash");
+    expect(DISTRO_PROFILES.lattice.defaultTheme).toBe("grid");
+    expect(DISTRO_PROFILES.velvet.defaultTheme).toBe("plum");
+    expect(DISTRO_PROFILES.daybreak.defaultTheme).toBe("warm");
+    expect(DISTRO_PROFILES.petal.defaultTheme).toBe("light");
   });
 
   it("falls back safely when persisted presentation data is invalid", () => {
