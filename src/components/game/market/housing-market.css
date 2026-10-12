@@ -1,0 +1,68 @@
+/* Illustrated housing listings. Facts only from projected housing rows. */
+.housing-store { container: housing-store / inline-size; min-width: 0; }
+.housing-store-heading { display:flex; align-items:end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:9px 0 15px; }
+.housing-store-heading h2 { margin:4px 0; color:var(--foreground); font:750 clamp(17px,2vw,22px)/1.3 var(--font-ui); letter-spacing:-.03em; }
+.housing-store-heading p { margin:0; max-width:58ch; color:var(--foreground-muted); font:400 12px/1.5 var(--font-ui); }
+.housing-store-total { border:1px solid var(--border); border-radius:var(--radius-control); color:var(--foreground-muted); padding:6px 9px; font:600 11px var(--font-ui); }
+.market-catalog.housing-store-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; margin:0; padding:0; list-style:none; }
+.market-catalog.housing-store-grid > li.housing-listing { display:block; min-width:0; margin:0; padding:0; border:0; background:transparent; }
+.housing-location-card[data-slot="card"] {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:0; padding:0; min-width:0;
+  overflow:hidden; color:var(--foreground); border:1px solid var(--border);
+  border-radius:var(--radius-panel); background:var(--surface);
+  box-shadow:0 8px 25px rgb(0 0 0 / 12%);
+}
+.housing-listing[data-lease-active="true"] .housing-location-card { border-color:var(--border-emphasis); }
+.housing-location-art {
+  position:relative; display:grid; place-items:center; overflow:hidden;
+  min-height:142px; padding:9px;
+  border-bottom:1px solid var(--border);
+  background:radial-gradient(ellipse at 50% 60%,color-mix(in srgb,var(--accent) 18%, transparent),transparent 68%),
+    color-mix(in srgb,var(--surface-raised) 84%,var(--background));
+}
+.housing-location-art img { display:block; width:100%; max-width:340px; height:auto; max-height:170px; object-fit:contain; }
+.housing-location-art-caption {
+  position:absolute; bottom:8px; left:10px; color:var(--foreground-muted);
+  font:650 9px/1 var(--font-mono); letter-spacing:.1em;
+}
+.housing-location-content[data-slot="card-content"] { display:flex; flex-direction:column; gap:9px; padding:13px 14px 9px; min-width:0; }
+.housing-location-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.housing-location-meta [data-slot="badge"] { border-radius:4px; font:650 10px/1.3 var(--font-ui); text-transform:capitalize; }
+.housing-location-content h3 { margin:0; font:750 16px/1.35 var(--font-ui); letter-spacing:-.025em; overflow-wrap:anywhere; }
+.housing-location-travel { display:flex; flex-wrap:wrap; gap:8px; color:var(--foreground-muted); font:500 11px/1.4 var(--font-ui); }
+.housing-location-travel span + span { border-left:1px solid var(--border); padding-left:8px; }
+.housing-location-capabilities { display:flex; flex-wrap:wrap; gap:5px; }
+.housing-location-stat {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 7px; border:1px solid var(--border); border-radius:4px;
+  background:var(--surface-raised); color:var(--foreground-muted);
+  font:600 11px/1.2 var(--font-mono);
+}
+.housing-location-stat strong { color:var(--foreground); }
+.housing-location-footer[data-slot="card-footer"] {
+  display:flex; gap:10px; flex-wrap:wrap; align-items:end; justify-content:space-between;
+  padding:10px 14px 14px; border-top:1px solid var(--border);
+}
+.housing-location-rent { display:flex; gap:3px; flex-direction:column; white-space:nowrap; }
+.housing-location-rent strong { font:750 18px/1.2 var(--font-ui); color:var(--accent); }
+.housing-location-rent span { color:var(--foreground-muted); font:500 11px/1.25 var(--font-ui); }
+.market-catalog.housing-store-grid .housing-listing [data-slot="button"] {
+  min-height:38px; padding:8px 13px; border-radius:var(--radius-control);
+  border:1px solid var(--accent); background:var(--accent);
+  color:var(--accent-foreground); font:700 12px/1.3 var(--font-ui);
+}
+.market-catalog.housing-store-grid .housing-listing [data-slot="button"].ui-button-ghost {
+  border-color:var(--border-emphasis); background:var(--surface-raised); color:var(--foreground);
+}
+.market-catalog.housing-store-grid .housing-listing [data-slot="button"]:focus-visible {
+  outline:3px solid var(--focus); outline-offset:2px;
+}
+@container housing-store (min-width:630px) {
+  .market-catalog.housing-store-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@container housing-store (max-width:260px) {
+  .housing-location-footer[data-slot="card-footer"] { align-items:stretch; }
+  .housing-location-footer [data-slot="button"] { width:100%; }
+  .housing-location-content[data-slot="card-content"] { padding:11px; }
+}
+:where(.desktop-surface[data-contrast="high"]) .housing-location-card[data-slot="card"] { box-shadow:none; border-color:var(--border-emphasis); }

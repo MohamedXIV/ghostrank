@@ -150,6 +150,27 @@ async function oneView(browser, view) {
       await software.getByRole("button", { name: "Stop Commercial Monitoring Suite" }).click();
       await run.waitFor();
       await shot(page, id, view.name, "software");
+      // Housing is a live lease choice, not a non-interactive catalog mock.
+      const housing = page.locator('.os-window-market .housing-listing[data-housing-id="housing-cowork-loft"]');
+      await housing.scrollIntoViewIfNeeded();
+      await housing.getByText("Co-working Loft").waitFor();
+      if (!(await housing.innerText()).includes("30 cr")
+        || !(await housing.innerText()).includes("NET")
+        || !(await housing.innerText()).includes("Same district")
+        || await housing.locator('[data-slot="card"]').count() !== 1) {
+        throw new Error(id + ": projected housing facts or shadcn card missing");
+      }
+      await page.waitForFunction(() => {
+        const img = document.querySelector('.housing-listing[data-housing-id="housing-cowork-loft"] img');
+        return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+      });
+      await housing.getByRole("button", { name: "Move into Co-working Loft" }).click();
+      await housing.getByRole("button", { name: "Move out of Co-working Loft" }).waitFor();
+      await housing.getByText("CURRENT LEASE").waitFor();
+      await housing.getByRole("button", { name: "Move out of Co-working Loft" }).click();
+      await housing.getByRole("button", { name: "Move into Co-working Loft" }).waitFor();
+      await shot(page, id, view.name, "housing");
+
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       const reconRoot = page.locator(".os-window-recon .recon-workstation");
@@ -209,6 +230,10 @@ async function oneView(browser, view) {
       await softwareMode.scrollIntoViewIfNeeded();
       await softwareMode.getByRole("button", { name: "Run Commercial Monitoring Suite" }).waitFor();
       await shot(page, id, view.name, themeVariant + "-software");
+      const housingMode = page.locator('.os-window-market .housing-listing[data-housing-id="housing-cowork-loft"]');
+      await housingMode.scrollIntoViewIfNeeded();
+      await housingMode.getByRole("button", { name: "Move into Co-working Loft" }).waitFor();
+      await shot(page, id, view.name, themeVariant + "-housing");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -234,9 +259,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 80, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 100, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 80 || failures.length) {
+if (captured.length !== 100 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 80/80 Chromium app screenshots incl. live software licenses");
+} else console.log("DISTRO 10-MODE PASS: 100/100 Chromium screenshots incl. live software and housing leases");
