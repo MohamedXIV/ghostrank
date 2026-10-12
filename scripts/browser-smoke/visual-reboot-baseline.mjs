@@ -90,8 +90,8 @@ async function inspectView(browser, view) {
     await market.waitFor();
     const item = market.locator(".market-catalog").getByText("Secondhand Workstation", { exact: true }).first();
     await item.waitFor();
-    const buy = market.getByRole("button", { name: "BUY", exact: true });
-    if ((await buy.count()) < 1) throw new Error("Real Market BUY control missing");
+    const buy = market.getByRole("button", { name: "Buy Secondhand Workstation" });
+    if ((await buy.count()) < 1) throw new Error("Real projected starter workstation BUY control missing");
     await item.scrollIntoViewIfNeeded();
     await capture(page, view, "market");
     await page.getByTitle("Recon (Alt+2)").click();
