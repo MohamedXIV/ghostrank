@@ -87,6 +87,8 @@ import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/c
 import { HardwareProductCard } from "@/components/game/market/hardware-product-card";
 import { SoftwareLicenseCard } from "@/components/game/market/software-license-card";
 import { HousingLocationCard } from "@/components/game/market/housing-location-card";
+import { MachineListingCard, OwnedMachineCard } from "@/components/game/market/machine-cards";
+import { presentMachineListing, presentOwnedMachine } from "@/components/game/market/machine-listing-model";
 import { presentHousingListing } from "@/components/game/market/housing-listing-model";
 import { presentSoftwareListing } from "@/components/game/market/software-listing-model";
 import { presentHardwareItem } from "@/components/game/market/hardware-item-model";
@@ -1155,7 +1157,7 @@ function MachineRenameRow({
         setDraft("");
       }}
     >
-      <input
+      <Input
         aria-label={`Rename machine ${machineId}`}
         autoComplete="off"
         maxLength={24}
@@ -1163,9 +1165,9 @@ function MachineRenameRow({
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
-      <button type="submit" disabled={trimmed.length === 0}>
+      <Button type="submit" size="sm" disabled={trimmed.length === 0}>
         NAME
-      </button>
+      </Button>
     </form>
   );
 }
@@ -2957,6 +2959,77 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <section aria-label="Machines" className="machine-store">
+        <div className="machine-store-heading">
+          <div>
+            <span className="panel-label">MACHINE EXCHANGE / OWNED SYSTEMS</span>
+            <h2>Machines & rack</h2>
+            <p>Complete hardware boxes. Pay once, stack their projected capability, then rename or resell any box you own.</p>
+          </div>
+          <span className="machine-store-count">{machineListings.length} listed · {ownedMachines.length} owned</span>
+        </div>
+        {machineListings.length === 0 ? (
+          <p className="market-empty">No machines on offer.</p>
+        ) : (
+          <ul className="market-catalog machine-store-grid">
+            {visibleRecords(machineListings, recordPage).map(([id, entry]) => (
+              <MachineListingCard
+                key={id}
+                item={presentMachineListing(id, {
+                  label: String(entry.label ?? id),
+                  cost: Number(entry.cost ?? 0),
+                  ownedCount: Number(entry.ownedCount ?? 0),
+                  exotic: entry.exotic === true,
+                  compute: Number(entry.compute ?? 0),
+                  memory: Number(entry.memory ?? 0),
+                  vram: Number(entry.vram ?? 0),
+                  storage: Number(entry.storage ?? 0),
+                  network: Number(entry.network ?? 0),
+                }, credits)}
+                onBuy={() => runtime.execute(buyMachineFromGui(id))}
+              />
+            ))}
+          </ul>
+        )}
+        <h3 className="machine-owned-heading">YOUR RACK / {ownedMachines.length} MACHINES</h3>
+        {ownedMachines.length === 0 ? (
+          <p className="market-empty">No machines owned yet.</p>
+        ) : (
+          <ul className="market-catalog machine-store-grid">
+            {visibleRecords(ownedMachines, recordPage).map(([id, entry]) => (
+              <OwnedMachineCard
+                key={id}
+                item={presentOwnedMachine(id, {
+                  catalogId: String(entry.catalogId ?? ""),
+                  label: String(entry.label ?? id),
+                  paidCost: Number(entry.paidCost ?? 0),
+                  resaleValue: Number(entry.resaleValue ?? 0),
+                  acquiredWorldMinute: Number(entry.acquiredWorldMinute ?? 0),
+                  compute: Number(entry.compute ?? 0),
+                  memory: Number(entry.memory ?? 0),
+                  vram: Number(entry.vram ?? 0),
+                  storage: Number(entry.storage ?? 0),
+                  network: Number(entry.network ?? 0),
+                })}
+                renameControl={<MachineRenameRow
+                  machineId={id}
+                  currentLabel={String(entry.label ?? id)}
+                  onRename={(label) => runtime.execute(renameMachineFromGui(id, label))}
+                />}
+                onSell={() => runtime.execute(sellMachineFromGui(id))}
+              />
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          Standard machines can be owned in multiples. Exotic stock is displayed
+          only when this run has it available and can be claimed once.
+          Machine purchases have no daily rent; owned boxes retain the price
+          actually paid and resell for their projected value.
+          Capability changes action throughput, not target access or rank.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3159,129 +3232,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
           copy carries its author&apos;s handle, so every trade is a named edge in
           the scene&apos;s value graph. Like every other layer, tools are a lift —
           never a gate.
-        </p>
-      </section>
-
-      <section aria-label="Machines">
-        <span className="panel-label">MACHINES // NAMED BOXES</span>
-        {ownedMachines.length === 0 && machineListings.length === 0 ? (
-          <p className="market-empty">No machines on offer.</p>
-        ) : (
-          <ul className="market-catalog">
-            {visibleRecords(ownedMachines, recordPage).map(([id, entry]) => {
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-              const resale = Number(entry.resaleValue ?? 0);
-
-              return (
-                <li key={id} className="is-owned">
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span>
-                      {stats.length === 0
-                        ? "no capability lift"
-                        : stats
-                            .map(
-                              ([label, value]) =>
-                                `${label} +${Number(value ?? 0)}`,
-                            )
-                            .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      {String(entry.catalogId ?? "")} · paid{" "}
-                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
-                      sells {resale.toLocaleString("en-US")} cr ·{" "}
-                      {formatWorldTime(
-                        Number(entry.acquiredWorldMinute ?? 0),
-                      )}
-                    </span>
-                    <MachineRenameRow
-                      machineId={id}
-                      currentLabel={String(entry.label ?? id)}
-                      onRename={(label) =>
-                        runtime.execute(renameMachineFromGui(id, label))
-                      }
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    title="Resell this machine to the fence (no upkeep is lost)"
-                    onClick={() => runtime.execute(sellMachineFromGui(id))}
-                  >
-                    SELL
-                  </button>
-                </li>
-              );
-            })}
-            {visibleRecords(machineListings, recordPage).map(([id, entry]) => {
-              const cost = Number(entry.cost ?? 0);
-              const affordable = credits >= cost;
-              const owned = Number(entry.ownedCount ?? 0);
-              const exotic = entry.exotic === true;
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-
-              return (
-                <li
-                  key={`listing-${id}`}
-                  className={owned > 0 ? "is-owned" : undefined}
-                >
-                  <div>
-                    <span className="panel-label">
-                      {exotic ? "EXOTIC // " : ""}
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span>
-                      {stats.length === 0
-                        ? "no capability lift"
-                        : stats
-                            .map(
-                              ([label, value]) =>
-                                `${label} +${Number(value ?? 0)}`,
-                            )
-                            .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      {cost.toLocaleString("en-US")} cr one-time
-                      {owned > 0 ? ` · owned ×${owned}` : ""}
-                      {exotic ? " · one-shot off-market stock" : ""}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!affordable}
-                    title={
-                      affordable
-                        ? "Buy this machine (one-time, no upkeep)"
-                        : "Not enough credits"
-                    }
-                    onClick={() => runtime.execute(buyMachineFromGui(id))}
-                  >
-                    BUY
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          A machine is a whole named box. Standard stock can be bought in
-          multiples; rare off-market stock appears only when this run has earned
-          it and can be claimed once. Every box still folds into the same rig
-          capability profile — exotic hardware adds no new attack verb, success
-          roll, or target gate.
         </p>
       </section>
 

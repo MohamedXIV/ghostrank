@@ -170,6 +170,25 @@ async function oneView(browser, view) {
       await housing.getByRole("button", { name: "Move out of Co-working Loft" }).click();
       await housing.getByRole("button", { name: "Move into Co-working Loft" }).waitFor();
       await shot(page, id, view.name, "housing");
+      const machine = page.locator('.os-window-market .machine-listing[data-machine-catalog-id="box-burner"]');
+      await machine.scrollIntoViewIfNeeded();
+      await machine.getByText("Burner Laptop").waitFor();
+      if (!(await machine.innerText()).includes("600 cr")
+        || !(await machine.innerText()).includes("CPU")
+        || !(await machine.innerText()).includes("MEM")
+        || await machine.locator('[data-slot="card"]').count() !== 1) {
+        throw new Error(id + ": machine catalog projection/shadcn view missing");
+      }
+      await page.waitForFunction(() => {
+        const img = document.querySelector('.machine-listing[data-machine-catalog-id="box-burner"] img');
+        return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+      });
+      const walletText = await page.locator(".market-wallet strong").first().innerText();
+      const walletCredits = Number(walletText.replace(/[^0-9]/g, ""));
+      if (await machine.getByRole("button", { name: "Buy Burner Laptop" }).isEnabled() !== (walletCredits >= 600)) {
+        throw new Error(id + ": machine BUY enablement not tied to real wallet");
+      }
+      await shot(page, id, view.name, "machines");
 
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
@@ -234,6 +253,10 @@ async function oneView(browser, view) {
       await housingMode.scrollIntoViewIfNeeded();
       await housingMode.getByRole("button", { name: "Move into Co-working Loft" }).waitFor();
       await shot(page, id, view.name, themeVariant + "-housing");
+      const machineMode = page.locator('.os-window-market .machine-listing[data-machine-catalog-id="box-burner"]');
+      await machineMode.scrollIntoViewIfNeeded();
+      await machineMode.getByRole("button", { name: "Buy Burner Laptop" }).waitFor();
+      await shot(page, id, view.name, themeVariant + "-machines");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -259,9 +282,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 100, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 120, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 100 || failures.length) {
+if (captured.length !== 120 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 100/100 Chromium screenshots incl. live software and housing leases");
+} else console.log("DISTRO 10-MODE PASS: 120/120 Chromium screenshots incl. live software, housing and machine listings");
