@@ -33,7 +33,8 @@ export function DockingWorkspace({
     try {
       if (typeof window !== "undefined") stored = window.localStorage.getItem(PREFIX + distroId);
     } catch { /* Persisted UI layouts are optional and never game-state authority. */ }
-    return safeRestoredDockModel(distroId, openWindows, focusedWindow, stored);
+    return safeRestoredDockModel(distroId, openWindows, focusedWindow, stored,
+      typeof window !== "undefined" && window.innerWidth <= 700);
   });
   const focusSync = useRef<ComputerWindowId | null>(null);
   const persist = useCallback(() => {
