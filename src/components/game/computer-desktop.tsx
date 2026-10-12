@@ -3137,7 +3137,7 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         <p className="market-hint">
           Buy once, keep the projected lift without daily rent. Reselling an owned
           copy pays the projected resale amount, derived from its original paid price,
-          not today's catalog price. Transactions preserve peer authorship in the
+          not today&apos;s catalog price. Transactions preserve peer authorship in the
           value ledger. An owned tool never unlocks a target or changes rank.
         </p>
       </section>
