@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { presentModelListing } from "@/components/game/market/model-listing-model";
 import { ModelLicenseCard } from "@/components/game/market/model-license-card";
-function render(source: "cloud"|"local", owned=false, running=false, credits=0, delivered=0.85) {
+function render(source: "cloud"|"local", owned=false, running=false, credits=0, delivered=0.95) {
   const item=presentModelListing(source==="cloud"?"model-cloud-compact":"model-local-workhorse",{
     source,label:source==="cloud"?"Compact Class API":"Quantized Workhorse 13B",
     cost:source==="cloud"?0:900,dailyCost:source==="cloud"?40:0,
@@ -29,7 +29,7 @@ describe("shadcn AI model cards",()=>{
     expect(html).toContain("900 cr");expect(html).toContain("one-time");
     expect(html).toContain("VRAM load");expect(html).toContain("Storage load");
     expect(html).toContain("Current rig delivers");
-    expect(html).toContain("×0.85");
+    expect(html).toContain("×0.95");
     expect(html).toContain('aria-label="Buy Quantized Workhorse 13B"');
     expect(html).toContain("Not enough credits");
     expect(html).toContain('disabled=""');
