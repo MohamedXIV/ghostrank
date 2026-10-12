@@ -1,0 +1,164 @@
+/* Scoped shadcn/ui token extension: each distro keeps its own layout,
+   while the newly available mode affects only cosmetic presentation. */
+:where(.desktop-surface, .boot-screen) {
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-overlay);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--foreground);
+  --ring: var(--focus);
+  --input: var(--border);
+  --radius: var(--radius-control);
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="ghost-os"][data-theme="dawn"] {
+  color-scheme: light;
+  --background: #e8eee9;
+  --surface: #f7faf6;
+  --surface-raised: #dce8e0;
+  --surface-overlay: #ffffff;
+  --border: #9ab6a8;
+  --border-emphasis: #5b8e74;
+  --foreground: #1b3129;
+  --foreground-muted: #4e6258;
+  --accent: #286f55;
+  --accent-foreground: #fafffb;
+  --success: #27684d;
+  --warning: #825a28;
+  --danger: #ab4852;
+  --focus: #185f47;
+  --desktop-background: #d9e9df;
+  --desktop-vignette: rgb(65 106 80 / 8%);
+  --desktop-glow: #c2dfcf;
+  --chrome-background: rgb(244 251 246 / 94%);
+  --window-background: rgb(252 255 252 / 98%);
+  --window-title-background: #d5e7dc;
+  --launcher-hover: rgb(35 100 70 / 10%);
+  --input-background: #f1f8f3;
+  --card-background: #eff8f2;
+  --boot-background: #e2efe6;
+  --boot-glow: #b3cfbf;
+  --terminal-background: #10241d;
+  --terminal-foreground: #d3ecdd;
+  --distro-wallpaper: url("/visual-reboot/wallpapers/ghost-os-dawn.svg");
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="lattice"][data-theme="paper"] {
+  color-scheme: light;
+  --background: #e7f0f4;
+  --surface: #f6fbfd;
+  --surface-raised: #d6e7ec;
+  --surface-overlay: #ffffff;
+  --border: #91b0bc;
+  --border-emphasis: #4c8aa6;
+  --foreground: #112f3e;
+  --foreground-muted: #466575;
+  --accent: #216b8c;
+  --accent-foreground: #f8fdff;
+  --success: #267259;
+  --warning: #855f2f;
+  --danger: #ac4a5b;
+  --focus: #0f658b;
+  --desktop-background: #e1edf1;
+  --desktop-vignette: rgb(16 68 90 / 7%);
+  --desktop-glow: #cadee6;
+  --chrome-background: rgb(240 249 252 / 95%);
+  --window-background: rgb(250 253 255 / 98%);
+  --window-title-background: #dcecf0;
+  --launcher-hover: rgb(33 107 140 / 10%);
+  --input-background: #f1f8fb;
+  --card-background: #edf5f7;
+  --boot-background: #e6f2f5;
+  --boot-glow: #b8d9e5;
+  --terminal-background: #102734;
+  --terminal-foreground: #cce7ef;
+  --distro-wallpaper: url("/visual-reboot/wallpapers/lattice-paper.svg");
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="velvet"][data-theme="mist"] {
+  color-scheme: light;
+  --background: #f3ecf2;
+  --surface: #fffafd;
+  --surface-raised: #e9dce9;
+  --surface-overlay: #ffffff;
+  --border: #c4a6c2;
+  --border-emphasis: #99668f;
+  --foreground: #342537;
+  --foreground-muted: #6e536e;
+  --accent: #88517e;
+  --accent-foreground: #fffaff;
+  --success: #39735d;
+  --warning: #86592b;
+  --danger: #a64563;
+  --focus: #85407c;
+  --desktop-background: #ece0e9;
+  --desktop-vignette: rgb(100 52 90 / 6%);
+  --desktop-glow: #e8ccdf;
+  --chrome-background: rgb(255 249 253 / 95%);
+  --window-background: rgb(255 253 255 / 98%);
+  --window-title-background: #ecdaea;
+  --launcher-hover: rgb(136 81 126 / 10%);
+  --input-background: #fdf5fb;
+  --card-background: #faf0f8;
+  --boot-background: #f2e6ee;
+  --boot-glow: #dec1d8;
+  --terminal-background: #29192b;
+  --terminal-foreground: #ead6e7;
+  --distro-wallpaper: url("/visual-reboot/wallpapers/velvet-mist.svg");
+}
+
+:where(.desktop-surface, .boot-screen)[data-distro="daybreak"][data-theme="dusk"] {
+  color-scheme: dark;
+  --background: #101d27;
+  --surface: #192a35;
+  --surface-raised: #263945;
+  --surface-overlay: #30444f;
+  --border: #526c75;
+  --border-emphasis: #b8aa87;
+  --foreground: #ecf5ef;
+  --foreground-muted: #b6c9c6;
+  --accent: #ebc581;
+  --accent-foreground: #1d2524;
+  --success: #94ceb4;
+  --warning: #e4b177;
+  --danger: #e18c8a;
+  --focus: #ffe0a8;
+  --desktop-background: #0f1a24;
+  --desktop-vignette: rgb(0 0 0 / 28%);
+  --desktop-glow: #314d58;
+  --chrome-background: rgb(20 33 40 / 94%);
+  --window-background: rgb(23 36 45 / 98%);
+  --window-title-background: #2a3d46;
+  --launcher-hover: rgb(235 197 129 / 9%);
+  --input-background: #182934;
+  --card-background: #1b303b;
+  --boot-background: #0c1520;
+  --boot-glow: #456071;
+  --terminal-background: #09151a;
+  --terminal-foreground: #dbebe3;
+  --distro-wallpaper: url("/visual-reboot/wallpapers/daybreak-dusk.svg");
+}
+
+/* Keep high-contrast overrides valid for new *light* modes; globals.css's
+   older dark-first high-contrast rules would otherwise force white on white. */
+:where(.desktop-surface, .boot-screen)[data-color-mode="light"][data-contrast="high"] {
+  --foreground: #11191d;
+  --foreground-muted: #293b42;
+  --border: #34464c;
+  --border-emphasis: #182a30;
+  --focus: #073b55;
+  --accent: #145d58;
+  --accent-foreground: #ffffff;
+  --chrome-background: var(--surface);
+  --window-background: var(--surface);
+  --shadow-window: 0 0 0 2px var(--border), 0 18px 50px rgb(0 0 0 / 20%);
+  --shadow-window-focused: 0 0 0 2px var(--focus), 0 20px 60px rgb(0 0 0 / 30%);
+}
+/* User's opacity setting must beat theme-dependent frosted materials. */
+:where(.desktop-surface, .boot-screen)[data-transparency="opaque"][data-theme] {
+  --chrome-background: var(--surface-raised);
+  --window-background: var(--surface);
+}
