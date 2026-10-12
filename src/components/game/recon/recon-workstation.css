@@ -1,0 +1,257 @@
+/* Recon Control — a real split tactical workspace, not another text dashboard.
+   Every datum and interaction remains owned by existing TinyBase/CommandBus views.
+   Classes only recompose shadcn Card/Badge/Input and the existing topology. */
+.recon-workstation {
+  container: recon-station / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(10px, 1.6vw, 18px);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 4%, transparent), transparent 42%),
+    var(--background);
+  color: var(--foreground);
+}
+.recon-station-heading {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+.recon-station-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.recon-station-emblem {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 55px; height: 55px;
+  color: var(--accent);
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-panel);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 19%, transparent), transparent 74%), var(--surface);
+}
+.recon-station-heading .panel-label {
+  color: var(--foreground-muted);
+  font-size: 10px;
+  letter-spacing: .1em;
+}
+.recon-station-heading h2 {
+  margin: 2px 0 3px;
+  font-size: clamp(19px, 2vw, 25px);
+  font-weight: 750;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+}
+.recon-station-heading p {
+  margin: 0;
+  max-width: 55ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--foreground-muted);
+}
+.recon-station-readouts { display: flex; flex-wrap: wrap; gap: 7px; }
+.recon-station-readouts .recon-known-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 9px;
+  max-width: 100%;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font: 600 11px/1.3 var(--font-ui);
+  color: var(--foreground-muted);
+}
+.recon-station-readouts .recon-known-badge strong {
+  color: var(--foreground);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.recon-station-readouts .recon-live-badge {
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 43%, var(--border));
+  color: var(--foreground);
+}
+.recon-target-card[data-slot="card"] {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+}
+.recon-target-card .recon-target-card-heading {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 11px 15px 9px;
+  border-bottom: 1px solid var(--border);
+}
+.recon-target-card-heading [data-slot="card-title"] {
+  color: var(--foreground);
+  font: 700 12px/1.3 var(--font-ui);
+  letter-spacing: .08em;
+}
+.recon-target-card-heading [data-slot="badge"] {
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-control);
+  color: var(--foreground-muted);
+  font: 600 10px/1.3 var(--font-ui);
+}
+.recon-target-card .recon-target-card-body {
+  padding: 12px 15px 14px;
+}
+.recon-target-card .recon-lead {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  align-items: center;
+  min-width: 0;
+}
+.recon-target-card .recon-lead strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+.recon-target-card .recon-lead small {
+  display: block;
+  margin-top: 5px;
+  color: var(--foreground-muted);
+  font-size: 11px;
+}
+.recon-target-card .recon-command {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 13px 0 0;
+  min-width: 0;
+}
+.recon-target-card .recon-command [data-slot="input"] {
+  flex: 1 1 180px;
+  min-width: 0;
+  min-height: 40px;
+  background: var(--input-background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  font: 500 13px/1.4 var(--font-mono);
+}
+.recon-target-card .recon-command [data-slot="input"]:focus-visible {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.recon-target-card .recon-command [data-slot="button"] {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 17px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+.recon-target-card .analysis-caveat { margin: 9px 0 0; }
+.recon-tactical-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  min-width: 0;
+}
+.recon-topology-stage {
+  min-width: 0;
+  min-height: 320px;
+  border-radius: var(--radius-panel);
+  background:
+    radial-gradient(circle at 45% 22%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in srgb, var(--border) 37%, transparent) 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, color-mix(in srgb, var(--border) 37%, transparent) 32px),
+    var(--surface);
+}
+.recon-topology-stage .recon-topology-container {
+  background: transparent;
+  margin: 0;
+  border: 1px solid var(--border);
+  min-height: 320px;
+  padding: clamp(10px, 1.5vw, 20px);
+}
+.recon-topology-stage .topology-header {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.recon-topology-stage .topology-node {
+  background: var(--surface);
+  box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
+}
+.recon-ops-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.recon-ops-sidebar .operation-panel {
+  margin: 0;
+  border-radius: var(--radius-panel);
+  border-color: var(--border-emphasis);
+  background: var(--surface);
+  padding: 14px;
+  box-shadow: 0 8px 23px rgb(0 0 0 / 11%);
+}
+.recon-ops-sidebar .footprint-panel,
+.recon-ops-sidebar .reaction-panel {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  padding: 13px;
+}
+.recon-ops-sidebar .footprint-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.recon-intel-archive {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+.recon-intel-archive > div {
+  min-width: 0;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 13px;
+}
+@container recon-station (min-width: 900px) {
+  .recon-tactical-workspace { grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); }
+  .recon-intel-archive { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .recon-intel-archive .assistant-analysis { grid-column: 1 / -1; }
+}
+@container recon-station (max-width: 440px) {
+  .recon-station-heading { align-items: flex-start; }
+  .recon-station-emblem { width: 42px; height: 42px; }
+  .recon-station-emblem svg { width: 24px; height: 24px; }
+  .recon-station-readouts { width: 100%; }
+  .recon-station-readouts .recon-known-badge { flex: 1 1 auto; }
+  .recon-target-card .recon-command [data-slot="button"] { min-width: 95px; }
+}
+:where(.desktop-surface[data-contrast="high"]) .recon-topology-stage,
+:where(.desktop-surface[data-contrast="high"]) .recon-target-card {
+  background: var(--surface);
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recon-workstation *,
+  .recon-workstation *::before,
+  .recon-workstation *::after { transition-duration: 0ms !important; }
+}
