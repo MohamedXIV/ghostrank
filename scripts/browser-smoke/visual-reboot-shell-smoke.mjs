@@ -134,6 +134,21 @@ async function oneView(browser, view) {
       await shot(page, id, view.name, "market");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
+      const reconRoot = page.locator(".os-window-recon .recon-workstation");
+      await reconRoot.locator(".recon-station-heading").waitFor();
+      if (await reconRoot.locator('.recon-target-card[data-slot="card"]').count() !== 1
+        || await reconRoot.locator('.recon-target-card [data-slot="input"]').count() !== 1
+        || await reconRoot.locator('.recon-station-readouts [data-slot="badge"]').count() < 2
+        || await reconRoot.locator(".recon-topology-stage .recon-topology-container").count() !== 1
+        || await reconRoot.locator(".recon-ops-sidebar .operation-desk").count() !== 1) {
+        throw new Error(id + ": Recon shadcn controls or map/operation split did not mount");
+      }
+      const visualOrder = await reconRoot.evaluate(el => {
+        const map = el.querySelector(".recon-topology-stage");
+        const operations = el.querySelector(".recon-ops-sidebar");
+        return Boolean(map && operations && map.compareDocumentPosition(operations) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      if (!visualOrder) throw new Error(id + ": Recon map must precede operation rail in reading order");
       await shot(page, id, view.name, "recon");
       // Explicit in-game Appearance action, not DOM or store injection.
       const oldColors = await page.locator(".desktop-surface").evaluate(el => {
@@ -174,6 +189,7 @@ async function oneView(browser, view) {
       await shot(page, id, view.name, themeVariant + "-market");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
+      await page.locator(".os-window-recon .recon-station-heading").waitFor();
       await shot(page, id, view.name, themeVariant + "-recon");
     }
     if (errors.length) throw new Error("Browser errors: " + errors.join(" | "));

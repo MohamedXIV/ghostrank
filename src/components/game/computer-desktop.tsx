@@ -68,12 +68,16 @@ import type { GameRuntime } from "@/game/runtime/game-runtime";
 import type { GameSession } from "@/game/runtime/game-session";
 import type { CompletedRunSummary } from "@/game/simulation/systems/run-history";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { DesktopLauncher } from "@/components/game/desktop/desktop-launcher";
 import { shellLayoutFor } from "@/presentation/shell-layout";
 import { themeModeFor } from "@/presentation/distros";
 import { TruthMark } from "@/components/ui/truth-mark";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { ReconTopology } from "@/components/game/recon/recon-topology";
+import { ReconStationHeader } from "@/components/game/recon/recon-station-header";
 import { OperationPressureDesk } from "@/components/game/operation/operation-pressure-desk";
 import { deriveOpeningReconCue } from "@/game/onboarding/opening-recon-cue";
 import { RelationshipBadge } from "@/components/game/social/relationship-badge";
@@ -1239,7 +1243,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
   };
 
   return (
-    <div className="recon-app">
+    <div className="recon-app recon-workstation">
       <ContextualHint
         id="hint:recon-lead"
         title="PASSIVE RECONNAISSANCE"
@@ -1253,6 +1257,21 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
         }}
       />
 
+      <ReconStationHeader
+        observedTargets={targetIds.length}
+        knownMachines={machineIds.length}
+        activeEvidence={operationEvidenceCount}
+        activeOperation={operationTargetId.length > 0}
+      />
+
+      <Card className="recon-target-card">
+        <CardHeader className="recon-target-card-heading">
+          <CardTitle>TARGET ACQUISITION</CardTitle>
+          <Badge variant="outline">
+            {opening ? (targetIds.includes(opening.targetId) ? "PROFILE OBSERVED" : "UNVERIFIED LEAD") : "NO PUBLIC LEAD"}
+          </Badge>
+        </CardHeader>
+        <CardContent className="recon-target-card-body">
       <div className="recon-lead" aria-label="Public opening Recon lead">
         <div>
           <span className="panel-label">PLAYER-KNOWN OPENING LEAD</span>
@@ -1267,7 +1286,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
       </div>
 
       <div className="recon-command">
-        <input
+        <Input
           aria-label="Target identifier"
           value={targetId}
           placeholder={opening ? opening.targetId : "Use a public target ID"}
@@ -1284,8 +1303,20 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
         <p role="status" className="analysis-caveat">{observeFeedback}</p>
       )}
 
+        </CardContent>
+      </Card>
+
       {briefing ? <NightshadeBriefingPanel /> : null}
 
+      <div className="recon-tactical-workspace" aria-label="Recon map and operation instruments">
+        <div className="recon-topology-stage">
+      <ReconTopology
+        targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "")}
+        runtime={runtime}
+      />
+
+        </div>
+        <aside className="recon-ops-sidebar" aria-label="Operation instruments">
       <OperationPressureDesk
         operation={operationSummary}
         worldMinute={worldMinute}
@@ -1340,11 +1371,11 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
           ))
         )}
       </div>
+        </aside>
+      </div>
 
-      <ReconTopology
-        targetId={operationTargetId || targetId.trim().toLowerCase() || (targetIds[0] ?? "")}
-        runtime={runtime}
-      />
+      <div className="recon-intel-archive" aria-label="Additional observed intelligence">
+
 
       <div className="recon-results">
         <span className="panel-label">PLAYER-VISIBLE INDEX</span>
@@ -1392,6 +1423,7 @@ function ReconAppBody({ runtime }: { runtime: GameRuntime }) {
             plan to act on with SURVEY and INSPECT.
           </p>
         )}
+      </div>
       </div>
     </div>
   );
