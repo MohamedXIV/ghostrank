@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 240" role="img" aria-label="Illustrative architectural artwork">
+  <defs><linearGradient id="plate" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#445074" stop-opacity=".38"/><stop offset="1" stop-color="#aab6d6" stop-opacity=".12"/></linearGradient></defs>
+  <path d="M26 173 189 107 354 174 192 234Z" fill="url(#plate)" stroke="#aab6d6" stroke-opacity=".25"/>
+  <path d="M28 171 188 235M68 157 230 220M109 140 270 203M150 124 311 187M353 173 189 239M314 156 150 222M275 139 111 205M236 123 72 189" stroke="#aab6d6" stroke-opacity=".13" fill="none"/>
+  <g stroke="#aab6d6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="#445074" fill-opacity=".9"><path d="M92 171l89-35 101 38-101 37z"/><path d="M113 169v-52l64-24 77 28v49l-73 27z"/><path d="M177 93v104m-64-80 64 22 77-18M194 156l40-14v23l-40 15z"/><path d="M107 112l30-26 43-15 41 21"/></g>
+  <path d="M45 55h40m-40 0v28M336 47h-40m40 0v28" fill="none" stroke="#aab6d6" stroke-opacity=".56" stroke-width="2"/>
+  <circle cx="322" cy="197" r="3" fill="#aab6d6" /><circle cx="59" cy="194" r="3" fill="#aab6d6" />
+</svg>

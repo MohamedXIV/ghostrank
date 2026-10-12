@@ -86,6 +86,8 @@ import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-in
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
 import { HardwareProductCard } from "@/components/game/market/hardware-product-card";
 import { SoftwareLicenseCard } from "@/components/game/market/software-license-card";
+import { HousingLocationCard } from "@/components/game/market/housing-location-card";
+import { presentHousingListing } from "@/components/game/market/housing-listing-model";
 import { presentSoftwareListing } from "@/components/game/market/software-listing-model";
 import { presentHardwareItem } from "@/components/game/market/hardware-item-model";
 import { RunTimeline } from "@/components/game/history/run-timeline";
@@ -2913,10 +2915,55 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <section aria-label="Housing market" className="housing-store">
+        <div className="housing-store-heading">
+          <div>
+            <span className="panel-label">LOCATION EXCHANGE / RECURRING</span>
+            <h2>Housing & safehouses</h2>
+            <p>Choose where to operate. Compare the real daily lease, travel time, anonymity band and rig lift.</p>
+          </div>
+          <span className="housing-store-total">{housing.length} locations listed</span>
+        </div>
+        {housing.length === 0 ? (
+          <p className="market-empty">No locations listed.</p>
+        ) : (
+          <ul className="market-catalog housing-store-grid">
+            {visibleRecords(housing, recordPage).map(([id, entry]) => (
+              <HousingLocationCard
+                key={id}
+                item={presentHousingListing(id, {
+                  label: String(entry.label ?? id),
+                  dailyCost: Number(entry.dailyCost ?? 0),
+                  active: entry.active === true,
+                  travelMinutes: Number(entry.travelMinutes ?? 0),
+                  kind: String(entry.kind ?? "residential"),
+                  anonymity: String(entry.anonymity ?? "public"),
+                  compute: Number(entry.compute ?? 0),
+                  memory: Number(entry.memory ?? 0),
+                  vram: Number(entry.vram ?? 0),
+                  storage: Number(entry.storage ?? 0),
+                  network: Number(entry.network ?? 0),
+                })}
+                onMoveIn={() => runtime.execute(rentHousingFromGui(id))}
+                onMoveOut={() => runtime.execute(breakLeaseFromGui())}
+              />
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          Daily rent is charged at world-day boundaries, not when you sign.
+          Switching or leaving a lease transfers no credits. Insufficient upkeep
+          returns you to the free baseline without debt. Travel consumes world
+          time; safehouses provide no capability lift. Anonymity is a catalog
+          band, not a promised safety score. Returning from a distant lease
+          takes the same world-time journey.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
-        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
+        description="Rig compute limits concurrent AI models and workflow builds. A lease changes your operating location, travel exposure, anonymity band and possibly capability."
       />
       <section aria-label="Rig capability">
         <span className="panel-label">RIG CAPABILITY</span>
@@ -2999,97 +3046,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             ))}
           </ul>
         )}
-      </section>
-
-      <section aria-label="Housing market">
-        <span className="panel-label">HOUSING // RECURRING</span>
-        {housing.length === 0 ? (
-          <p className="market-empty">No locations listed.</p>
-        ) : (
-          <ul className="market-catalog">
-            {visibleRecords(housing, recordPage).map(([id, entry]) => {
-              const cost = Number(entry.dailyCost ?? 0);
-              const active = entry.active === true;
-              // Phase 6 P0: distance is part of the price of a dwelling, so it is
-              // shown with the rent. Names for kind/anonymity, never numbers.
-              const travel = Number(entry.travelMinutes ?? 0);
-              const anonymity = String(entry.anonymity ?? "public");
-              const kind = String(entry.kind ?? "residential");
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-
-              return (
-                <li key={id} className={active ? "is-owned" : undefined}>
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span>
-                      {stats.length === 0
-                        ? "no capability lift"
-                        : stats
-                            .map(
-                              ([label, value]) =>
-                                `${label} +${Number(value ?? 0)}`,
-                            )
-                            .join(" · ")}
-                      {` · ${kind} · ${anonymity}`}
-                    </span>
-                    <span className="market-time">
-                      {cost.toLocaleString("en-US")} cr / day
-                      {active
-                        ? " · active lease"
-                        : travel > 0
-                          ? ` · ${travel} min travel from here`
-                          : " · same district"}
-                    </span>
-                  </div>
-                  {active ? (
-                    <button
-                      type="button"
-                      title={
-                        travel > 0
-                          ? `Move out and return to the free baseline (${travel} min back)`
-                          : "Move out and return to the free baseline"
-                      }
-                      onClick={() => runtime.execute(breakLeaseFromGui())}
-                    >
-                      MOVE OUT
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      title={
-                        travel > 0
-                          ? `Sign this lease and spend ${travel} min travelling there`
-                          : currentHousingId
-                            ? "Switch to this lease (same district, no travel)"
-                            : "Sign this lease"
-                      }
-                      onClick={() => runtime.execute(rentHousingFromGui(id))}
-                    >
-                      {travel > 0 ? "TRAVEL & SIGN" : "MOVE IN"}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          A lease adds capability while you keep paying its daily upkeep — it
-          never unlocks or blocks a target. Signing, switching, and moving out
-          move no credits, and rent is only levied at each world-day boundary;
-          miss a payment and you simply return to the free baseline. No debt, no
-          gate. Dwellings marked <em>safehouse</em> contribute no capability at
-          all: what they sell is distance, and distance is paid in world time,
-          which is also exposure. Moving out of one pays the trip back.
-        </p>
       </section>
 
       <section aria-label="Player tools">

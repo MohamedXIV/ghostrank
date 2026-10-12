@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 240" role="img" aria-label="Illustrative architectural artwork">
+  <defs><linearGradient id="plate" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#525866" stop-opacity=".38"/><stop offset="1" stop-color="#d5c3a0" stop-opacity=".12"/></linearGradient></defs>
+  <path d="M26 173 189 107 354 174 192 234Z" fill="url(#plate)" stroke="#d5c3a0" stroke-opacity=".25"/>
+  <path d="M28 171 188 235M68 157 230 220M109 140 270 203M150 124 311 187M353 173 189 239M314 156 150 222M275 139 111 205M236 123 72 189" stroke="#d5c3a0" stroke-opacity=".13" fill="none"/>
+  <g stroke="#d5c3a0" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="#525866" fill-opacity=".9"><path d="M84 149l103-41 115 42-116 44z"/><path d="M110 148v38l76 26 89-33v-31l-89 34z"/><path d="M187 182v30m-56-56 34 12m46 25 44-16M145 139l41-16 44 17-44 17z"/><path d="M109 127l78-31 84 30"/></g>
+  <path d="M45 55h40m-40 0v28M336 47h-40m40 0v28" fill="none" stroke="#d5c3a0" stroke-opacity=".56" stroke-width="2"/>
+  <circle cx="322" cy="197" r="3" fill="#d5c3a0" /><circle cx="59" cy="194" r="3" fill="#d5c3a0" />
+</svg>
