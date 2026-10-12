@@ -7,6 +7,7 @@ on:
       - 'src/presentation/shell-layout*'
       - 'public/visual-reboot/**'
       - 'scripts/browser-smoke/visual-reboot-shell-smoke.mjs'
+      - 'scripts/browser-smoke/flexlayout-window-manager-smoke.mjs'
       - '.github/workflows/visual-reboot-shell.yml'
   workflow_dispatch:
 
@@ -31,6 +32,8 @@ jobs:
         run: npm run build
       - name: Capture five distros / three views / two screen sizes
         run: node scripts/browser-smoke/visual-reboot-shell-smoke.mjs
+      - name: Exercise real FlexLayout drag/resize/float/restore and phone layout
+        run: node scripts/browser-smoke/flexlayout-window-manager-smoke.mjs
       - name: Preserve images and report for human visual review
         if: always()
         uses: actions/upload-artifact@v6
@@ -38,3 +41,10 @@ jobs:
           name: ghostrank-v1-shell-screenshots
           path: .smoke/visual-reboot/shell-v1/
           if-no-files-found: error
+      - name: Preserve window manager interaction proof
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ghostrank-flexlayout-interaction
+          path: .smoke/visual-reboot/flexlayout/
+          if-no-files-found: warn
