@@ -81,3 +81,21 @@
   }
   .docking-workspace .flexlayout__tab_button { min-height: 38px; }
 }
+
+/* UI toolkit: shadcn Button primitives above the FlexLayout-managed workspace. */
+.docking-workspace .docking-tools {
+  position: absolute; top: 0; left: 0; right: 0; height: 35px;
+  z-index: 20; display: flex; justify-content: flex-end; align-items: center;
+  gap: 7px; padding: 2px 9px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--foreground);
+}
+.docking-workspace .docking-tools button {
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  color: var(--foreground); min-height: 28px; padding: 3px 10px;
+  font-size: var(--text-sm);
+}
+.docking-workspace .docking-tools button:disabled { opacity: .5; }
+.docking-workspace .docking-layout {
+  position: absolute; top: 35px; left: 0; right: 0; bottom: 0;
+  min-width: 0; min-height: 0;
+}
