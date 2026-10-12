@@ -32,7 +32,6 @@ export function buildDistroDockModel(
 ): Model {
   const ids = [...new Set(openWindows.filter(validApp))];
   const primary: ComputerWindowId[] = ids.filter(id => id === "terminal" || id === "recon");
-  const others = ids.filter(id => !primary.includes(id));
   const technical = distroId === "lattice" || distroId === "ghost-os";
   const first = compact ? ids : technical && primary.length ? [primary[0]] : ids.slice(0, 1);
   const remaining = ids.filter(id => !first.includes(id));
