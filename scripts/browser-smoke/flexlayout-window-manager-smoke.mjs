@@ -176,6 +176,20 @@ async function desktop(browser) {
     await page.getByRole("tab", { name: "MARKET // RIG" }).waitFor();
     await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
     check("keyboard shortcut maps to existing Market and real catalog", true);
+    // Preserve OS keyboard contracts while FlexLayout owns the geometry.
+    await page.keyboard.press("Alt+w");
+    const focusedApp = await page.locator('nav[data-distro-launcher="ghost-os"] [data-focused="true"]')
+      .getAttribute("data-window-id");
+    check("Alt+W genuinely cycles focused app", focusedApp !== null && focusedApp !== "market",
+      "focused=" + focusedApp);
+    await page.keyboard.press("F1");
+    const glossary = page.getByRole("dialog", { name: /system glossary|glossary|reference/i });
+    await glossary.waitFor();
+    check("F1 opens accessible modal above FlexLayout", await glossary.isVisible());
+    await page.keyboard.press("Escape");
+    await glossary.waitFor({ state: "detached" });
+    check("Escape closes modal before closing desktop tabs",
+      (await page.getByRole("tab", { name: "MARKET // RIG" }).count()) === 1);
     await page.getByRole("tab", { name: "MARKET // RIG" }).click();
     await page.getByRole("button", { name: "Float focused application" }).click();
     await page.locator(".flexlayout__float_window, .flexlayout__floating_window").first().waitFor();
