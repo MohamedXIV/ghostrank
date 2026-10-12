@@ -1157,7 +1157,7 @@ function MachineRenameRow({
         setDraft("");
       }}
     >
-      <input
+      <Input
         aria-label={`Rename machine ${machineId}`}
         autoComplete="off"
         maxLength={24}
@@ -1165,9 +1165,9 @@ function MachineRenameRow({
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
-      <button type="submit" disabled={trimmed.length === 0}>
+      <Button type="submit" size="sm" disabled={trimmed.length === 0}>
         NAME
-      </button>
+      </Button>
     </form>
   );
 }
