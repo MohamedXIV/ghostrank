@@ -30,7 +30,7 @@ export function buildDistroDockModel(
   focusedWindow: ComputerWindowId | null,
 ): Model {
   const ids = [...new Set(openWindows.filter(validApp))];
-  const primary = ids.filter(id => id === "terminal" || id === "recon");
+  const primary: ComputerWindowId[] = ids.filter(id => id === "terminal" || id === "recon");
   const others = ids.filter(id => !primary.includes(id));
   const technical = distroId === "lattice" || distroId === "ghost-os";
   const first = technical && primary.length ? [primary[0]] : ids.slice(0, 1);
@@ -49,7 +49,6 @@ export function buildDistroDockModel(
       tabEnableFloatIcon: true,
       tabEnablePopoutIcon: false,
       tabSetEnableMaximize: true,
-      splitterSize: 7,
     },
     borders: [],
     layout: { type: "row", weight: 100, children },
@@ -124,7 +123,8 @@ export function safeRestoredDockModel(
   }
   for (const id of openSet) {
     if (!model.getNodeById(id)) {
-      const target = model.getNodeById("main-dock") ?? model.getRoot();
+      const target = model.getNodeById("main-dock") ?? model.getNodeById("side-dock");
+      if (!target) return buildDistroDockModel(distroId, openWindows, focusedWindow);
       model.doAction(Actions.addTab(tab(id), target.getId(), DockLocation.CENTER, -1));
     }
   }
