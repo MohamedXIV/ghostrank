@@ -103,7 +103,17 @@ async function oneView(browser, view) {
       await activateDistro(page, id, label, mode);
       await shot(page, id, view.name, "shell");
       await page.getByTitle("Market & Rig (Alt+4)").click();
-      await page.locator(".os-window-market").getByText("Secondhand Workstation").first().waitFor();
+      const workstation = page.locator('.hardware-product[data-catalog-id="rig-starter"]');
+      await workstation.getByText("Secondhand Workstation").waitFor();
+      const starterPrice = await workstation.locator(".hardware-product-price").innerText();
+      if (starterPrice.trim().toLowerCase() !== "0 cr") {
+        throw new Error(id + ": expected actual 0 CR starter, got " + starterPrice);
+      }
+      const loadedArt = await workstation.locator("img").evaluate(img =>
+        img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0);
+      if (!loadedArt) throw new Error(id + ": starter workstation illustration did not load");
+      const ownedButPurchasable = await workstation.getByRole("button", { name: "Buy Secondhand Workstation" }).isEnabled();
+      if (!ownedButPurchasable) throw new Error(id + ": owned free starter unexpectedly blocks BUY");
       await shot(page, id, view.name, "market");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();

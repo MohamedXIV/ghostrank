@@ -78,6 +78,8 @@ import { RelationshipBadge } from "@/components/game/social/relationship-badge";
 import { ContractCard } from "@/components/game/contracts/contract-card";
 import { deriveContractSceneIntel } from "@/game/computer/apps/contract-scene-intel";
 import { CapabilityBar, type CapabilityMetric } from "@/components/game/market/capability-bar";
+import { HardwareProductCard } from "@/components/game/market/hardware-product-card";
+import { presentHardwareItem } from "@/components/game/market/hardware-item-model";
 import { RunTimeline } from "@/components/game/history/run-timeline";
 import {
   RecordScopeControl,
@@ -2730,11 +2732,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         pageCount={pageCount}
         onPageChange={setRecordPage}
       />
-      <ContextualHint
-        id="hint:market-capacity"
-        title="RIG CAPACITY & UPKEEP"
-        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
-      />
       <section aria-label="Wallet">
         <span className="panel-label">WALLET</span>
         <div className="market-wallet">
@@ -2748,6 +2745,50 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </div>
       </section>
 
+      {/* Market merchandise takes visual priority over rig telemetry. */}
+      <section aria-label="Catalog" className="hardware-market-section">
+        <div className="hardware-market-heading">
+          <div>
+            <span className="panel-label">EQUIPMENT EXCHANGE</span>
+            <h2>Hardware catalog</h2>
+            <p>Build your rig. Every upgrade changes compute capability, never your rank.</p>
+          </div>
+          <span className="hardware-market-count">{catalog.length} listed</span>
+        </div>
+        {catalog.length === 0 ? (
+          <p className="market-empty">Nothing listed.</p>
+        ) : (
+          <ul className="market-catalog hardware-product-grid">
+            {visibleRecords(catalog, recordPage).map(([id, entry]) => (
+              <HardwareProductCard
+                key={id}
+                item={presentHardwareItem(
+                  id,
+                  {
+                    label: String(entry.label ?? id),
+                    category: String(entry.category ?? ""),
+                    cost: Number(entry.cost ?? 0),
+                    compute: Number(entry.compute ?? 0),
+                    memory: Number(entry.memory ?? 0),
+                    vram: Number(entry.vram ?? 0),
+                    storage: Number(entry.storage ?? 0),
+                    network: Number(entry.network ?? 0),
+                    owned: Number(entry.owned ?? 0),
+                  },
+                  credits,
+                )}
+                onBuy={() => runtime.execute(buyHardwareFromGui(id))}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <ContextualHint
+        id="hint:market-capacity"
+        title="RIG CAPACITY & UPKEEP"
+        description="Rig compute limits concurrent AI models and workflow builds. Safehouse leases provide physical security against retaliatory raids."
+      />
       <section aria-label="Rig capability">
         <span className="panel-label">RIG CAPABILITY</span>
         <div className="market-capability-grid">
@@ -2827,64 +2868,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
                 </span>
               </li>
             ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-label="Catalog">
-        <span className="panel-label">MARKET CATALOG</span>
-        {catalog.length === 0 ? (
-          <p className="market-empty">Nothing listed.</p>
-        ) : (
-          <ul className="market-catalog">
-            {visibleRecords(catalog, recordPage).map(([id, entry]) => {
-              const cost = Number(entry.cost ?? 0);
-              const owned = Number(entry.owned ?? 0);
-              const affordable = credits >= cost;
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-
-              return (
-                <li key={id} className={owned > 0 ? "is-owned" : undefined}>
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span>
-                      {stats.length === 0
-                        ? "baseline platform"
-                        : stats
-                            .map(
-                              ([label, value]) =>
-                                `${label} +${Number(value ?? 0)}`,
-                            )
-                            .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      {cost === 0 ? "included" : `${cost.toLocaleString("en-US")} cr`}
-                      {owned > 0 ? ` · owned ×${owned}` : ""}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!affordable}
-                    title={
-                      affordable
-                        ? "Acquire this hardware"
-                        : "Not enough credits"
-                    }
-                    onClick={() => runtime.execute(buyHardwareFromGui(id))}
-                  >
-                    BUY
-                  </button>
-                </li>
-              );
-            })}
           </ul>
         )}
       </section>
