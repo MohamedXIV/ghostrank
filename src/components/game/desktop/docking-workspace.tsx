@@ -87,7 +87,8 @@ export function DockingWorkspace({
     persist();
   }, [focusedWindow, model, persist]);
   const resetLayout = useCallback(() => {
-    const next = buildDistroDockModel(distroId, openWindows, focusedWindow);
+    const next = buildDistroDockModel(distroId, openWindows, focusedWindow,
+      window.innerWidth <= 700);
     try { window.localStorage.removeItem(PREFIX + distroId); } catch { /* Optional */ }
     focusSync.current = null;
     setModel(next);
