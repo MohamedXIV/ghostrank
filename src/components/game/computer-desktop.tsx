@@ -89,6 +89,8 @@ import { SoftwareLicenseCard } from "@/components/game/market/software-license-c
 import { HousingLocationCard } from "@/components/game/market/housing-location-card";
 import { MachineListingCard, OwnedMachineCard } from "@/components/game/market/machine-cards";
 import { ModelLicenseCard } from "@/components/game/market/model-license-card";
+import { AuthoredToolListingCard, OwnedAuthoredToolCard } from "@/components/game/market/authored-tool-cards";
+import { presentToolListing, presentOwnedTool } from "@/components/game/market/authored-tool-model";
 import { presentModelListing } from "@/components/game/market/model-listing-model";
 import { presentMachineListing, presentOwnedMachine } from "@/components/game/market/machine-listing-model";
 import { presentHousingListing } from "@/components/game/market/housing-listing-model";
@@ -3086,6 +3088,60 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <section aria-label="Player tools" className="authored-tool-store">
+        <div className="authored-tool-heading">
+          <div>
+            <span className="panel-label">SIGNED ARTIFACTS / PEER EXCHANGE</span>
+            <h2>Player-authored tools</h2>
+            <p>Buy verified catalog effects, not promised outcomes. Each tool names its in-world author.</p>
+          </div>
+          <span className="authored-tool-count">{toolListings.length} tools listed · {ownedTools.length} owned</span>
+        </div>
+        {toolListings.length===0 ? (
+          <p className="market-empty">Nothing authored is on offer.</p>
+        ) : (
+          <ul className="market-catalog authored-tool-grid">
+            {visibleRecords(toolListings,recordPage).map(([id,entry])=>(
+              <AuthoredToolListingCard key={id}
+                item={presentToolListing(id,{
+                  label:String(entry.label??id),author:String(entry.author??""),
+                  cost:Number(entry.cost??0),ownedCount:Number(entry.ownedCount??0),
+                  compute:Number(entry.compute??0),memory:Number(entry.memory??0),
+                  vram:Number(entry.vram??0),storage:Number(entry.storage??0),
+                  network:Number(entry.network??0),discountFactor:Number(entry.discountFactor??1),
+                },credits)}
+                onBuy={()=>runtime.execute(buyPlayerToolFromGui(id))}/>
+            ))}
+          </ul>
+        )}
+        <h3 className="authored-tool-section-title">YOUR COPIES / {ownedTools.length} OWNED</h3>
+        {ownedTools.length===0 ? (
+          <p className="market-empty">No authored tools in your library.</p>
+        ) : (
+          <ul className="market-catalog authored-tool-grid">
+            {visibleRecords(ownedTools,recordPage).map(([id,entry])=>(
+              <OwnedAuthoredToolCard key={id}
+                item={presentOwnedTool(id,{
+                  catalogId:String(entry.catalogId??""),label:String(entry.label??id),
+                  author:String(entry.author??""),paidCost:Number(entry.paidCost??0),
+                  resaleValue:Number(entry.resaleValue??0),
+                  acquiredWorldMinute:Number(entry.acquiredWorldMinute??0),
+                  compute:Number(entry.compute??0),memory:Number(entry.memory??0),
+                  vram:Number(entry.vram??0),storage:Number(entry.storage??0),
+                  network:Number(entry.network??0),discountFactor:Number(entry.discountFactor??1),
+                })}
+                onSell={()=>runtime.execute(sellPlayerToolFromGui(id))}/>
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          Buy once, keep the projected lift without daily rent. Reselling an owned
+          copy pays the projected resale amount, derived from its original paid price,
+          not today&apos;s catalog price. Transactions preserve peer authorship in the
+          value ledger. An owned tool never unlocks a target or changes rank.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3172,123 +3228,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             ))}
           </ul>
         )}
-      </section>
-
-      <section aria-label="Player tools">
-        <span className="panel-label">PLAYER TOOLS // ONE-TIME</span>
-        {ownedTools.length === 0 && toolListings.length === 0 ? (
-          <p className="market-empty">Nothing authored is on offer.</p>
-        ) : (
-          <ul className="market-catalog">
-            {visibleRecords(ownedTools, recordPage).map(([id, entry]) => {
-              const factor = Number(entry.discountFactor ?? 1);
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-              const resale = Number(entry.resaleValue ?? 0);
-
-              return (
-                <li key={id} className="is-owned">
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? entry.catalogId ?? id)}
-                    </span>
-                    <span>
-                      {factor < 1
-                        ? `×${factor} action time`
-                        : stats.length === 0
-                          ? "no capability lift"
-                          : stats
-                              .map(
-                                ([label, value]) =>
-                                  `${label} +${Number(value ?? 0)}`,
-                              )
-                              .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      by {String(entry.author ?? "unknown")} · paid{" "}
-                      {Number(entry.paidCost ?? 0).toLocaleString("en-US")} cr ·
-                      sells {resale.toLocaleString("en-US")} cr ·{" "}
-                      {formatWorldTime(
-                        Number(entry.acquiredWorldMinute ?? 0),
-                      )}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    title="Resell this copy to the fence (no upkeep is lost)"
-                    onClick={() => runtime.execute(sellPlayerToolFromGui(id))}
-                  >
-                    SELL
-                  </button>
-                </li>
-              );
-            })}
-            {visibleRecords(toolListings, recordPage).map(([id, entry]) => {
-              const cost = Number(entry.cost ?? 0);
-              const affordable = credits >= cost;
-              const factor = Number(entry.discountFactor ?? 1);
-              const owned = Number(entry.ownedCount ?? 0);
-              const stats = [
-                ["cpu", entry.compute],
-                ["mem", entry.memory],
-                ["vrm", entry.vram],
-                ["sto", entry.storage],
-                ["net", entry.network],
-              ].filter(([, value]) => Number(value ?? 0) > 0);
-
-              return (
-                <li key={`listing-${id}`} className={owned > 0 ? "is-owned" : undefined}>
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span>
-                      {factor < 1
-                        ? `×${factor} action time`
-                        : stats.length === 0
-                          ? "no capability lift"
-                          : stats
-                              .map(
-                                ([label, value]) =>
-                                  `${label} +${Number(value ?? 0)}`,
-                              )
-                              .join(" · ")}
-                    </span>
-                    <span className="market-time">
-                      by {String(entry.author ?? "unknown")} ·{" "}
-                      {cost.toLocaleString("en-US")} cr one-time
-                      {owned > 0 ? ` · owned ×${owned}` : ""}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!affordable}
-                    title={
-                      affordable
-                        ? "Buy this authored copy (one-time, no upkeep)"
-                        : "Not enough credits"
-                    }
-                    onClick={() => runtime.execute(buyPlayerToolFromGui(id))}
-                  >
-                    BUY
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          Authored tools are property, not rent: pay once, keep the lift with no
-          daily fee, and resell to the fence for half the price you paid. Each
-          copy carries its author&apos;s handle, so every trade is a named edge in
-          the scene&apos;s value graph. Like every other layer, tools are a lift —
-          never a gate.
-        </p>
       </section>
 
       <section aria-label="Software forge">
