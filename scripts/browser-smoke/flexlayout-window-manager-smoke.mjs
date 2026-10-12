@@ -77,6 +77,23 @@ function findTabset(json, id) {
   };
   return walk(json?.layout);
 }
+// Follow upstream caplin/FlexLayout native HTML5 DnD test mechanics: the
+// initial ~11px movement and dragover delay are required for a real drop.
+async function dragTab(page, source, target) {
+  const a = await source.boundingBox();
+  const b = await target.boundingBox();
+  check("drag source and target have real geometry", Boolean(a && b));
+  const start = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+  const finish = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.waitForTimeout(50);
+  await page.mouse.move(start.x + 10, start.y + 10);
+  await page.mouse.move(start.x + 11, start.y + 11);
+  await page.mouse.move(finish.x, finish.y, { steps: 10 });
+  await page.waitForTimeout(50);
+  await page.mouse.up();
+}
 async function screenshot(page, name) {
   const path = join(DEST, name + ".png");
   await page.screenshot({ path, animations: "disabled" });
@@ -121,7 +138,7 @@ async function desktop(browser) {
     // Pointer drag a tab from the right pane to the other tabset to form a tab group.
     const dragSource = page.getByRole("tab", { name: "RECON // OPERATIONS" });
     const dragTarget = page.getByRole("tab", { name: "TERMINAL" });
-    await dragSource.dragTo(dragTarget, { targetPosition: { x: 18, y: 13 }, timeout: 20000 });
+    await dragTab(page, dragSource, dragTarget);
     await page.waitForTimeout(400);
     const moved = await layoutState(page);
     const a = findTabset(moved, "terminal"), b = findTabset(moved, "recon");
@@ -156,7 +173,7 @@ async function desktop(browser) {
     // and a new run, without storing any simulation or world state in FlexLayout.
     const targetTab = page.getByRole("tab", { name: "RECON // OPERATIONS" });
     const sourceTab = page.getByRole("tab", { name: "TERMINAL" });
-    await targetTab.dragTo(sourceTab, { targetPosition: { x: 18, y: 13 }, timeout: 20000 });
+    await dragTab(page, targetTab, sourceTab);
     await page.waitForTimeout(400);
     const saved = await layoutState(page);
     check("dragged tab persisted in browser storage", findTabset(saved,"terminal")?.id === findTabset(saved,"recon")?.id);
