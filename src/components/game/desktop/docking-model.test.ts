@@ -16,6 +16,16 @@ describe("real FlexLayout desktop model (without world authority)", () => {
       expect(m.getNodeById("recon")).toBeDefined();
     }
   });
+  it("keeps real terminal/recon apps fully available in one mobile tabset", () => {
+    for (const distro of DISTRO_IDS) {
+      const m = buildDistroDockModel(distro, ["terminal", "recon"], "recon", true);
+      expect(m.toJson().layout.children).toHaveLength(1);
+      expect(tabIdsInDock(m)).toEqual(["terminal", "recon"]);
+      const small = safeRestoredDockModel(distro, ["terminal", "recon"], "recon", null, true);
+      expect(small.toJson().layout.children).toHaveLength(1);
+    }
+  });
+
   it("supports library-native dock, close/reopen and floating in-page actions", () => {
     const m = buildDistroDockModel("lattice", ["terminal", "recon", "market"], "market");
     // Without browser geometry Model cannot materialize a float; assert the
