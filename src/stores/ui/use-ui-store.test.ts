@@ -26,6 +26,15 @@ describe("useUiStore", () => {
     expect(useUiStore.getState().focusedWindow).toBe("settings");
   });
 
+  it("reactivates an already-focused application on every launcher click", () => {
+    const before = useUiStore.getState().activationSerial;
+    useUiStore.getState().openWindow("terminal");
+    expect(useUiStore.getState().activationSerial).toBe(before + 1);
+    useUiStore.getState().openWindow("terminal");
+    expect(useUiStore.getState().activationSerial).toBe(before + 2);
+    expect(useUiStore.getState().focusedWindow).toBe("terminal");
+  });
+
   it("cycles focused window forward and backward across open windows", () => {
     useUiStore.setState({
       openWindows: ["terminal", "recon", "market"],
