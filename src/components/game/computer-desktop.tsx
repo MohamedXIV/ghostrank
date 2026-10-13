@@ -194,6 +194,7 @@ export function ComputerDesktop({
 
   const openWindows = useUiStore((state) => state.openWindows);
   const focusedWindow = useUiStore((state) => state.focusedWindow);
+  const activationSerial = useUiStore((state) => state.activationSerial);
   const openWindow = useUiStore((state) => state.openWindow);
   const closeWindow = useUiStore((state) => state.closeWindow);
   const focusWindow = useUiStore((state) => state.focusWindow);
@@ -420,6 +421,7 @@ export function ComputerDesktop({
             colorMode={themeModeFor(distroId, themeId)}
             openWindows={openWindows}
             focusedWindow={focusedWindow}
+            activationSerial={activationSerial}
             onFocus={focusWindow}
             onClose={closeWindow}
             renderApp={renderDockedApp}
