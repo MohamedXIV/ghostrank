@@ -31,7 +31,7 @@ export function ValueNetwork({nodes,inflow,outflow,counterparties}:{
     </div>
    </CardContent>
   </Card>
-  {nodes.length===0 ? <p className="value-network-empty">No settled value yet. Transactions will appear here when credits actually change hands.</p>
+  {nodes.length===0 ? <p className="value-network-empty">{counterparties>0?"No counterparties on this record page.":"No settled value yet. Transactions will appear here when credits actually change hands."}</p>
   : <ul className="value-network-list" aria-label="Known value counterparties">
    {nodes.map(node=><li key={node.id} className="value-network-edge" data-counterparty={node.id}>
     <Card className="value-network-node">
