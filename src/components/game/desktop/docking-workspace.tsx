@@ -105,6 +105,10 @@ export function DockingWorkspace({
   const renderTabSet: NonNullable<React.ComponentProps<typeof Layout>["onRenderTabSet"]> =
     useCallback((node, values) => {
       if (node.getType() !== "tabset") return;
+      // Workspace-wide actions belong to one tabset header, not every dock.
+      // If its original header disappears, the surviving side dock takes over.
+      const primary = model.getNodeById("main-dock") ? "main-dock" : "side-dock";
+      if (node.getId() !== primary) return;
       values.buttons.push(
         <Button key="float" variant="ghost" size="icon" className="docking-tool-button"
           disabled={!focusedWindow} title="Float focused application"
@@ -116,7 +120,7 @@ export function DockingWorkspace({
           <RotateCcw size={15} aria-hidden="true" />
         </Button>,
       );
-    }, [floatFocused, focusedWindow, resetLayout]);
+    }, [floatFocused, focusedWindow, resetLayout, model]);
 
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
