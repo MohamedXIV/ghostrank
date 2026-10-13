@@ -56,6 +56,8 @@ export function DockingWorkspace({
         // FlexLayout deletes empty tabsets. Opening the first app after closing
         // them all must recreate a real workspace, never require Reset Layout.
         focusSync.current = null;
+        // FlexLayout removed the last tabset; the external model must be replaced.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setModel(buildDistroDockModel(distroId, openWindows, focusedWindow,
           window.innerWidth <= 700));
         return;
@@ -67,7 +69,7 @@ export function DockingWorkspace({
         }, target.getId(), DockLocation.CENTER, -1, true));
       }
     }
-    if (focusedWindow && focusSync.current !== focusedWindow && model.getNodeById(focusedWindow)) {
+    if (focusedWindow && model.getNodeById(focusedWindow)) {
       model.doAction(Actions.selectTab(focusedWindow));
       focusSync.current = focusedWindow;
     }
