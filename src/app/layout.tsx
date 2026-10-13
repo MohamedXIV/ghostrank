@@ -5,6 +5,7 @@ import "./globals.css";
 import "flexlayout-react/style/combined.css";
 import "@/components/game/desktop/desktop-shell.css";
 import "@/components/game/desktop/docking-workspace.css";
+import "@/components/game/terminal/terminal-v2.css";
 import "@/presentation/distro-theme-modes.css";
 import "@/components/game/market/hardware-catalog.css";
 import "@/components/game/market/software-market.css";

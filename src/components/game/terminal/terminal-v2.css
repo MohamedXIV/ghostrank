@@ -1,0 +1,215 @@
+/* Terminal v2 — shell-aware appearance, conventional input and a compact
+   optional discovery palette. The terminal is NOT a real system shell. */
+.desktop-surface .terminal-app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--terminal-background);
+  color: var(--terminal-foreground);
+  font-family: var(--font-mono);
+}
+.desktop-surface .terminal-toolbar {
+  flex: none;
+  min-height: 42px;
+  padding: 5px 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--terminal-foreground) 24%, transparent);
+  background: color-mix(in srgb, var(--terminal-background) 78%, var(--terminal-foreground));
+}
+.desktop-surface .terminal-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  color: var(--terminal-foreground);
+}
+.desktop-surface .terminal-identity strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+.desktop-surface .terminal-identity span {
+  font-size: 11px;
+  opacity: .7;
+}
+.desktop-surface .terminal-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 3px;
+}
+.desktop-surface .terminal-toolbar-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  border: 1px solid transparent;
+  padding: 4px 7px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--terminal-foreground);
+}
+.desktop-surface .terminal-toolbar-actions button:hover {
+  border-color: currentColor;
+  background: transparent;
+}
+.desktop-surface .terminal-output {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--terminal-foreground);
+  scrollbar-color: color-mix(in srgb, var(--terminal-foreground) 42%, transparent) transparent;
+}
+.desktop-surface .terminal-output .terminal-entry {
+  margin-bottom: 7px;
+  font-family: inherit;
+  font-size: inherit;
+}
+.desktop-surface .terminal-output .terminal-entry-result {
+  color: var(--terminal-foreground);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.desktop-surface .terminal-output .terminal-entry-error {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.desktop-surface .terminal-output .terminal-badge {
+  font-size: 10px;
+  line-height: 1.5;
+  flex: none;
+  font-family: inherit;
+}
+.desktop-surface .terminal-output .terminal-table-pre {
+  color: var(--terminal-foreground);
+  background: transparent;
+  border: none;
+  padding: 3px 0;
+  max-width: 100%;
+  white-space: pre;
+  font-size: 12px;
+}
+.desktop-surface .terminal-input-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  min-height: 48px;
+  border-top: 1px solid color-mix(in srgb, var(--terminal-foreground) 28%, transparent);
+  color: var(--terminal-foreground);
+}
+.desktop-surface .terminal-prompt {
+  flex: none;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--terminal-foreground);
+  opacity: .92;
+}
+.desktop-surface .terminal-input-row input {
+  min-width: 0;
+  height: 34px;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 5px 2px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline-offset: 2px;
+  background: transparent;
+  color: var(--terminal-foreground);
+}
+.desktop-surface .terminal-input-row input::placeholder {
+  color: var(--terminal-foreground);
+  opacity: .5;
+}
+.desktop-surface .terminal-statusline {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--terminal-foreground) 12%, transparent);
+  padding: 3px 13px 5px;
+  font: 10px var(--font-mono);
+  opacity: .64;
+}
+.desktop-surface .terminal-command-palette {
+  position: absolute;
+  z-index: 10;
+  top: 45px;
+  right: 8px;
+  width: min(590px, calc(100% - 16px));
+  max-height: min(67%, 390px);
+  overflow: auto;
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 48%);
+  color: var(--foreground);
+}
+.desktop-surface .terminal-command-palette .command-discovery-container {
+  border: 0;
+  padding: 12px;
+}
+.desktop-surface .terminal-command-palette .discovery-header-row {
+  flex-wrap: wrap;
+}
+.desktop-surface .terminal-command-palette .discovery-title {
+  font-size: 12px;
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+}
+.desktop-surface .terminal-command-palette .discovery-category-tabs { max-width: 100%; }
+.desktop-surface .terminal-command-palette .category-tab {
+  font: 11px var(--font-ui);
+  padding: 5px 9px;
+  border-radius: var(--radius-control);
+}
+.desktop-surface .terminal-command-palette .discovery-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+  max-height: none;
+  gap: 6px;
+}
+.desktop-surface .terminal-command-palette .command-chip {
+  border-radius: var(--radius-control);
+  padding: 8px;
+  min-width: 0;
+  text-align: left;
+}
+.desktop-surface .terminal-command-palette .chip-syntax {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.desktop-surface .terminal-command-palette .chip-desc {
+  white-space: normal;
+  max-width: none;
+  font: 11px/1.35 var(--font-ui);
+}
+@media (max-width: 700px) {
+  .desktop-surface .terminal-output { font-size: 12px; padding: 10px; }
+  .desktop-surface .terminal-toolbar { padding: 4px 8px; }
+  .desktop-surface .terminal-input-row { padding: 6px 9px; gap: 6px; }
+  .desktop-surface .terminal-prompt { max-width: 37%; font-size: 10px; }
+  .desktop-surface .terminal-input-row input { font-size: 12px; }
+  .desktop-surface .terminal-statusline { justify-content: flex-start; gap: 9px; }
+}

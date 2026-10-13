@@ -117,6 +117,24 @@ async function oneView(browser, view) {
   });
   try {
     await startGame(page);
+    // Exercise the actual terminal keyboard/editing behavior, not static markup.
+    const terminal = page.locator(".os-window-terminal");
+    const shellInput = terminal.getByRole("textbox", { name: "Terminal command" });
+    await shellInput.fill("help");
+    await shellInput.press("Enter");
+    await terminal.locator(".terminal-entry-prompt > span.terminal-entry-prompt").filter({ hasText: "help" }).waitFor();
+    await shellInput.press("ArrowUp");
+    if (await shellInput.inputValue() !== "help") throw new Error(view.name + ": command history failed");
+    await shellInput.fill("obse");
+    await shellInput.press("Tab");
+    if (await shellInput.inputValue() !== "observe ") throw new Error(view.name + ": Tab completion failed");
+    await terminal.getByRole("button", { name: "Commands" }).click();
+    await terminal.getByRole("button", { name: "Insert command observe <target>" }).click();
+    if (await shellInput.inputValue() !== "observe nightshade") {
+      throw new Error(view.name + ": command palette failed to populate prompt");
+    }
+    await shellInput.press("Control+l");
+    if (await terminal.locator(".terminal-entry").count()) throw new Error(view.name + ": Ctrl+L failed");
     // Real browser evidence that FlexLayout can float panels and reset layout.
     if (!view.isMobile) {
       await page.getByRole("button", { name: "Float focused application" }).click();
