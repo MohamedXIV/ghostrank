@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { RotateCcw, PanelsTopLeft } from "lucide-react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Actions, DockLocation, Layout, type Model, type TabNode } from "flexlayout-react";
 import type { DistroId } from "@/presentation/distros";
@@ -48,15 +49,22 @@ export function DockingWorkspace({
     for (const id of tabIdsInDock(model)) {
       if (!expected.has(id)) model.doAction(Actions.deleteTab(id));
     }
-    for (const id of openWindows) {
-      if (!model.getNodeById(id)) {
-        const target = model.getNodeById("main-dock") ?? model.getNodeById("side-dock");
-        if (target) {
-          model.doAction(Actions.addTab({
-            type: "tab", id, component: id, name: WORKSPACE_TITLES[id],
-            enableFloat: true, enablePopout: false,
-          }, target.getId(), DockLocation.CENTER, -1, true));
-        }
+    const missing = openWindows.filter(id => !model.getNodeById(id));
+    if (missing.length) {
+      const target = model.getNodeById("main-dock") ?? model.getNodeById("side-dock");
+      if (!target) {
+        // FlexLayout deletes empty tabsets. Opening the first app after closing
+        // them all must recreate a real workspace, never require Reset Layout.
+        focusSync.current = null;
+        setModel(buildDistroDockModel(distroId, openWindows, focusedWindow,
+          window.innerWidth <= 700));
+        return;
+      }
+      for (const id of missing) {
+        model.doAction(Actions.addTab({
+          type: "tab", id, component: id, name: WORKSPACE_TITLES[id],
+          enableFloat: true, enablePopout: false,
+        }, target.getId(), DockLocation.CENTER, -1, true));
       }
     }
     if (focusedWindow && focusSync.current !== focusedWindow && model.getNodeById(focusedWindow)) {
@@ -64,7 +72,7 @@ export function DockingWorkspace({
       focusSync.current = focusedWindow;
     }
     persist();
-  }, [model, openWindows, focusedWindow, persist]);
+  }, [model, openWindows, focusedWindow, persist, distroId]);
 
   const handleAction: NonNullable<React.ComponentProps<typeof Layout>["onAction"]> =
     useCallback((action) => {
@@ -94,6 +102,22 @@ export function DockingWorkspace({
     setModel(next);
   }, [distroId, openWindows, focusedWindow]);
 
+  const renderTabSet: NonNullable<React.ComponentProps<typeof Layout>["onRenderTabSet"]> =
+    useCallback((node, values) => {
+      if (node.getType() !== "tabset") return;
+      values.buttons.push(
+        <Button key="float" variant="ghost" size="icon" className="docking-tool-button"
+          disabled={!focusedWindow} title="Float focused application"
+          aria-label="Float focused application" onClick={floatFocused}>
+          <PanelsTopLeft size={15} aria-hidden="true" />
+        </Button>,
+        <Button key="reset" variant="ghost" size="icon" className="docking-tool-button"
+          title="Reset workspace layout" aria-label="Reset workspace layout" onClick={resetLayout}>
+          <RotateCcw size={15} aria-hidden="true" />
+        </Button>,
+      );
+    }, [floatFocused, focusedWindow, resetLayout]);
+
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
     if (!isApp(component)) return null;
@@ -114,14 +138,9 @@ export function DockingWorkspace({
       data-docking-workspace={distroId}
       aria-label="Dockable application workspace"
     >
-      <div className="docking-tools" role="toolbar" aria-label="Workspace layout controls">
-        <Button variant="ghost" size="sm" disabled={!focusedWindow} onClick={floatFocused}
-          aria-label="Float focused application">FLOAT</Button>
-        <Button variant="ghost" size="sm" onClick={resetLayout}
-          aria-label="Reset workspace layout">RESET LAYOUT</Button>
-      </div>
       <div className="docking-layout">
-        <Layout model={model} factory={factory} onAction={handleAction} onModelChange={persist} />
+        <Layout model={model} factory={factory} onAction={handleAction}
+          onRenderTabSet={renderTabSet} onModelChange={persist} />
       </div>
     </div>
   );

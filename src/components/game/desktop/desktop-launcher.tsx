@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookOpen, Pin, PinOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { DistroId } from "@/presentation/distros";
@@ -38,13 +39,38 @@ export function DesktopLauncher({
   distroId, openWindows, focusedWindow, onOpenWindow, onOpenGlossary,
 }: DesktopLauncherProps) {
   const shell = shellLayoutFor(distroId);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    try {
+      setPinned(window.localStorage.getItem(`ghostrank:launcher:pinned:${distroId}`) === "true");
+    } catch { setPinned(false); }
+  }, [distroId]);
+  const togglePin = () => {
+    const next = !pinned;
+    setPinned(next);
+    try { window.localStorage.setItem(`ghostrank:launcher:pinned:${distroId}`, String(next)); }
+    catch { /* Persisting launcher preference is optional. */ }
+  };
   return (
     <nav
       className="desktop-launcher distro-launcher"
       aria-label="Applications"
       data-distro-launcher={distroId}
       data-shell-placement={shell.launcherPlacement}
+      data-pinned={String(pinned)}
     >
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
+        className="launcher-pin"
+        aria-label={pinned ? "Auto-hide application dock" : "Pin application dock open"}
+        aria-pressed={pinned}
+        title={pinned ? "Auto-hide dock" : "Keep dock visible"}
+        onClick={togglePin}
+      >
+        {pinned ? <PinOff size={16} aria-hidden="true" /> : <Pin size={16} aria-hidden="true" />}
+      </Button>
       {LAUNCHER_APPS.map(({ id, label, shortcut, legacyTitle }) => (
         <Button
           key={id}

@@ -178,3 +178,170 @@
 .desktop-surface[data-shell-mode] .field-directives-minimized {
   z-index: 4;
 }
+
+/* Desktop UX: genuine distro type identities, all using locally available font
+   stacks so desktop rendering does not wait for external font downloads. */
+.desktop-surface[data-distro="ghost-os"] {
+  --font-ui: "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "Consolas", monospace;
+}
+.desktop-surface[data-distro="lattice"] {
+  --font-ui: "IBM Plex Sans", "Arial", sans-serif;
+  --font-display: "Cascadia Mono", "Consolas", monospace;
+  --font-mono: "Cascadia Mono", "Consolas", monospace;
+}
+.desktop-surface[data-distro="velvet"] {
+  --font-ui: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-display: "Palatino Linotype", "Book Antiqua", "Georgia", serif;
+  --font-mono: "Lucida Console", "Consolas", monospace;
+}
+.desktop-surface[data-distro="daybreak"] {
+  --font-ui: "Candara", "Segoe UI", sans-serif;
+  --font-display: "Candara", "Segoe UI", sans-serif;
+  --font-mono: "Consolas", monospace;
+}
+.desktop-surface[data-distro="petal"] {
+  --font-ui: "Trebuchet MS", "Arial Rounded MT Bold", sans-serif;
+  --font-display: "Trebuchet MS", "Arial Rounded MT Bold", sans-serif;
+  --font-mono: "Consolas", monospace;
+}
+.desktop-surface[data-shell-mode] {
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+}
+.desktop-surface[data-shell-mode] .os-bar {
+  gap: 8px 18px;
+  min-height: 50px;
+  padding: 7px 16px;
+  font-family: var(--font-ui);
+}
+.desktop-surface[data-shell-mode] .os-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  min-width: 0;
+  letter-spacing: 0;
+}
+.desktop-surface[data-shell-mode] .os-brand .status-dot { flex: none; align-self: center; }
+.desktop-surface[data-shell-mode] .os-distro-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+}
+.desktop-surface[data-shell-mode] .os-operator {
+  min-width: 0;
+  max-width: min(27vw, 210px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--foreground);
+  letter-spacing: 0;
+}
+.desktop-surface[data-shell-mode] .os-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 18px;
+  color: var(--foreground);
+}
+.desktop-surface[data-shell-mode] .os-stats > .os-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+.desktop-surface[data-shell-mode] .os-stats .os-stat span { border: 0; padding: 0; }
+.desktop-surface[data-shell-mode] .os-stat-label {
+  font-size: 10px;
+  color: var(--foreground-muted);
+  font-weight: 500;
+}
+.desktop-surface[data-shell-mode] .os-stat strong {
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.desktop-surface[data-shell-mode] .os-guidance-actions .os-help-button,
+.desktop-surface[data-shell-mode] .os-room-button {
+  letter-spacing: 0;
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+.desktop-surface[data-shell-mode] .panel-label,
+.desktop-surface[data-shell-mode] .window-titlebar,
+.desktop-surface[data-shell-mode] .discovery-title {
+  font-family: var(--font-display);
+  letter-spacing: .015em;
+  font-size: 12px;
+  font-weight: 600;
+}
+.desktop-surface[data-shell-mode] .flexlayout__tab_button_content {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.desktop-surface[data-shell-mode="compact-rail"] .flexlayout__tab_button_content {
+  font-family: var(--font-display);
+  font-size: 11px;
+}
+.desktop-surface[data-shell-mode="edge-shelf"] .flexlayout__tab_button_content {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+.desktop-surface[data-shell-mode] .desktop-launcher.distro-launcher {
+  position: absolute;
+  z-index: 40;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.desktop-surface[data-shell-mode] .distro-launcher .launcher-pin {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  min-height: 22px;
+  height: 22px;
+  border-radius: 999px;
+  opacity: .75;
+  z-index: 2;
+  padding: 2px;
+  background: var(--surface-raised);
+}
+.desktop-surface[data-shell-mode="compact-rail"] .distro-launcher .launcher-pin,
+.desktop-surface[data-shell-mode="edge-shelf"] .distro-launcher .launcher-pin {
+  right: 2px; top: 2px;
+}
+.desktop-surface[data-shell-mode] .distro-launcher .launcher-pin:hover { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .desktop-surface[data-shell-mode="topbar-dock"] .distro-launcher[data-pinned="false"]:not(:hover):not(:focus-within),
+  .desktop-surface[data-shell-mode="soft-dock"] .distro-launcher[data-pinned="false"]:not(:hover):not(:focus-within) {
+    transform: translate(-50%, calc(100% - 8px));
+  }
+  .desktop-surface[data-shell-mode="bottom-taskbar"] .distro-launcher[data-pinned="false"]:not(:hover):not(:focus-within) {
+    transform: translateY(calc(100% - 8px));
+  }
+  .desktop-surface[data-shell-mode="compact-rail"] .distro-launcher[data-pinned="false"]:not(:hover):not(:focus-within) {
+    transform: translate(calc(-100% + 8px), -50%);
+  }
+  .desktop-surface[data-shell-mode="edge-shelf"] .distro-launcher[data-pinned="false"]:not(:hover):not(:focus-within) {
+    transform: translate(calc(100% - 8px), -50%);
+  }
+}
+@media (max-width: 700px) {
+  .desktop-surface[data-shell-mode] .os-bar { padding: 8px 10px; gap: 5px 12px; }
+  .desktop-surface[data-shell-mode] .os-stats { gap: 4px 10px; }
+  .desktop-surface[data-shell-mode] .os-operator { max-width: 120px; }
+  .desktop-surface[data-shell-mode] .distro-launcher .launcher-pin {
+    top: -24px; right: 6px; width: 26px; height: 26px; min-height: 26px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktop-surface[data-shell-mode] .desktop-launcher.distro-launcher { transition: none; }
+}
+.desktop-surface[data-motion-mode="reduce"] .desktop-launcher.distro-launcher { transition: none; }

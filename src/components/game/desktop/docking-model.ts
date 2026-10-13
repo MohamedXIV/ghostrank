@@ -7,12 +7,12 @@ export const WORKSPACE_APP_IDS: readonly ComputerWindowId[] = [
 ];
 
 export const WORKSPACE_TITLES: Readonly<Record<ComputerWindowId, string>> = {
-  terminal: "TERMINAL",
-  recon: "RECON // OPERATIONS",
-  underground: "UNDERGROUND INDEX",
-  market: "MARKET // RIG",
-  history: "RUN HISTORY",
-  settings: "SYSTEM // APPEARANCE",
+  terminal: "Terminal",
+  recon: "Recon",
+  underground: "Underground",
+  market: "Market",
+  history: "History",
+  settings: "Appearance",
 };
 
 function validApp(id: unknown): id is ComputerWindowId {
