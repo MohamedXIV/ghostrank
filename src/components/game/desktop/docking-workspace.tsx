@@ -20,6 +20,7 @@ interface Props {
   colorMode: "light" | "dark";
   openWindows: readonly ComputerWindowId[];
   focusedWindow: ComputerWindowId | null;
+  activationSerial: number;
   onClose: (id: ComputerWindowId) => void;
   onFocus: (id: ComputerWindowId) => void;
   renderApp: (id: ComputerWindowId) => ReactNode;
@@ -27,7 +28,7 @@ interface Props {
 
 /** FlexLayout is layout authority only; useUiStore remains app open/focus authority. */
 export function DockingWorkspace({
-  distroId, colorMode, openWindows, focusedWindow, onClose, onFocus, renderApp,
+  distroId, colorMode, openWindows, focusedWindow, activationSerial, onClose, onFocus, renderApp,
 }: Props) {
   const [model, setModel] = useState<Model>(() => {
     let stored: string | null = null;
@@ -74,7 +75,9 @@ export function DockingWorkspace({
       focusSync.current = focusedWindow;
     }
     persist();
-  }, [model, openWindows, focusedWindow, persist, distroId]);
+  // activationSerial changes on every launcher click, including already-open
+  // apps whose focusedWindow ID hasn't changed across a distro remount.
+  }, [model, openWindows, focusedWindow, activationSerial, persist, distroId]);
 
   const handleAction: NonNullable<React.ComponentProps<typeof Layout>["onAction"]> =
     useCallback((action) => {
