@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { BookOpen, Pin, PinOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,17 +39,26 @@ export function DesktopLauncher({
   distroId, openWindows, focusedWindow, onOpenWindow, onOpenGlossary,
 }: DesktopLauncherProps) {
   const shell = shellLayoutFor(distroId);
-  const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    try {
-      setPinned(window.localStorage.getItem(`ghostrank:launcher:pinned:${distroId}`) === "true");
-    } catch { setPinned(false); }
-  }, [distroId]);
+  const storageKey = `ghostrank:launcher:pinned:${distroId}`;
+  const pinned = useSyncExternalStore(
+    (notify) => {
+      window.addEventListener("storage", notify);
+      window.addEventListener("ghostrank:launcher-pin-change", notify);
+      return () => {
+        window.removeEventListener("storage", notify);
+        window.removeEventListener("ghostrank:launcher-pin-change", notify);
+      };
+    },
+    () => {
+      try { return window.localStorage.getItem(storageKey) === "true"; }
+      catch { return false; }
+    },
+    () => false,
+  );
   const togglePin = () => {
-    const next = !pinned;
-    setPinned(next);
-    try { window.localStorage.setItem(`ghostrank:launcher:pinned:${distroId}`, String(next)); }
-    catch { /* Persisting launcher preference is optional. */ }
+    try { window.localStorage.setItem(storageKey, String(!pinned)); }
+    catch { /* Nonpersistent fallback: auto-hide stays available on hover. */ }
+    window.dispatchEvent(new Event("ghostrank:launcher-pin-change"));
   };
   return (
     <nav
