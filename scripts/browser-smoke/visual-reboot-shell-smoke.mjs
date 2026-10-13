@@ -121,7 +121,23 @@ async function oneView(browser, view) {
       await shot(page, id, view.name, "shell");
       await page.getByTitle("Market & Rig (Alt+4)").click();
       const workstation = page.locator('.hardware-product[data-catalog-id="rig-starter"]');
-      await workstation.getByText("Secondhand Workstation").waitFor();
+      try {
+        await workstation.getByText("Secondhand Workstation").waitFor({ timeout: 6000 });
+      } catch (error) {
+        const diagnostic = await page.evaluate(() => ({
+          distro: document.querySelector(".desktop-surface")?.getAttribute("data-distro"),
+          tabsets: [...document.querySelectorAll(".flexlayout__tabset")].map(el => ({
+            label: el.textContent?.slice(0, 150),
+          })),
+          tabs: [...document.querySelectorAll("[role=tab]")].map(el => ({
+            title: el.textContent, selected: el.getAttribute("aria-selected"),
+          })),
+          marketCount: document.querySelectorAll(".os-window-market").length,
+          marketDisplay: [...document.querySelectorAll(".os-window-market")].map(el => getComputedStyle(el).display),
+          layout: localStorage.getItem("ghostrank:docking:v1:lattice")?.slice(0, 900),
+        }));
+        throw new Error("Market panel not visible: " + JSON.stringify(diagnostic) + " / " + error);
+      }
       const starterPrice = await workstation.locator(".hardware-product-price").innerText();
       if (starterPrice.trim().toLowerCase() !== "0 cr") {
         throw new Error(id + ": expected actual 0 CR starter, got " + starterPrice);
