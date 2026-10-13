@@ -106,7 +106,7 @@ async function oneView(browser, view) {
     const shellInput = terminal.getByRole("textbox", { name: "Terminal command" });
     await shellInput.fill("help");
     await shellInput.press("Enter");
-    await terminal.locator(".terminal-entry-prompt").filter({ hasText: "help" }).waitFor();
+    await terminal.locator(".terminal-entry-prompt > span.terminal-entry-prompt").filter({ hasText: "help" }).waitFor();
     await shellInput.press("ArrowUp");
     if (await shellInput.inputValue() !== "help") throw new Error(view.name + ": command history failed");
     await shellInput.fill("obse");
