@@ -15,6 +15,7 @@ interface UiState {
   activeSurface: ActiveSurface;
   openWindows: ComputerWindowId[];
   focusedWindow: ComputerWindowId | null;
+  activationSerial: number;
   setActiveSurface: (surface: ActiveSurface) => void;
   openWindow: (windowId: ComputerWindowId) => void;
   closeWindow: (windowId: ComputerWindowId) => void;
@@ -26,6 +27,7 @@ export const useUiStore = create<UiState>((set) => ({
   activeSurface: "room",
   openWindows: ["terminal", "recon"],
   focusedWindow: "terminal",
+  activationSerial: 0,
 
   setActiveSurface: (activeSurface) => set({ activeSurface }),
 
@@ -35,6 +37,7 @@ export const useUiStore = create<UiState>((set) => ({
         ? state.openWindows
         : [...state.openWindows, windowId],
       focusedWindow: windowId,
+      activationSerial: state.activationSerial + 1,
     })),
 
   closeWindow: (windowId) =>

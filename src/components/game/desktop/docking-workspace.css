@@ -2,7 +2,7 @@
    Match in-game distro/shadcn semantic variables, not a separate theme registry. */
 .desktop-surface .docking-workspace {
   position: absolute;
-  inset: 12px 24px 85px;
+  inset: 7px;
   z-index: 8;
   min-width: 0;
   min-height: 0;
@@ -33,10 +33,7 @@
   --flexlayout-font-size: var(--text-sm);
   --flexlayout-splitter-size: 8px;
 }
-.desktop-surface[data-shell-mode="compact-rail"] .docking-workspace { left: 91px; right: 17px; bottom: 34px; }
-.desktop-surface[data-shell-mode="edge-shelf"] .docking-workspace { left: 25px; right: 103px; bottom: 37px; }
-.desktop-surface[data-shell-mode="bottom-taskbar"] .docking-workspace { left: 17px; right: 17px; bottom: 58px; }
-.desktop-surface[data-shell-mode="soft-dock"] .docking-workspace { left: 21px; right: 21px; bottom: 100px; }
+/* All distro launchers float over the desktop. None consume workspace space. */
 
 .docking-workspace .flexlayout__layout { background: transparent; border-radius: var(--distro-frame-radius); }
 .docking-workspace .flexlayout__tabset { border-radius: var(--distro-frame-radius); overflow: hidden; }
@@ -70,32 +67,28 @@
 .desktop-surface[data-motion-mode="reduce"] .docking-workspace *::before,
 .desktop-surface[data-motion-mode="reduce"] .docking-workspace *::after { transition-duration: 0ms !important; }
 @media (max-width: 700px) {
-  .desktop-surface .docking-workspace { inset: 8px 8px 64px; }
-  .desktop-surface[data-shell-mode="compact-rail"] .docking-workspace {
-    inset: 8px 5px 8px 54px;
-  }
-  .desktop-surface[data-shell-mode="edge-shelf"] .docking-workspace,
-  .desktop-surface[data-shell-mode="soft-dock"] .docking-workspace,
-  .desktop-surface[data-shell-mode="bottom-taskbar"] .docking-workspace {
-    left: 7px; right: 7px; bottom: 64px;
-  }
+  .desktop-surface .docking-workspace { inset: 4px; }
   .docking-workspace .flexlayout__tab_button { min-height: 38px; }
 }
 
-/* UI toolkit: shadcn Button primitives above the FlexLayout-managed workspace. */
-.docking-workspace .docking-tools {
-  position: absolute; top: 0; left: 0; right: 0; height: 35px;
-  z-index: 20; display: flex; justify-content: flex-end; align-items: center;
-  gap: 7px; padding: 2px 9px; border: 1px solid var(--border);
-  background: var(--surface); color: var(--foreground);
-}
-.docking-workspace .docking-tools button {
-  border: 1px solid var(--border); border-radius: var(--radius-control);
-  color: var(--foreground); min-height: 28px; padding: 3px 10px;
-  font-size: var(--text-sm);
-}
-.docking-workspace .docking-tools button:disabled { opacity: .5; }
+/* Layout tools live inside FlexLayout's tabset header, not a second toolbar. */
 .docking-workspace .docking-layout {
-  position: absolute; top: 35px; left: 0; right: 0; bottom: 0;
-  min-width: 0; min-height: 0;
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
 }
+.docking-workspace .docking-tool-button {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 4px;
+  border: 0;
+  color: var(--foreground-muted);
+  background: transparent;
+}
+.docking-workspace .docking-tool-button:hover:not(:disabled) {
+  color: var(--foreground);
+  background: var(--surface-raised);
+}
+.docking-workspace .docking-tool-button:disabled { opacity: .45; }

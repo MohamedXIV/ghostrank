@@ -158,12 +158,12 @@ interface ComputerDesktopProps {
 }
 
 const WINDOW_LABELS: Record<ComputerWindowId, string> = {
-  terminal: "TERM_01",
-  recon: "RECON INDEX",
-  underground: "UNDERGROUND INDEX",
-  market: "MARKET // RIG",
-  history: "RUN HISTORY",
-  settings: "SYSTEM // APPEARANCE",
+  terminal: "Terminal",
+  recon: "Recon",
+  underground: "Underground",
+  market: "Market",
+  history: "History",
+  settings: "Appearance",
 };
 
 const RECON_ACTION_LABELS: ReadonlyArray<readonly [string, string]> = [
@@ -194,6 +194,7 @@ export function ComputerDesktop({
 
   const openWindows = useUiStore((state) => state.openWindows);
   const focusedWindow = useUiStore((state) => state.focusedWindow);
+  const activationSerial = useUiStore((state) => state.activationSerial);
   const openWindow = useUiStore((state) => state.openWindow);
   const closeWindow = useUiStore((state) => state.closeWindow);
   const focusWindow = useUiStore((state) => state.focusWindow);
@@ -346,14 +347,14 @@ export function ComputerDesktop({
     >
       <header className="os-bar">
         <div className="os-brand">
-          <span className="status-dot" />
-          {distro.label}
+          <span className="status-dot" aria-hidden="true" />
+          <strong className="os-distro-name">{distro.label}</strong>
+          <span className="os-operator" title="Operator handle">{handle}</span>
         </div>
-        <div className="os-stats">
-          <span>{handle}</span>
-          <span>RANK #{rank.toLocaleString("en-US")}</span>
-          <span>{credits.toLocaleString("en-US")} cr</span>
-          <span>{formatWorldTime(worldMinute)}</span>
+        <div className="os-stats" aria-label="Player status">
+          <span className="os-stat"><span className="os-stat-label">Rank</span><strong>#{rank.toLocaleString("en-US")}</strong></span>
+          <span className="os-stat"><span className="os-stat-label">Credits</span><strong>{credits.toLocaleString("en-US")} cr</strong></span>
+          <span className="os-stat"><span className="os-stat-label">World time</span><strong>{formatWorldTime(worldMinute)}</strong></span>
         </div>
         {/* Guidance buttons and ROOM share one wrapper so that, when the bar
             wraps on a narrow screen, they wrap together and stay in DOM order. */}
@@ -420,6 +421,7 @@ export function ComputerDesktop({
             colorMode={themeModeFor(distroId, themeId)}
             openWindows={openWindows}
             focusedWindow={focusedWindow}
+            activationSerial={activationSerial}
             onFocus={focusWindow}
             onClose={closeWindow}
             renderApp={renderDockedApp}

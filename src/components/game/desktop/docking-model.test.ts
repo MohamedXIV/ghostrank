@@ -36,6 +36,16 @@ describe("real FlexLayout desktop model (without world authority)", () => {
     const roundTrip = Model.fromJson(m.toJson());
     expect(roundTrip.getNodeById("terminal")).toBeDefined();
   });
+  it("reopens an application after the last tabset was closed", () => {
+    const m = buildDistroDockModel("velvet", ["terminal"], "terminal");
+    m.doAction(Actions.deleteTab("terminal"));
+    const restored = safeRestoredDockModel(
+      "velvet", ["terminal"], "terminal", JSON.stringify(m.toJson()),
+    );
+    expect(restored.getNodeById("terminal")).toBeDefined();
+    expect(tabIdsInDock(restored)).toEqual(["terminal"]);
+  });
+
   it("rejects invalid persisted layouts and unknown app IDs, never leaking them", () => {
     const m = buildDistroDockModel("ghost-os", ["terminal", "market"], "market");
     const valid = m.toJson();

@@ -65,8 +65,24 @@ async function startGame(page) {
   const pause = page.locator(".clock-hud button", { hasText: "Pause" }).first();
   if (await pause.count()) await pause.click();
 }
+/** A user reveals an auto-hidden dock by moving to the screen edge.
+ * Directly clicking an offscreen child while it slides is not a valid OS test. */
+async function revealLauncher(page) {
+  if ((page.viewportSize()?.width ?? 0) <= 700) return;
+  const dock = page.locator(".desktop-surface nav.distro-launcher");
+  const box = await dock.boundingBox();
+  if (!box) throw new Error("Launcher has no geometry");
+  const placement = await dock.getAttribute("data-shell-placement");
+  const horizontal = placement === "left-vertical" || placement === "right-floating";
+  const x = placement === "left-vertical" ? box.x + box.width - 3
+    : placement === "right-floating" ? box.x + 3 : box.x + box.width / 2;
+  const y = horizontal ? box.y + box.height / 2 : box.y + 3;
+  await page.mouse.move(Math.max(2, x), Math.max(2, y));
+  await page.waitForTimeout(180);
+}
 async function activateDistro(page, id, label, mode) {
   if (id !== "ghost-os") {
+    await revealLauncher(page);
     await page.getByTitle("System & Appearance (Alt+6)").click();
     const card = page.locator(".distro-card").filter({ hasText: label }).first();
     await card.getByRole("button", { name: "INSTALL", exact: true }).click();
@@ -119,9 +135,29 @@ async function oneView(browser, view) {
     for (const [id, label, mode] of distros) {
       await activateDistro(page, id, label, mode);
       await shot(page, id, view.name, "shell");
-      await page.getByTitle("Market & Rig (Alt+4)").click();
+      await revealLauncher(page);
+    await page.getByTitle("Market & Rig (Alt+4)").click();
       const workstation = page.locator('.hardware-product[data-catalog-id="rig-starter"]');
-      await workstation.getByText("Secondhand Workstation").waitFor();
+      try {
+        await workstation.getByText("Secondhand Workstation").waitFor({ timeout: 6000 });
+      } catch (error) {
+        const diagnostic = await page.evaluate(() => ({
+          distro: document.querySelector(".desktop-surface")?.getAttribute("data-distro"),
+          tabsets: [...document.querySelectorAll(".flexlayout__tabset")].map(el => ({
+            label: el.textContent?.slice(0, 150),
+          })),
+          tabs: [...document.querySelectorAll("[role=tab]")].map(el => ({
+            title: el.textContent, selected: el.getAttribute("aria-selected"),
+          })),
+          focusedDockApps: [...document.querySelectorAll("nav[data-distro-launcher] [data-window-id][data-focused=true]")]
+            .map(el => el.getAttribute("data-window-id")),
+          marketLauncher: document.querySelector("nav [data-window-id=market]")?.outerHTML.slice(0, 400),
+          marketCount: document.querySelectorAll(".os-window-market").length,
+          marketDisplay: [...document.querySelectorAll(".os-window-market")].map(el => getComputedStyle(el).display),
+          layout: localStorage.getItem("ghostrank:docking:v1:lattice")?.slice(0, 900),
+        }));
+        throw new Error("Market panel not visible: " + JSON.stringify(diagnostic) + " / " + error);
+      }
       const starterPrice = await workstation.locator(".hardware-product-price").innerText();
       if (starterPrice.trim().toLowerCase() !== "0 cr") {
         throw new Error(id + ": expected actual 0 CR starter, got " + starterPrice);
@@ -291,7 +327,8 @@ async function oneView(browser, view) {
       await shot(page,id,view.name,"value");
 
 
-      await page.getByTitle("Recon (Alt+2)").click();
+      await revealLauncher(page);
+    await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       const reconRoot = page.locator(".os-window-recon .recon-workstation");
       await reconRoot.locator(".recon-station-heading").waitFor();
@@ -332,7 +369,8 @@ async function oneView(browser, view) {
         return [style.getPropertyValue("--background").trim(), style.getPropertyValue("--foreground").trim()];
       });
       const [labelVariant, themeVariant, colorMode] = variants[id];
-      await page.getByTitle("System & Appearance (Alt+6)").click();
+      await revealLauncher(page);
+    await page.getByTitle("System & Appearance (Alt+6)").click();
       const switchMode = page.locator(".theme-picker").getByRole("button", { name: labelVariant, exact: true });
       await switchMode.click();
       const activeMode = page.locator(
@@ -360,7 +398,8 @@ async function oneView(browser, view) {
       // FlexLayout uses its own tab close control, not legacy WindowFrame close markup.
       // Selecting Market below must activate the real tab and display its live content.
       await shot(page, id, view.name, themeVariant + "-shell");
-      await page.getByTitle("Market & Rig (Alt+4)").click();
+      await revealLauncher(page);
+    await page.getByTitle("Market & Rig (Alt+4)").click();
       await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
       await shot(page, id, view.name, themeVariant + "-market");
       const softwareMode = page.locator('.os-window-market .software-listing[data-software-id="software-net-monitor"]');
@@ -391,7 +430,8 @@ async function oneView(browser, view) {
       await valueMode.scrollIntoViewIfNeeded();
       await valueMode.getByText("YOUR WALLET").waitFor();
       await shot(page,id,view.name,themeVariant+"-value");
-      await page.getByTitle("Recon (Alt+2)").click();
+      await revealLauncher(page);
+    await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").scrollIntoViewIfNeeded();

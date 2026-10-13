@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { RotateCcw, PanelsTopLeft } from "lucide-react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Actions, DockLocation, Layout, type Model, type TabNode } from "flexlayout-react";
 import type { DistroId } from "@/presentation/distros";
@@ -19,6 +20,7 @@ interface Props {
   colorMode: "light" | "dark";
   openWindows: readonly ComputerWindowId[];
   focusedWindow: ComputerWindowId | null;
+  activationSerial: number;
   onClose: (id: ComputerWindowId) => void;
   onFocus: (id: ComputerWindowId) => void;
   renderApp: (id: ComputerWindowId) => ReactNode;
@@ -26,7 +28,7 @@ interface Props {
 
 /** FlexLayout is layout authority only; useUiStore remains app open/focus authority. */
 export function DockingWorkspace({
-  distroId, colorMode, openWindows, focusedWindow, onClose, onFocus, renderApp,
+  distroId, colorMode, openWindows, focusedWindow, activationSerial, onClose, onFocus, renderApp,
 }: Props) {
   const [model, setModel] = useState<Model>(() => {
     let stored: string | null = null;
@@ -48,23 +50,34 @@ export function DockingWorkspace({
     for (const id of tabIdsInDock(model)) {
       if (!expected.has(id)) model.doAction(Actions.deleteTab(id));
     }
-    for (const id of openWindows) {
-      if (!model.getNodeById(id)) {
-        const target = model.getNodeById("main-dock") ?? model.getNodeById("side-dock");
-        if (target) {
-          model.doAction(Actions.addTab({
-            type: "tab", id, component: id, name: WORKSPACE_TITLES[id],
-            enableFloat: true, enablePopout: false,
-          }, target.getId(), DockLocation.CENTER, -1, true));
-        }
+    const missing = openWindows.filter(id => !model.getNodeById(id));
+    if (missing.length) {
+      const target = model.getNodeById("main-dock") ?? model.getNodeById("side-dock");
+      if (!target) {
+        // FlexLayout deletes empty tabsets. Opening the first app after closing
+        // them all must recreate a real workspace, never require Reset Layout.
+        focusSync.current = null;
+        // FlexLayout removed the last tabset; the external model must be replaced.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setModel(buildDistroDockModel(distroId, openWindows, focusedWindow,
+          window.innerWidth <= 700));
+        return;
+      }
+      for (const id of missing) {
+        model.doAction(Actions.addTab({
+          type: "tab", id, component: id, name: WORKSPACE_TITLES[id],
+          enableFloat: true, enablePopout: false,
+        }, target.getId(), DockLocation.CENTER, -1, true));
       }
     }
-    if (focusedWindow && focusSync.current !== focusedWindow && model.getNodeById(focusedWindow)) {
+    if (focusedWindow && model.getNodeById(focusedWindow)) {
       model.doAction(Actions.selectTab(focusedWindow));
       focusSync.current = focusedWindow;
     }
     persist();
-  }, [model, openWindows, focusedWindow, persist]);
+  // activationSerial changes on every launcher click, including already-open
+  // apps whose focusedWindow ID hasn't changed across a distro remount.
+  }, [model, openWindows, focusedWindow, activationSerial, persist, distroId]);
 
   const handleAction: NonNullable<React.ComponentProps<typeof Layout>["onAction"]> =
     useCallback((action) => {
@@ -94,6 +107,26 @@ export function DockingWorkspace({
     setModel(next);
   }, [distroId, openWindows, focusedWindow]);
 
+  const renderTabSet: NonNullable<React.ComponentProps<typeof Layout>["onRenderTabSet"]> =
+    useCallback((node, values) => {
+      if (node.getType() !== "tabset") return;
+      // Workspace-wide actions belong to one tabset header, not every dock.
+      // If its original header disappears, the surviving side dock takes over.
+      const primary = model.getNodeById("main-dock") ? "main-dock" : "side-dock";
+      if (node.getId() !== primary) return;
+      values.buttons.push(
+        <Button key="float" variant="ghost" size="icon" className="docking-tool-button"
+          disabled={!focusedWindow} title="Float focused application"
+          aria-label="Float focused application" onClick={floatFocused}>
+          <PanelsTopLeft size={15} aria-hidden="true" />
+        </Button>,
+        <Button key="reset" variant="ghost" size="icon" className="docking-tool-button"
+          title="Reset workspace layout" aria-label="Reset workspace layout" onClick={resetLayout}>
+          <RotateCcw size={15} aria-hidden="true" />
+        </Button>,
+      );
+    }, [floatFocused, focusedWindow, resetLayout, model]);
+
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
     if (!isApp(component)) return null;
@@ -114,14 +147,9 @@ export function DockingWorkspace({
       data-docking-workspace={distroId}
       aria-label="Dockable application workspace"
     >
-      <div className="docking-tools" role="toolbar" aria-label="Workspace layout controls">
-        <Button variant="ghost" size="sm" disabled={!focusedWindow} onClick={floatFocused}
-          aria-label="Float focused application">FLOAT</Button>
-        <Button variant="ghost" size="sm" onClick={resetLayout}
-          aria-label="Reset workspace layout">RESET LAYOUT</Button>
-      </div>
       <div className="docking-layout">
-        <Layout model={model} factory={factory} onAction={handleAction} onModelChange={persist} />
+        <Layout model={model} factory={factory} onAction={handleAction}
+          onRenderTabSet={renderTabSet} onModelChange={persist} />
       </div>
     </div>
   );

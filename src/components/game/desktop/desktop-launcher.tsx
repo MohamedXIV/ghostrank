@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { BookOpen } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { BookOpen, Pin, PinOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { DistroId } from "@/presentation/distros";
@@ -38,13 +39,47 @@ export function DesktopLauncher({
   distroId, openWindows, focusedWindow, onOpenWindow, onOpenGlossary,
 }: DesktopLauncherProps) {
   const shell = shellLayoutFor(distroId);
+  const storageKey = `ghostrank:launcher:pinned:${distroId}`;
+  const pinned = useSyncExternalStore(
+    (notify) => {
+      window.addEventListener("storage", notify);
+      window.addEventListener("ghostrank:launcher-pin-change", notify);
+      return () => {
+        window.removeEventListener("storage", notify);
+        window.removeEventListener("ghostrank:launcher-pin-change", notify);
+      };
+    },
+    () => {
+      try { return window.localStorage.getItem(storageKey) === "true"; }
+      catch { return false; }
+    },
+    () => false,
+  );
+  const togglePin = () => {
+    try { window.localStorage.setItem(storageKey, String(!pinned)); }
+    catch { /* Nonpersistent fallback: auto-hide stays available on hover. */ }
+    window.dispatchEvent(new Event("ghostrank:launcher-pin-change"));
+  };
   return (
     <nav
       className="desktop-launcher distro-launcher"
       aria-label="Applications"
       data-distro-launcher={distroId}
       data-shell-placement={shell.launcherPlacement}
+      data-pinned={String(pinned)}
     >
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
+        className="launcher-pin"
+        aria-label={pinned ? "Auto-hide application dock" : "Pin application dock open"}
+        aria-pressed={pinned}
+        title={pinned ? "Auto-hide dock" : "Keep dock visible"}
+        onClick={togglePin}
+      >
+        {pinned ? <PinOff size={16} aria-hidden="true" /> : <Pin size={16} aria-hidden="true" />}
+      </Button>
       {LAUNCHER_APPS.map(({ id, label, shortcut, legacyTitle }) => (
         <Button
           key={id}
