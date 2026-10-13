@@ -276,6 +276,20 @@ async function oneView(browser, view) {
       await compact.getByRole("button",{name:"Run Compact Class API"}).waitFor();
       await spec.scrollIntoViewIfNeeded();
       await shot(page,id,view.name,"forge");
+      const valuePanel=page.locator(".os-window-market .value-network-panel");
+      await valuePanel.scrollIntoViewIfNeeded();
+      await valuePanel.getByText("YOUR WALLET").waitFor();
+      if(await valuePanel.locator('[data-slot="card"]').count()<1
+        || !(await valuePanel.innerText()).includes("IN TO YOU")
+        || !(await valuePanel.innerText()).includes("OUT FROM YOU")) {
+        throw new Error(id+": real Value Network summaries or shadcn composition missing");
+      }
+      const displayedEdges=await valuePanel.locator(".value-network-edge").count();
+      const declaredCount=Number((await valuePanel.locator(".value-network-count").innerText()).replace(/[^0-9]/g,""));
+      if(displayedEdges>declaredCount)throw new Error(id+": graph invented counterparties");
+      if(displayedEdges===0)await valuePanel.getByText("No settled value yet",{exact:false}).waitFor();
+      await shot(page,id,view.name,"value");
+
 
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
@@ -373,6 +387,10 @@ async function oneView(browser, view) {
       await forgeMode.scrollIntoViewIfNeeded();
       await forgeMode.getByRole("button",{name:"Build Homegrown Monitoring Loop"}).waitFor();
       await shot(page,id,view.name,themeVariant+"-forge");
+      const valueMode=page.locator(".os-window-market .value-network-panel");
+      await valueMode.scrollIntoViewIfNeeded();
+      await valueMode.getByText("YOUR WALLET").waitFor();
+      await shot(page,id,view.name,themeVariant+"-value");
       await page.getByTitle("Recon (Alt+2)").click();
       await page.locator(".os-window-recon").waitFor();
       await page.locator(".os-window-recon .recon-station-heading").waitFor();
@@ -402,9 +420,9 @@ try {
 } finally {
   await browser?.close();
   await new Promise(ok => http.close(ok));
-  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 200, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
+  writeFileSync(join(DEST, "report.json"), JSON.stringify({ expected: 220, captured: captured.length, entries: captured, failures }, null, 2) + "\n");
 }
-if (captured.length !== 200 || failures.length) {
+if (captured.length !== 220 || failures.length) {
   console.error("SHELL V1 FAIL:", JSON.stringify({ count: captured.length, failures }, null, 2));
   process.exitCode = 1;
-} else console.log("DISTRO 10-MODE PASS: 200/200 Chromium screenshots incl. real Forge BUILD/ABORT and projected IR");
+} else console.log("DISTRO 10-MODE PASS: 220/220 Chromium screenshots incl. player-safe transaction network");

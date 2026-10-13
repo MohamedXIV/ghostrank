@@ -91,6 +91,8 @@ import { MachineListingCard, OwnedMachineCard } from "@/components/game/market/m
 import { ModelLicenseCard } from "@/components/game/market/model-license-card";
 import { AuthoredToolListingCard, OwnedAuthoredToolCard } from "@/components/game/market/authored-tool-cards";
 import { ForgeSpecCard, ForgeQueueCard, ForgeOwnedCard } from "@/components/game/market/forge-cards";
+import { ValueNetwork, ValueLedger } from "@/components/game/market/value-network-panel";
+import { presentValueFlow, presentLedgerLine } from "@/components/game/market/value-network-model";
 import { presentForgeSpec, presentForgeBuild, presentForgeOwned } from "@/components/game/market/forge-listing-model";
 import { presentToolListing, presentOwnedTool } from "@/components/game/market/authored-tool-model";
 import { presentModelListing } from "@/components/game/market/model-listing-model";
@@ -3204,6 +3206,28 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <ValueNetwork
+        nodes={visibleRecords(valueNodes,recordPage).map(([id,entry])=>presentValueFlow(id,{
+          kind:String(entry.kind??"peer"),
+          received:Number(entry.received??0),paid:Number(entry.paid??0),
+          net:Number(entry.net??0),interactions:Number(entry.interactions??0),
+          firstWorldMinute:Number(entry.firstWorldMinute??0),
+          lastWorldMinute:Number(entry.lastWorldMinute??0),
+          causeKinds:String(entry.causeKinds??""),
+        }))}
+        inflow={valueInflow}
+        outflow={valueOutflow}
+        counterparties={valueCounterparties}
+      />
+      <ValueLedger lines={visibleRecords(ledger,recordPage).map(([id,entry])=>presentLedgerLine(id,{
+        worldMinute:Number(entry.worldMinute??0),
+        direction:String(entry.direction??"debit"),
+        amount:Number(entry.amount??0),
+        balanceAfter:Number(entry.balanceAfter??0),
+        causeKind:String(entry.causeKind??""),
+        causeId:String(entry.causeId??""),
+        counterparty:String(entry.counterparty??""),
+      }))}/>
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3292,113 +3316,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         )}
       </section>
 
-      <section aria-label="Value graph">
-        <span className="panel-label">
-          VALUE GRAPH // {valueCounterparties} COUNTERPART
-          {valueCounterparties === 1 ? "" : "IES"}
-        </span>
-        {valueNodes.length === 0 ? (
-          <p className="market-empty">
-            No value has moved yet — every wallet tells a story once it starts.
-          </p>
-        ) : (
-          <ul className="market-value-graph">
-            {visibleRecords(valueNodes, recordPage).map(([id, entry]) => {
-              const received = Number(entry.received ?? 0);
-              const paid = Number(entry.paid ?? 0);
-              const net = Number(entry.net ?? 0);
-              const volume = Math.max(received, paid, 1);
-              const kind = String(entry.kind ?? "peer");
-              const causes = String(entry.causeKinds ?? "")
-                .split(",")
-                .filter(Boolean);
-
-              return (
-                <li key={id} className={`value-node value-node-${kind}`}>
-                  <div>
-                    <span className="panel-label">
-                      {id}
-                      <span className="value-node-tag">
-                        {kind === "institution" ? " role" : " peer"}
-                      </span>
-                    </span>
-                    <span>
-                      {causes.length > 0 ? causes.join(" · ") : "—"}
-                    </span>
-                    <span className="market-time">
-                      {Number(entry.interactions ?? 0)}× · first{" "}
-                      {formatWorldTime(
-                        Number(entry.firstWorldMinute ?? 0),
-                      )}{" "}
-                      · last{" "}
-                      {formatWorldTime(Number(entry.lastWorldMinute ?? 0))}
-                    </span>
-                  </div>
-                  <div className="value-node-bars">
-                    <span className="value-node-bar value-node-in">
-                      <span style={{ width: `${(received / volume) * 100}%` }} />
-                      +{received.toLocaleString("en-US")}
-                    </span>
-                    <span className="value-node-bar value-node-out">
-                      <span style={{ width: `${(paid / volume) * 100}%` }} />
-                      −{paid.toLocaleString("en-US")}
-                    </span>
-                    <span className="value-node-net">
-                      net {net >= 0 ? "+" : "−"}
-                      {Math.abs(net).toLocaleString("en-US")}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          Money is a graph, not a bar: this is the ledger aggregated by who
-          actually got paid. <strong>In</strong> is value they gave you,
-          <strong> out</strong> is value you gave them; <strong>net</strong> is
-          your standing with each. Institutions (market, landlord, vendor,
-          fence) are roles — every other name is a scene handle.
-        </p>
-        <p className="market-hint">
-          Lifetime totals: in +{valueInflow.toLocaleString("en-US")} · out −
-          {valueOutflow.toLocaleString("en-US")} · net{" "}
-          {valueInflow - valueOutflow >= 0 ? "+" : "−"}
-          {Math.abs(valueInflow - valueOutflow).toLocaleString("en-US")} cr.
-        </p>
-      </section>
-
-      <section aria-label="Ledger">
-        <span className="panel-label">VALUE LEDGER</span>
-        {ledger.length === 0 ? (
-          <p className="market-empty">No value has moved yet.</p>
-        ) : (
-          <ul className="market-ledger">
-            {visibleRecords(ledger, recordPage).map(([id, entry]) => (
-              <li key={id}>
-                <span
-                  className={
-                    entry.direction === "credit"
-                      ? "market-credit"
-                      : "market-debit"
-                  }
-                >
-                  {entry.direction === "credit" ? "+" : "−"}
-                  {Number(entry.amount ?? 0).toLocaleString("en-US")}
-                </span>
-                <span>
-                  {String(entry.causeKind ?? "")} ·{" "}
-                  {String(entry.counterparty ?? "")}
-                </span>
-                <span className="market-time">
-                  bal {Number(entry.balanceAfter ?? 0).toLocaleString("en-US")} ·{" "}
-                  {formatWorldTime(Number(entry.worldMinute ?? 0))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
