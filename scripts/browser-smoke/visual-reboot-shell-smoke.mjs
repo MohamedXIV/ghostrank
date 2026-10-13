@@ -132,6 +132,9 @@ async function oneView(browser, view) {
           tabs: [...document.querySelectorAll("[role=tab]")].map(el => ({
             title: el.textContent, selected: el.getAttribute("aria-selected"),
           })),
+          focusedDockApps: [...document.querySelectorAll("nav[data-distro-launcher] [data-window-id][data-focused=true]")]
+            .map(el => el.getAttribute("data-window-id")),
+          marketLauncher: document.querySelector("nav [data-window-id=market]")?.outerHTML.slice(0, 400),
           marketCount: document.querySelectorAll(".os-window-market").length,
           marketDisplay: [...document.querySelectorAll(".os-window-market")].map(el => getComputedStyle(el).display),
           layout: localStorage.getItem("ghostrank:docking:v1:lattice")?.slice(0, 900),
