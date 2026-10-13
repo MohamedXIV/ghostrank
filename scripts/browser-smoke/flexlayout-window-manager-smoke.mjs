@@ -125,8 +125,8 @@ async function desktop(browser) {
     check("real FlexLayout not fallback", await page.locator('.docking-workspace .flexlayout__layout').isVisible());
     check("six original launcher icons remain", (await page.locator('nav[data-distro-launcher="ghost-os"] [data-window-id]').count()) === 6);
     check("two real app tabsets initially", (await page.locator(".docking-layout .flexlayout__tabset").count()) === 2);
-    const terminal = page.getByRole("tab", { name: "TERMINAL" });
-    const recon = page.getByRole("tab", { name: "RECON // OPERATIONS" });
+    const terminal = page.getByRole("tab", { name: "Terminal" });
+    const recon = page.getByRole("tab", { name: "Recon" });
     await terminal.waitFor(); await recon.waitFor();
 
     const maximize = page.getByRole("button", { name: "Maximize" }).first();
@@ -151,8 +151,8 @@ async function desktop(browser) {
     check("pointer resizing alters real dock geometry", changed > 12, "delta=" + changed.toFixed(1));
 
     // Pointer drag a tab from the right pane to the other tabset to form a tab group.
-    const dragSource = page.getByRole("tab", { name: "RECON // OPERATIONS" });
-    const dragTarget = page.getByRole("tab", { name: "TERMINAL" });
+    const dragSource = page.getByRole("tab", { name: "Recon" });
+    const dragTarget = page.getByRole("tab", { name: "Terminal" });
     await dragTab(page, dragSource, dragTarget);
     await page.waitForTimeout(400);
     const moved = await layoutState(page);
@@ -162,18 +162,18 @@ async function desktop(browser) {
     await screenshot(page, "desktop-tab-drag");
 
     // Native tab close is an upstream pointer-only icon inside the accessible tab.
-    await page.getByRole("tab", { name: "RECON // OPERATIONS" }).hover();
-    await page.getByRole("tab", { name: "RECON // OPERATIONS" })
+    await page.getByRole("tab", { name: "Recon" }).hover();
+    await page.getByRole("tab", { name: "Recon" })
       .locator('[title="Close"]').click();
-    await page.getByRole("tab", { name: "RECON // OPERATIONS" }).waitFor({state:"detached"});
-    check("native close actually removes tab", (await page.getByRole("tab", {name:"RECON // OPERATIONS"}).count()) === 0);
+    await page.getByRole("tab", { name: "Recon" }).waitFor({state:"detached"});
+    check("native close actually removes tab", (await page.getByRole("tab", {name:"Recon"}).count()) === 0);
     await page.getByTitle("Recon (Alt+2)").click();
-    await page.getByRole("tab", { name: "RECON // OPERATIONS" }).waitFor();
+    await page.getByRole("tab", { name: "Recon" }).waitFor();
     check("original launcher reopens closed app", true);
 
     // Alt+4 opens a real Market tab (not a second fake window model).
     await page.keyboard.press("Alt+4");
-    await page.getByRole("tab", { name: "MARKET // RIG" }).waitFor();
+    await page.getByRole("tab", { name: "Market" }).waitFor();
     await page.locator('.hardware-product[data-catalog-id="rig-starter"]').waitFor();
     check("keyboard shortcut maps to existing Market and real catalog", true);
     // Preserve OS keyboard contracts while FlexLayout owns the geometry.
@@ -189,8 +189,8 @@ async function desktop(browser) {
     await page.keyboard.press("Escape");
     await glossary.waitFor({ state: "detached" });
     check("Escape closes modal before closing desktop tabs",
-      (await page.getByRole("tab", { name: "MARKET // RIG" }).count()) === 1);
-    await page.getByRole("tab", { name: "MARKET // RIG" }).click();
+      (await page.getByRole("tab", { name: "Market" }).count()) === 1);
+    await page.getByRole("tab", { name: "Market" }).click();
     await page.getByRole("button", { name: "Float focused application" }).click();
     await page.locator(".flexlayout__float_window, .flexlayout__floating_window").first().waitFor();
     check("in-page float renders without browser popout", true);
@@ -200,8 +200,8 @@ async function desktop(browser) {
 
     // A meaningful change to the layout tree must survive a whole page refresh
     // and a new run, without storing any simulation or world state in FlexLayout.
-    const targetTab = page.getByRole("tab", { name: "RECON // OPERATIONS" });
-    const sourceTab = page.getByRole("tab", { name: "TERMINAL" });
+    const targetTab = page.getByRole("tab", { name: "Recon" });
+    const sourceTab = page.getByRole("tab", { name: "Terminal" });
     await dragTab(page, targetTab, sourceTab);
     await page.waitForTimeout(400);
     const saved = await layoutState(page);
