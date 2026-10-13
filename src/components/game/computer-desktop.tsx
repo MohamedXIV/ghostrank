@@ -90,6 +90,8 @@ import { HousingLocationCard } from "@/components/game/market/housing-location-c
 import { MachineListingCard, OwnedMachineCard } from "@/components/game/market/machine-cards";
 import { ModelLicenseCard } from "@/components/game/market/model-license-card";
 import { AuthoredToolListingCard, OwnedAuthoredToolCard } from "@/components/game/market/authored-tool-cards";
+import { ForgeSpecCard, ForgeQueueCard, ForgeOwnedCard } from "@/components/game/market/forge-cards";
+import { presentForgeSpec, presentForgeBuild, presentForgeOwned } from "@/components/game/market/forge-listing-model";
 import { presentToolListing, presentOwnedTool } from "@/components/game/market/authored-tool-model";
 import { presentModelListing } from "@/components/game/market/model-listing-model";
 import { presentMachineListing, presentOwnedMachine } from "@/components/game/market/machine-listing-model";
@@ -3142,6 +3144,66 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
         </p>
       </section>
 
+      <section aria-label="Software forge" className="forge-store">
+        <div className="forge-heading">
+          <div>
+            <span className="panel-label">SOFTWARE FORGE / SAFE WORKFLOW IR</span>
+            <h2>Software forge</h2>
+            <p>Commission a model to build a real projected workflow over world time. No executable host code.</p>
+          </div>
+          <span className="forge-heading-count">{forgeSpecs.length} specs · {buildQueue.length} queued · {ownedWorkflows.length} built</span>
+        </div>
+        {forgeSpecs.length===0 ? <p className="market-empty">No workflow specs available.</p> : (
+          <ul className="market-catalog forge-grid">
+            {visibleRecords(forgeSpecs,recordPage).map(([id,entry])=>(
+              <ForgeSpecCard key={id} item={presentForgeSpec(id,{
+                label:String(entry.label??id),steps:String(entry.steps??""),
+                tests:String(entry.tests??""),estimatedMinutes:Number(entry.estimatedMinutes??0),
+                vram:Number(entry.vram??0),storage:Number(entry.storage??0),
+                replacesLabel:String(entry.replacesLabel??""),
+              })}
+              assistantRunning={assistantRunning}
+              onBuild={()=>runtime.execute(startBuildFromGui(id))}/>
+            ))}
+          </ul>
+        )}
+        <h3 className="forge-section-label">BUILD QUEUE / {buildQueue.length} ACTIVE</h3>
+        {buildQueue.length===0?<p className="market-empty">No builds in flight.</p>:(
+          <ul className="market-catalog forge-grid">
+            {visibleRecords(buildQueue,recordPage).map(([id,entry])=>(
+              <ForgeQueueCard key={id} item={presentForgeBuild(id,{
+                specLabel:String(entry.specLabel??id),modelLabel:String(entry.modelLabel??""),
+                startedWorldMinute:Number(entry.startedWorldMinute??0),
+                dueWorldMinute:Number(entry.dueWorldMinute??0),
+                paused:entry.paused===true,vram:Number(entry.vram??0),storage:Number(entry.storage??0),
+              })} onAbort={()=>runtime.execute(abortBuildFromGui(id))}/>
+            ))}
+          </ul>
+        )}
+        <h3 className="forge-section-label">SELF-AUTHORED / {ownedWorkflows.length} DELIVERED</h3>
+        {ownedWorkflows.length===0 ? (
+          <p className="market-empty">No finished workflows yet. Completed work is permanent.</p>
+        ) : (
+          <ul className="market-catalog forge-grid">
+            {visibleRecords(ownedWorkflows,recordPage).map(([id,entry])=>(
+              <ForgeOwnedCard key={id} item={presentForgeOwned(id,{
+                label:String(entry.label??id),outcome:String(entry.outcome??""),
+                builtWithLabel:String(entry.builtWithLabel??""),
+                acquiredWorldMinute:Number(entry.acquiredWorldMinute??0),
+                tests:String(entry.tests??""),
+              })}/>
+            ))}
+          </ul>
+        )}
+        <p className="market-hint">
+          BUILD uses world time and rig occupancy, never credits. A running assistant
+          is required; completed workflows contribute through the same capability
+          system as licensed software. The assistant can make defective or warning-level
+          copies. Test labels describe coverage, not a promise of passing. Queue dates
+          and outcomes only reflect known projected state.
+        </p>
+      </section>
+
       <ContextualHint
         id="hint:market-capacity"
         title="RIG CAPACITY & UPKEEP"
@@ -3228,138 +3290,6 @@ function MarketApp({ runtime }: { runtime: GameRuntime }) {
             ))}
           </ul>
         )}
-      </section>
-
-      <section aria-label="Software forge">
-        <span className="panel-label">SOFTWARE FORGE // SPECS</span>
-        {forgeSpecs.length === 0 ? (
-          <p className="market-empty">The forge shelves are empty.</p>
-        ) : (
-          <ul className="market-catalog forge-specs">
-            {visibleRecords(forgeSpecs, recordPage).map(([id, entry]) => {
-              const minutes = Number(entry.estimatedMinutes ?? 0);
-
-              return (
-                <li key={id}>
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                    </span>
-                    <span className="forge-steps">
-                      {String(entry.steps ?? "").split("\n").map((step) => (
-                        <span key={step} className="forge-step">
-                          {step}
-                        </span>
-                      ))}
-                    </span>
-                    <span className="market-time">
-                      replaces {String(entry.replacesLabel ?? "")} · about{" "}
-                      {minutes.toLocaleString("en-US")} min on this rig · load{" "}
-                      {Number(entry.vram ?? 0)} vram /{" "}
-                      {Number(entry.storage ?? 0)} storage
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!assistantRunning}
-                    title={
-                      assistantRunning
-                        ? "Commission the running assistant to build this (pays in time, not credits)"
-                        : "Run a model first — the forge needs an assistant"
-                    }
-                    onClick={() => runtime.execute(startBuildFromGui(id))}
-                  >
-                    BUILD
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <span className="panel-label">BUILD QUEUE</span>
-        {buildQueue.length === 0 ? (
-          <p className="market-empty">
-            No builds in flight — the rig is not writing anything.
-          </p>
-        ) : (
-          <ul className="market-catalog forge-queue">
-            {visibleRecords(buildQueue, recordPage).map(([id, entry]) => (
-              <li key={id}>
-                <div>
-                  <span className="panel-label">{String(entry.specLabel ?? id)}</span>
-                  <span>
-                    {String(entry.modelLabel ?? "")} · occupies{" "}
-                    {Number(entry.vram ?? 0)} vram /{" "}
-                    {Number(entry.storage ?? 0)} storage
-                  </span>
-                  <span className="market-time">
-                    started {formatWorldTime(Number(entry.startedWorldMinute ?? 0))} ·{" "}
-                    {entry.paused === true
-                      ? "PAUSED // work clock stopped"
-                      : `due ${formatWorldTime(Number(entry.dueWorldMinute ?? 0))}`}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  title="Abort this build — the queue slot frees, nothing is charged"
-                  onClick={() => runtime.execute(abortBuildFromGui(id))}
-                >
-                  ABORT
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <span className="panel-label">SELF-AUTHORED</span>
-        {ownedWorkflows.length === 0 ? (
-          <p className="market-empty">
-            Nothing built yet — a finished workflow is yours permanently, with no
-            recurring fee.
-          </p>
-        ) : (
-          <ul className="market-catalog forge-owned">
-            {visibleRecords(ownedWorkflows, recordPage).map(([id, entry]) => {
-              const outcome = String(entry.outcome ?? "");
-
-              return (
-                <li key={id}>
-                  <div>
-                    <span className="panel-label">
-                      {String(entry.label ?? id)}
-                      <span className={`workflow-outcome-${outcome}`}>
-                        {outcome}
-                      </span>
-                    </span>
-                    <span className="forge-tests">
-                      {String(entry.tests ?? "").split("\n").filter(Boolean).map((test) => (
-                        <span key={test} className="forge-test">
-                          {test}
-                        </span>
-                      ))}
-                    </span>
-                    <span className="market-time">
-                      built by {String(entry.builtWithLabel ?? "")} · delivered{" "}
-                      {formatWorldTime(Number(entry.acquiredWorldMinute ?? 0))}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="market-hint">
-          The forge is where you stop renting: hand the running assistant a spec
-          — a safe workflow/IR, plan only, never executable code — and it writes
-          the program over world time. Building costs no credits; you pay in
-          minutes and rig occupancy instead. Each build occupies VRAM and
-          storage while it runs, competing with a local assistant for the same
-          pool, so a queue taxes both the next build&apos;s estimate and the
-          model&apos;s delivered shortcut. The finished workflow is yours
-          forever, contributes through the same capability language as the
-          license it replaces, and — because the assistant can be wrong — may
-          arrive clean, with warnings, or defective. A defective copy still
-          works, just for less; software is a lift, never a trap.
-        </p>
       </section>
 
       <section aria-label="Value graph">
