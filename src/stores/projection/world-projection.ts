@@ -694,7 +694,13 @@ export function syncWorldProjection(
     store.setTable("modelListings", modelListingRows);
     store.setTable("analysisClaims", analysisClaimRows);
     store.setTable("forgeSpecs", forgeSpecRows);
-    store.setTable("buildQueue", buildQueueRows);
+    if (Object.keys(buildQueueRows).length === 0) {
+      // TinyBase ignores an empty setTable payload, so ABORT/completion must
+      // explicitly clear previous queue rows or the UI shows phantom work.
+      store.delTable("buildQueue");
+    } else {
+      store.setTable("buildQueue", buildQueueRows);
+    }
     store.setTable("ownedWorkflows", ownedWorkflowRows);
     store.setTable("valueNodes", valueNodeRows);
     store.setCell("meta", "wallet", "credits", projection.economy.credits);
