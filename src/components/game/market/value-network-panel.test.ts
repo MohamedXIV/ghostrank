@@ -11,7 +11,7 @@ describe("shadcn financial network and transaction log",()=>{
   expect(html).toContain('data-slot="card"');expect(html).toContain('data-slot="badge"');
   expect(html).toContain('data-counterparty="nullbyte"');expect(html).toContain("OUT TO THEM");
   expect(html).toContain("500");expect(html).toContain("IN TO YOU");
-  expect(html).toContain("40".slice(0,1));expect(html).not.toContain("trust score");
+  expect(html).toContain("width:100%");expect(html).not.toContain("trust score");
  });
  it("empty projection does not invent parties or transactions",()=>{
   const html=renderToStaticMarkup(createElement(ValueNetwork,{nodes:[],inflow:0,outflow:0,counterparties:0}));
